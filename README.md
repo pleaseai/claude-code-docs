@@ -44,11 +44,13 @@ Agents then read individual pages from the cached checkout on demand — always 
 `ask search` delegates to [csp (Code Search Please)](https://github.com/pleaseai/code-search) for token-efficient semantic search over the cached checkout — ask "how does X work" instead of reading whole pages:
 
 ```bash
-ask search github:pleaseai/claude-code-docs "how do hooks intercept tool calls"
-ask search github:pleaseai/claude-code-docs "sandbox network policy" --top-k 10
+ask search github:pleaseai/claude-code-docs "how do hooks intercept tool calls" --content docs
+ask search github:pleaseai/claude-code-docs "sandbox network policy" --content docs --top-k 10
 ```
 
-csp is optional: without it on `PATH`, `ask search` prints the resolved checkout path plus a runnable recipe (`csp search "<query>" "$(ask src github:pleaseai/claude-code-docs)"`) instead of failing.
+Pass `--content docs` so csp indexes the per-page markdown under `docs/` (skipping the 5MB `llms-full.txt` bundle, which would only duplicate every result).
+
+csp is optional: without it on `PATH`, `ask search` prints the resolved checkout path plus a runnable recipe (`csp search "<query>" "$(ask src github:pleaseai/claude-code-docs)/docs"`) instead of failing.
 
 ## Copyright
 
