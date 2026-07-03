@@ -69,6 +69,10 @@ Left untouched: URLs already ending in a file extension (`.md`, `llms.txt`, imag
 
 Hook tests: `bash hooks/rewrite-docs-url.test.sh`
 
+### Skill: `/claude-code-docs:claude-code-docs [question]`
+
+The plugin also ships a skill that answers Claude Code questions from this mirror: it resolves the version-pinned checkout via `ask src`, semantically searches it with `csp` (`--content docs`), reads the matching pages, and answers with canonical-URL citations. Both CLIs fall back to `npx -y @pleaseai/ask` / `npx -y @pleaseai/csp` when not on PATH, and to grep + WebFetch when unavailable entirely.
+
 ## Copyright
 
 All documentation content is © [Anthropic](https://www.anthropic.com). This is an unofficial, unmodified mirror maintained for reference and tooling purposes; the canonical documentation lives at [code.claude.com/docs](https://code.claude.com/docs). This repository will be removed upon request by Anthropic.
