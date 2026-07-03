@@ -1,0 +1,28 @@
+name: sync
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun run sync.ts
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add -A
+          git diff --cached --quiet && exit 0
+          deleted=$(git diff --cached --name-only --diff-filter=D -- docs/ | xargs -rn1 basename | paste -sd, -)
+          git commit -m "docs: sync $(date -u +%F)${deleted:+ (removed: $deleted)}"
+          git push
