@@ -39,6 +39,17 @@ ask install                                # generates AGENTS.md + a Claude Code
 
 Agents then read individual pages from the cached checkout on demand — always at the ref this mirror was last synced to.
 
+### Semantic search with `ask search`
+
+`ask search` delegates to [csp (Code Search Please)](https://github.com/pleaseai/code-search) for token-efficient semantic search over the cached checkout — ask "how does X work" instead of reading whole pages:
+
+```bash
+ask search github:pleaseai/claude-code-docs "how do hooks intercept tool calls"
+ask search github:pleaseai/claude-code-docs "sandbox network policy" --top-k 10
+```
+
+csp is optional: without it on `PATH`, `ask search` prints the resolved checkout path plus a runnable recipe (`csp search "<query>" "$(ask src github:pleaseai/claude-code-docs)"`) instead of failing.
+
 ## Copyright
 
 All documentation content is © [Anthropic](https://www.anthropic.com). This is an unofficial, unmodified mirror maintained for reference and tooling purposes; the canonical documentation lives at [code.claude.com/docs](https://code.claude.com/docs). This repository will be removed upon request by Anthropic.
