@@ -1,0 +1,27 @@
+README.md
+  s_e33dd32a48c230::t_3bcd3da105afe6 55-71
+.claude-plugin/plugin.json
+  s_e33dd32a48c230::t_64f292b2b2d5e8 1-18
+hooks/hooks.json
+  s_e33dd32a48c230::t_26c45907684ca3 1-17
+hooks/rewrite-docs-url.sh
+  s_e33dd32a48c230::t_278465cc14d049 1-42
+hooks/rewrite-docs-url.test.sh
+  s_e33dd32a48c230::t_9dceada6ee67d6 1-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b2248d6386cbbed45446c706a73f8cb9dd9a5007",
+  "prompts": {},
+  "sessions": {
+    "s_e33dd32a48c230": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "06639944-5762-43cc-ad7b-0057e59bdb72",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Minsu Lee <minsu.lee@pleaseai.dev>"
+    }
+  }
+}
