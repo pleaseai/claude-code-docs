@@ -1,0 +1,353 @@
+.github/workflows/sync.yml
+  s_e33dd32a48c230::t_d1737d831d5b13 1-28
+README.md
+  s_e33dd32a48c230::t_1fa96cac7b09ab 1-22
+docs/admin-setup.md
+  s_e33dd32a48c230::t_469b829053e1a1 1-143
+docs/advisor.md
+  s_e33dd32a48c230::t_cf8cdd46ef234d 1-170
+docs/agent-sdk/agent-loop.md
+  s_e33dd32a48c230::t_ce1dd95806057d 1-402
+docs/agent-sdk/claude-code-features.md
+  s_e33dd32a48c230::t_d7e8fadefc916d 1-298
+docs/agent-sdk/cost-tracking.md
+  s_e33dd32a48c230::t_68f4a507e37d4b 1-280
+docs/agent-sdk/custom-tools.md
+  s_e33dd32a48c230::t_5d1f9417a44255 1-833
+docs/agent-sdk/file-checkpointing.md
+  s_e33dd32a48c230::t_793f8b58f32302 1-770
+docs/agent-sdk/hooks.md
+  s_e33dd32a48c230::t_af7bd79a804da9 1-847
+docs/agent-sdk/hosting.md
+  s_e33dd32a48c230::t_67a47a1b4952f3 1-307
+docs/agent-sdk/mcp.md
+  s_e33dd32a48c230::t_3eafe901b33632 1-788
+docs/agent-sdk/migration-guide.md
+  s_e33dd32a48c230::t_aef98961f12a62 1-295
+docs/agent-sdk/modifying-system-prompts.md
+  s_e33dd32a48c230::t_07daa3b38f00ed 1-434
+docs/agent-sdk/observability.md
+  s_e33dd32a48c230::t_4e9fee4c1f7bd6 1-247
+docs/agent-sdk/overview.md
+  s_e33dd32a48c230::t_87ad5e5e8ba798 1-602
+docs/agent-sdk/permissions.md
+  s_e33dd32a48c230::t_e8c4fa45a7464a 1-265
+docs/agent-sdk/plugins.md
+  s_e33dd32a48c230::t_eeab3a94f60f01 1-358
+docs/agent-sdk/python.md
+  s_e33dd32a48c230::t_4c5595e45b4f70 1-3473
+docs/agent-sdk/quickstart.md
+  s_e33dd32a48c230::t_37f9e862f719b7 1-374
+docs/agent-sdk/secure-deployment.md
+  s_e33dd32a48c230::t_2e3a81f69b5f82 1-350
+docs/agent-sdk/session-storage.md
+  s_e33dd32a48c230::t_b8444dac9a2f66 1-261
+docs/agent-sdk/sessions.md
+  s_e33dd32a48c230::t_4aabb0ea2c911f 1-338
+docs/agent-sdk/skills.md
+  s_e33dd32a48c230::t_461fc330fe04e9 1-314
+docs/agent-sdk/slash-commands.md
+  s_e33dd32a48c230::t_bb2389442d2eeb 1-566
+docs/agent-sdk/streaming-output.md
+  s_e33dd32a48c230::t_387eb4ac4d14d3 1-394
+docs/agent-sdk/streaming-vs-single-mode.md
+  s_e33dd32a48c230::t_17d431f4258939 1-300
+docs/agent-sdk/structured-outputs.md
+  s_e33dd32a48c230::t_7025f61c18389a 1-410
+docs/agent-sdk/subagents.md
+  s_e33dd32a48c230::t_4b1cefecb60d12 1-653
+docs/agent-sdk/todo-tracking.md
+  s_e33dd32a48c230::t_3fa0b01bc0556b 1-270
+docs/agent-sdk/tool-search.md
+  s_e33dd32a48c230::t_93e62a568952fc 1-129
+docs/agent-sdk/typescript-v2-preview.md
+  s_e33dd32a48c230::t_c2f1a10c40ce42 1-394
+docs/agent-sdk/typescript.md
+  s_e33dd32a48c230::t_0dd992c1d67740 1-3550
+docs/agent-sdk/user-input.md
+  s_e33dd32a48c230::t_71e1c1a5968565 1-859
+docs/agent-teams.md
+  s_e33dd32a48c230::t_2bdc46cef3d789 1-433
+docs/agent-view.md
+  s_e33dd32a48c230::t_376496e3fbc685 1-664
+docs/agents.md
+  s_e33dd32a48c230::t_08d158ce26d2c4 1-66
+docs/amazon-bedrock.md
+  s_e33dd32a48c230::t_2de89b652bce14 1-516
+docs/analytics.md
+  s_e33dd32a48c230::t_6dee2897184607 1-226
+docs/artifacts.md
+  s_e33dd32a48c230::t_3fdd626218ed56 1-217
+docs/authentication.md
+  s_e33dd32a48c230::t_430408c7020e60 1-164
+docs/auto-mode-config.md
+  s_e33dd32a48c230::t_df4569f9f2f756 1-248
+docs/best-practices.md
+  s_e33dd32a48c230::t_570d47f007cac3 1-608
+docs/champion-kit.md
+  s_e33dd32a48c230::t_b9e6feef933cba 1-195
+docs/changelog.md
+  s_e33dd32a48c230::t_d1d8daa5afb207 1-4717
+docs/channels-reference.md
+  s_e33dd32a48c230::t_c7eeda0a346025 1-761
+docs/channels.md
+  s_e33dd32a48c230::t_4bea10e7d59423 1-356
+docs/checkpointing.md
+  s_e33dd32a48c230::t_da55320bc85d5f 1-100
+docs/chrome.md
+  s_e33dd32a48c230::t_881696afe6cd2f 1-243
+docs/claude-apps-gateway-config.md
+  s_e33dd32a48c230::t_2ebef7c735ed67 1-752
+docs/claude-apps-gateway-deploy.md
+  s_e33dd32a48c230::t_bf3891dd303392 1-261
+docs/claude-apps-gateway-on-gcp.md
+  s_e33dd32a48c230::t_e97f18f9ab8aa9 1-318
+docs/claude-apps-gateway-spend-limits.md
+  s_e33dd32a48c230::t_731d8c95be9791 1-142
+docs/claude-apps-gateway.md
+  s_e33dd32a48c230::t_ab85edd8478244 1-327
+docs/claude-code-on-the-web.md
+  s_e33dd32a48c230::t_fa0b4bf7169bba 1-831
+docs/claude-directory.md
+  s_e33dd32a48c230::t_941d6e0cd0efef 1-1611
+docs/claude-platform-on-aws.md
+  s_e33dd32a48c230::t_095af51bc6f1ed 1-344
+docs/cli-reference.md
+  s_e33dd32a48c230::t_6eda4c8f25cec5 1-150
+docs/code-review.md
+  s_e33dd32a48c230::t_dd77d738605520 1-296
+docs/commands.md
+  s_e33dd32a48c230::t_3ed51a96a0360d 1-158
+docs/common-workflows.md
+  s_e33dd32a48c230::t_181cc1d6636057 1-528
+docs/communications-kit.md
+  s_e33dd32a48c230::t_c1a83c4e365544 1-529
+docs/computer-use.md
+  s_e33dd32a48c230::t_9862abb214b2ee 1-214
+docs/context-window.md
+  s_e33dd32a48c230::t_6e6676381365d0 1-1627
+docs/costs.md
+  s_e33dd32a48c230::t_3bf1c4dd966a9f 1-209
+docs/data-usage.md
+  s_e33dd32a48c230::t_f8ba73f61e692c 1-126
+docs/debug-your-config.md
+  s_e33dd32a48c230::t_cfa63902efc4bb 1-119
+docs/deep-links.md
+  s_e33dd32a48c230::t_d1bb4bec4643f5 1-192
+docs/desktop-linux.md
+  s_e33dd32a48c230::t_1dc9c503c183f9 1-103
+docs/desktop-quickstart.md
+  s_e33dd32a48c230::t_4691a1679ed961 1-133
+docs/desktop-scheduled-tasks.md
+  s_e33dd32a48c230::t_31865d131c600f 1-106
+docs/desktop.md
+  s_e33dd32a48c230::t_8486bc6ef47ffa 1-796
+docs/devcontainer.md
+  s_e33dd32a48c230::t_6532e5fc7982e6 1-190
+docs/discover-plugins.md
+  s_e33dd32a48c230::t_d3583743dbbbb8 1-484
+docs/env-vars.md
+  s_e33dd32a48c230::t_4f6716b678be3a 1-386
+docs/errors.md
+  s_e33dd32a48c230::t_e225a5d3d09299 1-894
+docs/fast-mode.md
+  s_e33dd32a48c230::t_19d962437f8aad 1-155
+docs/feature-availability.md
+  s_e33dd32a48c230::t_c93bd08c622bc1 1-296
+docs/features-overview.md
+  s_e33dd32a48c230::t_5914063d6e16e7 1-344
+docs/fullscreen.md
+  s_e33dd32a48c230::t_1004c7e5a006e3 1-202
+docs/gateways.md
+  s_e33dd32a48c230::t_09714c2445e3b7 1-73
+docs/github-actions.md
+  s_e33dd32a48c230::t_5477c957a24f8d 1-679
+docs/github-enterprise-server.md
+  s_e33dd32a48c230::t_9b0af2e7498fb6 1-189
+docs/gitlab-ci-cd.md
+  s_e33dd32a48c230::t_61e5e2ae449432 1-466
+docs/glossary.md
+  s_e33dd32a48c230::t_9541bf364cef8f 1-327
+docs/goal.md
+  s_e33dd32a48c230::t_e1609e3b2096a9 1-135
+docs/google-vertex-ai.md
+  s_e33dd32a48c230::t_42612640160a2c 1-300
+docs/headless.md
+  s_e33dd32a48c230::t_7f73b6df16a1e4 1-259
+docs/hooks-guide.md
+  s_e33dd32a48c230::t_a9ee875dbac60a 1-981
+docs/hooks.md
+  s_e33dd32a48c230::t_559088e52b4e8e 1-3099
+docs/how-claude-code-works.md
+  s_e33dd32a48c230::t_9c1ce3c6461121 1-259
+docs/interactive-mode.md
+  s_e33dd32a48c230::t_54a34f81cb176a 1-384
+docs/jetbrains.md
+  s_e33dd32a48c230::t_09a51e31ba55b1 1-202
+docs/keybindings.md
+  s_e33dd32a48c230::t_cb14fb192ac25a 1-477
+docs/large-codebases.md
+  s_e33dd32a48c230::t_3cec771aa7675a 1-471
+docs/legal-and-compliance.md
+  s_e33dd32a48c230::t_da0e5a70be5688 1-57
+docs/llm-gateway-connect.md
+  s_e33dd32a48c230::t_26a55589e78044 1-478
+docs/llm-gateway-protocol.md
+  s_e33dd32a48c230::t_01ae7b6fc3f70a 1-181
+docs/llm-gateway-rollout.md
+  s_e33dd32a48c230::t_3056b1c61dc68a 1-270
+docs/llm-gateway.md
+  s_e33dd32a48c230::t_4753bf88345b76 1-56
+docs/managed-mcp.md
+  s_e33dd32a48c230::t_4463c30df2325b 1-356
+docs/mcp-quickstart.md
+  s_e33dd32a48c230::t_ea26754d3189fe 1-382
+docs/mcp.md
+  s_e33dd32a48c230::t_410beeb85a1630 1-1186
+docs/memory.md
+  s_e33dd32a48c230::t_61714785f814cf 1-438
+docs/microsoft-foundry.md
+  s_e33dd32a48c230::t_e20242b9817d9a 1-216
+docs/model-config.md
+  s_e33dd32a48c230::t_e2fe4d8e2cb486 1-640
+docs/monitoring-usage.md
+  s_e33dd32a48c230::t_2014cd067da67f 1-1213
+docs/network-config.md
+  s_e33dd32a48c230::t_dd3ff124aa37ac 1-130
+docs/output-styles.md
+  s_e33dd32a48c230::t_323d99f47705f3 1-123
+docs/overview.md
+  s_e33dd32a48c230::t_855a379198c4ba 1-243
+docs/permission-modes.md
+  s_e33dd32a48c230::t_6c467b6e77ff7a 1-410
+docs/permissions.md
+  s_e33dd32a48c230::t_1bc92f3f980d73 1-454
+docs/platforms.md
+  s_e33dd32a48c230::t_1c520c73962083 1-81
+docs/plugin-dependencies.md
+  s_e33dd32a48c230::t_870984adbd2be4 1-184
+docs/plugin-hints.md
+  s_e33dd32a48c230::t_260937441ce13e 1-151
+docs/plugin-marketplaces.md
+  s_e33dd32a48c230::t_b49d5196942e8f 1-1135
+docs/plugin-relevance.md
+  s_e33dd32a48c230::t_9534e627bf4687 1-170
+docs/plugins-reference.md
+  s_e33dd32a48c230::t_a8e6c07f026276 1-1233
+docs/plugins.md
+  s_e33dd32a48c230::t_65017a43a1ac73 1-503
+docs/prompt-caching.md
+  s_e33dd32a48c230::t_a9e357b30141a6 1-251
+docs/prompt-library.md
+  s_e33dd32a48c230::t_bedd3c92d67235 1-1389
+docs/quickstart.md
+  s_e33dd32a48c230::t_21292b344a48b7 1-353
+docs/remote-control.md
+  s_e33dd32a48c230::t_e05a32235b7c82 1-340
+docs/routines.md
+  s_e33dd32a48c230::t_9592a00a6395db 1-390
+docs/sandbox-environments.md
+  s_e33dd32a48c230::t_eeb7278cddace1 1-136
+docs/sandboxing.md
+  s_e33dd32a48c230::t_64ac7e68729f2e 1-450
+docs/scheduled-tasks.md
+  s_e33dd32a48c230::t_d93a8f2526c719 1-224
+docs/security-guidance.md
+  s_e33dd32a48c230::t_0ecc4e04750fda 1-239
+docs/security.md
+  s_e33dd32a48c230::t_935b5b17f57d73 1-146
+docs/server-managed-settings.md
+  s_e33dd32a48c230::t_4be371e9c4759d 1-269
+docs/sessions.md
+  s_e33dd32a48c230::t_acc8f76eeb6d08 1-151
+docs/settings.md
+  s_e33dd32a48c230::t_132bebe118a52e 1-1151
+docs/setup.md
+  s_e33dd32a48c230::t_42b4ec3ff57619 1-643
+docs/skills.md
+  s_e33dd32a48c230::t_b2539efee8a600 1-864
+docs/slack.md
+  s_e33dd32a48c230::t_d18a4b5b158965 1-247
+docs/statusline.md
+  s_e33dd32a48c230::t_f0f450a714c0b1 1-1092
+docs/sub-agents.md
+  s_e33dd32a48c230::t_f23f5d243b8c7e 1-1140
+docs/terminal-config.md
+  s_e33dd32a48c230::t_95a3263fd51f94 1-309
+docs/third-party-integrations.md
+  s_e33dd32a48c230::t_75a28890169bcb 1-349
+docs/tools-reference.md
+  s_e33dd32a48c230::t_cfc7adee20f581 1-372
+docs/troubleshoot-install.md
+  s_e33dd32a48c230::t_e0ce939934e5df 1-841
+docs/troubleshooting.md
+  s_e33dd32a48c230::t_35f3b52382a24f 1-126
+docs/ultraplan.md
+  s_e33dd32a48c230::t_e28ab12fcf93b7 1-84
+docs/ultrareview.md
+  s_e33dd32a48c230::t_7a21439369969a 1-111
+docs/voice-dictation.md
+  s_e33dd32a48c230::t_c835a5fb7558fe 1-206
+docs/vs-code.md
+  s_e33dd32a48c230::t_55117f4902eb3f 1-553
+docs/web-quickstart.md
+  s_e33dd32a48c230::t_23da7e61e06374 1-230
+docs/whats-new/2026-w13.md
+  s_e33dd32a48c230::t_2ac6c27451450f 1-164
+docs/whats-new/2026-w14.md
+  s_e33dd32a48c230::t_8966e1e3406f38 1-138
+docs/whats-new/2026-w15.md
+  s_e33dd32a48c230::t_1c8fe0a5358df9 1-119
+docs/whats-new/2026-w16.md
+  s_e33dd32a48c230::t_93fc3035f098f6 1-133
+docs/whats-new/2026-w17.md
+  s_e33dd32a48c230::t_2d1d145f70a497 1-113
+docs/whats-new/2026-w18.md
+  s_e33dd32a48c230::t_97ee59c8a1cbdc 1-113
+docs/whats-new/2026-w19.md
+  s_e33dd32a48c230::t_59ea9aa1a1d49c 1-60
+docs/whats-new/2026-w20.md
+  s_e33dd32a48c230::t_e5a5616e44de35 1-95
+docs/whats-new/2026-w21.md
+  s_e33dd32a48c230::t_0a775353030aaa 1-50
+docs/whats-new/2026-w22.md
+  s_e33dd32a48c230::t_775be6a3447135 1-119
+docs/whats-new/2026-w23.md
+  s_e33dd32a48c230::t_6d1c70efc882b8 1-102
+docs/whats-new/2026-w24.md
+  s_e33dd32a48c230::t_27e67c796445e3 1-84
+docs/whats-new/2026-w25.md
+  s_e33dd32a48c230::t_e8acfd3b1e50ff 1-90
+docs/whats-new/2026-w26.md
+  s_e33dd32a48c230::t_fedbe8b38eb1e7 1-66
+docs/whats-new/index.md
+  s_e33dd32a48c230::t_cc850e31a9f913 1-121
+docs/workflows.md
+  s_e33dd32a48c230::t_b25d0bf2beb841 1-328
+docs/worktrees.md
+  s_e33dd32a48c230::t_ae519882b89f14 1-167
+docs/zero-data-retention.md
+  s_e33dd32a48c230::t_0583007c6768c7 1-77
+llms-full.txt
+  s_e33dd32a48c230::t_17d1bf675a4609 1-69910
+llms.txt
+  s_e33dd32a48c230::t_5033d6af6568d5 1-169
+sync.ts
+  s_e33dd32a48c230::t_afe30e8d359625 1-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "fc92c35aa4c54561c89b694c5dd52691c011ac67",
+  "prompts": {},
+  "sessions": {
+    "s_e33dd32a48c230": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "06639944-5762-43cc-ad7b-0057e59bdb72",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
