@@ -1,0 +1,19 @@
+README.md
+  s_e33dd32a48c230::t_398c5ae1d1496b 20-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "83383601cd8567d7b636a75526eb11f4450f59fe",
+  "prompts": {},
+  "sessions": {
+    "s_e33dd32a48c230": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "06639944-5762-43cc-ad7b-0057e59bdb72",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Minsu Lee <minsu.lee@pleaseai.dev>"
+    }
+  }
+}
