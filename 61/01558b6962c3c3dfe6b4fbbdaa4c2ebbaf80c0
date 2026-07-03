@@ -1,0 +1,21 @@
+README.md
+  s_e33dd32a48c230::t_08f1684a624681 72-75
+skills/claude-code-docs/SKILL.md
+  s_e33dd32a48c230::t_2bd97290ce4532 1-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "6101558b6962c3c3dfe6b4fbbdaa4c2ebbaf80c0",
+  "prompts": {},
+  "sessions": {
+    "s_e33dd32a48c230": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "06639944-5762-43cc-ad7b-0057e59bdb72",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Minsu Lee <minsu.lee@pleaseai.dev>"
+    }
+  }
+}
