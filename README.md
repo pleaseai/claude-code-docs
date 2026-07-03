@@ -52,6 +52,23 @@ Pass `--content docs` so csp indexes the per-page markdown under `docs/` (skippi
 
 csp is optional: without it on `PATH`, `ask search` prints the resolved checkout path plus a runnable recipe (`csp search "<query>" "$(ask src github:pleaseai/claude-code-docs)/docs"`) instead of failing.
 
+## Claude Code plugin: fetch docs as markdown
+
+This repo is also a Claude Code plugin. A `PreToolUse` hook rewrites `code.claude.com/docs` page URLs to their `.md` source before WebFetch runs, so Claude reads the clean markdown twin instead of the HTML app shell:
+
+```bash
+/plugin install claude-code-docs@pleaseai
+```
+
+| WebFetch input | Rewritten to |
+|---|---|
+| `https://code.claude.com/docs/en/agents` | `https://code.claude.com/docs/en/agents.md` |
+| `https://code.claude.com/docs/en/hooks#pretooluse-decision-control` | `https://code.claude.com/docs/en/hooks.md` |
+
+Left untouched: URLs already ending in a file extension (`.md`, `llms.txt`, images), the docs root, and everything outside `code.claude.com/docs`. The hook returns [`updatedInput` with `permissionDecision: "allow"`](https://code.claude.com/docs/en/hooks#pretooluse-decision-control), so the rewritten fetch runs without an extra prompt.
+
+Hook tests: `bash hooks/rewrite-docs-url.test.sh`
+
 ## Copyright
 
 All documentation content is © [Anthropic](https://www.anthropic.com). This is an unofficial, unmodified mirror maintained for reference and tooling purposes; the canonical documentation lives at [code.claude.com/docs](https://code.claude.com/docs). This repository will be removed upon request by Anthropic.
