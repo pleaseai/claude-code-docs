@@ -783,6 +783,7 @@ MCP server connections time out after 30 seconds by default. If your server take
 
 * **[Custom tools guide](./custom-tools.md)**: Build your own MCP server that runs in-process with your SDK application
 * **[Permissions](./permissions.md)**: Control which MCP tools your agent can use with `allowedTools` and `disallowedTools`
+* **[MCP output limits and warnings](../mcp.md#mcp-output-limits-and-warnings)**: How the SDK handles tool results that exceed `MAX_MCP_OUTPUT_TOKENS`, including the persist-to-disk fallback and the `anthropic/maxResultSizeChars` per-tool annotation
 * **[TypeScript SDK reference](./typescript.md)**: Full API reference including MCP configuration options
 * **[Python SDK reference](./python.md)**: Full API reference including MCP configuration options
 * **[MCP server directory](https://github.com/modelcontextprotocol/servers)**: Browse available MCP servers for databases, APIs, and more
