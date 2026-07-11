@@ -26,7 +26,7 @@ Three approaches keep the current session running between prompts. Pick based on
 | Approach                                                            | Next turn starts when      | Stops when                                      |
 | :------------------------------------------------------------------ | :------------------------- | :---------------------------------------------- |
 | `/goal`                                                             | The previous turn finishes | A model confirms the condition is met           |
-| [`/loop`](./scheduled-tasks.md#run-a-prompt-repeatedly-with-%2Floop) | A time interval elapses    | You stop it, or Claude decides the work is done |
+| [`/loop`](./scheduled-tasks.md#run-a-prompt-repeatedly-with-loop) | A time interval elapses    | You stop it, or Claude decides the work is done |
 | [Stop hook](./hooks-guide.md#prompt-based-hooks)                     | The previous turn finishes | Your own script or prompt decides               |
 
 `/goal` and a Stop hook both fire after every turn. `/goal` is a session-scoped shortcut: you type a condition and it's active for the current session only. A Stop hook lives in your settings file, applies to every session in its scope, and can run a script for deterministic checks or a prompt for model-evaluated ones.
@@ -129,7 +129,7 @@ The evaluator runs on whichever provider your session is configured for. It does
 
 ## See also
 
-* [Run a prompt repeatedly with `/loop`](./scheduled-tasks.md#run-a-prompt-repeatedly-with-%2Floop): re-run on a time interval instead of until a condition holds
+* [Run a prompt repeatedly with `/loop`](./scheduled-tasks.md#run-a-prompt-repeatedly-with-loop): re-run on a time interval instead of until a condition holds
 * [Prompt-based hooks](./hooks-guide.md#prompt-based-hooks): write your own Stop hook when you need custom evaluation logic
 * [Auto mode](./auto-mode-config.md): approve tool calls automatically so each goal turn runs unattended
 * [Scheduling comparison](./scheduled-tasks.md#compare-scheduling-options): run work on a schedule independent of any open session

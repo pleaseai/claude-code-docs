@@ -70,7 +70,7 @@ The `input` object contains tool-specific parameters. Common examples:
 | `Edit`  | `file_path`, `old_string`, `new_string` |
 | `Read`  | `file_path`, `offset`, `limit`          |
 
-See the SDK reference for complete input schemas: [Python](./python.md#tool-input%2Foutput-types) | [TypeScript](./typescript.md#tool-input-types).
+See the SDK reference for complete input schemas: [Python](./python.md#tool-inputoutput-types) | [TypeScript](./typescript.md#tool-input-types).
 
 You can display this information to the user so they can decide whether to allow or reject the action, then return the appropriate response.
 

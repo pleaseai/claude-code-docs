@@ -4,7 +4,7 @@
 // Any fetch failure throws, failing the job before a partial tree gets committed.
 
 import { rm } from "node:fs/promises";
-import { dirname, relative } from "node:path";
+import { dirname, relative } from "node:path/posix";
 
 const BASE = "https://code.claude.com/docs";
 const CONCURRENCY = 10;
@@ -21,7 +21,10 @@ function rewriteLinks(content: string, rel: string, knownSlugs: Set<string>): st
     if (knownSlugs.has(slug)) {
       let target = relative(fromDir, `${slug}.md`);
       if (!target.startsWith(".")) target = `./${target}`;
-      return `${target}${anchor}`;
+      // GitHub removes slashes from generated heading IDs, while the source
+      // site percent-encodes them in fragments (for example, `%2F`).
+      const githubAnchor = anchor.replace(/%2F/gi, "");
+      return `${target}${githubAnchor}`;
     }
     return `${BASE}/en/${slug}${anchor}`;
   };
