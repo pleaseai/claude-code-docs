@@ -15,7 +15,7 @@ Status lines are useful when you:
 * Work across multiple sessions and need to distinguish them
 * Want git branch and status always visible
 
-The status line renders in its own row above the built-in footer badges and does not replace them. To add clickable link badges to the footer when an ID appears in the conversation, without writing a script, configure [`footerLinksRegexes`](/en/settings#footer-link-badges) instead.
+The status line renders in its own row above the built-in footer badges and does not replace them. To add clickable link badges to the footer when an ID appears in the conversation, without writing a script, configure [`footerLinksRegexes`](./settings.md#footer-link-badges) instead.
 
 Here's an example of a [multi-line status line](#display-multiple-lines) that displays git info on the first line and a color-coded context bar on the second.
 
@@ -39,7 +39,7 @@ The `/statusline` command accepts natural language instructions describing what 
 
 ### Manually configure a status line
 
-Add a `statusLine` field to your user settings (`~/.claude/settings.json`, where `~` is your home directory) or [project settings](/en/settings#settings-files). Set `type` to `"command"` and point `command` to a script path or an inline shell command. For a full walkthrough of creating a script, see [Build a status line step by step](#build-a-status-line-step-by-step).
+Add a `statusLine` field to your user settings (`~/.claude/settings.json`, where `~` is your home directory) or [project settings](./settings.md#settings-files). Set `type` to `"command"` and point `command` to a script path or an inline shell command. For a full walkthrough of creating a script, see [Build a status line step by step](#build-a-status-line-step-by-step).
 
 ```json theme={null}
 {
@@ -180,11 +180,11 @@ Claude Code sends the following JSON fields to your script via stdin:
 | `rate_limits.five_hour.resets_at`, `rate_limits.seven_day.resets_at`             | Unix epoch seconds when the 5-hour or 7-day rate limit window resets                                                                                                                                                                                                              |
 | `session_id`                                                                     | Unique session identifier                                                                                                                                                                                                                                                         |
 | `session_name`                                                                   | Custom session name set with the `--name` flag or `/rename`. Absent if no custom name has been set                                                                                                                                                                                |
-| `prompt_id`                                                                      | UUID identifying the user prompt currently being processed. Matches the [`prompt.id` attribute on OpenTelemetry events](/en/monitoring-usage#event-correlation-attributes). Absent until the first user input. {/* min-version: 2.1.196 */}Requires Claude Code v2.1.196 or later |
+| `prompt_id`                                                                      | UUID identifying the user prompt currently being processed. Matches the [`prompt.id` attribute on OpenTelemetry events](./monitoring-usage.md#event-correlation-attributes). Absent until the first user input. {/* min-version: 2.1.196 */}Requires Claude Code v2.1.196 or later |
 | `transcript_path`                                                                | Path to conversation transcript file                                                                                                                                                                                                                                              |
 | `version`                                                                        | Claude Code version                                                                                                                                                                                                                                                               |
 | `output_style.name`                                                              | Name of the current output style                                                                                                                                                                                                                                                  |
-| `vim.mode`                                                                       | Current vim mode (`NORMAL`, `INSERT`, `VISUAL`, or `VISUAL LINE`) when [vim mode](/en/interactive-mode#vim-editor-mode) is enabled                                                                                                                                                |
+| `vim.mode`                                                                       | Current vim mode (`NORMAL`, `INSERT`, `VISUAL`, or `VISUAL LINE`) when [vim mode](./interactive-mode.md#vim-editor-mode) is enabled                                                                                                                                                |
 | `agent.name`                                                                     | Agent name when running with the `--agent` flag or agent settings configured                                                                                                                                                                                                      |
 | `pr.number`, `pr.url`                                                            | Open pull request for the current branch. Mirrors the PR badge in the bottom status bar. Absent until a PR is found, when not in a git repository, or once the PR merges or closes                                                                                                |
 | `pr.review_state`                                                                | Review status of the open PR: `approved`, `pending`, `changes_requested`, or `draft`. May be independently absent even when `pr` is present                                                                                                                                       |
@@ -316,7 +316,7 @@ The `current_usage` object contains:
 * `cache_creation_input_tokens`: tokens written to cache
 * `cache_read_input_tokens`: tokens read from cache
 
-For what the cache fields mean and how they're billed, see [check cache performance](/en/prompt-caching#check-cache-performance).
+For what the cache fields mean and how they're billed, see [check cache performance](./prompt-caching.md#check-cache-performance).
 
 The `used_percentage` field is calculated from input tokens only: `input_tokens + cache_creation_input_tokens + cache_read_input_tokens`. It does not include `output_tokens`.
 
@@ -997,7 +997,7 @@ Or, when Git Bash is installed, run a Bash script directly:
 
 ## Subagent status lines
 
-The `subagentStatusLine` setting renders a custom row body for each [subagent](/en/sub-agents) shown in the agent panel below the prompt. Use it to replace the default `name · description · token count` row with your own formatting.
+The `subagentStatusLine` setting renders a custom row body for each [subagent](./sub-agents.md) shown in the agent panel below the prompt. Use it to replace the default `name · description · token count` row with your own formatting.
 
 ```json theme={null}
 {
@@ -1008,13 +1008,13 @@ The `subagentStatusLine` setting renders a custom row body for each [subagent](/
 }
 ```
 
-The command runs once per refresh tick with all visible subagent rows passed as a single JSON object on stdin. The input includes the [base hook fields](/en/hooks#common-input-fields), a `columns` field with the usable row width, and a `tasks` array. Each task has `id`, `name`, `type`, `status`, `description`, `label`, `startTime`, `model`, `contextWindowSize`, `tokenCount`, `tokenSamples`, and `cwd`.
+The command runs once per refresh tick with all visible subagent rows passed as a single JSON object on stdin. The input includes the [base hook fields](./hooks.md#common-input-fields), a `columns` field with the usable row width, and a `tasks` array. Each task has `id`, `name`, `type`, `status`, `description`, `label`, `startTime`, `model`, `contextWindowSize`, `tokenCount`, `tokenSamples`, and `cwd`.
 
 The per-task `model` field is the resolved model ID the task runs on. `contextWindowSize` is that model's context window in tokens, computed the same way as the main status line's `context_window.context_window_size`, so you can render a per-row percentage from `tokenCount`. Both fields require Claude Code v2.1.205 or later and are omitted for a task whose model isn't resolved yet.
 
 Write one JSON line to stdout per row you want to override, in the form `{"id": "<task id>", "content": "<row body>"}`. The `content` string is rendered as-is, including ANSI colors and OSC 8 hyperlinks. Omit a task's `id` to keep the default rendering for that row; emit an empty `content` string to hide it.
 
-The same trust and `disableAllHooks` gates that apply to `statusLine` apply here. Plugins can ship a default `subagentStatusLine` in their [`settings.json`](/en/plugins-reference#standard-plugin-layout).
+The same trust and `disableAllHooks` gates that apply to `statusLine` apply here. Plugins can ship a default `subagentStatusLine` in their [`settings.json`](./plugins-reference.md#standard-plugin-layout).
 
 ## Tips
 

@@ -19,7 +19,7 @@ The Claude Code SDK has been renamed to the **Claude Agent SDK** and its documen
 | **Documentation Location** | Claude Code docs            | API Guide → Agent SDK section    |
 
 <Note>
-  **Documentation Changes:** The Agent SDK documentation has moved from the Claude Code docs to the API Guide under a dedicated [Agent SDK](/en/agent-sdk/overview) section. The Claude Code docs now focus on the CLI tool and automation features.
+  **Documentation Changes:** The Agent SDK documentation has moved from the Claude Code docs to the API Guide under a dedicated [Agent SDK](./overview.md) section. The Claude Code docs now focus on the CLI tool and automation features.
 </Note>
 
 ## Migration Steps
@@ -260,7 +260,7 @@ To run isolated from filesystem settings, pass an empty array:
 Isolation is especially important for CI/CD pipelines, deployed applications, test environments, and multi-tenant systems where local customizations should not leak in.
 
 <Note>
-  SDK v0.1.0 briefly defaulted to no settings loaded; this was reverted in subsequent releases. Python SDK 0.1.59 and earlier treated an empty list the same as omitting the option, so upgrade before relying on `setting_sources=[]`. See [What settingSources does not control](/en/agent-sdk/claude-code-features#what-settingsources-does-not-control) for inputs that are read even when `settingSources` is `[]`.
+  SDK v0.1.0 briefly defaulted to no settings loaded; this was reverted in subsequent releases. Python SDK 0.1.59 and earlier treated an empty list the same as omitting the option, so upgrade before relying on `setting_sources=[]`. See [What settingSources does not control](./claude-code-features.md#what-settingsources-does-not-control) for inputs that are read even when `settingSources` is `[]`.
 </Note>
 
 ## Why the Rename?
@@ -289,7 +289,7 @@ If you encounter any issues during migration:
 
 ## Next Steps
 
-* Explore the [Agent SDK Overview](/en/agent-sdk/overview) to learn about available features
-* Check out the [TypeScript SDK Reference](/en/agent-sdk/typescript) for detailed API documentation
-* Review the [Python SDK Reference](/en/agent-sdk/python) for Python-specific documentation
-* Learn about [Custom Tools](/en/agent-sdk/custom-tools) and [MCP Integration](/en/agent-sdk/mcp)
+* Explore the [Agent SDK Overview](./overview.md) to learn about available features
+* Check out the [TypeScript SDK Reference](./typescript.md) for detailed API documentation
+* Review the [Python SDK Reference](./python.md) for Python-specific documentation
+* Learn about [Custom Tools](./custom-tools.md) and [MCP Integration](./mcp.md)

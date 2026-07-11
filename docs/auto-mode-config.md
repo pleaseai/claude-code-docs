@@ -6,15 +6,15 @@
 
 > Tell the auto mode classifier which repos, buckets, and domains your organization trusts. Set environment context, override the default block and allow rules, and inspect your effective config with the auto-mode CLI subcommands.
 
-[Auto mode](/en/permission-modes#eliminate-prompts-with-auto-mode) lets Claude Code run without routine permission prompts by routing tool calls through a classifier that blocks anything irreversible, destructive, or aimed outside your environment. Deny and explicit ask rules are evaluated before the classifier and still block or prompt. Use the `autoMode` settings block to tell that classifier which repos, buckets, and domains your organization trusts, so it stops blocking routine internal operations.
+[Auto mode](./permission-modes.md#eliminate-prompts-with-auto-mode) lets Claude Code run without routine permission prompts by routing tool calls through a classifier that blocks anything irreversible, destructive, or aimed outside your environment. Deny and explicit ask rules are evaluated before the classifier and still block or prompt. Use the `autoMode` settings block to tell that classifier which repos, buckets, and domains your organization trusts, so it stops blocking routine internal operations.
 
 <Note>
-  Auto mode is available to all users on the Anthropic API. On Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, and signed-in [Claude apps gateway](/en/claude-apps-gateway) sessions, you must first [set `CLAUDE_CODE_ENABLE_AUTO_MODE`](/en/permission-modes#enable-auto-mode-on-bedrock-agent-platform-or-foundry). If Claude Code reports auto mode as unavailable for your account, check the [full requirements](/en/permission-modes#eliminate-prompts-with-auto-mode), which also cover the supported models and Owner enablement on Team and Enterprise plans.
+  Auto mode is available to all users on the Anthropic API. On Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, and signed-in [Claude apps gateway](./claude-apps-gateway.md) sessions, you must first [set `CLAUDE_CODE_ENABLE_AUTO_MODE`](./permission-modes.md#enable-auto-mode-on-bedrock-agent-platform-or-foundry). If Claude Code reports auto mode as unavailable for your account, check the [full requirements](./permission-modes.md#eliminate-prompts-with-auto-mode), which also cover the supported models and Owner enablement on Team and Enterprise plans.
 </Note>
 
 By default, the classifier trusts only the working directory and the current repo's configured remotes. Actions like pushing to your company's source-control org or writing to a team cloud bucket are blocked until you add them to `autoMode.environment`.
 
-For how to enable auto mode and what it blocks by default, see [Permission modes](/en/permission-modes#eliminate-prompts-with-auto-mode). This page is the configuration reference.
+For how to enable auto mode and what it blocks by default, see [Permission modes](./permission-modes.md#eliminate-prompts-with-auto-mode). This page is the configuration reference.
 
 This page covers how to:
 
@@ -27,7 +27,7 @@ This page covers how to:
 
 ## Where the classifier reads configuration
 
-The classifier reads the same [CLAUDE.md](/en/memory) content Claude itself loads, so an instruction like "never force push" in your project's CLAUDE.md steers both Claude and the classifier at the same time. Start there for project conventions and behavioral rules.
+The classifier reads the same [CLAUDE.md](./memory.md) content Claude itself loads, so an instruction like "never force push" in your project's CLAUDE.md steers both Claude and the classifier at the same time. Start there for project conventions and behavioral rules.
 
 For rules that apply across projects, such as trusted infrastructure or organization-wide deny rules, use the `autoMode` settings block. The classifier reads `autoMode` from the following scopes:
 
@@ -35,7 +35,7 @@ For rules that apply across projects, such as trusted infrastructure or organiza
 | :----------------------------- | :---------------------------------------------- | :--------------------------------------------------- |
 | One developer                  | `~/.claude/settings.json`                       | Personal trusted infrastructure                      |
 | One project, one developer     | `.claude/settings.local.json`                   | Per-project trusted buckets or services              |
-| Organization-wide              | [Managed settings](/en/server-managed-settings) | Trusted infrastructure distributed to all developers |
+| Organization-wide              | [Managed settings](./server-managed-settings.md) | Trusted infrastructure distributed to all developers |
 | `--settings` flag or Agent SDK | Inline JSON                                     | Per-invocation overrides for automation              |
 
 The classifier doesn't read `autoMode` from shared project settings in `.claude/settings.json`, so a checked-in repo can't inject its own allow rules.
@@ -43,7 +43,7 @@ The classifier doesn't read `autoMode` from shared project settings in `.claude/
 Entries from each scope are combined. A developer can extend `environment`, `allow`, `soft_deny`, and `hard_deny` with personal entries but can't remove entries that managed settings provide. Because allow rules act as exceptions to soft block rules inside the classifier, a developer-added `allow` entry can override an organization `soft_deny` entry: the combination is additive, not a hard policy boundary.
 
 <Note>
-  The classifier is a second gate that runs after the [permissions system](/en/permissions). For actions that must never run regardless of user intent or classifier configuration, use `permissions.deny` in managed settings, which blocks the action before the classifier is consulted and can't be overridden.
+  The classifier is a second gate that runs after the [permissions system](./permissions.md). For actions that must never run regardless of user intent or classifier configuration, use `permissions.deny` in managed settings, which blocks the action before the classifier is consulted and can't be overridden.
 </Note>
 
 ## Define trusted infrastructure
@@ -132,7 +132,7 @@ Three additional fields let you replace the classifier's built-in rule lists:
 * `autoMode.soft_deny`: destructive actions that user intent can clear
 * `autoMode.allow`: exceptions to soft block rules
 
-Each is an array of prose descriptions, read as natural-language rules. For tool-pattern-based hard blocks that run before the classifier, use [`permissions.deny`](/en/permissions).
+Each is an array of prose descriptions, read as natural-language rules. For tool-pattern-based hard blocks that run before the classifier, use [`permissions.deny`](./permissions.md).
 
 Inside the classifier, precedence works in four tiers:
 
@@ -238,11 +238,11 @@ In Claude Code v2.1.193 and later, the classifier's reason for each denial appea
 
 Repeated denials for the same destination usually mean the classifier is missing context. Add that destination to `autoMode.environment`, then run `claude auto-mode config` to confirm it took effect.
 
-To react to denials programmatically, use the [`PermissionDenied` hook](/en/hooks#permissiondenied).
+To react to denials programmatically, use the [`PermissionDenied` hook](./hooks.md#permissiondenied).
 
 ## See also
 
-* [Permission modes](/en/permission-modes#eliminate-prompts-with-auto-mode): what auto mode is, what it blocks by default, and how to enable it
-* [Managed settings](/en/server-managed-settings): deploy `autoMode` configuration across your organization
-* [Permissions](/en/permissions): allow, ask, and deny rules that apply before the classifier runs
-* [Settings](/en/settings): the full settings reference, including the `autoMode` key
+* [Permission modes](./permission-modes.md#eliminate-prompts-with-auto-mode): what auto mode is, what it blocks by default, and how to enable it
+* [Managed settings](./server-managed-settings.md): deploy `autoMode` configuration across your organization
+* [Permissions](./permissions.md): allow, ask, and deny rules that apply before the classifier runs
+* [Settings](./settings.md): the full settings reference, including the `autoMode` key

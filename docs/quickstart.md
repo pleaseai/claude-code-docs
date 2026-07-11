@@ -13,12 +13,12 @@ This quickstart guide will have you using AI-powered coding assistance in a few 
 Make sure you have:
 
 * A terminal or command prompt open
-  * If you've never used the terminal before, check out the [terminal guide](/en/terminal-guide)
+  * If you've never used the terminal before, check out the [terminal guide](https://code.claude.com/docs/en/terminal-guide)
 * A code project to work with
-* A [Claude subscription](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=quickstart_prereq) (Pro, Max, Team, or Enterprise), [Claude Console](https://console.anthropic.com/) account, or access through a [supported cloud provider](/en/third-party-integrations)
+* A [Claude subscription](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=quickstart_prereq) (Pro, Max, Team, or Enterprise), [Claude Console](https://console.anthropic.com/) account, or access through a [supported cloud provider](./third-party-integrations.md)
 
 <Note>
-  This guide covers the terminal CLI. Claude Code is also available on the [web](https://claude.ai/code), as a [desktop app](/en/desktop), in [VS Code](/en/vs-code) and [JetBrains IDEs](/en/jetbrains), in [Slack](/en/slack), and in CI/CD with [GitHub Actions](/en/github-actions) and [GitLab](/en/gitlab-ci-cd). See [all interfaces](/en/overview#use-claude-code-everywhere).
+  This guide covers the terminal CLI. Claude Code is also available on the [web](https://claude.ai/code), as a [desktop app](./desktop.md), in [VS Code](./vs-code.md) and [JetBrains IDEs](./jetbrains.md), in [Slack](./slack.md), and in CI/CD with [GitHub Actions](./github-actions.md) and [GitLab](./gitlab-ci-cd.md). See [all interfaces](./overview.md#use-claude-code-everywhere).
 </Note>
 
 ## Step 1: Install Claude Code
@@ -47,7 +47,7 @@ To install Claude Code, use one of the following methods:
 
     If you see `The token '&&' is not a valid statement separator`, you're in PowerShell, not CMD. If you see `'irm' is not recognized as an internal or external command`, you're in CMD, not PowerShell. Your prompt shows `PS C:\` when you're in PowerShell and `C:\` without the `PS` when you're in CMD.
 
-    If the install command fails with `syntax error near unexpected token '<'`, a `403`, or another curl error, see [Troubleshoot installation](/en/troubleshoot-install#find-your-error) to match the error to a fix and for alternative install methods.
+    If the install command fails with `syntax error near unexpected token '<'`, a `403`, or another curl error, see [Troubleshoot installation](./troubleshoot-install.md#find-your-error) to match the error to a fix and for alternative install methods.
 
     [Git for Windows](https://git-scm.com/downloads/win) is recommended on native Windows so Claude Code can use the Bash tool. If Git for Windows is not installed, Claude Code uses PowerShell as the shell tool instead. WSL setups do not need Git for Windows.
 
@@ -79,7 +79,7 @@ To install Claude Code, use one of the following methods:
   </Tab>
 </Tabs>
 
-You can also install with [apt, dnf, or apk](/en/setup#install-with-linux-package-managers) on Debian, Fedora, RHEL, and Alpine.
+You can also install with [apt, dnf, or apk](./setup.md#install-with-linux-package-managers) on Debian, Fedora, RHEL, and Alpine.
 
 ## Step 2: Log in to your account
 
@@ -99,8 +99,8 @@ You can log in using any of these account types:
 
 * [Claude Pro, Max, Team, or Enterprise](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=quickstart_login) (recommended)
 * [Claude Console](https://console.anthropic.com/) (API access with pre-paid credits). On first login, a "Claude Code" workspace is automatically created in the Console for centralized cost tracking.
-* [Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry](/en/third-party-integrations) (enterprise cloud providers)
-* A self-hosted [Claude apps gateway](/en/claude-apps-gateway), if your organization runs one: your admin pre-configures the gateway URL, and `/login` opens directly on the **Cloud gateway** screen for you to sign in with corporate SSO
+* [Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry](./third-party-integrations.md) (enterprise cloud providers)
+* A self-hosted [Claude apps gateway](./claude-apps-gateway.md), if your organization runs one: your admin pre-configures the gateway URL, and `/login` opens directly on the **Cloud gateway** screen for you to sign in with corporate SSO
 
 Once logged in, your credentials are stored and you won't need to log in again.
 
@@ -116,7 +116,7 @@ claude
 You'll see the Claude Code prompt with the version, current model, and working directory shown above it. Type `/help` for available commands or `/resume` to continue a previous conversation.
 
 <Tip>
-  After logging in (Step 2), your credentials are stored on your system. Learn more in [Credential Management](/en/authentication#credential-management).
+  After logging in (Step 2), your credentials are stored on your system. Learn more in [Credential Management](./authentication.md#credential-management).
 </Tip>
 
 ## Step 4: Ask your first question
@@ -281,11 +281,11 @@ Here are the most important commands for daily use. Shell commands run from your
 | `/help`           | Show available commands    | `/help`  |
 | `/exit` or Ctrl+D | Exit Claude Code           | `/exit`  |
 
-See the [CLI reference](/en/cli-reference) for the complete list of shell commands and the [commands reference](/en/commands) for the complete list of session commands.
+See the [CLI reference](./cli-reference.md) for the complete list of shell commands and the [commands reference](./commands.md) for the complete list of session commands.
 
 ## Pro tips for beginners
 
-For more, see [best practices](/en/best-practices) and [common workflows](/en/common-workflows).
+For more, see [best practices](./best-practices.md) and [common workflows](./common-workflows.md).
 
 <AccordionGroup>
   <Accordion title="Be specific with your requests">
@@ -329,19 +329,19 @@ For more, see [best practices](/en/best-practices) and [common workflows](/en/co
 Now that you've learned the basics, explore more advanced features:
 
 <CardGroup cols={2}>
-  <Card title="How Claude Code works" icon="microchip" href="/en/how-claude-code-works">
+  <Card title="How Claude Code works" icon="microchip" href="./how-claude-code-works.md">
     Understand the agentic loop, built-in tools, and how Claude Code interacts with your project
   </Card>
 
-  <Card title="Best practices" icon="star" href="/en/best-practices">
+  <Card title="Best practices" icon="star" href="./best-practices.md">
     Get better results with effective prompting and project setup
   </Card>
 
-  <Card title="Common workflows" icon="graduation-cap" href="/en/common-workflows">
+  <Card title="Common workflows" icon="graduation-cap" href="./common-workflows.md">
     Step-by-step guides for common tasks
   </Card>
 
-  <Card title="Extend Claude Code" icon="puzzle-piece" href="/en/features-overview">
+  <Card title="Extend Claude Code" icon="puzzle-piece" href="./features-overview.md">
     Customize with CLAUDE.md, skills, hooks, MCP, and more
   </Card>
 </CardGroup>

@@ -20,7 +20,7 @@ The difference is most noticeable in terminal emulators where rendering throughp
 
 ## Enable fullscreen rendering
 
-Run `/tui fullscreen` inside any Claude Code conversation. The CLI saves the [`tui` setting](/en/settings#available-settings) and relaunches into fullscreen with your conversation intact, so you can switch mid-session without losing context. Run `/tui default` to switch back to the classic renderer, or `/tui` with no argument to print which renderer is active.
+Run `/tui fullscreen` inside any Claude Code conversation. The CLI saves the [`tui` setting](./settings.md#available-settings) and relaunches into fullscreen with your conversation intact, so you can switch mid-session without losing context. Run `/tui default` to switch back to the classic renderer, or `/tui` with no argument to print which renderer is active.
 
 You can also set the `CLAUDE_CODE_NO_FLICKER` environment variable before starting Claude Code:
 
@@ -75,7 +75,7 @@ Fullscreen rendering handles scrolling inside the app. Use these shortcuts to na
 
 On keyboards without dedicated `PgUp`, `PgDn`, `Home`, or `End` keys, like MacBook keyboards, hold `Fn` with the arrow keys: `Fn+↑` sends `PgUp`, `Fn+↓` sends `PgDn`, `Fn+←` sends `Home`, and `Fn+→` sends `End`. That makes `Ctrl+Fn+→` the jump-to-bottom shortcut. If that feels awkward, scroll to the bottom with the mouse wheel to resume following, or rebind `scroll:bottom` to something reachable.
 
-These actions are rebindable. See [Scroll actions](/en/keybindings#scroll-actions) for the full list of action names, including half-page and full-page variants that have no default binding.
+These actions are rebindable. See [Scroll actions](./keybindings.md#scroll-actions) for the full list of action names, including half-page and full-page variants that have no default binding.
 
 ### Auto-follow
 
@@ -101,7 +101,7 @@ To adjust scroll speed interactively, run `/scroll-speed`. The dialog shows a ru
 
 The command writes the same value the `CLAUDE_CODE_SCROLL_SPEED` environment variable sets, persisted to `~/.claude/settings.json`. The command isn't available in the JetBrains IDE terminal.
 
-Separately from the base speed, Claude Code accelerates the scroll rate when you spin the wheel quickly, so a fast spin covers more distance than the same number of slow notches. {/* min-version: 2.1.174 */}To turn acceleration off and keep a constant rate per notch, set `wheelScrollAccelerationEnabled` to `false` in [`settings.json`](/en/settings#available-settings). This setting requires Claude Code v2.1.174 or later.
+Separately from the base speed, Claude Code accelerates the scroll rate when you spin the wheel quickly, so a fast spin covers more distance than the same number of slow notches. {/* min-version: 2.1.174 */}To turn acceleration off and keep a constant rate per notch, set `wheelScrollAccelerationEnabled` to `false` in [`settings.json`](./settings.md#available-settings). This setting requires Claude Code v2.1.174 or later.
 
 ### Scroll in the JetBrains IDE terminal
 
@@ -168,7 +168,7 @@ Claude Code writes the selection to your system clipboard, and the path it uses 
 
 Inside tmux it also writes to the tmux paste buffer. Over SSH it falls back to OSC 52 escape sequences. Claude Code prints a toast after each copy telling you which path it used.
 
-Some terminals block OSC 52 by default. iTerm2 blocks it until you turn on Settings → General → Selection → Applications in terminal may access clipboard; running [`/terminal-setup`](/en/terminal-config) in iTerm2 enables this for you.
+Some terminals block OSC 52 by default. iTerm2 blocks it until you turn on Settings → General → Selection → Applications in terminal may access clipboard; running [`/terminal-setup`](./terminal-config.md) in iTerm2 enables this for you.
 
 For a one-off native selection, the key to use depends on your terminal:
 
@@ -201,4 +201,4 @@ If you encounter a problem, run `/feedback` inside Claude Code to report it, or 
 
 To turn fullscreen rendering off, run `/tui default`, or unset `CLAUDE_CODE_NO_FLICKER` if you enabled it that way. To force the classic renderer regardless of the saved `tui` setting, set `CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1`. The classic renderer keeps the conversation in your terminal's native scrollback so `Cmd+f` and tmux copy mode work as usual.
 
-Background sessions opened from [agent view](/en/agent-view) or `claude attach` always use fullscreen rendering. The attaching terminal enters the alternate screen buffer to show the session, and the classic renderer has no scrollback or mouse handling there, so the `tui` setting and `CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN` don't apply to them.
+Background sessions opened from [agent view](./agent-view.md) or `claude attach` always use fullscreen rendering. The attaching terminal enters the alternate screen buffer to show the session, and the classic renderer has no scrollback or mouse handling there, so the `tui` setting and `CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN` don't apply to them.

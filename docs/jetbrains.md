@@ -23,7 +23,7 @@ The Claude Code plugin works with most JetBrains IDEs, including:
 
 * **Quick launch**: use `Cmd+Esc` (Mac) or `Ctrl+Esc` (Windows/Linux) to open Claude Code directly from your editor, or click the Claude Code button in the UI
 * **Diff viewing**: code changes can be displayed directly in the IDE diff viewer instead of the terminal
-* **Selection context**: the current selection or tab in the IDE is automatically shared with Claude Code. [`Read` deny rules](/en/permissions#read-and-edit) block this sharing for matching files
+* **Selection context**: the current selection or tab in the IDE is automatically shared with Claude Code. [`Read` deny rules](./permissions.md#read-and-edit) block this sharing for matching files
 * **File reference shortcuts**: use `Cmd+Option+K` (Mac) or `Alt+Ctrl+K` (Linux/Windows) to insert file references such as `@src/auth.ts#L1-99`
 * **Diagnostic sharing**: diagnostic errors from the IDE, such as lint and syntax errors, are automatically shared with Claude as you work
 
@@ -33,7 +33,7 @@ The plugin runs the `claude` command in your IDE's integrated terminal and conne
 
 <Steps>
   <Step title="Install the Claude Code CLI">
-    Follow the [quickstart](/en/quickstart) to install the CLI if you haven't already. The plugin shows a "Cannot launch Claude Code" notification when `claude` isn't on your PATH.
+    Follow the [quickstart](./quickstart.md) to install the CLI if you haven't already. The plugin shows a "Cannot launch Claude Code" notification when `claude` isn't on your PATH.
   </Step>
 
   <Step title="Install the JetBrains plugin">
@@ -43,7 +43,7 @@ The plugin runs the `claude` command in your IDE's integrated terminal and conne
 
 If `claude` is installed somewhere your IDE can't find, set the full path in the plugin's [Claude command setting](#general-settings).
 
-Claude Code works with any paid Claude subscription (Pro, Max, Team, or Enterprise) or a Claude Console account, and no API key is required. You'll be prompted to [log in](/en/authentication#log-in-to-claude-code) the first time you run `claude`.
+Claude Code works with any paid Claude subscription (Pro, Max, Team, or Enterprise) or a Claude Console account, and no API key is required. You'll be prompted to [log in](./authentication.md#log-in-to-claude-code) the first time you run `claude`.
 
 <Note>
   After installing the plugin, you may need to restart your IDE completely for it to take effect.
@@ -191,7 +191,7 @@ If clicking the Claude icon shows "command not found":
 
 ## Security considerations
 
-When Claude Code runs in a JetBrains IDE in [`acceptEdits` permission mode](/en/permission-modes#auto-approve-file-edits-with-acceptedits-mode), it may be able to modify IDE configuration files that can be automatically executed by your IDE. This may increase the risk of running Claude Code in `acceptEdits` mode and allow bypassing Claude Code's permission prompts for bash execution.
+When Claude Code runs in a JetBrains IDE in [`acceptEdits` permission mode](./permission-modes.md#auto-approve-file-edits-with-acceptedits-mode), it may be able to modify IDE configuration files that can be automatically executed by your IDE. This may increase the risk of running Claude Code in `acceptEdits` mode and allow bypassing Claude Code's permission prompts for bash execution.
 
 When running in JetBrains IDEs, consider:
 
@@ -199,4 +199,4 @@ When running in JetBrains IDEs, consider:
 * Taking extra care to ensure Claude is only used with trusted prompts
 * Being aware of which files Claude Code has access to modify
 
-For Claude Code installation or login problems outside the IDE, see [Troubleshoot installation and login](/en/troubleshoot-install).
+For Claude Code installation or login problems outside the IDE, see [Troubleshoot installation and login](./troubleshoot-install.md).

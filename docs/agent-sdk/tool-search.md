@@ -39,7 +39,7 @@ Tool search is on by default. It is disabled by default on Google Cloud's Agent 
 | `auto:N` | Same as `auto` with a custom percentage. `auto:5` activates when tool definitions exceed 5% of the context window. Lower values activate sooner.                                                                                                                         |
 | `false`  | Tool search is off. All tool definitions are loaded into context on every turn.                                                                                                                                                                                          |
 
-Tool search applies to all registered tools, whether they come from remote MCP servers or [custom SDK MCP servers](/en/agent-sdk/custom-tools). When using `auto`, the threshold is based on the combined size of all tool definitions across all servers.
+Tool search applies to all registered tools, whether they come from remote MCP servers or [custom SDK MCP servers](./custom-tools.md). When using `auto`, the threshold is based on the combined size of all tool definitions across all servers.
 
 Set the value in the `env` option on `query()`. This example connects to a remote MCP server that exposes many tools, pre-approves all of them with a wildcard, and uses `auto:5` so tool search activates when their definitions exceed 5% of the context window:
 
@@ -123,7 +123,7 @@ You can search for tools to interact with Slack, GitHub, and Jira.
 ## Related documentation
 
 * [Tool search in the API](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool): Full API documentation for tool search, including custom implementations
-* [Connect MCP servers](/en/agent-sdk/mcp): Connect to external tools via MCP servers
-* [Custom tools](/en/agent-sdk/custom-tools): Build your own tools with SDK MCP servers
-* [TypeScript SDK reference](/en/agent-sdk/typescript): Full API reference
-* [Python SDK reference](/en/agent-sdk/python): Full API reference
+* [Connect MCP servers](./mcp.md): Connect to external tools via MCP servers
+* [Custom tools](./custom-tools.md): Build your own tools with SDK MCP servers
+* [TypeScript SDK reference](./typescript.md): Full API reference
+* [Python SDK reference](./python.md): Full API reference

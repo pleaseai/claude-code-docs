@@ -83,7 +83,7 @@ Actions available in the `Global` context:
 | `app:interrupt`        | Ctrl+C    | Cancel current operation                                                                                     |
 | `app:exit`             | Ctrl+D    | Exit Claude Code                                                                                             |
 | `app:redraw`           | (unbound) | Force terminal redraw                                                                                        |
-| `app:toggleTodos`      | Ctrl+T    | Toggle visibility of Claude's to-do checklist. This is not the [`/tasks`](/en/commands) background-task view |
+| `app:toggleTodos`      | Ctrl+T    | Toggle visibility of Claude's to-do checklist. This is not the [`/tasks`](./commands.md) background-task view |
 | `app:toggleTranscript` | Ctrl+O    | Toggle verbose transcript                                                                                    |
 
 ### History actions
@@ -103,9 +103,9 @@ Actions available in the `Chat` context:
 | Action                | Default                           | Description                                                                                                                                                    |
 | :-------------------- | :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `chat:cancel`         | Escape                            | Cancel current input                                                                                                                                           |
-| `chat:clearInput`     | Ctrl+L                            | Force a full screen redraw, preserving input. In [fullscreen rendering](/en/fullscreen#clear-the-conversation), press twice within two seconds to run `/clear` |
-| `chat:clearScreen`    | Cmd+K                             | In [fullscreen rendering](/en/fullscreen#clear-the-conversation), press twice within two seconds to run `/clear`                                               |
-| `chat:killAgents`     | Ctrl+X Ctrl+K                     | Stop all running [background subagents](/en/sub-agents#run-subagents-in-foreground-or-background) in this session                                              |
+| `chat:clearInput`     | Ctrl+L                            | Force a full screen redraw, preserving input. In [fullscreen rendering](./fullscreen.md#clear-the-conversation), press twice within two seconds to run `/clear` |
+| `chat:clearScreen`    | Cmd+K                             | In [fullscreen rendering](./fullscreen.md#clear-the-conversation), press twice within two seconds to run `/clear`                                               |
+| `chat:killAgents`     | Ctrl+X Ctrl+K                     | Stop all running [background subagents](./sub-agents.md#run-subagents-in-foreground-or-background) in this session                                              |
 | `chat:cycleMode`      | Shift+Tab\*                       | Cycle permission modes                                                                                                                                         |
 | `chat:modelPicker`    | Meta+P                            | Open model picker                                                                                                                                              |
 | `chat:fastMode`       | Meta+O                            | Toggle fast mode                                                                                                                                               |
@@ -313,7 +313,7 @@ Actions available in the `Settings` context. The `select:accept` and `confirm:no
 
 ### Voice actions
 
-Actions available in the `Chat` context when [voice dictation](/en/voice-dictation) is enabled:
+Actions available in the `Chat` context when [voice dictation](./voice-dictation.md) is enabled:
 
 | Action             | Default | Description                                              |
 | :----------------- | :------ | :------------------------------------------------------- |
@@ -321,7 +321,7 @@ Actions available in the `Chat` context when [voice dictation](/en/voice-dictati
 
 ### Scroll actions
 
-Actions available in the `Scroll` context when [fullscreen rendering](/en/fullscreen) is enabled:
+Actions available in the `Scroll` context when [fullscreen rendering](./fullscreen.md) is enabled:
 
 | Action                      | Default              | Description                                                                                               |
 | :-------------------------- | :------------------- | :-------------------------------------------------------------------------------------------------------- |
@@ -475,4 +475,4 @@ Claude Code validates your keybindings and shows warnings for:
 * Terminal multiplexer conflicts
 * Duplicate bindings in the same context
 
-Claude Code reports warnings when the file loads and writes each one to the debug log. Start Claude Code with [`--debug`](/en/cli-reference#cli-flags) to see the details.
+Claude Code reports warnings when the file loads and writes each one to the debug log. Start Claude Code with [`--debug`](./cli-reference.md#cli-flags) to see the details.

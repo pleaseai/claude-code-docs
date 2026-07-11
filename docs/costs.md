@@ -31,7 +31,7 @@ Total code changes:    0 lines added, 0 lines removed
 
 On a Pro, Max, Team, or Enterprise plan, `/usage` also shows a breakdown of what counts against your plan limits. It attributes recent usage to skills, subagents, plugins, and individual MCP servers, with each shown as a percentage of the total. Press `d` or `w` to switch between the last 24 hours and the last 7 days. The figures are approximate and computed from local session history on this machine, so usage from other devices or claude.ai is not included.
 
-In the [VS Code extension](/en/vs-code#check-account-and-usage), the same breakdown appears in the Account & usage dialog with a Day and Week toggle. Requires Claude Code v2.1.174 or later.
+In the [VS Code extension](./vs-code.md#check-account-and-usage), the same breakdown appears in the Account & usage dialog with a Day and Week toggle. Requires Claude Code v2.1.174 or later.
 
 ## Managing costs for teams
 
@@ -45,7 +45,7 @@ On Pro and Max plans, you can set a monthly spend limit on usage credits with th
   For organizations with custom rate limits, Claude Code traffic in this workspace counts toward your organization's overall API rate limits. You can set a [workspace rate limit](https://platform.claude.com/docs/en/api/rate-limits#setting-lower-limits-for-workspaces) on this workspace's Limits page in the Claude Console to cap Claude Code's share and protect other production workloads.
 </Note>
 
-On Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry, Claude Code doesn't send metrics from your cloud. A self-hosted [Claude apps gateway](/en/claude-apps-gateway) provides per-user usage attribution, OTLP metrics with token counts, and [per-user spend limits](/en/claude-apps-gateway-spend-limits) on these providers. Organizations that route Claude Code through a different [LLM gateway](/en/llm-gateway) can track spend at the gateway instead, since it sees every request.
+On Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry, Claude Code doesn't send metrics from your cloud. A self-hosted [Claude apps gateway](./claude-apps-gateway.md) provides per-user usage attribution, OTLP metrics with token counts, and [per-user spend limits](./claude-apps-gateway-spend-limits.md) on these providers. Organizations that route Claude Code through a different [LLM gateway](./llm-gateway.md) can track spend at the gateway instead, since it sees every request.
 
 ### Rate limit recommendations
 
@@ -70,7 +70,7 @@ The TPM per user decreases as team size grows because fewer users tend to use Cl
 
 ### Agent team token costs
 
-[Agent teams](/en/agent-teams) spawn multiple Claude Code instances, each with its own context window. Token usage scales with the number of active teammates and how long each one runs.
+[Agent teams](./agent-teams.md) spawn multiple Claude Code instances, each with its own context window. Token usage scales with the number of active teammates and how long each one runs.
 
 To keep agent team costs manageable:
 
@@ -78,17 +78,17 @@ To keep agent team costs manageable:
 * Keep teams small. Each teammate runs its own context window, so token usage is roughly proportional to team size.
 * Keep spawn prompts focused. Teammates load CLAUDE.md, MCP servers, and skills automatically, but everything in the spawn prompt adds to their context from the start.
 * Shut down teammates when their work is done. Each active teammate continues consuming tokens until it exits or the session ends.
-* Agent teams are disabled by default. Set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in your [settings.json](/en/settings) or environment to enable them. See [enable agent teams](/en/agent-teams#enable-agent-teams).
+* Agent teams are disabled by default. Set `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in your [settings.json](./settings.md) or environment to enable them. See [enable agent teams](./agent-teams.md#enable-agent-teams).
 
 ## Reduce token usage
 
-Token costs scale with context size: the more context Claude processes, the more tokens you use. Claude Code automatically optimizes costs through [prompt caching](/en/prompt-caching), which reduces costs for repeated content like system prompts, and auto-compaction, which summarizes conversation history when approaching context limits.
+Token costs scale with context size: the more context Claude processes, the more tokens you use. Claude Code automatically optimizes costs through [prompt caching](./prompt-caching.md), which reduces costs for repeated content like system prompts, and auto-compaction, which summarizes conversation history when approaching context limits.
 
 The following strategies help you keep context small and reduce per-message costs.
 
 ### Manage context proactively
 
-Use `/usage` to check your current token usage, or [configure your status line](/en/statusline#context-window-usage) to display it continuously.
+Use `/usage` to check your current token usage, or [configure your status line](./statusline.md#context-window-usage) to display it continuously.
 
 * **Clear between tasks**: Use `/clear` to start fresh when switching to unrelated work. Stale context wastes tokens on every subsequent message. Use `/rename` before clearing so you can easily find the session later, then `/resume` to return to it.
 * **Add custom compaction instructions**: `/compact Focus on code samples and API usage` tells Claude what to preserve during summarization.
@@ -103,30 +103,30 @@ When you are using compact, please focus on test output and code changes
 
 ### Choose the right model
 
-Sonnet handles most coding tasks well and costs less than Opus. Reserve Opus for complex architectural decisions or multi-step reasoning. Use `/model` to switch models mid-session, or set a default in `/config`. For simple subagent tasks, specify `model: haiku` in your [subagent configuration](/en/sub-agents#choose-a-model).
+Sonnet handles most coding tasks well and costs less than Opus. Reserve Opus for complex architectural decisions or multi-step reasoning. Use `/model` to switch models mid-session, or set a default in `/config`. For simple subagent tasks, specify `model: haiku` in your [subagent configuration](./sub-agents.md#choose-a-model).
 
 ### Reduce MCP server overhead
 
-MCP tool definitions are [deferred by default](/en/mcp#scale-with-mcp-tool-search), so only tool names enter context until Claude uses a specific tool. Run `/context` to see what's consuming space.
+MCP tool definitions are [deferred by default](./mcp.md#scale-with-mcp-tool-search), so only tool names enter context until Claude uses a specific tool. Run `/context` to see what's consuming space.
 
 * **Prefer CLI tools when available**: Tools like `gh`, `aws`, `gcloud`, and `sentry-cli` are still more context-efficient than MCP servers because they don't add any per-tool listing. Claude can run CLI commands directly.
 * **Disable unused servers**: Run `/mcp` to see configured servers and disable any you're not actively using.
 
 ### Install code intelligence plugins for typed languages
 
-[Code intelligence plugins](/en/discover-plugins#code-intelligence) give Claude precise symbol navigation instead of text-based search, reducing unnecessary file reads when exploring unfamiliar code. A single "go to definition" call replaces what might otherwise be a grep followed by reading multiple candidate files. Installed language servers also report type errors automatically after edits, so Claude catches mistakes without running a compiler.
+[Code intelligence plugins](./discover-plugins.md#code-intelligence) give Claude precise symbol navigation instead of text-based search, reducing unnecessary file reads when exploring unfamiliar code. A single "go to definition" call replaces what might otherwise be a grep followed by reading multiple candidate files. Installed language servers also report type errors automatically after edits, so Claude catches mistakes without running a compiler.
 
 ### Offload processing to hooks and skills
 
-Custom [hooks](/en/hooks) can preprocess data before Claude sees it. Instead of Claude reading a 10,000-line log file to find errors, a hook can grep for `ERROR` and return only matching lines, reducing context from tens of thousands of tokens to hundreds.
+Custom [hooks](./hooks.md) can preprocess data before Claude sees it. Instead of Claude reading a 10,000-line log file to find errors, a hook can grep for `ERROR` and return only matching lines, reducing context from tens of thousands of tokens to hundreds.
 
-A [skill](/en/skills) can give Claude domain knowledge so it doesn't have to explore. For example, a "codebase-overview" skill could describe your project's architecture, key directories, and naming conventions. When Claude invokes the skill, it gets this context immediately instead of spending tokens reading multiple files to understand the structure.
+A [skill](./skills.md) can give Claude domain knowledge so it doesn't have to explore. For example, a "codebase-overview" skill could describe your project's architecture, key directories, and naming conventions. When Claude invokes the skill, it gets this context immediately instead of spending tokens reading multiple files to understand the structure.
 
 For example, this PreToolUse hook filters test output to show only failures:
 
 <Tabs>
   <Tab title="settings.json">
-    Add this to your [settings.json](/en/settings#settings-files) to run the hook before every Bash command:
+    Add this to your [settings.json](./settings.md#settings-files) to run the hook before every Bash command:
 
     ```json theme={null}
     {
@@ -168,19 +168,19 @@ For example, this PreToolUse hook filters test output to show only failures:
 
 ### Move instructions from CLAUDE.md to skills
 
-Your [CLAUDE.md](/en/memory) file is loaded into context at session start. If it contains detailed instructions for specific workflows (like PR reviews or database migrations), those tokens are present even when you're doing unrelated work. [Skills](/en/skills) load on-demand only when invoked, so moving specialized instructions into skills keeps your base context smaller. Aim to keep CLAUDE.md under 200 lines by including only essentials.
+Your [CLAUDE.md](./memory.md) file is loaded into context at session start. If it contains detailed instructions for specific workflows (like PR reviews or database migrations), those tokens are present even when you're doing unrelated work. [Skills](./skills.md) load on-demand only when invoked, so moving specialized instructions into skills keeps your base context smaller. Aim to keep CLAUDE.md under 200 lines by including only essentials.
 
 ### Adjust extended thinking
 
-Extended thinking is enabled by default because it significantly improves performance on complex planning and reasoning tasks. Thinking tokens are billed as output tokens, and the default budget can be tens of thousands of tokens per request depending on the model. For simpler tasks where deep reasoning isn't needed, you can reduce costs by lowering the [effort level](/en/model-config#adjust-effort-level) with `/effort` or in `/model`, disabling thinking in `/config`, or, on models with a [fixed thinking budget](/en/model-config#adaptive-reasoning-and-fixed-thinking-budgets), lowering the budget by setting the `MAX_THINKING_TOKENS` [environment variable](/en/env-vars), for example `MAX_THINKING_TOKENS=8000`. Adaptive-reasoning models ignore nonzero budgets, so use effort levels there instead. Disabling thinking is not available on Fable 5, which always uses extended thinking.
+Extended thinking is enabled by default because it significantly improves performance on complex planning and reasoning tasks. Thinking tokens are billed as output tokens, and the default budget can be tens of thousands of tokens per request depending on the model. For simpler tasks where deep reasoning isn't needed, you can reduce costs by lowering the [effort level](./model-config.md#adjust-effort-level) with `/effort` or in `/model`, disabling thinking in `/config`, or, on models with a [fixed thinking budget](./model-config.md#adaptive-reasoning-and-fixed-thinking-budgets), lowering the budget by setting the `MAX_THINKING_TOKENS` [environment variable](./env-vars.md), for example `MAX_THINKING_TOKENS=8000`. Adaptive-reasoning models ignore nonzero budgets, so use effort levels there instead. Disabling thinking is not available on Fable 5, which always uses extended thinking.
 
 ### Delegate verbose operations to subagents
 
-Running tests, fetching documentation, or processing log files can consume significant context. Delegate these to [subagents](/en/sub-agents#isolate-high-volume-operations) so the verbose output stays in the subagent's context while only a summary returns to your main conversation.
+Running tests, fetching documentation, or processing log files can consume significant context. Delegate these to [subagents](./sub-agents.md#isolate-high-volume-operations) so the verbose output stays in the subagent's context while only a summary returns to your main conversation.
 
 ### Manage agent team costs
 
-Agent teams use approximately 7x more tokens than standard sessions when teammates run in plan mode, because each teammate maintains its own context window and runs as a separate Claude instance. Keep team tasks small and self-contained to limit per-teammate token usage. See [agent teams](/en/agent-teams) for details.
+Agent teams use approximately 7x more tokens than standard sessions when teammates run in plan mode, because each teammate maintains its own context window and runs as a separate Claude instance. Keep team tasks small and self-contained to limit per-teammate token usage. See [agent teams](./agent-teams.md) for details.
 
 ### Write specific prompts
 
@@ -190,7 +190,7 @@ Vague requests like "improve this codebase" trigger broad scanning. Specific req
 
 For longer or more complex work, these habits help avoid wasted tokens from going down the wrong path:
 
-* **Use plan mode for complex tasks**: Press Shift+Tab to enter [plan mode](/en/permission-modes#analyze-before-you-edit-with-plan-mode) before implementation. Claude explores the codebase and proposes an approach for your approval, preventing expensive re-work when the initial direction is wrong.
+* **Use plan mode for complex tasks**: Press Shift+Tab to enter [plan mode](./permission-modes.md#analyze-before-you-edit-with-plan-mode) before implementation. Claude explores the codebase and proposes an approach for your approval, preventing expensive re-work when the initial direction is wrong.
 * **Course-correct early**: If Claude starts heading the wrong direction, press Escape to stop immediately. Use `/rewind` or double-tap Escape to restore conversation and code to a previous checkpoint.
 * **Give verification targets**: Include test cases, paste screenshots, or define expected output in your prompt. When Claude can verify its own work, it catches issues before you need to request fixes.
 * **Test incrementally**: Write one file, test it, then continue. This catches issues early when they're cheap to fix.

@@ -6,7 +6,7 @@
 
 > Connect Claude Code to your Chrome browser to test web apps, debug with console logs, automate form filling, and extract data from web pages.
 
-Claude Code integrates with the [Claude in Chrome browser extension](https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn) to give you browser automation capabilities from the CLI or the [VS Code extension](/en/vs-code#automate-browser-tasks-with-chrome). Build your code, then test and debug in the browser without switching contexts.
+Claude Code integrates with the [Claude in Chrome browser extension](https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn) to give you browser automation capabilities from the CLI or the [VS Code extension](./vs-code.md#automate-browser-tasks-with-chrome). Build your code, then test and debug in the browser without switching contexts.
 
 Claude opens new tabs for browser tasks and shares your browser's login state, so it can access any site you're already signed into. Browser actions run in a visible Chrome window in real time. When Claude encounters a login page or CAPTCHA, it pauses and asks you to handle it manually.
 
@@ -32,7 +32,7 @@ Before using Claude Code with Chrome, you need:
 
 * [Google Chrome](https://www.google.com/chrome/) or [Microsoft Edge](https://www.microsoft.com/edge) browser
 * [Claude in Chrome extension](https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn) version 1.0.36 or higher, available in the Chrome Web Store for both browsers
-* [Claude Code](/en/quickstart#step-1-install-claude-code) version 2.0.73 or higher
+* [Claude Code](./quickstart.md#step-1-install-claude-code) version 2.0.73 or higher
 * A direct Anthropic plan (Pro, Max, Team, or Enterprise)
 
 <Note>
@@ -64,13 +64,13 @@ Before using Claude Code with Chrome, you need:
 
 Run `/chrome` at any time to check the connection status, manage permissions, reconnect the extension, or choose which connected browser to use. If more than one browser is connected when a browser action starts, Claude prompts you to pick one.
 
-For VS Code, see [browser automation in VS Code](/en/vs-code#automate-browser-tasks-with-chrome).
+For VS Code, see [browser automation in VS Code](./vs-code.md#automate-browser-tasks-with-chrome).
 
 ### Enable Chrome by default
 
 To avoid passing `--chrome` each session, run `/chrome` and select "Enabled by default".
 
-In the [VS Code extension](/en/vs-code#automate-browser-tasks-with-chrome), Chrome is available whenever the Chrome extension is installed. No additional flag is needed.
+In the [VS Code extension](./vs-code.md#automate-browser-tasks-with-chrome), Chrome is available whenever the Chrome extension is installed. No additional flag is needed.
 
 <Note>
   Enabling Chrome by default in the CLI increases context usage since browser tools are always loaded. If you notice increased context consumption, disable this setting and use `--chrome` only when needed.
@@ -82,7 +82,7 @@ Site-level permissions are inherited from the Chrome extension. Manage permissio
 
 ### Browser tools in plan mode
 
-In [plan mode](/en/permission-modes#analyze-before-you-edit-with-plan-mode), browser tool calls that only read the page or browser state run without a permission prompt, and calls that change state prompt for approval.
+In [plan mode](./permission-modes.md#analyze-before-you-edit-with-plan-mode), browser tool calls that only read the page or browser state run without a permission prompt, and calls that change state prompt for approval.
 
 * **Read-only calls**: `read_page`, `get_page_text`, `find`, reading console messages or network requests, and taking a screenshot
 * **State-changing calls**: clicks, typing, navigation, tab and window management, and recording a GIF
@@ -235,9 +235,9 @@ These are the most frequently encountered errors and how to resolve them:
 
 ## See also
 
-* [Computer use](/en/computer-use): control native macOS apps when a task can't be done in a browser
-* [Use Claude Code in VS Code](/en/vs-code#automate-browser-tasks-with-chrome): browser automation in the VS Code extension
-* [CLI reference](/en/cli-reference): command-line flags including `--chrome`
-* [Common workflows](/en/common-workflows): more ways to use Claude Code
-* [Data and privacy](/en/data-usage): how Claude Code handles your data
+* [Computer use](./computer-use.md): control native macOS apps when a task can't be done in a browser
+* [Use Claude Code in VS Code](./vs-code.md#automate-browser-tasks-with-chrome): browser automation in the VS Code extension
+* [CLI reference](./cli-reference.md): command-line flags including `--chrome`
+* [Common workflows](./common-workflows.md): more ways to use Claude Code
+* [Data and privacy](./data-usage.md): how Claude Code handles your data
 * [Getting started with Claude in Chrome](https://support.claude.com/en/articles/12012173-getting-started-with-claude-in-chrome): full documentation for the Chrome extension, including shortcuts, scheduling, and permissions

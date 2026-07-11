@@ -350,7 +350,7 @@ The schema includes optional fields (`author` and `date`) since git blame inform
 
 ## Error handling
 
-Structured output generation can fail when the agent cannot produce valid JSON matching your schema. This typically happens when the schema is too complex for the task, the task itself is ambiguous, or the agent hits its retry limit trying to fix validation errors. It can also happen without any validation failure: a [model fallback](/en/model-config#automatic-model-fallback) can retract an already-completed output mid-stream, and if no retry replaces it the run ends with the same error. Check the `errors` field on the result message to tell the two causes apart before debugging your schema.
+Structured output generation can fail when the agent cannot produce valid JSON matching your schema. This typically happens when the schema is too complex for the task, the task itself is ambiguous, or the agent hits its retry limit trying to fix validation errors. It can also happen without any validation failure: a [model fallback](../model-config.md#automatic-model-fallback) can retract an already-completed output mid-stream, and if no retry replaces it the run ends with the same error. Check the `errors` field on the result message to tell the two causes apart before debugging your schema.
 
 When an error occurs, the result message has a `subtype` indicating what went wrong:
 
@@ -411,4 +411,4 @@ The example below checks the `subtype` field to determine whether the output was
 
 * [JSON Schema documentation](https://json-schema.org/): learn JSON Schema syntax for defining complex schemas with nested objects, arrays, enums, and validation constraints
 * [API Structured Outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs): use structured outputs with the Claude API directly for single-turn requests without tool use
-* [Custom tools](/en/agent-sdk/custom-tools): give your agent custom tools to call during execution before returning structured output
+* [Custom tools](./custom-tools.md): give your agent custom tools to call during execution before returning structured output
