@@ -1,0 +1,34 @@
+docs/claude-apps-gateway-config.md
+  s_08e0629f6d0e14::t_2737d6156d0cdc 357
+sync.ts
+  s_08e0629f6d0e14::t_0ef075cf46deef 7
+  s_08e0629f6d0e14::t_b6c41500747d5d 24-27
+docs/hooks-guide.md
+  s_08e0629f6d0e14::t_2737d6156d0cdc 772
+docs/sub-agents.md
+  s_08e0629f6d0e14::t_2737d6156d0cdc 805
+docs/goal.md
+  s_08e0629f6d0e14::t_2737d6156d0cdc 29,132
+docs/best-practices.md
+  s_08e0629f6d0e14::t_2737d6156d0cdc 410
+docs/agent-sdk/user-input.md
+  s_08e0629f6d0e14::t_2737d6156d0cdc 73
+docs/commands.md
+  s_08e0629f6d0e14::t_2737d6156d0cdc 55,142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.11",
+  "base_commit_sha": "b3e3a6bcb2be9417ead2476ab03d9fe3756b2050",
+  "prompts": {},
+  "sessions": {
+    "s_08e0629f6d0e14": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "328df6fb-9ca5-45ca-bf00-4a2b78e09b95",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Minsu Lee <minsu.lee@pleaseai.dev>"
+    }
+  }
+}
