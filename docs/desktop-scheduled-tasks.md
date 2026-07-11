@@ -8,20 +8,20 @@
 
 Scheduled tasks start a new session automatically at a time and frequency you choose. Use them for recurring work like daily code reviews, dependency update checks, or morning briefings that pull from your calendar and inbox.
 
-The Desktop app's **Routines** page lets you create both local scheduled tasks and remote [routines](/en/routines). A local task runs on your machine with direct access to your files and tools, but only fires while the app is open and your computer is awake. A remote routine runs on Anthropic-managed cloud infrastructure even when your computer is off, and can also fire on API calls or GitHub events. This page covers local scheduled tasks; for remote routines and their trigger options, see [Routines](/en/routines).
+The Desktop app's **Routines** page lets you create both local scheduled tasks and remote [routines](./routines.md). A local task runs on your machine with direct access to your files and tools, but only fires while the app is open and your computer is awake. A remote routine runs on Anthropic-managed cloud infrastructure even when your computer is off, and can also fire on API calls or GitHub events. This page covers local scheduled tasks; for remote routines and their trigger options, see [Routines](./routines.md).
 
 ## Compare scheduling options
 
 Claude Code offers three ways to schedule recurring or one-off work:
 
-|                            | [Cloud](/en/routines)          | [Desktop](/en/desktop-scheduled-tasks) | [`/loop`](/en/scheduled-tasks)      |
+|                            | [Cloud](./routines.md)          | [Desktop](./desktop-scheduled-tasks.md) | [`/loop`](./scheduled-tasks.md)      |
 | :------------------------- | :----------------------------- | :------------------------------------- | :---------------------------------- |
 | Runs on                    | Anthropic cloud                | Your machine                           | Your machine                        |
 | Requires machine on        | No                             | Yes                                    | Yes                                 |
 | Requires open session      | No                             | No                                     | Yes                                 |
 | Persistent across restarts | Yes                            | Yes                                    | Restored on `--resume` if unexpired |
 | Access to local files      | No (fresh clone)               | Yes                                    | Yes                                 |
-| MCP servers                | Connectors configured per task | [Config files](/en/mcp) and connectors | Inherits from session               |
+| MCP servers                | Connectors configured per task | [Config files](./mcp.md) and connectors | Inherits from session               |
 | Permission prompts         | No (runs autonomously)         | Configurable per task                  | Inherits from session               |
 | Customizable schedule      | Via `/schedule` in the CLI     | Yes                                    | Yes                                 |
 | Minimum interval           | 1 hour                         | 1 minute                               | 1 minute                            |
@@ -31,7 +31,7 @@ Claude Code offers three ways to schedule recurring or one-off work:
 </Tip>
 
 <Note>
-  By default, scheduled tasks run against whatever state your working directory is in, including uncommitted changes. Enable the worktree toggle when creating the task to give each run its own isolated Git worktree, the same way [parallel sessions](/en/desktop#work-in-parallel-with-sessions) work.
+  By default, scheduled tasks run against whatever state your working directory is in, including uncommitted changes. Enable the worktree toggle when creating the task to give each run its own isolated Git worktree, the same way [parallel sessions](./desktop.md#work-in-parallel-with-sessions) work.
 </Note>
 
 ## Create a scheduled task
@@ -67,7 +67,7 @@ Scheduled tasks run on your machine. Desktop checks the schedule every minute wh
 
 When a task fires, you get a desktop notification and a new session appears under a **Scheduled** section in the sidebar. Open it to see what Claude did, review changes, or respond to permission prompts. The session works like any other: Claude can edit files, run commands, create commits, and open pull requests.
 
-Tasks only run while the desktop app is running and your computer is awake. If your computer sleeps through a scheduled time, the run is skipped. To prevent idle-sleep, enable **Keep computer awake** in Settings under **Desktop app → General**. Closing the laptop lid still puts it to sleep. For tasks that need to run even when your computer is off, or that should trigger on an API call or GitHub event, create a remote [routine](/en/routines) instead.
+Tasks only run while the desktop app is running and your computer is awake. If your computer sleeps through a scheduled time, the run is skipped. To prevent idle-sleep, enable **Keep computer awake** in Settings under **Desktop app → General**. Closing the laptop lid still puts it to sleep. For tasks that need to run even when your computer is off, or that should trigger on an API call or GitHub event, create a remote [routine](./routines.md) instead.
 
 ## Missed runs
 
@@ -96,11 +96,11 @@ You can also list, create, edit, and pause tasks by asking Claude in any Desktop
 
 A scheduled task can also modify its own schedule or prompt from within a running session using the `update_scheduled_task` MCP tool. This lets a task reschedule itself based on what it finds, for example, rescheduling a code review to run earlier when it detects a release branch has been created.
 
-To edit a task's prompt on disk, open `~/.claude/scheduled-tasks/<task-name>/SKILL.md` (or under [`CLAUDE_CONFIG_DIR`](/en/env-vars) if set). The file uses YAML frontmatter for `name` and `description`, with the prompt as the body. Changes take effect on the next run. Schedule, folder, model, and enabled state are not in this file: change them through the Edit form or ask Claude.
+To edit a task's prompt on disk, open `~/.claude/scheduled-tasks/<task-name>/SKILL.md` (or under [`CLAUDE_CONFIG_DIR`](./env-vars.md) if set). The file uses YAML frontmatter for `name` and `description`, with the prompt as the body. Changes take effect on the next run. Schedule, folder, model, and enabled state are not in this file: change them through the Edit form or ask Claude.
 
 ## Related resources
 
-* [Routines](/en/routines): run tasks on Anthropic-managed infrastructure on a schedule, via API call, or in response to GitHub events, even when your computer is off
-* [Run prompts on a schedule](/en/scheduled-tasks): session-scoped scheduling with `/loop` in the CLI
-* [Claude Code GitHub Actions](/en/github-actions): run Claude on a schedule in CI instead of on your machine
-* [Use Claude Code Desktop](/en/desktop): the full Desktop app guide
+* [Routines](./routines.md): run tasks on Anthropic-managed infrastructure on a schedule, via API call, or in response to GitHub events, even when your computer is off
+* [Run prompts on a schedule](./scheduled-tasks.md): session-scoped scheduling with `/loop` in the CLI
+* [Claude Code GitHub Actions](./github-actions.md): run Claude on a schedule in CI instead of on your machine
+* [Use Claude Code Desktop](./desktop.md): the full Desktop app guide

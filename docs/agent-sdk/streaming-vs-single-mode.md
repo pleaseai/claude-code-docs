@@ -237,7 +237,7 @@ Use single message input when:
   * Natural multi-turn conversations
 </Warning>
 
-If a query ends with an error result, such as `error_max_turns`, a single message `query()` call raises an error that includes the failure text after yielding the final result message, so wrap the loop in a try block if your code needs to continue. See [Handle the result](/en/agent-sdk/agent-loop#handle-the-result) for the result subtypes.
+If a query ends with an error result, such as `error_max_turns`, a single message `query()` call raises an error that includes the failure text after yielding the final result message, so wrap the loop in a try block if your code needs to continue. See [Handle the result](./agent-loop.md#handle-the-result) for the result subtypes.
 
 ### Implementation Example
 

@@ -15,8 +15,8 @@ This guide explains how to define and use subagents in the SDK using the `agents
 
 You can create subagents in three ways:
 
-* **Programmatically**: use the `agents` parameter in your `query()` options. See the [TypeScript](/en/agent-sdk/typescript#agentdefinition) and [Python](/en/agent-sdk/python#agentdefinition) references
-* **Filesystem-based**: define agents as markdown files in `.claude/agents/` directories. See [defining subagents as files](/en/sub-agents)
+* **Programmatically**: use the `agents` parameter in your `query()` options. See the [TypeScript](./typescript.md#agentdefinition) and [Python](./python.md#agentdefinition) references
+* **Filesystem-based**: define agents as markdown files in `.claude/agents/` directories. See [defining subagents as files](../sub-agents.md)
 * **Built-in general-purpose**: Claude can invoke the built-in `general-purpose` subagent at any time via the Agent tool without you defining anything
 
 This guide focuses on the programmatic approach, which is recommended for SDK applications.
@@ -179,20 +179,20 @@ This example creates two subagents: a code reviewer with read-only access and a 
 | `effort`          | `'low' \| 'medium' \| 'high' \| 'xhigh' \| 'max' \| number` | No       | Reasoning effort level for this agent                                                                                                                                                                                            |
 | `permissionMode`  | `PermissionMode`                                            | No       | Permission mode for tool execution within this agent                                                                                                                                                                             |
 
-In the Python SDK, multi-word field names such as `disallowedTools` and `mcpServers` keep their camelCase spelling to match the wire format rather than following Python's snake\_case convention. See the [`AgentDefinition` reference](/en/agent-sdk/python#agentdefinition) for details.
+In the Python SDK, multi-word field names such as `disallowedTools` and `mcpServers` keep their camelCase spelling to match the wire format rather than following Python's snake\_case convention. See the [`AgentDefinition` reference](./python.md#agentdefinition) for details.
 
 Two subagent behaviors changed in Claude Code v2.1.198:
 
-* Subagents run in the background by default. An Agent tool call that omits the [`run_in_background`](/en/agent-sdk/typescript) input launches a background subagent, and Claude sets `run_in_background: false` when it needs the result before continuing. Before v2.1.198, omitting `run_in_background` ran the subagent synchronously. Set the `background` field to `true` to force background execution for a specific agent regardless of what Claude requests.
+* Subagents run in the background by default. An Agent tool call that omits the [`run_in_background`](./typescript.md) input launches a background subagent, and Claude sets `run_in_background: false` when it needs the result before continuing. Before v2.1.198, omitting `run_in_background` ran the subagent synchronously. Set the `background` field to `true` to force background execution for a specific agent regardless of what Claude requests.
 * A subagent inherits the main session's extended thinking configuration. On earlier versions, extended thinking is disabled inside subagents regardless of the main session's setting.
 
 <Note>
-  {/* min-version: 2.1.172 */}As of Claude Code v2.1.172, subagents can spawn their own subagents. A subagent five levels below the main agent can't spawn further subagents, regardless of whether it runs in the foreground or background. To prevent a subagent from spawning others, omit `Agent` from its `tools` array or add it to `disallowedTools`. See [nested subagents](/en/sub-agents#spawn-nested-subagents) for the full depth rules.
+  {/* min-version: 2.1.172 */}As of Claude Code v2.1.172, subagents can spawn their own subagents. A subagent five levels below the main agent can't spawn further subagents, regardless of whether it runs in the foreground or background. To prevent a subagent from spawning others, omit `Agent` from its `tools` array or add it to `disallowedTools`. See [nested subagents](../sub-agents.md#spawn-nested-subagents) for the full depth rules.
 </Note>
 
 ### Filesystem-based definition (alternative)
 
-You can also define subagents as markdown files in `.claude/agents/` directories. See the [Claude Code subagents documentation](/en/sub-agents) for details on this approach. Programmatically defined agents take precedence over filesystem-based agents with the same name.
+You can also define subagents as markdown files in `.claude/agents/` directories. See the [Claude Code subagents documentation](../sub-agents.md) for details on this approach. Programmatically defined agents take precedence over filesystem-based agents with the same name.
 
 <Note>
   Even without defining custom subagents, Claude can spawn the built-in `general-purpose` subagent. This is useful for delegating research or exploration tasks without creating specialized agents. Include `Agent` in `allowedTools` so these invocations auto-approve without a permission prompt.
@@ -205,14 +205,14 @@ A subagent's context window starts fresh, with no parent conversation, but isn't
 | The subagent receives                                                                                                                 | The subagent doesn't receive                                       |
 | :------------------------------------------------------------------------------------------------------------------------------------ | :----------------------------------------------------------------- |
 | Its own system prompt (`AgentDefinition.prompt`) and the Agent tool's prompt                                                          | The parent's conversation history or tool results                  |
-| Project CLAUDE.md (loaded via [`settingSources`](/en/agent-sdk/claude-code-features#control-filesystem-settings-with-settingsources)) | Preloaded skill content, unless listed in `AgentDefinition.skills` |
+| Project CLAUDE.md (loaded via [`settingSources`](./claude-code-features.md#control-filesystem-settings-with-settingsources)) | Preloaded skill content, unless listed in `AgentDefinition.skills` |
 | Tool definitions (inherited from parent, or the subset in `tools`)                                                                    | The parent's system prompt                                         |
 
 <Note>
   The parent receives the subagent's final message verbatim as the Agent tool result, but may summarize it in its own response. To preserve subagent output verbatim in the user-facing response, include an instruction to do so in the prompt or `systemPrompt` option you pass to the main `query()` call.
 </Note>
 
-{/* min-version: 2.1.199 */}An API error that ends the subagent early, such as a rate limit, is never delivered as its result. If a rate limit, overload, or server error cuts off a foreground subagent that already produced text output, the Agent tool returns that partial output with a note that the subagent didn't finish. {/* min-version: 2.1.200 */}A subagent that produced nothing, or whose only output was tool calls with no text, fails with an error message, `Agent terminated early due to an API error`, followed by the error detail. See [API errors in subagents](/en/sub-agents#api-errors-in-subagents) for the foreground and background behavior.
+{/* min-version: 2.1.199 */}An API error that ends the subagent early, such as a rate limit, is never delivered as its result. If a rate limit, overload, or server error cuts off a foreground subagent that already produced text output, the Agent tool returns that partial output with a note that the subagent didn't finish. {/* min-version: 2.1.200 */}A subagent that produced nothing, or whose only output was tool calls with no text, fails with an error message, `Agent terminated early due to an API error`, followed by the error detail. See [API errors in subagents](../sub-agents.md#api-errors-in-subagents) for the foreground and background behavior.
 
 This partial-output handling requires Claude Code v2.1.199 or later. In v2.1.199, a rate limit, overload, or server error left the tool-calls-only shape with an empty partial result containing only the cutoff note.
 
@@ -405,7 +405,7 @@ This example iterates through streamed messages, logging when a subagent is invo
 
 You can resume a subagent to continue where it left off rather than starting fresh. A resumed subagent retains its full conversation history, including all previous tool calls, results, and reasoning.
 
-When a subagent completes, the Agent tool result includes a text block containing `agentId: <id>`. The built-in [`Explore` and `Plan` agents](/en/sub-agents#built-in-subagents) are one-shot and don't return an `agentId`, so use a custom agent or `general-purpose` when you need to resume. To resume a subagent programmatically:
+When a subagent completes, the Agent tool result includes a text block containing `agentId: <id>`. The built-in [`Explore` and `Plan` agents](../sub-agents.md#built-in-subagents) are one-shot and don't return an `agentId`, so use a custom agent or `general-purpose` when you need to resume. To resume a subagent programmatically:
 
 1. **Capture the session ID**: extract `session_id` from messages during the first query
 2. **Extract the agent ID**: parse `agentId` from the Agent tool result text
@@ -619,9 +619,9 @@ This example creates a read-only analysis agent that can examine code but can't 
 
 ## Scale up with dynamic workflows
 
-Subagents work well for a few delegated tasks per turn. For runs that coordinate dozens to hundreds of agents, use the `Workflow` tool, which moves the orchestration into a script the runtime executes outside the conversation context. See [dynamic workflows](/en/workflows) for how workflows differ from turn-by-turn subagent delegation.
+Subagents work well for a few delegated tasks per turn. For runs that coordinate dozens to hundreds of agents, use the `Workflow` tool, which moves the orchestration into a script the runtime executes outside the conversation context. See [dynamic workflows](../workflows.md) for how workflows differ from turn-by-turn subagent delegation.
 
-The `Workflow` tool is available in the TypeScript Agent SDK v0.3.149 and later. Include `Workflow` in `allowedTools` to auto-approve workflow runs. The tool input and output schemas are listed in the [TypeScript reference](/en/agent-sdk/typescript#workflow).
+The `Workflow` tool is available in the TypeScript Agent SDK v0.3.149 and later. Include `Workflow` in `allowedTools` to auto-approve workflow runs. The tool input and output schemas are listed in the [TypeScript reference](./typescript.md#workflow).
 
 ## Troubleshooting
 
@@ -642,7 +642,7 @@ Claude Code watches `~/.claude/agents/` and `.claude/agents/` and picks up a new
 * **`--disable-slash-commands`**: sessions started with this flag don't watch these directories and always need a restart to load new files.
 * **A programmatic agent with the same name**: `agents` passed to `query()` override a filesystem agent with the same name.
 
-For the file format, see [how to write subagent files](/en/sub-agents#write-subagent-files).
+For the file format, see [how to write subagent files](../sub-agents.md#write-subagent-files).
 
 ### Long prompt failures on Windows
 
@@ -650,6 +650,6 @@ On Windows, subagents with very long prompts may fail due to the command line le
 
 ## Related documentation
 
-* [Claude Code subagents](/en/sub-agents): comprehensive subagent documentation including filesystem-based definitions
-* [Dynamic workflows](/en/workflows): orchestrate many subagents from a script for jobs too large for one conversation
-* [SDK overview](/en/agent-sdk/overview): getting started with the Claude Agent SDK
+* [Claude Code subagents](../sub-agents.md): comprehensive subagent documentation including filesystem-based definitions
+* [Dynamic workflows](../workflows.md): orchestrate many subagents from a script for jobs too large for one conversation
+* [SDK overview](./overview.md): getting started with the Claude Agent SDK

@@ -34,9 +34,9 @@ What to know:
 Toggle fast mode in either of these ways:
 
 * Type `/fast` and press Tab to toggle on or off
-* Set `"fastMode": true` in your [user settings file](/en/settings)
+* Set `"fastMode": true` in your [user settings file](./settings.md)
 
-By default, fast mode you turn on in an interactive session persists across sessions. {/* min-version: 2.1.205 */}In [non-interactive mode](/en/headless), with the `-p` flag, `/fast` works only in a session launched with fast mode in its [`--settings`](/en/cli-reference#cli-flags) value, for example `claude -p --settings '{"fastMode": true}'`; the toggle then applies to that session only and isn't saved as your default, and in any other non-interactive session the command reports that fast mode isn't available. Administrators can configure fast mode to reset each session. See [require per-session opt-in](#require-per-session-opt-in) for details.
+By default, fast mode you turn on in an interactive session persists across sessions. {/* min-version: 2.1.205 */}In [non-interactive mode](./headless.md), with the `-p` flag, `/fast` works only in a session launched with fast mode in its [`--settings`](./cli-reference.md#cli-flags) value, for example `claude -p --settings '{"fastMode": true}'`; the toggle then applies to that session only and isn't saved as your default, and in any other non-interactive session the command reports that fast mode isn't available. Administrators can configure fast mode to reset each session. See [require per-session opt-in](#require-per-session-opt-in) for details.
 
 For the best cost efficiency, enable fast mode at the start of a session rather than switching mid-conversation. See [understand the cost tradeoff](#understand-the-cost-tradeoff) for details.
 
@@ -62,7 +62,7 @@ Fast mode has higher per-token pricing than standard Opus, with the multiplier v
 
 Fast mode pricing is flat across the full 1M token context window. For the standard Opus rate to compare against, see the [Claude pricing reference](https://platform.claude.com/docs/en/about-claude/pricing).
 
-The first time you enable fast mode in a conversation, you pay the full fast mode uncached input token price for the entire conversation context. The deeper into a conversation you are, the more this costs, so enabling fast mode from the start is cheaper. The cost applies once per conversation, so toggling fast mode off and on again later does not repeat it. For the mechanism, see [how fast mode interacts with the prompt cache](/en/prompt-caching#turning-on-fast-mode).
+The first time you enable fast mode in a conversation, you pay the full fast mode uncached input token price for the entire conversation context. The deeper into a conversation you are, the more this costs, so enabling fast mode from the start is cheaper. The cost applies once per conversation, so toggling fast mode off and on again later does not repeat it. For the mechanism, see [how fast mode interacts with the prompt cache](./prompt-caching.md#turning-on-fast-mode).
 
 ## Decide when to use fast mode
 
@@ -87,7 +87,7 @@ Fast mode and effort level both affect response speed, but differently:
 | **Fast mode**          | Same model quality, lower latency, higher cost                                   |
 | **Lower effort level** | Less thinking time, faster responses, potentially lower quality on complex tasks |
 
-You can combine both: use fast mode with a lower [effort level](/en/model-config#adjust-effort-level) for maximum speed on straightforward tasks.
+You can combine both: use fast mode with a lower [effort level](./model-config.md#adjust-effort-level) for maximum speed on straightforward tasks.
 
 ## Requirements
 
@@ -103,7 +103,7 @@ Fast mode requires all of the following:
 * **Owner enablement for Team and Enterprise**: fast mode is disabled by default for Team and Enterprise organizations. An Owner must explicitly [enable fast mode](#enable-fast-mode-for-your-organization) before users can access it.
 
 <Note>
-  If fast mode has not been enabled for your organization, the `/fast` command will show "Fast mode has been disabled by your organization." If your organization's [`availableModels`](/en/model-config#restrict-model-selection) allowlist excludes the fast-mode Opus model, `/fast` is refused with "is not in your organization's allowed models". The exception is a session already running on an allowed Opus model that supports fast mode: `/fast` enables fast mode on your current model instead of switching models.
+  If fast mode has not been enabled for your organization, the `/fast` command will show "Fast mode has been disabled by your organization." If your organization's [`availableModels`](./model-config.md#restrict-model-selection) allowlist excludes the fast-mode Opus model, `/fast` is refused with "is not in your organization's allowed models". The exception is a session already running on an allowed Opus model that supports fast mode: `/fast` enables fast mode on your current model instead of switching models.
 </Note>
 
 ### Enable fast mode for your organization
@@ -113,11 +113,11 @@ Where you enable fast mode depends on which product your organization uses:
 * **Console** (API customers): an admin enables it in [Claude Code preferences](https://platform.claude.com/claude-code/preferences)
 * **Claude AI** (Team and Enterprise): an Owner enables it at [Admin Settings > Claude Code](https://claude.ai/admin-settings/claude-code)
 
-Another option to disable fast mode entirely is to set `CLAUDE_CODE_DISABLE_FAST_MODE=1`. See [Environment variables](/en/env-vars).
+Another option to disable fast mode entirely is to set `CLAUDE_CODE_DISABLE_FAST_MODE=1`. See [Environment variables](./env-vars.md).
 
 ### Require per-session opt-in
 
-By default, fast mode a user turns on in an interactive session persists across sessions: it stays on in future sessions. Administrators on [Team](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=fast_mode_teams#team-&-enterprise) or [Enterprise](https://anthropic.com/contact-sales?utm_source=claude_code\&utm_medium=docs\&utm_content=fast_mode_enterprise) plans can prevent this by setting `fastModePerSessionOptIn` to `true` in [managed settings](/en/settings#settings-files) or [server-managed settings](/en/server-managed-settings). This causes each session to start with fast mode off, requiring users to explicitly enable it with `/fast`.
+By default, fast mode a user turns on in an interactive session persists across sessions: it stays on in future sessions. Administrators on [Team](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=fast_mode_teams#team-&-enterprise) or [Enterprise](https://anthropic.com/contact-sales?utm_source=claude_code\&utm_medium=docs\&utm_content=fast_mode_enterprise) plans can prevent this by setting `fastModePerSessionOptIn` to `true` in [managed settings](./settings.md#settings-files) or [server-managed settings](./server-managed-settings.md). This causes each session to start with fast mode off, requiring users to explicitly enable it with `/fast`.
 
 ```json theme={null}
 {
@@ -150,6 +150,6 @@ Report issues or feedback through your usual Anthropic support channels.
 
 ## See also
 
-* [Model configuration](/en/model-config): switch models and adjust effort levels
-* [Manage costs effectively](/en/costs): track token usage and reduce costs
-* [Status line configuration](/en/statusline): display model and context information
+* [Model configuration](./model-config.md): switch models and adjust effort levels
+* [Manage costs effectively](./costs.md): track token usage and reduce costs
+* [Status line configuration](./statusline.md): display model and context information

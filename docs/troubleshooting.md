@@ -10,14 +10,14 @@ This page covers performance, stability, and search problems once Claude Code is
 
 | Symptom                                                                                                                                              | Go to                                                                                    |
 | :--------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------- |
-| `command not found`, install fails, PATH issues, `EACCES`, TLS errors                                                                                | [Troubleshoot installation and login](/en/troubleshoot-install)                          |
-| Update or install download fails with `The connection dropped while downloading the update` or `aborted`                                             | [Error reference](/en/errors#the-connection-dropped-while-downloading-the-update)        |
-| Login loops, OAuth errors, `403 Forbidden`, "organization disabled", Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry credentials | [Troubleshoot installation and login](/en/troubleshoot-install#login-and-authentication) |
-| Settings not applying, hooks not firing, MCP servers not loading                                                                                     | [Debug your configuration](/en/debug-your-config)                                        |
-| `API Error: 5xx`, `529 Overloaded`, `429`, request validation errors                                                                                 | [Error reference](/en/errors)                                                            |
-| `model not found` or `you may not have access to it`                                                                                                 | [Error reference](/en/errors#theres-an-issue-with-the-selected-model)                    |
-| VS Code extension not connecting or detecting Claude                                                                                                 | [VS Code integration](/en/vs-code#fix-common-issues)                                     |
-| JetBrains plugin or IDE not detected                                                                                                                 | [JetBrains integration](/en/jetbrains#troubleshooting)                                   |
+| `command not found`, install fails, PATH issues, `EACCES`, TLS errors                                                                                | [Troubleshoot installation and login](./troubleshoot-install.md)                          |
+| Update or install download fails with `The connection dropped while downloading the update` or `aborted`                                             | [Error reference](./errors.md#the-connection-dropped-while-downloading-the-update)        |
+| Login loops, OAuth errors, `403 Forbidden`, "organization disabled", Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry credentials | [Troubleshoot installation and login](./troubleshoot-install.md#login-and-authentication) |
+| Settings not applying, hooks not firing, MCP servers not loading                                                                                     | [Debug your configuration](./debug-your-config.md)                                        |
+| `API Error: 5xx`, `529 Overloaded`, `429`, request validation errors                                                                                 | [Error reference](./errors.md)                                                            |
+| `model not found` or `you may not have access to it`                                                                                                 | [Error reference](./errors.md#theres-an-issue-with-the-selected-model)                    |
+| VS Code extension not connecting or detecting Claude                                                                                                 | [VS Code integration](./vs-code.md#fix-common-issues)                                     |
+| JetBrains plugin or IDE not detected                                                                                                                 | [JetBrains integration](./jetbrains.md#troubleshooting)                                   |
 | High CPU or memory, slow responses, hangs, search not finding files                                                                                  | [Performance and stability](#performance-and-stability) below                            |
 
 If you're not sure which applies, run `/doctor` inside Claude Code for an automated check of your installation, settings, extensions, and context usage; it proposes fixes it can apply after you confirm. If `claude` won't start at all, run `claude doctor` from your shell instead. Run `/mcp` to check MCP server status.
@@ -33,7 +33,7 @@ Claude Code is designed to work with most development environments, but may cons
 1. Use `/compact` regularly to reduce context size
 2. Close and restart Claude Code between major tasks
 3. Consider adding large build directories to your `.gitignore` file
-4. Restart with [`claude --safe-mode`](/en/cli-reference#cli-flags) to check whether a plugin, MCP server, or hook is the source. It disables all customizations for the session; if usage drops, see [Debug your configuration](/en/debug-your-config#test-against-a-clean-configuration) to find which one
+4. Restart with [`claude --safe-mode`](./cli-reference.md#cli-flags) to check whether a plugin, MCP server, or hook is the source. It disables all customizations for the session; if usage drops, see [Debug your configuration](./debug-your-config.md#test-against-a-clean-configuration) to find which one
 
 If memory usage stays high after these steps, run `/heapdump` to write a JavaScript heap snapshot and a memory breakdown to `~/Desktop`. On Linux without a Desktop folder, the files are written to your home directory.
 
@@ -47,7 +47,7 @@ To recover:
 
 1. Ask Claude to read the oversized file in smaller chunks, such as a specific line range or function, instead of the whole file
 2. Run `/compact` with a focus that drops the large output, for example `/compact keep only the plan and the diff`
-3. Move the large-file work to a [subagent](/en/sub-agents) so it runs in a separate context window
+3. Move the large-file work to a [subagent](./sub-agents.md) so it runs in a separate context window
 4. Run `/clear` if the earlier conversation is no longer needed
 
 ### Command hangs or freezes
@@ -61,7 +61,7 @@ Restarting doesn't lose your conversation. Run `claude --resume` in the same dir
 
 ### Garbled or corrupted text in an editor's integrated terminal
 
-If characters render as boxes, smears, or the wrong glyphs when running Claude Code in the VS Code, Cursor, or Devin Desktop integrated terminal, the terminal's GPU renderer is likely the cause. Run `/terminal-setup` inside Claude Code to set `terminal.integrated.gpuAcceleration` to `"off"`, or set it manually in your editor settings and reload the window. See [Terminal configuration](/en/terminal-config) for the other settings `/terminal-setup` writes.
+If characters render as boxes, smears, or the wrong glyphs when running Claude Code in the VS Code, Cursor, or Devin Desktop integrated terminal, the terminal's GPU renderer is likely the cause. Run `/terminal-setup` inside Claude Code to set `terminal.integrated.gpuAcceleration` to `"off"`, or set it manually in your editor settings and reload the window. See [Terminal configuration](./terminal-config.md) for the other settings `/terminal-setup` writes.
 
 ### Search and discovery issues
 
@@ -99,7 +99,7 @@ If the Search tool, `@file` mentions, custom agents, or custom skills aren't fin
   </Tab>
 </Tabs>
 
-Then set `USE_BUILTIN_RIPGREP=0` in your [environment](/en/env-vars).
+Then set `USE_BUILTIN_RIPGREP=0` in your [environment](./env-vars.md).
 
 ### Slow or incomplete search results on WSL
 

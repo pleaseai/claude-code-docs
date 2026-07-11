@@ -9,7 +9,7 @@
 Claude Code supports various enterprise network and security configurations through environment variables. This includes routing traffic through corporate proxy servers, trusting custom Certificate Authorities (CA), and authenticating with mutual Transport Layer Security (mTLS) certificates for enhanced security.
 
 <Note>
-  All environment variables shown on this page can also be configured in [`settings.json`](/en/settings).
+  All environment variables shown on this page can also be configured in [`settings.json`](./settings.md).
 </Note>
 
 ## Proxy configuration
@@ -111,22 +111,22 @@ Claude Code requires access to the following URLs. Allowlist these in your proxy
 | `platform.claude.com`          | Anthropic Console account authentication                                                                                                                                                     |
 | `downloads.claude.ai`          | Plugin executable downloads; native installer and native auto-updater                                                                                                                        |
 | `storage.googleapis.com`       | {/* max-version: 2.1.115 */}Native installer and native auto-updater on versions prior to 2.1.116                                                                                            |
-| `bridge.claudeusercontent.com` | [Claude in Chrome](/en/chrome) extension WebSocket bridge                                                                                                                                    |
-| `*.claudeusercontent.com`      | Viewing [artifacts](/en/artifacts) on claude.ai. The viewer loads each artifact's content from a sandboxed subdomain of this origin. Required in the viewer's browser, not by the CLI itself |
-| `raw.githubusercontent.com`    | Changelog feed for [`/release-notes`](/en/commands) and the release notes shown after updating; plugin marketplace install counts                                                            |
+| `bridge.claudeusercontent.com` | [Claude in Chrome](./chrome.md) extension WebSocket bridge                                                                                                                                    |
+| `*.claudeusercontent.com`      | Viewing [artifacts](./artifacts.md) on claude.ai. The viewer loads each artifact's content from a sandboxed subdomain of this origin. Required in the viewer's browser, not by the CLI itself |
+| `raw.githubusercontent.com`    | Changelog feed for [`/release-notes`](./commands.md) and the release notes shown after updating; plugin marketplace install counts                                                            |
 
 If you install Claude Code through npm or manage your own binary distribution, end users may not need access to `downloads.claude.ai` or `storage.googleapis.com`.
 
-Claude Code also sends optional operational telemetry by default, which you can disable with environment variables. See [Telemetry services](/en/data-usage#telemetry-services) for how to disable it before finalizing your allowlist.
+Claude Code also sends optional operational telemetry by default, which you can disable with environment variables. See [Telemetry services](./data-usage.md#telemetry-services) for how to disable it before finalizing your allowlist.
 
-When using [Amazon Bedrock](/en/amazon-bedrock), [Google Cloud's Agent Platform](/en/google-vertex-ai), [Microsoft Foundry](/en/microsoft-foundry), or a signed-in [Claude apps gateway](/en/claude-apps-gateway) session, model traffic and authentication go to your provider or gateway instead of `api.anthropic.com`, `claude.ai`, or `platform.claude.com`. The WebFetch tool still calls `api.anthropic.com` for its [domain safety check](/en/data-usage#webfetch-domain-safety-check) unless you set `skipWebFetchPreflight: true` in [settings](/en/settings).
+When using [Amazon Bedrock](./amazon-bedrock.md), [Google Cloud's Agent Platform](./google-vertex-ai.md), [Microsoft Foundry](./microsoft-foundry.md), or a signed-in [Claude apps gateway](./claude-apps-gateway.md) session, model traffic and authentication go to your provider or gateway instead of `api.anthropic.com`, `claude.ai`, or `platform.claude.com`. The WebFetch tool still calls `api.anthropic.com` for its [domain safety check](./data-usage.md#webfetch-domain-safety-check) unless you set `skipWebFetchPreflight: true` in [settings](./settings.md).
 
-[Claude Code on the web](/en/claude-code-on-the-web) and [Code Review](/en/code-review) connect to your repositories from Anthropic-managed infrastructure. If your GitHub Enterprise Cloud organization restricts access by IP address, enable [IP allow list inheritance for installed GitHub Apps](https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/managing-allowed-ip-addresses-for-your-organization#allowing-access-by-github-apps). The Claude GitHub App registers its IP ranges, so enabling this setting allows access without manual configuration. To [add the ranges to your allow list manually](https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/managing-allowed-ip-addresses-for-your-organization#adding-an-allowed-ip-address) instead, or to configure other firewalls, see the [Anthropic API IP addresses](https://platform.claude.com/docs/en/api/ip-addresses).
+[Claude Code on the web](./claude-code-on-the-web.md) and [Code Review](./code-review.md) connect to your repositories from Anthropic-managed infrastructure. If your GitHub Enterprise Cloud organization restricts access by IP address, enable [IP allow list inheritance for installed GitHub Apps](https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/managing-allowed-ip-addresses-for-your-organization#allowing-access-by-github-apps). The Claude GitHub App registers its IP ranges, so enabling this setting allows access without manual configuration. To [add the ranges to your allow list manually](https://docs.github.com/en/enterprise-cloud@latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/managing-allowed-ip-addresses-for-your-organization#adding-an-allowed-ip-address) instead, or to configure other firewalls, see the [Anthropic API IP addresses](https://platform.claude.com/docs/en/api/ip-addresses).
 
-For self-hosted [GitHub Enterprise Server](/en/github-enterprise-server) instances behind a firewall, allowlist the same [Anthropic API IP addresses](https://platform.claude.com/docs/en/api/ip-addresses) so Anthropic infrastructure can reach your GHES host to clone repositories and post review comments.
+For self-hosted [GitHub Enterprise Server](./github-enterprise-server.md) instances behind a firewall, allowlist the same [Anthropic API IP addresses](https://platform.claude.com/docs/en/api/ip-addresses) so Anthropic infrastructure can reach your GHES host to clone repositories and post review comments.
 
 ## Additional resources
 
-* [Claude Code settings](/en/settings)
-* [Environment variables reference](/en/env-vars)
-* [Troubleshooting guide](/en/troubleshooting)
+* [Claude Code settings](./settings.md)
+* [Environment variables reference](./env-vars.md)
+* [Troubleshooting guide](./troubleshooting.md)

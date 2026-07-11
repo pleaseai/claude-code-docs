@@ -241,21 +241,21 @@ The SDK never deletes from your store on its own. Retention is the adapter's res
 
 The following SDK functions accept a `sessionStore` option and operate against the store instead of the local filesystem when it is provided:
 
-* [`query()`](/en/agent-sdk/typescript#query)
-* [`startup()`](/en/agent-sdk/typescript#startup)
-* [`listSessions()`](/en/agent-sdk/typescript#listsessions)
-* [`getSessionInfo()`](/en/agent-sdk/typescript#getsessioninfo)
-* [`getSessionMessages()`](/en/agent-sdk/typescript#getsessionmessages)
-* [`renameSession()`](/en/agent-sdk/typescript#renamesession)
-* [`tagSession()`](/en/agent-sdk/typescript#tagsession)
-* [`deleteSession()`](/en/agent-sdk/typescript)
-* [`forkSession()`](/en/agent-sdk/typescript)
-* [`listSubagents()`](/en/agent-sdk/typescript)
-* [`getSubagentMessages()`](/en/agent-sdk/typescript)
+* [`query()`](./typescript.md#query)
+* [`startup()`](./typescript.md#startup)
+* [`listSessions()`](./typescript.md#listsessions)
+* [`getSessionInfo()`](./typescript.md#getsessioninfo)
+* [`getSessionMessages()`](./typescript.md#getsessionmessages)
+* [`renameSession()`](./typescript.md#renamesession)
+* [`tagSession()`](./typescript.md#tagsession)
+* [`deleteSession()`](./typescript.md)
+* [`forkSession()`](./typescript.md)
+* [`listSubagents()`](./typescript.md)
+* [`getSubagentMessages()`](./typescript.md)
 
 ## Related resources
 
-* [Work with sessions](/en/agent-sdk/sessions): Continue, resume, and fork without a custom store
-* [Host the SDK](/en/agent-sdk/hosting): Deployment patterns for multi-host environments
-* [TypeScript `Options`](/en/agent-sdk/typescript#options): Full option reference
+* [Work with sessions](./sessions.md): Continue, resume, and fork without a custom store
+* [Host the SDK](./hosting.md): Deployment patterns for multi-host environments
+* [TypeScript `Options`](./typescript.md#options): Full option reference
 * [`examples/session-stores/`](https://github.com/anthropics/claude-agent-sdk-typescript/tree/main/examples/session-stores): Runnable S3, Redis, and Postgres reference adapters

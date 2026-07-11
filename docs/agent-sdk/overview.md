@@ -40,7 +40,7 @@ Build AI agents that autonomously read files, run commands, search the web, edit
 The Agent SDK includes built-in tools for reading files, running commands, and editing code, so your agent can start working immediately without you implementing tool execution. Dive into the quickstart or explore real agents built with the SDK:
 
 <CardGroup cols={2}>
-  <Card title="Quickstart" icon="play" href="/en/agent-sdk/quickstart">
+  <Card title="Quickstart" icon="play" href="./quickstart.md">
     Build a bug-fixing agent in minutes
   </Card>
 
@@ -88,7 +88,7 @@ The Agent SDK includes built-in tools for reading files, running commands, and e
     * **Google Cloud's Agent Platform**: set `CLAUDE_CODE_USE_VERTEX=1` environment variable and configure Google Cloud credentials
     * **Microsoft Azure**: set `CLAUDE_CODE_USE_FOUNDRY=1` environment variable and configure Azure credentials
 
-    See the setup guides for [Amazon Bedrock](/en/amazon-bedrock), [Claude Platform on AWS](/en/claude-platform-on-aws), [Google Cloud's Agent Platform](/en/google-vertex-ai), or [Microsoft Foundry](/en/microsoft-foundry) for details.
+    See the setup guides for [Amazon Bedrock](../amazon-bedrock.md), [Claude Platform on AWS](../claude-platform-on-aws.md), [Google Cloud's Agent Platform](../google-vertex-ai.md), or [Microsoft Foundry](../microsoft-foundry.md) for details.
 
     <Note>
       Unless previously approved, Anthropic does not allow third party developers to offer claude.ai login or rate limits for their products, including agents built on the Claude Agent SDK. Please use the API key authentication methods described in this document instead.
@@ -130,7 +130,7 @@ The Agent SDK includes built-in tools for reading files, running commands, and e
   </Step>
 </Steps>
 
-**Ready to build?** Follow the [Quickstart](/en/agent-sdk/quickstart) to create an agent that finds and fixes bugs in minutes.
+**Ready to build?** Follow the [Quickstart](./quickstart.md) to create an agent that finds and fixes bugs in minutes.
 
 ## Capabilities
 
@@ -151,7 +151,7 @@ Everything that makes Claude Code powerful is available in the SDK:
     | **Grep**                                                                    | Search file contents with regex                                     |
     | **WebSearch**                                                               | Search the web for current information                              |
     | **WebFetch**                                                                | Fetch and parse web page content                                    |
-    | **[AskUserQuestion](/en/agent-sdk/user-input#handle-clarifying-questions)** | Ask the user clarifying questions with multiple choice options      |
+    | **[AskUserQuestion](./user-input.md#handle-clarifying-questions)** | Ask the user clarifying questions with multiple choice options      |
 
     This example creates an agent that searches your codebase for TODO comments:
 
@@ -250,7 +250,7 @@ Everything that makes Claude Code powerful is available in the SDK:
       ```
     </CodeGroup>
 
-    [Learn more about hooks →](/en/agent-sdk/hooks)
+    [Learn more about hooks →](./hooks.md)
   </Tab>
 
   <Tab title="Subagents">
@@ -308,7 +308,7 @@ Everything that makes Claude Code powerful is available in the SDK:
 
     Messages from within a subagent's context include a `parent_tool_use_id` field, letting you track which messages belong to which subagent execution.
 
-    [Learn more about subagents →](/en/agent-sdk/subagents)
+    [Learn more about subagents →](./subagents.md)
   </Tab>
 
   <Tab title="MCP">
@@ -354,14 +354,14 @@ Everything that makes Claude Code powerful is available in the SDK:
       ```
     </CodeGroup>
 
-    [Learn more about MCP →](/en/agent-sdk/mcp)
+    [Learn more about MCP →](./mcp.md)
   </Tab>
 
   <Tab title="Permissions">
     Control exactly which tools your agent can use. Allow safe operations, block dangerous ones, or require approval for sensitive actions.
 
     <Note>
-      For interactive approval prompts and the `AskUserQuestion` tool, see [Handle approvals and user input](/en/agent-sdk/user-input).
+      For interactive approval prompts and the `AskUserQuestion` tool, see [Handle approvals and user input](./user-input.md).
     </Note>
 
     This example creates a read-only agent that can analyze but not modify code. `allowed_tools` pre-approves `Read`, `Glob`, and `Grep`.
@@ -400,7 +400,7 @@ Everything that makes Claude Code powerful is available in the SDK:
       ```
     </CodeGroup>
 
-    [Learn more about permissions →](/en/agent-sdk/permissions)
+    [Learn more about permissions →](./permissions.md)
   </Tab>
 
   <Tab title="Sessions">
@@ -462,7 +462,7 @@ Everything that makes Claude Code powerful is available in the SDK:
       ```
     </CodeGroup>
 
-    [Learn more about sessions →](/en/agent-sdk/sessions)
+    [Learn more about sessions →](./sessions.md)
   </Tab>
 </Tabs>
 
@@ -472,10 +472,10 @@ The SDK also supports Claude Code's filesystem-based configuration. With default
 
 | Feature                                          | Description                                                                   | Location                           |
 | ------------------------------------------------ | ----------------------------------------------------------------------------- | ---------------------------------- |
-| [Skills](/en/agent-sdk/skills)                   | Specialized capabilities Claude uses automatically or you invoke with `/name` | `.claude/skills/*/SKILL.md`        |
-| [Commands](/en/agent-sdk/slash-commands)         | Custom commands in the legacy format. Use skills for new custom commands      | `.claude/commands/*.md`            |
-| [Memory](/en/agent-sdk/modifying-system-prompts) | Project context and instructions                                              | `CLAUDE.md` or `.claude/CLAUDE.md` |
-| [Plugins](/en/agent-sdk/plugins)                 | Extend with skills, agents, hooks, and MCP servers                            | Programmatic via `plugins` option  |
+| [Skills](./skills.md)                   | Specialized capabilities Claude uses automatically or you invoke with `/name` | `.claude/skills/*/SKILL.md`        |
+| [Commands](./slash-commands.md)         | Custom commands in the legacy format. Use skills for new custom commands      | `.claude/commands/*.md`            |
+| [Memory](./modifying-system-prompts.md) | Project context and instructions                                              | `CLAUDE.md` or `.claude/CLAUDE.md` |
+| [Plugins](./plugins.md)                 | Extend with skills, agents, hooks, and MCP servers                            | Programmatic via `plugins` option  |
 
 ## Compare the Agent SDK to other Claude tools
 
@@ -584,7 +584,7 @@ Use of the Claude Agent SDK is governed by [Anthropic's Commercial Terms of Serv
 ## Next steps
 
 <CardGroup cols={2}>
-  <Card title="Quickstart" icon="play" href="/en/agent-sdk/quickstart">
+  <Card title="Quickstart" icon="play" href="./quickstart.md">
     Build an agent that finds and fixes bugs in minutes
   </Card>
 
@@ -592,11 +592,11 @@ Use of the Claude Agent SDK is governed by [Anthropic's Commercial Terms of Serv
     Email assistant, research agent, and more
   </Card>
 
-  <Card title="TypeScript SDK" icon="code" href="/en/agent-sdk/typescript">
+  <Card title="TypeScript SDK" icon="code" href="./typescript.md">
     Full TypeScript API reference and examples
   </Card>
 
-  <Card title="Python SDK" icon="code" href="/en/agent-sdk/python">
+  <Card title="Python SDK" icon="code" href="./python.md">
     Full Python API reference and examples
   </Card>
 </CardGroup>

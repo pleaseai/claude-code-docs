@@ -6,7 +6,7 @@
 
 > Fix command not found, PATH, permission, network, and authentication errors when installing or signing in to Claude Code.
 
-If installation fails or you can't sign in, find your error below. For runtime issues after Claude Code is working, see [Troubleshooting](/en/troubleshooting). For configuration problems such as settings not applying or hooks not firing, see [Debug your configuration](/en/debug-your-config).
+If installation fails or you can't sign in, find your error below. For runtime issues after Claude Code is working, see [Troubleshooting](./troubleshooting.md). For configuration problems such as settings not applying or hooks not firing, see [Debug your configuration](./debug-your-config.md).
 
 ## Find your error
 
@@ -39,12 +39,12 @@ Match the error message or symptom you're seeing to a fix:
 | `OAuth error` or `403 Forbidden`                                                                      | [Fix authentication](#login-and-authentication)                                                                                               |
 | `Could not load the default credentials` or `Could not load credentials from any providers`           | [Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry credentials](#bedrock-agent-platform-or-foundry-credentials-not-loading) |
 | `ChainedTokenCredential authentication failed` or `CredentialUnavailableError`                        | [Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry credentials](#bedrock-agent-platform-or-foundry-credentials-not-loading) |
-| `API Error: 500`, `529 Overloaded`, `429`, or other 4xx and 5xx errors not listed above               | See the [Error reference](/en/errors)                                                                                                         |
+| `API Error: 500`, `529 Overloaded`, `429`, or other 4xx and 5xx errors not listed above               | See the [Error reference](./errors.md)                                                                                                         |
 
 If your issue isn't listed, work through the diagnostic checks below to narrow down the cause.
 
 <Tip>
-  If you'd rather skip the terminal entirely, the [Claude Code Desktop app](/en/desktop-quickstart) lets you install and use Claude Code through a graphical interface. Download it for [macOS](https://claude.ai/api/desktop/darwin/universal/dmg/latest/redirect?utm_source=claude_code\&utm_medium=docs), [Windows](https://claude.com/download?utm_source=claude_code\&utm_medium=docs), or [Linux](https://claude.com/download?utm_source=claude_code\&utm_medium=docs) and start coding without any command-line setup.
+  If you'd rather skip the terminal entirely, the [Claude Code Desktop app](./desktop-quickstart.md) lets you install and use Claude Code through a graphical interface. Download it for [macOS](https://claude.ai/api/desktop/darwin/universal/dmg/latest/redirect?utm_source=claude_code\&utm_medium=docs), [Windows](https://claude.com/download?utm_source=claude_code\&utm_medium=docs), or [Linux](https://claude.com/download?utm_source=claude_code\&utm_medium=docs) and start coding without any command-line setup.
 </Tip>
 
 ## Run diagnostic checks
@@ -92,7 +92,7 @@ This example sets both proxy variables, then runs the installer through your pro
 If installation succeeded but you get a `command not found` or `not recognized` error when running `claude`, the install directory isn't in your PATH. Your shell searches for programs in directories listed in PATH, and the installer places `claude` at `~/.local/bin/claude` on macOS/Linux or `%USERPROFILE%\.local\bin\claude.exe` on Windows.
 
 <Note>
-  The [VS Code extension](/en/vs-code) does not place `claude` at this location. It bundles a private copy of the CLI inside the extension directory for its own chat panel and does not add it to PATH. If you have only installed the extension, `~/.local/bin/claude` will not exist. Run the [standalone install](/en/setup) to use `claude` from a terminal, then continue below.
+  The [VS Code extension](./vs-code.md) does not place `claude` at this location. It bundles a private copy of the CLI inside the extension directory for its own chat panel and does not add it to PATH. If you have only installed the extension, `~/.local/bin/claude` will not exist. Run the [standalone install](./setup.md) to use `claude` from a terminal, then continue below.
 </Note>
 
 Check if the install directory is in your PATH by listing your PATH entries and filtering for `local/bin`:
@@ -278,7 +278,7 @@ On Windows, use PowerShell:
 Get-Command claude | Select-Object Source
 ```
 
-On Linux, check for missing shared libraries. If `ldd` shows missing libraries, you may need to install system packages. On Alpine Linux and other musl-based distributions, see [Alpine Linux setup](/en/setup#alpine-linux-and-musl-based-distributions).
+On Linux, check for missing shared libraries. If `ldd` shows missing libraries, you may need to install system packages. On Alpine Linux and other musl-based distributions, see [Alpine Linux setup](./setup.md#alpine-linux-and-musl-based-distributions).
 
 ```bash theme={null}
 ldd "$(command -v claude)" | grep "not found"
@@ -387,7 +387,7 @@ brew update
 brew install --cask claude-code
 ```
 
-If Homebrew installs an older Claude Code version than you expect, the same stale index is usually the cause. The `claude-code` cask tracks the stable channel and is typically about one week behind the latest release; for the newest version run `brew install --cask claude-code@latest` instead. See [Configure release channel](/en/setup#configure-release-channel) for the difference between the two casks.
+If Homebrew installs an older Claude Code version than you expect, the same stale index is usually the cause. The `claude-code` cask tracks the stable channel and is typically about one week behind the latest release; for the newest version run `brew install --cask claude-code@latest` instead. See [Configure release channel](./setup.md#configure-release-channel) for the difference between the two casks.
 
 ### TLS or SSL connection errors
 
@@ -438,7 +438,7 @@ The installer couldn't reach the download server. This typically means `download
    curl -sI https://downloads.claude.ai/claude-code-releases/latest
    ```
 
-2. **If behind a proxy**, set `HTTPS_PROXY` so the installer can route through it. See [proxy configuration](/en/network-config#proxy-configuration) for details.
+2. **If behind a proxy**, set `HTTPS_PROXY` so the installer can route through it. See [proxy configuration](./network-config.md#proxy-configuration) for details.
    ```bash theme={null}
    export HTTPS_PROXY=http://proxy.example.com:8080
    curl -fsSL https://claude.ai/install.sh | bash
@@ -515,7 +515,7 @@ Claude Code needs roughly 512MB of free memory to install. Free up memory, then 
 
 Before v2.1.200, the script exited with only the shell's bare `Killed` line and no explanation.
 
-Installing needs roughly 512 MB of free memory, and running Claude Code needs more. See the [system requirements](/en/setup#system-requirements).
+Installing needs roughly 512 MB of free memory, and running Claude Code needs more. See the [system requirements](./setup.md#system-requirements).
 
 **Solutions:**
 
@@ -565,13 +565,13 @@ Update Claude Desktop to the latest version to fix this issue.
 
 ### Claude Code on Windows requires either Git for Windows (for bash) or PowerShell
 
-Git for Windows is optional. Claude Code uses the [PowerShell tool](/en/tools-reference#powershell-tool) when Git Bash is absent, so this error means neither shell was found.
+Git for Windows is optional. Claude Code uses the [PowerShell tool](./tools-reference.md#powershell-tool) when Git Bash is absent, so this error means neither shell was found.
 
 **If PowerShell is missing from your PATH**, its default location is `C:\Windows\System32\WindowsPowerShell\v1.0\`. Add that directory to your `PATH`, or install [PowerShell 7](https://aka.ms/powershell), which provides `pwsh`.
 
 **To install Git for Windows instead**, download it from [git-scm.com/downloads/win](https://git-scm.com/downloads/win). During setup, select "Add to PATH." Restart your terminal after installing. Installing it enables the Bash tool, useful when working with Bash-based scripts and tooling.
 
-**If Git is already installed** but Claude Code can't find it, set the path in your [settings.json file](/en/settings):
+**If Git is already installed** but Claude Code can't find it, set the path in your [settings.json file](./settings.md):
 
 ```json theme={null}
 {
@@ -597,7 +597,7 @@ Windows includes two PowerShell entries in the Start menu: `Windows PowerShell` 
 
 If this prints `True`, your operating system is fine. Close the window, open `Windows PowerShell` without the x86 suffix, and run the install command again.
 
-If this prints `False`, you are on a 32-bit edition of Windows. Claude Code requires a 64-bit operating system. See the [system requirements](/en/setup#system-requirements).
+If this prints `False`, you are on a 32-bit edition of Windows. Claude Code requires a 64-bit operating system. See the [system requirements](./setup.md#system-requirements).
 
 ### Linux musl or glibc binary mismatch
 
@@ -683,7 +683,7 @@ Then run `source ~/.bashrc` and retry `claude`.
 
 ### npm install errors in WSL
 
-These issues apply if you installed Claude Code with `npm install -g` inside WSL. If you used the [native installer](/en/setup), skip this section.
+These issues apply if you installed Claude Code with `npm install -g` inside WSL. If you used the [native installer](./setup.md), skip this section.
 
 **OS or platform detection issues.** If npm reports a platform mismatch during install, WSL is likely picking up the Windows `npm`. Run `npm config set os linux` first, then install with `npm install -g @anthropic-ai/claude-code --force`. Do not use `sudo`.
 
@@ -728,7 +728,7 @@ curl -fsSL https://claude.ai/install.sh | bash
 The `@anthropic-ai/claude-code` npm package pulls in the native binary through a per-platform optional dependency such as `@anthropic-ai/claude-code-darwin-arm64`. If running `claude` after install prints `Could not find native binary package "@anthropic-ai/claude-code-<platform>"`, check the following causes:
 
 * **Optional dependencies are disabled.** Remove `--omit=optional` from your npm install command, `--no-optional` from pnpm, or `--ignore-optional` from yarn, and check that `.npmrc` does not set `optional=false`. Then reinstall. The native binary is delivered only as an optional dependency, so there is no JavaScript fallback if it is skipped.
-* **Unsupported platform.** Prebuilt binaries are published for `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, `linux-arm64-musl`, `win32-x64`, and `win32-arm64`. Claude Code does not ship a binary for other platforms; see the [system requirements](/en/setup#system-requirements). {/* min-version: 2.1.205 */}On FreeBSD, the installer reports the platform as unsupported. Before v2.1.205, it treated FreeBSD as Linux and downloaded a binary that couldn't run.
+* **Unsupported platform.** Prebuilt binaries are published for `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`, `linux-x64-musl`, `linux-arm64-musl`, `win32-x64`, and `win32-arm64`. Claude Code does not ship a binary for other platforms; see the [system requirements](./setup.md#system-requirements). {/* min-version: 2.1.205 */}On FreeBSD, the installer reports the platform as unsupported. Before v2.1.205, it treated FreeBSD as Linux and downloaded a binary that couldn't run.
 * **Corporate npm mirror is missing the platform packages.** Ensure your registry mirrors all eight `@anthropic-ai/claude-code-*` platform packages in addition to the meta package.
 
 Installing with `--ignore-scripts` does not trigger this error. The postinstall step that links the binary into place is skipped, so Claude Code falls back to a wrapper that locates and spawns the platform binary on each launch. This works but starts more slowly; reinstall with scripts enabled for direct execution.
@@ -763,13 +763,13 @@ If you see `API Error: 403 {"error":{"type":"forbidden","message":"Request not a
 
 * **Claude Pro/Max users**: verify your subscription is active at [claude.ai/settings](https://claude.ai/settings)
 * **Anthropic Console users**: confirm your account has the "Claude Code" or "Developer" role. Admins assign this in the Anthropic Console under Settings → Members.
-* **Behind a proxy**: corporate proxies can interfere with API requests. See [network configuration](/en/network-config) for proxy setup.
+* **Behind a proxy**: corporate proxies can interfere with API requests. See [network configuration](./network-config.md) for proxy setup.
 
 ### This organization has been disabled with an active subscription
 
 If you see `API Error: 400 ... "This organization has been disabled"` despite having an active Claude subscription, an `ANTHROPIC_API_KEY` environment variable is overriding your subscription. This commonly happens when an old API key from a previous employer or project is still set in your shell profile.
 
-When `ANTHROPIC_API_KEY` is present and you have approved it, Claude Code uses that key instead of your subscription's OAuth credentials. In non-interactive mode with the `-p` flag, the key is always used when present. See [authentication precedence](/en/authentication#authentication-precedence) for the full resolution order.
+When `ANTHROPIC_API_KEY` is present and you have approved it, Claude Code uses that key instead of your subscription's OAuth credentials. In non-interactive mode with the `-p` flag, the key is always used when present. See [authentication precedence](./authentication.md#authentication-precedence) for the full resolution order.
 
 To use your subscription instead, unset the environment variable and remove it from your shell profile:
 
@@ -833,7 +833,7 @@ az login
 
 If credentials work in your terminal but not in the VS Code or JetBrains extension, the IDE process likely didn't inherit your shell environment. Set the provider environment variables in the IDE's own settings, or launch the IDE from a terminal where they're already exported.
 
-See [Amazon Bedrock](/en/amazon-bedrock), [Google Cloud's Agent Platform](/en/google-vertex-ai), or [Microsoft Foundry](/en/microsoft-foundry) for full provider setup.
+See [Amazon Bedrock](./amazon-bedrock.md), [Google Cloud's Agent Platform](./google-vertex-ai.md), or [Microsoft Foundry](./microsoft-foundry.md) for full provider setup.
 
 ## Still stuck
 
