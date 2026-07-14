@@ -442,4 +442,4 @@ Now that you understand the loop, here's where to go depending on what you're bu
 * **Need tighter control over what the agent can do?** Lock down tool access with [permissions](./permissions.md), and use [hooks](./hooks.md) to audit, block, or transform tool calls before they execute.
 * **Running long or expensive tasks?** Offload isolated work to [subagents](./subagents.md) to keep your main context lean.
 
-For the broader conceptual picture of the agentic loop (not SDK-specific), see [How Claude Code works](../how-claude-code-works.md).
+For the broader conceptual picture of the agentic loop (not SDK-specific), see [How Claude Code works](../how-claude-code-works.md). For a practical guide to designing loops in Claude Code, from turn-based to goal-based and proactive loops, see [Loop engineering: getting started with loops](https://claude.com/blog/getting-started-with-loops) on the blog.
