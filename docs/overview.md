@@ -114,7 +114,7 @@ Claude Code runs on several surfaces: the terminal, IDE extensions, a desktop ap
   </Tab>
 
   <Tab title="Web">
-    Run Claude Code in your browser with no local setup. Kick off long-running tasks and check back when they're done, work on repos you don't have locally, or run multiple tasks in parallel. Available on desktop browsers and the Claude iOS app.
+    Run Claude Code in your browser with no local setup. Kick off long-running tasks and check back when they're done, work on repos you don't have locally, or run multiple tasks in parallel. Available on desktop browsers and [the Claude app for iOS and Android](./mobile.md).
 
     Start coding at [claude.ai/code](https://claude.ai/code).
 
@@ -207,7 +207,7 @@ Here are some of the ways you can use Claude Code:
 
     * Step away from your desk and keep working from your phone or any browser with [Remote Control](./remote-control.md)
     * Message [Dispatch](./desktop.md#sessions-from-dispatch) a task from your phone and open the Desktop session it creates
-    * Kick off a long-running task on the [web](./claude-code-on-the-web.md) or [iOS app](https://apps.apple.com/app/claude-by-anthropic/id6473753684), then pull it into your terminal with `claude --teleport`. Teleport requires a claude.ai subscription.
+    * Kick off a long-running task on the [web](./claude-code-on-the-web.md) or the [Claude mobile app](./mobile.md), then pull it into your terminal with `claude --teleport`. Teleport requires a claude.ai subscription.
     * Hand off a terminal session to the [Desktop app](./desktop.md) with `/desktop` for visual diff review
     * Route tasks from team chat: mention `@Claude` in [Slack](./slack.md) with a bug report and get a pull request back
   </Accordion>
@@ -219,17 +219,17 @@ Each [surface](./glossary.md#surface) connects to the same underlying Claude Cod
 
 Beyond the [Terminal](./quickstart.md), [VS Code](./vs-code.md), [JetBrains](./jetbrains.md), [Desktop](./desktop.md), and [Web](./claude-code-on-the-web.md) surfaces above, Claude Code integrates with CI/CD, chat, and browser workflows:
 
-| I want to...                                                                    | Best option                                                                                                        |
-| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Continue a local session from my phone or another device                        | [Remote Control](./remote-control.md)                                                                               |
-| Push events from Telegram, Discord, iMessage, or my own webhooks into a session | [Channels](./channels.md)                                                                                           |
-| Start a task locally, continue on mobile                                        | [Web](./claude-code-on-the-web.md) or [Claude iOS app](https://apps.apple.com/app/claude-by-anthropic/id6473753684) |
-| Run Claude on a recurring schedule                                              | [Routines](./routines.md) or [Desktop scheduled tasks](./desktop-scheduled-tasks.md)                                 |
-| Automate PR reviews and issue triage                                            | [GitHub Actions](./github-actions.md) or [GitLab CI/CD](./gitlab-ci-cd.md)                                           |
-| Get automatic code review on every PR                                           | [GitHub Code Review](./code-review.md)                                                                              |
-| Route bug reports from Slack to pull requests                                   | [Slack](./slack.md)                                                                                                 |
-| Debug live web applications                                                     | [Chrome](./chrome.md)                                                                                               |
-| Build custom agents for your own workflows                                      | [Agent SDK](./agent-sdk/overview.md)                                                                                |
+| I want to...                                                                    | Best option                                                                                                   |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Continue a local session from my phone or another device                        | [Remote Control](./remote-control.md)                                                                          |
+| Push events from Telegram, Discord, iMessage, or my own webhooks into a session | [Channels](./channels.md)                                                                                      |
+| Start a task locally, continue on mobile                                        | [`claude --cloud`](./claude-code-on-the-web.md#from-terminal-to-web), then the [Claude mobile app](./mobile.md) |
+| Run Claude on a recurring schedule                                              | [Routines](./routines.md) or [Desktop scheduled tasks](./desktop-scheduled-tasks.md)                            |
+| Automate PR reviews and issue triage                                            | [GitHub Actions](./github-actions.md) or [GitLab CI/CD](./gitlab-ci-cd.md)                                      |
+| Get automatic code review on every PR                                           | [GitHub Code Review](./code-review.md)                                                                         |
+| Route bug reports from Slack to pull requests                                   | [Slack](./slack.md)                                                                                            |
+| Debug live web applications                                                     | [Chrome](./chrome.md)                                                                                          |
+| Build custom agents for your own workflows                                      | [Agent SDK](./agent-sdk/overview.md)                                                                           |
 
 ## Next steps
 
