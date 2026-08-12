@@ -108,7 +108,9 @@ Match the message you see in your terminal to a section below.
 | `Error: Workspace not trusted` when starting Remote Control                                                                                                                                   | [Command-line errors](#workspace-not-trusted-when-starting-remote-control)                                                    |
 | `Could not import <server>: <reason>`                                                                                                                                                         | [Command-line errors](#could-not-import-a-server-from-claude-desktop)                                                         |
 | `Error: MCP tool <name> (passed via --permission-prompt-tool) not found`                                                                                                                      | [Command-line errors](#mcp-permission-prompt-tool-not-found)                                                                  |
-| ``Shell command failed for pattern "!`git ... origin/HEAD...`"``                                                                                                                              | [Command-line errors](#security-review-fails-without-origin-head)                                                             |
+| `Shell command failed for pattern "..."`, from `/security-review` or any skill that injects dynamic context                                                                                   | [Command-line errors](#security-review-fails-without-origin-head)                                                             |
+| `Shell command permission check failed for pattern "..."`, from a skill that injects dynamic context                                                                                          | [Command-line errors](#security-review-fails-without-origin-head)                                                             |
+| ``Skill <name> requires bash (`shell: bash` in frontmatter) but Git Bash was not found``                                                                                                      | [Command-line errors](#security-review-fails-without-origin-head)                                                             |
 | `Input must be provided either through stdin or as a prompt argument when using --print`                                                                                                      | [Command-line errors](#input-must-be-provided-when-using-print)                                                               |
 | `Diff is too large for ultrareview` / `PR #<N> is too large for ultrareview`                                                                                                                  | [Command-line errors](#diff-is-too-large-for-ultrareview)                                                                     |
 | `Could not find merge-base with <branch>`                                                                                                                                                     | [Command-line errors](#could-not-find-merge-base-with-the-base-branch)                                                        |
@@ -541,7 +543,11 @@ When the message continues past `Fix external API key` with a description such a
 
 ### Your apiKeyHelper script is failing
 
-The command configured in the [`apiKeyHelper`](/docs/en/settings#available-settings) setting exited with an error, timed out, printed nothing to stdout, or printed output that can't be used as an API key, such as a value with a line break or a character outside printable ASCII. Without a key from the script, the request reaches the API with a placeholder credential, and the API rejects it with `401`.
+Claude Code ran the command in your [`apiKeyHelper`](/docs/en/settings#available-settings) setting and didn't get a key back. Without one, the request reaches the API with a placeholder credential, and the API rejects it with `401`. The `Authentication` panel in the terminal shows which of these happened:
+
+* The command exited with an error or timed out
+* The command printed nothing to stdout
+* The command printed something besides the key, such as a login banner or a log line. The panel shows `returned output that cannot be used as an API key` and says what's wrong, without repeating the output. Before v2.1.227, Claude Code sent whatever the command printed, after trimming surrounding whitespace.
 
 ```text theme={null}
 Your apiKeyHelper script is failing · This usually means you need to re-authenticate with your provider · Run /status to see the script's error output
@@ -555,7 +561,7 @@ Running `/login` doesn't help here: the helper's output [takes precedence](/docs
 
 * Run the command configured in `apiKeyHelper` directly in your shell to reproduce the failure
 * If the command reports an expired session, re-authenticate with your credential provider, for example by signing in to your SSO or secrets vault again
-* Fix the command so it prints the key to stdout and exits with code 0. See [rotate credentials with apiKeyHelper](/docs/en/llm-gateway-connect#rotate-credentials-with-apikeyhelper) for a working setup.
+* Fix the command so it prints only the key to stdout, as a single token of printable ASCII up to 16,384 characters, and exits with code 0. See [rotate credentials with apiKeyHelper](/docs/en/llm-gateway-connect#rotate-credentials-with-apikeyhelper) for a working setup.
 * Run `/status` to confirm `apiKeyHelper` is the active credential source. Each time the command fails, its exit code and error output appear in an `Authentication` panel in the terminal. Before v2.1.212, the panel was titled `Cloud authentication`.
 
 ### Invalid request header value
@@ -656,7 +662,7 @@ The Agent SDK and `-p` non-interactive mode surface this as the `oauth_org_not_a
   Routines are disabled by your organization's policy
 </h3>
 
-An Owner in your Team or Enterprise organization has turned off routines at the organization level. The error appears when you try to create or run a routine, including from `/schedule` and the [Routines](/docs/en/routines) UI on claude.ai/code.
+An Owner in your Team or Enterprise organization has turned off routines at the organization level. The error appears when you try to create or run a routine, for example from the [Routines](/docs/en/routines) UI on claude.ai/code. On Claude Code v2.1.227 or later, the same setting also [hides `/schedule`](/docs/en/routines#troubleshooting) in the CLI.
 
 ```text theme={null}
 Routines are disabled by your organization's policy.
@@ -1032,10 +1038,10 @@ Resuming with `claude --resume` or `claude --continue` reconnects to the [Remote
 **What to do:**
 
 * Run `/remote-control` to retry the connection
-* Start Claude Code without `--resume` to create a new Remote Control session
+* Start a new session with `claude --remote-control` to create a new Remote Control session
 * For other Remote Control startup messages, see [Troubleshoot Remote Control](/docs/en/remote-control#troubleshooting)
 
-You won't see this message when the server confirms the previous session no longer exists; Claude Code creates a new one in that case. Before v2.1.200, any reconnection failure created a new Remote Control session, which left extra sessions in the session list at claude.ai/code.
+When the server reports instead that the previous session no longer exists, Claude Code shows [`Remote Control could not resume the previous session under the current login`](/docs/en/remote-control#remote-control-could-not-resume-the-previous-session-under-the-current-login) rather than this message and doesn't create a replacement session. Earlier versions created a new Remote Control session instead of showing a message: before v2.1.200 on any reconnection failure, and through v2.1.226 when the server reported the session gone.
 
 <h3 id="couldnt-share-the-transcript">
   Couldn't share the transcript
@@ -1201,7 +1207,7 @@ Claude Code sends beta-only fields such as `context_management` and `effort` alo
 **What to do:**
 
 * Configure your gateway to forward the `anthropic-beta` header. See [feature pass-through](/docs/en/llm-gateway-protocol#feature-pass-through) for what gateways must forward.
-* As a fallback, set [`CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`](/docs/en/env-vars) before launching. This disables features that require the beta header so requests succeed through a gateway that cannot forward it.
+* As a fallback, set [`CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`](/docs/en/env-vars) before launching. [Disable pre-release capabilities](/docs/en/llm-gateway-protocol#disable-pre-release-capabilities) covers the exact scope.
 
 <h3 id="theres-an-issue-with-the-selected-model">
   There's an issue with the selected model
@@ -1525,6 +1531,11 @@ Use '--' to separate paths from revisions, like this:
 
 The quoted command varies between runs: the review starts several `git` commands against `origin/HEAD` at once and reports whichever fails first, so you may see `git log` or a different `git diff` in its place. Git creates the ref only when the remote's default branch is both advertised by the remote and covered by your fetch refspec. A full `git clone` of a remote with commits meets both conditions. Single-branch and CI checkouts fetch too narrow a refspec, a server-side HEAD left pointing at a branch nobody pushed advertises no default, and a repository with no `origin` remote, or one you never fetched, provides neither.
 
+Claude Code shows the same error for any skill that [injects dynamic context](/docs/en/skills#when-an-injected-command-fails). A failed injected command aborts that skill's invocation. Two sibling strings fire before the command runs at all:
+
+* `Shell command permission check failed for pattern "..."`: the command's permission check returned something other than allow. Injected commands never prompt, so the invocation aborts without asking you. Pre-approve commands that would otherwise hit the default permission prompt with [`allowed-tools`](/docs/en/skills#pre-approve-tools-for-a-skill). A matching ask or deny rule still aborts the invocation regardless of `allowed-tools`
+* ``Skill <name> requires bash (`shell: bash` in frontmatter) but Git Bash was not found``: the skill's frontmatter demands bash on a machine without it. Install Git for Windows or change the frontmatter to `shell: powershell`. See [How injected commands run](/docs/en/skills#how-injected-commands-run)
+
 **What to do:**
 
 * Create the ref by naming your remote's default branch: `git remote set-head origin <default-branch>`. This works whenever the local tracking ref `origin/<default-branch>` exists. If it doesn't, as in single-branch clones, fetch the branch first: run `git remote set-branches --add origin <branch>`, then `git fetch origin`, then rerun the set-head command. Rerun `/security-review`.
@@ -1623,7 +1634,7 @@ Claude Code exits with code 1 after showing the message. Claude Code [searches t
 Common causes:
 
 * **Mistyped ID**: for a non-interactive run, the ID is the `session_id` field of the [`--output-format json` output](/docs/en/headless#get-structured-output)
-* **Deleted transcript**: Claude Code removes transcripts after the [retention period](/docs/en/sessions#where-transcripts-are-stored), 30 days by default
+* **Deleted transcript**: Claude Code removes transcripts after the [retention period](/docs/en/sessions#where-transcripts-are-stored), 30 days by default, following the [retention sweep rules](/docs/en/claude-directory#cleaned-up-automatically)
 * **Different machine**: Claude Code stores transcripts locally, so resume the session on the machine where it ran
 * **Duplicate copies**: if you copied a project directory under `~/.claude/projects` so two transcripts carry the same ID, Claude Code reports this message rather than resume one copy arbitrarily
 
@@ -1728,16 +1739,18 @@ Agent 'code-reviewer' would be spawned with zero tools — refusing. Its tools l
 
 ### File is covered by a Read deny rule
 
-The Edit tool was called on a path matched by a [`Read` deny rule](/docs/en/permissions#read-and-edit), including creating a new file at that path. Editing rewrites content Claude has to be able to read back, so the call is refused before any file access. The rule blocks the Edit tool only: Write and NotebookEdit aren't covered by `Read` deny rules. Before v2.1.208, only an `Edit` deny rule blocked edits, and a `Read` deny rule alone didn't.
+The Edit or Write tool was called on a path matched by a [`Read` deny rule](/docs/en/permissions#read-and-edit), including creating a new file at that path. Both tools change content Claude has to be able to read back, so Claude Code refuses the call before any file access. NotebookEdit isn't covered by `Read` deny rules. Before v2.1.228, the rule blocked the Edit tool only, and before v2.1.208, only an `Edit` deny rule blocked edits.
 
 ```text theme={null}
 File is covered by a Read deny rule in your permission settings and cannot be edited.
 ```
 
+When Claude Code refuses the Write tool, the message ends `and cannot be written` instead.
+
 **What to do:**
 
-* If Claude should be able to edit the file, remove or narrow the `Read` deny rule in `/permissions` or in [settings](/docs/en/settings#permission-settings)
-* If the file must stay untouched, keep the rule and add an `Edit` deny rule for the same path so the Write and NotebookEdit tools are blocked too
+* If Claude should be able to change the file, remove or narrow the `Read` deny rule in `/permissions` or in [settings](/docs/en/settings#permission-settings)
+* If the file must stay untouched, keep the rule and add an `Edit` deny rule for the same path to block the NotebookEdit tool too
 
 ### Memory index is over its read limit
 

@@ -397,6 +397,8 @@ export CLAUDE_CODE_ENABLE_TELEMETRY=1
 export OTEL_METRICS_EXPORTER=prometheus
 ```
 
+On a [self-hosted environment](/docs/en/self-hosted-environments-reference#pass-through-session-child-metrics), the session binds port 9464 only at the runner's default capacity of one. At higher capacity, the runner re-exposes session counters and gauges on its own `/metrics` endpoint instead.
+
 To send metrics to multiple exporters:
 
 ```bash theme={null}
@@ -1082,6 +1084,30 @@ Logged when conversation compaction completes.
 * `error`: Error message when compaction failed
 * `precompute_reuse`: Only set when `trigger` is `"manual"`. Auto-compaction can prepare a summary in the background before the context window fills, and this attribute records whether `/compact` reused that prepared summary. `"hit"` means it was reused; `"miss_custom_instructions"`, `"miss_hook"`, and `"miss_not_ready"` give the reason a fresh summary was computed instead. Requires Claude Code v2.1.153 or later
 
+#### Subagent completed event
+
+Logged when a [subagent](/docs/en/sub-agents) finishes and returns its result to the conversation that started it. Use it to roll up tool use and run time by subagent type; for token or cost rollups, use the [token counter](#token-counter) and [cost counter](#cost-counter) filtered to `query_source` `"subagent"`, since this event's `total_tokens` covers only the final request. The `"subagent"` category also counts requests from agent-based hooks, which emit no subagent event.
+
+**Event Name**: `claude_code.subagent_completed`
+
+**Attributes**:
+
+* All [standard attributes](#standard-attributes)
+* `event.name`: `"subagent_completed"`
+* `event.timestamp`: ISO 8601 timestamp
+* `event.sequence`: monotonically increasing counter for ordering events within a session
+* `agent_type`: The subagent type. Built-in agent names and agents from official-marketplace plugins appear verbatim; other agent names are replaced with `"custom"` unless `OTEL_LOG_TOOL_DETAILS=1` is set
+* `agent.source`: Where the agent definition came from: `built-in`, `plugin`, or the settings source that defined a custom agent, such as `userSettings` or `projectSettings`
+* `is_built_in`: Whether the subagent is a built-in agent type
+* `is_async`: Whether the subagent ran in the [background](/docs/en/sub-agents#run-subagents-in-foreground-or-background)
+* `total_tokens`: The token footprint of the subagent's final API request: that one request's input, cache creation, cache read, and output tokens, roughly the subagent's context size at completion. Not a sum across the run
+* `total_tool_uses`: Number of tool calls the subagent made across the whole run
+* `duration_ms`: Run time in milliseconds
+* `model`: The model the subagent was resolved to run
+* `final_model`: The model that produced the subagent's final response, which differs from `model` after a mid-run switch such as a fallback. Requires Claude Code v2.1.212 or later
+* `model_swapped`: Whether more than one model served the subagent's requests. Requires Claude Code v2.1.212 or later
+* `plugin_id_hash`, `plugin.name`: Present for plugin-provided agents. Official-marketplace plugin names appear verbatim; other plugin names are replaced with `"third-party"` unless `OTEL_LOG_TOOL_DETAILS=1` is set
+
 #### Feedback survey event
 
 Logged when a session quality survey is shown or answered. See [Session quality surveys](/docs/en/data-usage#session-quality-surveys) for what the surveys collect and how to control them.
@@ -1099,6 +1125,36 @@ Logged when a session quality survey is shown or answered. See [Session quality 
 * `survey_type`: Which survey produced the event. `"session"` is the "How is Claude doing?" rating prompt
 * `response`: The user's selection on `responded` events
 * `enabled_via_override`: `true` when [`CLAUDE_CODE_ENABLE_FEEDBACK_SURVEY_FOR_OTEL`](/docs/en/env-vars) is set. Emitted as a boolean, not a string. Present on `session` survey events. Filter on this attribute to confirm the override is applied across a fleet
+
+#### Retention sweep event
+
+Logged once per run of the retention cleanup sweep, which deletes [session transcripts and other application data](/docs/en/claude-directory#cleaned-up-automatically) older than the [`cleanupPeriodDays`](/docs/en/settings#available-settings) setting. Claude Code runs the sweep in the background at most once per session, and a run that deletes nothing still emits the event. If Claude Code ran the sweep in any session on the same machine in the last 24 hours, it delays this session's sweep by at least 10 minutes, so a session that exits sooner emits nothing. When you run `claude -p` with `--bare`, Claude Code doesn't run the sweep and emits nothing.
+
+Like every OTel event on this page, it goes only to the telemetry backend you configure. Requires Claude Code v2.1.227 or later.
+
+When Claude Code can't safely determine the retention period, it pauses the sweep and emits the event with `result` set to `"skipped"` and a `skip_reason`. When [managed settings](/docs/en/server-managed-settings) set `cleanupPeriodDays`, the managed value pins the retention period and the sweep runs even when a settings file in a lower-priority scope is broken or invalid; a managed settings file that itself can't be read or parsed still pauses the sweep. The deletion counter attributes are present only when `result` is `"complete"`.
+
+**Event Name**: `claude_code.retention_sweep`
+
+**Attributes**:
+
+* All [standard attributes](#standard-attributes)
+* `event.name`: `"retention_sweep"`
+* `event.timestamp`: ISO 8601 timestamp
+* `event.sequence`: monotonically increasing counter for ordering events within a session
+* `result`: `"complete"` when the sweep ran, `"skipped"` when Claude Code paused it
+* `period_days`: The `cleanupPeriodDays` value from merged settings, in days, or `30` when no source sets it. On skipped events, the value the sweep would have used, computed from the settings sources Claude Code could read
+* `used_default`: `"true"` when no readable settings source sets `cleanupPeriodDays`, `"false"` otherwise. On complete events, `"true"` means the 30-day default applied
+* `skip_reason`: Why Claude Code paused the sweep. Present only when `result` is `"skipped"`:
+  * `"user_source_disabled"`: User settings are excluded, for example by the [`--setting-sources`](/docs/en/cli-reference#cli-flags) flag or the SDK's [`settingSources`](/docs/en/agent-sdk/typescript#options) option, and no enabled source provides `cleanupPeriodDays`
+  * `"settings_unknowable"`: A settings file couldn't be read or parsed, so `cleanupPeriodDays` may be set to a value Claude Code can't see
+  * `"settings_invalid_key_set"`: Settings have validation errors and `cleanupPeriodDays` is explicitly set, so falling back to the default could delete files the setting was meant to keep
+* `transcripts_deleted`: Number of session transcripts, the top-level `~/.claude/projects/*/*.jsonl` files, that the sweep deleted
+* `session_files_deleted`: Number of artifacts the session-files sweep deleted: transcripts plus per-session companion files such as sidecars, recordings, and tool results
+* `artifacts_deleted`: Total items the sweep deleted across the data directories it covers, including the session files. Some sweeps count a whole removed directory tree as one item and a few cleanup passes don't contribute to the counter, so treat the value as a floor rather than an exact file count
+* `files_retained_fresh`: Files inspected and left in place because they're still within the retention period. Only per-file sweeps count these, so the value is a floor; a nonzero value is the normal steady state
+* `files_past_cutoff`: Files older than the retention period that the sweep failed to delete, for example because of a permission error or a file held open. A value above zero means files outlived the configured retention period; zero isn't proof that none did, because a failed removal of a whole directory counts toward `error_count` instead
+* `error_count`: Number of errors the sweep encountered while listing or deleting files
 
 ## Interpret metrics and events data
 
