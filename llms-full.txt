@@ -63,8 +63,6 @@ By default, WSL reads only the Linux file path at `/etc/claude-code`. To extend 
 
 Whichever mechanism you choose, managed values take precedence over user and project settings, apart from a few security-sensitive [exceptions](/docs/en/settings#exceptions-to-managed-settings-precedence). Array settings such as `permissions.allow` and `permissions.deny` merge entries from all sources, so developers can extend managed lists but not remove from them. For `fallbackModel` and `availableModels`, the managed value replaces lower layers rather than merging.
 
-See [Server-managed settings](/docs/en/server-managed-settings) and [Settings files and precedence](/docs/en/settings#settings-files).
-
 ### WSL sessions in Claude Code Desktop
 
 On Windows, [Claude Code Desktop can run Code sessions inside a WSL 2 distribution](/docs/en/desktop-wsl). The session's Claude Code process runs inside the distribution, so it resolves managed settings through the WSL discovery path above: Windows-only sources don't reach it unless `wslInheritsWindowsSettings: true` is deployed.
@@ -10013,8 +10011,6 @@ Have these in place before you start:
 | Private-network address                 | At `/login`, Claude Code requires the gateway's hostname or IP address to resolve only to private addresses: RFC 1918, link-local, CGNAT `100.64.0.0/10`, IPv6 ULA `fc00::/7`, or loopback. For a gateway you host, any public address is rejected; see the [threat model](/docs/en/claude-apps-gateway-deploy#threat-model-summary) in the deployment guide. The check runs on each resolved IP, so if any address the name resolves to is public, `/login` rejects the URL. If developer machines route HTTPS through a corporate proxy, sign-in also requires the proxy host to resolve to private addresses; if it doesn't, add the gateway host to `NO_PROXY` so the CLI connects directly. |
 | Linux runtime                           | The gateway server runs only on the native Linux binary. macOS works for local development. Windows isn't supported as a server platform.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
-The gateway server requires the native `claude` binary; download a pinned release as described in [Install Claude Code](/docs/en/setup). The server uses runtime features that aren't available when Claude Code runs under Node. If you see `requires the native binary` at boot, switch to one of the standalone install methods.
-
 ### Steps
 
 <Steps>
@@ -10334,8 +10330,6 @@ Usage telemetry carries the developer's identity, token counts, model, and laten
 The table covers which Claude Code features work when developers connect through the gateway, and what the gateway server itself supports. Where something isn't supported, the Notes column gives the alternative.
 
 The gateway delivers the [`anthropic-beta`](https://platform.claude.com/docs/en/api/beta-headers) values the CLI sends to every upstream, so operators don't maintain a beta allowlist. For Amazon Bedrock, which ignores the header, the gateway moves the values into the request body's `anthropic_beta` field; the other upstreams receive the header as sent.
-
-The CLI's gateway-session beta set omits first-party-only betas and the extended-cache-ttl beta, which is why those rows below show as not available.
 
 | Feature                                                                                                                    | Status                | Notes                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | -------------------------------------------------------------------------------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -10680,12 +10674,7 @@ upstreams:
     auth:
       api_key: ${ANTHROPIC_API_KEY}
 
-# Per-upstream model IDs are keyed on the upstream's `name:`; an upstream
-# without a `name:` defaults to its provider string (e.g. `bedrock`). For a
-# built-in Claude model, an upstream you leave out of the map still serves it
-# with that provider's default ID; list the upstream to override the ID, for
-# example with a provisioned-throughput ARN. Only a custom `id` that isn't a
-# built-in model skips the upstreams missing from its map.
+# Per-upstream model IDs are keyed on the upstream's `name:`.
 models:
   - id: claude-opus-4-8
     label: Claude Opus 4.8
@@ -11301,8 +11290,6 @@ A few providers handle email and group claims differently:
 * **Microsoft Entra ID**: `issuer` = `https://login.microsoftonline.com/<tenant-id>/v2.0`. Entra emits group Object IDs rather than names, so use the GUIDs in `managed.policies.match.groups`, or use App Roles for human-readable names. If your tenant emits roles under `roles` instead of `groups`, set `oidc.groups_claim: roles`.
 * **Google Workspace**: `issuer` = `https://accounts.google.com`. Google's id\_token doesn't carry groups. To use group-based `allowed_groups` or `managed.policies` with Google as the IdP, configure [`oidc.google_groups`](/docs/en/claude-apps-gateway-config#oidc), which looks up each user's groups through the Admin SDK Directory API using a service account with domain-wide delegation. Without it, use `oidc.allowed_email_domains` for membership gating and `managed.policies.match.email_domain` for policy assignment. Google also ignores the standard `offline_access` scope. For refresh tokens, set `oidc.scopes: [openid, profile, email]` and `oidc.extra_auth_params: { access_type: offline, prompt: consent }`.
 
-For support with an identity provider not covered above, see [Troubleshooting](#troubleshooting).
-
 <Warning>
   Refresh tokens let the gateway renew a developer's session silently, without sending the developer back to the browser. They also drive deprovisioning, because when the IdP disables a user, the next refresh fails and the session ends within `ttl_hours`. The gateway requests `offline_access` by default to get a refresh token. If your IdP requires explicit consent for offline access, configure the OAuth client to allow it.
 
@@ -11355,11 +11342,7 @@ Run the gateway as a Deployment, like any stateless service:
 
 For a complete worked example on AWS, covering ECS Fargate or EKS, Amazon RDS, and AWS Secrets Manager, see [Deploy on AWS](/docs/en/claude-apps-gateway-on-aws).
 
-<Note>
-  **Workload identity**
-
-  Prefer the platform's workload identity over static keys: IRSA on EKS for Amazon Bedrock and for Claude Platform on AWS, Workload Identity on GKE for Google Cloud's Agent Platform, and workload identity on AKS for Microsoft Foundry. Set `auth: {}` in the upstream block, or `use_azure_ad: true` for Microsoft Foundry, and the gateway picks up the pod's identity through that provider's default credential chain. For a cross-cloud pairing, such as an Amazon Bedrock upstream on GKE, set explicit credentials in the upstream's `auth` block instead. The [`upstreams` reference](/docs/en/claude-apps-gateway-config#upstreams) has per-platform setup details.
-</Note>
+Prefer the platform's workload identity over static keys; the [`upstreams` reference](/docs/en/claude-apps-gateway-config#upstreams) has per-platform setup details. For a cross-cloud pairing, such as an Amazon Bedrock upstream on GKE, set explicit credentials in the upstream's `auth` block instead.
 
 ### Cloud Run
 
@@ -11370,9 +11353,7 @@ Configure the service as follows:
 * Mount the config as a secret volume
 * Set `min-instances: 1` to avoid a cold OIDC discovery on first request
 
-<Note>
-  For a complete worked example on Google Cloud, covering Cloud Run or GKE, Cloud SQL, and Secret Manager, see [Deploy on Google Cloud](/docs/en/claude-apps-gateway-on-gcp).
-</Note>
+For a complete worked example on Google Cloud, covering Cloud Run or GKE, Cloud SQL, and Secret Manager, see [Deploy on Google Cloud](/docs/en/claude-apps-gateway-on-gcp).
 
 ### Push the gateway URL to developer machines
 
@@ -11399,8 +11380,6 @@ The gateway writes two streams to stderr, both JSON-friendly:
 The gateway serves `GET /healthz` as a liveness probe and `GET /readyz` as a readiness probe; `/readyz` verifies the store is reachable. Both are exempt from `access_control.allow_cidrs`, so probes keep working on a locked-down listener.
 
 The OAuth discovery document at `/.well-known/oauth-authorization-server` also returns `200` only after config load, OIDC discovery, upstream client construction, and Postgres migration all succeed, so it doubles as an end-to-end boot check.
-
-A running gateway also serves a description of the paths and request shapes it accepts at `<public_url>/protocol`, matched to the version you're running. The contents aren't stable across releases.
 
 ### Outage behavior
 
@@ -12040,7 +12019,7 @@ Client telemetry is off by default; configuring `telemetry.forward_to` is what t
 
 Point `telemetry.forward_to` at an OpenTelemetry collector, such as the [AWS Distro for OpenTelemetry (ADOT) collector](https://aws-otel.github.io/), and export from there to Amazon CloudWatch, Amazon Managed Service for Prometheus, or any OTLP backend.
 
-Run the collector as its own internal service reachable over `https://`: the gateway accepts plaintext `http://` only for loopback URLs, and even then its [SSRF guard](/docs/en/claude-apps-gateway-deploy#threat-model-summary) blocks loopback connections by default. Unless `CLAUDE_GATEWAY_ALLOW_LOOPBACK=1` is set in the gateway's environment, a sidecar collector on `http://localhost:4318` passes config validation but receives no traffic, with exports failing as `ECONNREFUSED_SSRF` in the gateway logs, and the gateway rejects an IP-literal URL such as `http://127.0.0.1:4318` at boot. That variable relaxes the loopback block for every operator-configured URL, not only telemetry, so prefer the internal-service pattern and reserve the sidecar-plus-flag setup for tasks whose network is otherwise locked down.
+Run the collector as its own internal service reachable over `https://`; the [`telemetry` reference](/docs/en/claude-apps-gateway-config#telemetry) covers the loopback exception and `CLAUDE_GATEWAY_ALLOW_LOOPBACK`.
 
 ### Gateway logs
 
@@ -12532,8 +12511,6 @@ The gateway holds four spend-related tables; an hourly sweep enforces the retent
 | `spend_limits`     | The configured caps                                                           | Until deleted via the API                                                                               |
 | `admin_audit`      | The mutation trail                                                            | [`admin.audit_retention_days`](/docs/en/claude-apps-gateway-config#admin), default 365                       |
 | `principal_emails` | Each principal's last-seen email, display name, and IdP groups. Contains PII. | [`admin.identity_retention_days`](/docs/en/claude-apps-gateway-config#admin) since last activity, default 90 |
-
-`identity_retention_days` is deliberately shorter than `spend_retention_months`: a deprovisioned identity stops refreshing and ages out, while its anonymous spend counters remain for year-over-year reporting.
 
 When a developer leaves, delete any per-user cap via `DELETE /v1/organizations/spend_limits/{id}`; their spend and identity rows age out on the retention windows above. To erase one person immediately, for offboarding or a data subject access request (DSAR), run `DELETE FROM principal_emails WHERE principal = '<sub>'` directly against the gateway database. That removes the only table holding their email, name, and groups. The `spend` and `admin_audit` rows reference the pseudonymous OIDC `sub` only and age out on their own windows.
 
@@ -23382,15 +23359,17 @@ The empty `matcher` fires on all notification types. To fire only on specific ev
 
 | Matcher                  | Fires when                                                                                               |
 | :----------------------- | :------------------------------------------------------------------------------------------------------- |
-| `permission_prompt`      | Claude needs you to approve a tool use and you haven't typed for about 6 seconds                         |
+| `permission_prompt`      | Claude needs you to approve a tool use and the prompt has waited about six seconds                       |
 | `idle_prompt`            | Claude finished responding about 60 seconds ago and you haven't typed since                              |
 | `auth_success`           | Authentication completes                                                                                 |
-| `elicitation_dialog`     | An MCP server opens an elicitation form and you haven't typed for about 6 seconds                        |
-| `elicitation_url_dialog` | An MCP server asks you to open a browser URL and you haven't typed for about 6 seconds                   |
+| `elicitation_dialog`     | An MCP server opens an elicitation form and you haven't typed for about six seconds                      |
+| `elicitation_url_dialog` | An MCP server asks you to open a browser URL and you haven't typed for about six seconds                 |
 | `elicitation_complete`   | An MCP elicitation form is submitted or dismissed                                                        |
 | `elicitation_response`   | An MCP elicitation response is sent back to the server                                                   |
 | `agent_needs_input`      | A background session starts waiting on your input. Fires only while [agent view](/docs/en/agent-view) is open |
 | `agent_completed`        | A background session finishes or fails. Fires only while [agent view](/docs/en/agent-view) is open            |
+
+Claude Code times `permission_prompt` differently in a terminal and in Claude Desktop, the VS Code extension, and other hosts that answer permission requests through the Agent SDK. See [when each notification type fires](/docs/en/hooks#notification) for both timings.
 
 The `agent_needs_input` and `agent_completed` matchers require Claude Code v2.1.198 or later.
 
@@ -25883,8 +25862,6 @@ The strip is positional, so it only works when the gateway forwards the `system`
 * Forward the `system` array exactly as received, keeping the block first: prepending another system block, reordering the array, or converting it to a single string defeats the strip, and the block then reaches the model and the prompt cache key.
 * Keep the block in its own array entry: the endpoint treats a merged block that starts with the attribution header as attribution in its entirety and drops everything merged into it, including the rest of the system prompt.
 * If your gateway must reshape system content, set [`CLAUDE_CODE_ATTRIBUTION_HEADER=0`](/docs/en/env-vars) so Claude Code omits the block. Anthropic and the cloud providers' Claude endpoints read the block for attribution, so omit it at the client rather than stripping or moving it in the gateway.
-
-Requests that reach the endpoint unmodified are unaffected.
 
 The variable exists for gateway and third-party caching compatibility, not as a privacy control: on a direct connection the full request already goes to the Anthropic API either way. When both of these hold, Claude Code keeps the block on [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) classifier requests even when you set the variable to `0`:
 
@@ -35972,8 +35949,6 @@ Centrally configure Claude Code for your organization through server-delivered s
 
 Server-managed settings let organization Owners centrally configure Claude Code from [**Admin Settings > Claude Code > Managed settings**](https://claude.ai/admin-settings/claude-code) in the claude.ai console. Claude Code clients fetch these settings automatically when users authenticate with an organization OAuth login or a directly configured API key, on platforms where server-managed delivery is supported. See [Platform availability](#platform-availability).
 
-This approach is designed for organizations that don't have device management infrastructure in place, or that need to manage settings for users on unmanaged devices.
-
 <Note>
   Server-managed settings are available for [Claude for Teams](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=server_settings_teams#team-&-enterprise) and [Claude for Enterprise](https://anthropic.com/contact-sales?utm_source=claude_code\&utm_medium=docs\&utm_content=server_settings_enterprise) customers.
 </Note>
@@ -36045,21 +36020,9 @@ If your devices are enrolled in an MDM or endpoint management solution, endpoint
     }
     ```
 
-    To configure the [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) classifier so it knows which repos, buckets, and domains your organization trusts:
+    Because hooks execute shell commands, users see a [security approval dialog](#security-approval-dialogs) before they're applied.
 
-    ```json theme={null}
-    {
-      "autoMode": {
-        "environment": [
-          "Source control: github.example.com/acme-corp and all repos under it",
-          "Trusted cloud buckets: s3://acme-build-artifacts, gs://acme-ml-datasets",
-          "Trusted internal domains: *.corp.example.com"
-        ]
-      }
-    }
-    ```
-
-    Because hooks execute shell commands, users see a [security approval dialog](#security-approval-dialogs) before they're applied. See [Configure auto mode](/docs/en/auto-mode-config) for how the `autoMode` entries affect what the classifier blocks and important warnings about the `environment`, `allow`, `soft_deny`, and `hard_deny` fields.
+    To configure the [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) classifier so it knows which repos, buckets, and domains your organization trusts, deliver an `autoMode` block the same way; see [Configure auto mode](/docs/en/auto-mode-config) for how the `autoMode` entries affect what the classifier blocks and important warnings about the `environment`, `allow`, `soft_deny`, and `hard_deny` fields.
   </Step>
 
   <Step title="Save and deploy">
@@ -46719,14 +46682,12 @@ To confirm the hook fires, point the webhook URL at an endpoint you can watch an
 
 ### Forward notifications to Slack
 
-Use `Notification` hooks to receive system notifications from the agent and forward them to external services. Notifications fire for event types such as:
+Use `Notification` hooks to receive system notifications from the agent and forward them to external services. In SDK sessions, Claude Code runs this hook for the following notification types:
 
-* `permission_prompt` when Claude needs permission
-* `idle_prompt` when Claude is waiting for input
-* `auth_success` when authentication completes
-* `elicitation_dialog`, `elicitation_complete`, and `elicitation_response` for user-prompt elicitation flows
+* [`permission_prompt`](/docs/en/hooks#notification) once a permission request has waited about six seconds on your [`canUseTool` callback](/docs/en/agent-sdk/user-input). Requires TypeScript Agent SDK v0.3.233 or later, or Python Agent SDK v0.2.139 or later
+* `elicitation_complete` and `elicitation_response` for user-prompt elicitation flows
 
-In headless SDK sessions, only the elicitation events `elicitation_complete` and `elicitation_response` fire this hook; the other types are emitted by interactive UI that SDK sessions don't run. Permission requests, for example, go to the `canUseTool` callback instead.
+Claude Code emits the other types, such as `idle_prompt`, `auth_success`, and `elicitation_dialog`, from interactive UI that SDK sessions don't run.
 
 Each notification includes a `message` field with a human-readable description and optionally a `title`.
 
@@ -54455,7 +54416,7 @@ When the store returns the transcript, the SDK writes it into a temporary config
 
 The SDK also seeds the temporary directory with files from your real config directory. What it copies differs by language:
 
-* **TypeScript**: credentials, `.claude.json`, and your user `settings.json`. From `settings.json` it strips the three keys that misbehave under a temporary config directory: `enabledPlugins`, `extraKnownMarketplaces`, and any `CLAUDE_CONFIG_DIR` in the file's `env` block. Auth configured in settings, such as [`apiKeyHelper`](/docs/en/settings#available-settings), works when you resume from the store. Before Agent SDK v0.3.222, the TypeScript SDK copied only credentials and `.claude.json`.
+* **TypeScript**: credentials, `.claude.json`, and your user `settings.json`. From `settings.json` it strips the keys that misbehave under a temporary config directory: `enabledPlugins`, `extraKnownMarketplaces`, its [`additionalMarketplaces`](/docs/en/settings#extraknownmarketplaces) alias, and any `CLAUDE_CONFIG_DIR` in the file's `env` block. Before Agent SDK v0.3.232, the SDK didn't strip the alias. Auth configured in settings, such as [`apiKeyHelper`](/docs/en/settings#available-settings), works when you resume from the store. Before Agent SDK v0.3.222, the TypeScript SDK copied only credentials and `.claude.json`.
 * **Python**: credentials and `.claude.json` only, so an app that authenticates through `apiKeyHelper` in your user `settings.json` fails with `Not logged in` when resuming from a store. An `apiKeyHelper` in managed or project settings still works, because Claude Code reads those files from locations that `CLAUDE_CONFIG_DIR` doesn't affect.
 
 When the store has nothing for the session, the SDK runs under your real config directory instead, and the outcome depends on which option you passed:
@@ -58909,7 +58870,9 @@ The receipt is a snapshot taken at the moment the interrupt is processed, and on
 
 ### `SDKControlGetContextUsageResponse`
 
-Return type of [`getContextUsage()`](#query-object). This is the same payload the `/context` command renders in an interactive session, so alongside the token counts it carries display fields such as `color`, `gridRows`, and `percentage` that `/context` uses to draw its usage grid.
+Return type of [`getContextUsage()`](#query-object). This is the same payload Claude Code renders for the `/context` command in an interactive session, so alongside the token counts it carries display fields such as `color` and `gridRows` that Claude Code uses to draw the `/context` usage grid.
+
+When you send `/context` as a prompt instead of calling the method, Claude Code attaches an [`SDKContextUsage`](#sdkcontextusage) payload to the `context_usage` field of the assistant message that delivers the result. That field requires Agent SDK v0.3.232 or later.
 
 ```typescript theme={null}
 type SDKControlGetContextUsageResponse = {
@@ -59012,7 +58975,9 @@ Read token attribution from the collection fields:
 * `memoryFiles` lists each loaded memory file with its cost.
 * `skills.skillFrontmatter` attributes the skill listing's tokens to each included skill. The per-skill counts measure each skill's listing entry as Claude Code actually sends it, which can be shorter than the skill's full frontmatter. Compare `skills.totalSkills` with `skills.includedSkills` to see whether every discovered skill made it into the listing.
 
-`totalTokens` is the session's current context usage, and `maxTokens` is the window that usage is measured against. That window is the model's context window, or the lower auto-compaction window when one applies. Claude Code leaves the optional `deferredBuiltinTools`, `systemTools`, and `systemPromptSections` diagnostics unset, so expect them to be absent even though the type declares them.
+`totalTokens` is the session's current context usage, and `maxTokens` is the window that usage is measured against. That window is the model's context window, or the lower auto-compaction window when one applies. `rawMaxTokens` carries the same value as `maxTokens`, and `percentage` is `totalTokens` as a rounded percentage of that window.
+
+Claude Code leaves the optional `deferredBuiltinTools`, `systemTools`, and `systemPromptSections` diagnostics unset, so expect them to be absent even though the type declares them.
 
 ### `SDKControlReadFileResponse`
 
@@ -59392,6 +59357,7 @@ type SDKAssistantMessage = {
   error?: SDKAssistantMessageError;
   aborted?: true;
   timestamp?: string;
+  context_usage?: SDKContextUsage;
 };
 ```
 
@@ -59402,6 +59368,8 @@ The `message` field is a [`BetaMessage`](https://platform.claude.com/docs/en/api
 `aborted` is `true` when an interrupt or abort truncated the assistant message before the stream completed: the message has no `stop_reason` and the content may end mid-word. The field is absent on normally completed messages. It requires Agent SDK v0.3.214 or later.
 
 `timestamp` is the ISO 8601 time when the message's content finished generating on the process that produced it. The value comes from that machine's clock, so use it for display only and don't order messages by it. One API turn can produce several assistant messages that share a `message.id`, each with its own `timestamp`. When the field is absent, fall back to the time you received the message.
+
+`context_usage` is a structured copy of the `/context` report, typed as [`SDKContextUsage`](#sdkcontextusage), and requires Agent SDK v0.3.232 or later. When you send `/context` as a prompt, Claude Code delivers the report as an assistant message whose `message.content` holds the markdown table, and attaches `context_usage` to that same message. Claude Code doesn't set the field on any other assistant message, and earlier versions deliver the `/context` table without it, so read the breakdown from the field when it's present and fall back to the markdown text when it isn't.
 
 ### `SDKUserMessage`
 
@@ -59711,6 +59679,94 @@ type SDKPermissionDenial = {
   tool_input: Record<string, unknown>;
 };
 ```
+
+### `SDKContextUsage`
+
+Structured form of the `/context` report, carried as `context_usage` on the [`SDKAssistantMessage`](#sdkassistantmessage) that delivers a `/context` result. Agent SDK v0.3.232 and later export the type. Unlike [`SDKControlGetContextUsageResponse`](#sdkcontrolgetcontextusageresponse), it carries only the data needed to render the usage breakdown, without display fields such as `color` and `gridRows`.
+
+```typescript theme={null}
+type SDKContextUsage = {
+  model: string;
+  total_tokens: number;
+  raw_max_tokens: number;
+  percentage: number;
+  over_limit?: {
+    tokens_over: number;
+    kind: "hard_limit" | "compaction_window";
+  };
+  categories: SDKContextUsageCategory[];
+  mcp_tools: {
+    name: string;
+    server_name: string;
+    tokens: number;
+  }[];
+  memory_files: {
+    path: string;
+    type: string;
+    tokens: number;
+  }[];
+  agents: {
+    agent_type: string;
+    source: string;
+    tokens: number;
+  }[];
+  skills?: {
+    name: string;
+    source: string;
+    plugin_name?: string;
+    tokens: number;
+  }[];
+};
+```
+
+The table lists what Claude Code puts in each field. The fields from `model` through `over_limit` describe the session as a whole, and the collection fields attribute tokens to individual items.
+
+| Field            | Type                                                      | Description                                                                                                                                                                                                                                                                                       |
+| ---------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model`          | `string`                                                  | The main loop's model Claude Code computed the usage for, not a subagent's                                                                                                                                                                                                                        |
+| `total_tokens`   | `number`                                                  | Claude Code's estimate of the tokens in use. Not clamped to the window, so it can exceed `raw_max_tokens` when the session is over the limit                                                                                                                                                      |
+| `raw_max_tokens` | `number`                                                  | The model's context window, or the lower [auto-compact window](/docs/en/model-config#context-window-and-auto-compaction) when one applies, such as one you set or the 200K boundary Claude Code applies to some models with a 1M-token window. Claude Code measures `total_tokens` against this window |
+| `percentage`     | `number`                                                  | `total_tokens` as a rounded percentage of `raw_max_tokens`, so it can exceed 100 when the session is over the limit                                                                                                                                                                               |
+| `over_limit`     | `object`                                                  | Present only when `total_tokens` exceeds `raw_max_tokens`. `tokens_over` is the amount over, and `kind` says how Claude Code resolved the window                                                                                                                                                  |
+| `categories`     | [`SDKContextUsageCategory`](#sdkcontextusagecategory)`[]` | One entry per row of the usage-by-category breakdown                                                                                                                                                                                                                                              |
+| `mcp_tools`      | `object[]`                                                | Tokens attributed to each MCP tool, with its wire name, such as `mcp__linear__create_issue`, and its `server_name`                                                                                                                                                                                |
+| `memory_files`   | `object[]`                                                | Tokens attributed to each loaded memory file, with its `path` and a source label such as `Project` or `User` in `type`                                                                                                                                                                            |
+| `agents`         | `object[]`                                                | Tokens attributed to each custom subagent definition, with a source identifier such as `projectSettings`, `userSettings`, or `plugin`. Built-in subagents aren't listed                                                                                                                           |
+| `skills`         | `object[]`                                                | Tokens attributed to each skill in the skill listing, with a source identifier and, for plugin skills, the plugin's name in `plugin_name`. Absent when no skills contribute tokens                                                                                                                |
+
+`over_limit.kind` records how Claude Code resolved the window, not whether the API accepts the next request:
+
+* `hard_limit`: the window is what Claude Code believes to be the model's own limit, past which the API refuses requests
+* `compaction_window`: the window is a compaction-policy window, which may or may not coincide with the model's limit
+
+Claude Code evolves the type additively, adding new data as optional fields rather than reshaping existing ones. Read the fields you know and ignore any you don't recognize.
+
+### `SDKContextUsageCategory`
+
+One row of the `/context` usage-by-category breakdown.
+
+```typescript theme={null}
+type SDKContextUsageCategory = {
+  name: string;
+  tokens: number;
+  kind: "used" | "free" | "buffer" | "deferred";
+};
+```
+
+The table lists what Claude Code puts in each field of a row.
+
+| Field    | Type     | Description                                                                                              |
+| -------- | -------- | -------------------------------------------------------------------------------------------------------- |
+| `name`   | `string` | The row's display name as `/context` prints it, such as `Messages`. Classify rows by `kind`, not by name |
+| `tokens` | `number` | The row's token count. Rows can carry zero tokens                                                        |
+| `kind`   | `string` | What the row represents: `used`, `free`, `buffer`, or `deferred`                                         |
+
+Each `kind` value says what the row's tokens are:
+
+* `used`: content that occupies the context window
+* `free`: the remaining window
+* `buffer`: the compaction reserve
+* `deferred`: tool schemas Claude Code holds out of the window and excludes from the usage calculation, listed for awareness
 
 ### `SDKMessageOrigin`
 
@@ -67216,6 +67272,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK`             | Set to `1` to disable the non-streaming fallback when a streaming request fails mid-stream. Streaming errors propagate to the retry layer instead. Useful when a proxy or gateway causes the fallback to produce duplicate tool execution                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `CLAUDE_CODE_DISABLE_NOTIFICATION_PRESENCE_CHECK`       | Set to `1` to send the `PushNotification` tool's desktop notification even while you are typing in or focused on the terminal. By default the tool skips both the desktop notification and the [mobile push](/docs/en/remote-control#mobile-push-notifications) when it detects recent keyboard activity or terminal focus. This variable disables only that local check, so the server can still suppress the mobile push when it detects that you are active. Requires Claude Code v2.1.193 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL`  | Set to `1` to disable automatic registration of the official plugin marketplace. Claude Code reads the variable when it is about to register the marketplace, usually during a machine's first interactive launch. If the variable is set at that point, Claude Code skips the registration permanently. Unsetting the variable later doesn't undo the skip. Run `claude plugin marketplace add anthropics/claude-plugins-official` to register the marketplace at any time                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `CLAUDE_CODE_DISABLE_PERMISSION_PROMPT_NOTIFY_HOOKS`    | Set to `1` to stop Claude Code from running your [`Notification` hooks for unanswered permission requests](/docs/en/hooks#notification) in sessions where Claude Code sends them to the Agent SDK's `canUseTool` callback, which is how Claude Desktop and the VS Code extension host Claude Code. Has no effect in terminal sessions. Requires Claude Code v2.1.233 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `CLAUDE_CODE_DISABLE_POLICY_SKILLS`                     | Set to `1` to skip loading skills from the system-wide managed skills directory. Useful for container or CI sessions that should not load operator-provisioned skills                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `CLAUDE_CODE_DISABLE_TERMINAL_TITLE`                    | Set to `1` to disable automatic terminal title updates based on conversation context. In Agent SDK and `claude -p` sessions, this also skips the background small/fast-model request that generates the session title                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `CLAUDE_CODE_DISABLE_THINKING`                          | Set to `1` to omit the `thinking` parameter from API requests entirely. This is a compatibility option for proxies and gateways that reject the parameter. The variable's behavior is unchanged from earlier versions; on models that think by default, omitting the parameter means the model may still think. To explicitly disable [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) on the Anthropic API, use `MAX_THINKING_TOKENS=0` instead, which is also ineffective on Fable 5 since it cannot have thinking turned off. On [third-party providers](/docs/en/third-party-integrations), `0` likewise omits the parameter, so the two variables behave the same there                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -67328,6 +67385,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_TEAM_TEARDOWN_PARK_TIMEOUT_MS`             | Override, in milliseconds, how long a non-interactive session waits at exit for its [agent team](/docs/en/agent-teams) to finish tearing down. Accepts 1000 to 60000; an out-of-range value is ignored and the default of 10000 applies. Requires Claude Code v2.1.206 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `CLAUDE_CODE_TMPDIR`                                    | Override the temp directory used for internal temp files. Claude Code appends `/claude-{uid}/` on Unix or `/claude/` on Windows to this path. Default: `/tmp` on macOS, `os.tmpdir()` on Linux and Windows. As of v2.1.161, on macOS and Linux, [sandboxed](/docs/en/sandboxing) Bash subprocesses receive a short fallback `$TMPDIR` under the system default when your override is a long path, since some tools fail when temp paths get too long. Unsandboxed Bash commands inherit your shell's `$TMPDIR` unchanged. Claude Code's own temp files always use your override                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `CLAUDE_CODE_TMUX_TRUECOLOR`                            | Set to any non-empty value, such as `1`, to allow 24-bit truecolor output inside tmux. **Setting it to `0` or `false` still allows truecolor**, unlike most on/off variables; unset the variable to restore the 256-color clamp. By default, Claude Code clamps to 256 colors when `$TMUX` is set because tmux does not pass through truecolor escape sequences unless configured to. Set this after adding `set -ga terminal-overrides ',*:Tc'` to your `~/.tmux.conf`. See [Terminal configuration](/docs/en/terminal-config) for other tmux settings                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `CLAUDE_CODE_TOOL_MEMORY_LIMIT`                         | On Linux and WSL, set to a size such as `4G` to [cap the memory that Bash and PowerShell tool commands can use](/docs/en/tools-reference#memory-limit-on-linux-and-wsl). Write the size in plain digits, alone for a number of bytes or with a `K`, `M`, `G`, or `T` suffix. Set `0` or `off` to turn the cap off. Once a tool command has turned the cap on or off, a changed value takes effect the next time you launch `claude`. Requires Claude Code v2.1.233 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `CLAUDE_CODE_USER_DIALOG_TIMEOUT_MS`                    | Deadline in milliseconds for dialogs Claude Code forwards to a remote client, such as a [Remote Control](/docs/en/remote-control) or SDK host, and for the approval dialog for a [held cross-session message](/docs/en/cross-session-messaging#control-inbound-messages), before Claude Code cancels them; permission prompts and `AskUserQuestion` questions use their own flows and aren't governed by it. [Control inbound messages](/docs/en/cross-session-messaging#control-inbound-messages) and [non-interactive sessions](/docs/en/cross-session-messaging#non-interactive-sessions) cover the full held-message expiry rules, including the cases where the deadline doesn't apply. Overrides the [`dialogExpiry`](/docs/en/settings#available-settings) setting; `0` or a negative value disables the deadline                                                                                                                                                                                                                                                                                                                                                                    |
 | `CLAUDE_CODE_USE_ANTHROPIC_AWS`                         | Use [Claude Platform on AWS](/docs/en/claude-platform-on-aws)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `CLAUDE_CODE_USE_BEDROCK`                               | Use [Amazon Bedrock](/docs/en/amazon-bedrock)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -67336,6 +67394,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_USE_NATIVE_FILE_SEARCH`                    | Set to `1` to discover custom commands, subagents, and output styles using Node.js file APIs instead of ripgrep. Set this if the bundled ripgrep binary is unavailable or blocked in your environment. Does not affect the Grep or file search tools                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `CLAUDE_CODE_USE_POWERSHELL_TOOL`                       | Controls the PowerShell tool. On Windows without Git Bash, the tool is enabled automatically; set to `0` to disable it. On Windows with Git Bash installed, the tool is rolling out progressively: set to `1` to opt in or `0` to opt out. On Linux, macOS, and WSL, set to `1` to enable it, which requires `pwsh` on your `PATH`. When enabled on Windows, Claude can run PowerShell commands natively instead of routing through Git Bash. See [PowerShell tool](/docs/en/tools-reference#powershell-tool)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `CLAUDE_CODE_USE_VERTEX`                                | Use [Google Cloud's Agent Platform](/docs/en/google-vertex-ai)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `CLAUDE_CODE_WEBFETCH_CACHE_TTL_MS`                     | Set to the number of milliseconds [WebFetch](/docs/en/tools-reference#webfetch-tool-behavior) keeps each fetched URL's response cached. The default is `900000`, which is 15 minutes. Takes plain digits only; `0`, a decimal, or any other spelling keeps the default. Claude Code reads the value once per launch, so a change in a settings `env` block applies when you next launch `claude`. Requires Claude Code v2.1.233 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `CLAUDE_CODE_WORKFLOW_PREFIX_STAGGER_MS`                | Upper bound in milliseconds on how long a [workflow](/docs/en/workflows) agent waits for a same-prefix sibling's first response to begin before sending its own first request. When a fan-out starts several agents that share a [prompt-cache prefix](/docs/en/workflows#prompt-caching-in-a-fan-out), Claude Code holds all but the first agent for up to this long so the rest read the cached prefix instead of each processing it uncached. Default `5000`. Set to `0` to disable the wait. When `DISABLE_PROMPT_CACHING` is set, agents never wait. Requires Claude Code v2.1.229 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `CLAUDE_CONFIG_DIR`                                     | Override the configuration directory (default: `~/.claude`). All settings, session history, and plugins are stored under this path, as are credentials on Linux and Windows; on macOS, credentials are in the system Keychain. Useful for running multiple accounts side by side: for example, `alias claude-work='CLAUDE_CONFIG_DIR=~/.claude-work claude'`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `CLAUDE_DISABLE_ADOPT`                                  | Set to `1` to stop in-flight background work instead of carrying it over when you background a session by pressing `←` or with [`/background`](/docs/en/agent-view#from-inside-a-session). Claude Code asks you to confirm before backgrounding, then stops the tasks that would otherwise carry over. Requires Claude Code v2.1.195 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -70031,7 +70090,7 @@ If the deferred tool is no longer available when you resume, the process exits w
 Runs when Claude Code is about to ask you for permission. In sessions that can't show a prompt, such as background subagents in [non-interactive mode](/docs/en/headless), Claude Code still runs these hooks, and if no hook returns a decision, it denies the tool call.
 Use [PermissionRequest decision control](#permissionrequest-decision-control) to allow or deny on behalf of the user.
 
-Use this event when you need a signal the moment Claude asks for permission. The [Notification](#notification) event's `permission_prompt` type reaches you only after about 6 seconds without terminal input.
+Use this event when you need a signal the moment Claude asks for permission. The [Notification](#notification) event's `permission_prompt` type reaches you only after the prompt has waited about six seconds.
 
 Matches on tool name, same values as PreToolUse.
 
@@ -70365,11 +70424,11 @@ You receive these hook events even with desktop notifications turned off: the `p
 
 | Matcher                  | When it fires                                                                                                          |
 | :----------------------- | :--------------------------------------------------------------------------------------------------------------------- |
-| `permission_prompt`      | Claude needs you to approve a tool use and you haven't typed for about 6 seconds                                       |
+| `permission_prompt`      | Claude needs you to approve a tool use and the prompt has waited about six seconds                                     |
 | `idle_prompt`            | Claude finished responding about 60 seconds ago and you haven't typed since                                            |
 | `auth_success`           | Authentication completes                                                                                               |
-| `elicitation_dialog`     | An MCP server opens an elicitation form and you haven't typed for about 6 seconds                                      |
-| `elicitation_url_dialog` | An MCP server asks you to open a browser URL and you haven't typed for about 6 seconds                                 |
+| `elicitation_dialog`     | An MCP server opens an elicitation form and you haven't typed for about six seconds                                    |
+| `elicitation_url_dialog` | An MCP server asks you to open a browser URL and you haven't typed for about six seconds                               |
 | `elicitation_complete`   | An MCP elicitation form is submitted or dismissed                                                                      |
 | `elicitation_response`   | An MCP elicitation response is sent back to the server                                                                 |
 | `agent_needs_input`      | A background session starts waiting on your input. Fires only while [agent view](/docs/en/agent-view) is open in a terminal |
@@ -70378,12 +70437,20 @@ You receive these hook events even with desktop notifications turned off: the `p
 The `agent_needs_input` and `agent_completed` types require Claude Code v2.1.198 or later.
 
 <Note>
-  The `permission_prompt`, `idle_prompt`, `elicitation_dialog`, and `elicitation_url_dialog` types share their timing with desktop notifications, so you only see them when you appear to be away from the terminal:
+  The `permission_prompt`, `idle_prompt`, `elicitation_dialog`, and `elicitation_url_dialog` types share their timing with desktop notifications, so in terminal sessions you only see them when you appear to be away from the terminal:
 
-  * Expect `permission_prompt` once you haven't typed for about 6 seconds. The timer starts when the permission prompt appears, and each keystroke defers it. To run a hook immediately on every permission ask, use [PermissionRequest](#permissionrequest) instead.
+  * Expect `permission_prompt` once you haven't typed for about six seconds. The timer starts when the permission prompt appears, and each keystroke defers it. To run a hook immediately on every permission ask, use [PermissionRequest](#permissionrequest) instead.
   * Expect `idle_prompt` about 60 seconds after Claude finishes responding, and only if you haven't typed since.
-  * Expect `elicitation_dialog` for an elicitation form, or `elicitation_url_dialog` for a browser URL request, once you haven't typed for about 6 seconds. Both share the same 6-second gate as `permission_prompt`: the timer starts when the dialog appears, and each keystroke defers it.
+  * Expect `elicitation_dialog` for an elicitation form, or `elicitation_url_dialog` for a browser URL request, once you haven't typed for about six seconds. Both share the same six-second gate as `permission_prompt`: the timer starts when the dialog appears, and each keystroke defers it.
 </Note>
+
+Claude Code times `permission_prompt` differently in sessions where it sends permission requests to the Agent SDK's [`canUseTool` callback](/docs/en/agent-sdk/user-input), which is how Claude Desktop and the VS Code extension host Claude Code:
+
+* Expect `permission_prompt` about six seconds after Claude asks for permission. Claude Code doesn't defer it while you type.
+* If you or a [PermissionRequest](#permissionrequest) hook answer sooner, Claude Code doesn't run `permission_prompt`.
+* Set [`CLAUDE_CODE_DISABLE_PERMISSION_PROMPT_NOTIFY_HOOKS`](/docs/en/env-vars) to `1` to turn `permission_prompt` off in these sessions.
+
+Before v2.1.233, `permission_prompt` didn't fire in these sessions.
 
 Use separate matchers to run different handlers depending on the notification type. This configuration triggers a permission-specific alert script when Claude needs permission approval and a different notification when Claude has been idle:
 
@@ -74016,7 +74083,7 @@ The following configuration types are loaded from `--add-dir` directories:
 | [Skills](/docs/en/skills) in `.claude/skills/`                                             | Yes, with live reload                                                                                                                                              |
 | [Command files](/docs/en/skills#where-skills-live) in `.claude/commands/`                  | Yes. When the added directory and your project both define a command with the same name, Claude Code runs your project's command                                   |
 | [Subagents](/docs/en/sub-agents) in `.claude/agents/`                                      | Yes                                                                                                                                                                |
-| [Settings](/docs/en/settings) in `.claude/settings.json` and `.claude/settings.local.json` | `enabledPlugins` and `extraKnownMarketplaces` keys only                                                                                                            |
+| [Settings](/docs/en/settings) in `.claude/settings.json` and `.claude/settings.local.json` | `enabledPlugins` and [`extraKnownMarketplaces`](/docs/en/settings#extraknownmarketplaces) keys only                                                                     |
 | [CLAUDE.md](/docs/en/memory) files, `.claude/rules/`, and `CLAUDE.local.md`                | Only when `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` is set. `CLAUDE.local.md` additionally requires the `local` setting source, which is enabled by default |
 
 Claude Code discovers output styles from the current working directory and its parents, your user directory at `~/.claude/`, and managed settings. Hooks and other `.claude/settings.json` keys load from the current working directory's `.claude/` folder with no parent-directory fallback, alongside your user `~/.claude/settings.json` and managed settings. `.claude/settings.local.json` loads from the git repository root instead, even when you start Claude Code in a subdirectory; before v2.1.211, it too loaded only from the current working directory. [Agent SDK](/docs/en/agent-sdk/claude-code-features#control-filesystem-settings-with-settingsources) sessions load it from the working directory in all versions.
@@ -77163,7 +77230,7 @@ The following are the limitations in this release, with workarounds where one ex
 
 ### Connector traffic leaves your network
 
-Connector tools, such as GitHub, Slack, Linear, and the other claude.ai connectors, are called from Anthropic's side rather than from your runner, so when a self-hosted session uses a connector, that traffic routes through `api.anthropic.com`, not from inside your network boundary. To keep a connector out of self-hosted sessions, filter it like any other MCP server with the [`allowedMcpServers` and `deniedMcpServers` policy settings](/docs/en/managed-mcp#policy-based-control-with-allowlists-and-denylists), which apply to server-delivered connectors too. An allowlist you deploy for other servers also blocks delivered connectors. To keep connectors available alongside a URL-based allowlist, add entries that match the Anthropic proxy paths for server-delivered MCP servers:
+Anthropic calls connector tools, such as GitHub, Slack, Linear, and the other claude.ai connectors, from its own infrastructure rather than from your runner, so when Claude uses a connector in a self-hosted session, that traffic goes through `api.anthropic.com` rather than originating inside your network boundary. To keep a connector out of self-hosted sessions, filter it like any other MCP server with the [`allowedMcpServers` and `deniedMcpServers` policy settings](/docs/en/managed-mcp#policy-based-control-with-allowlists-and-denylists). Claude Code applies these settings to the connectors Anthropic delivers as well as to the servers you configure, so if you deploy an allowlist for other servers, Claude Code blocks delivered connectors too. To keep connectors available alongside a URL-based allowlist, add entries that match the Anthropic proxy paths for delivered connectors:
 
 * `https://api.anthropic.com/v2/ccr-sessions/*`
 * `https://api.anthropic.com/v1/code/sessions/*`
@@ -78454,7 +78521,7 @@ This tolerance applies only to managed settings. User, project, and local settin
 | `spinnerVerbs`                     | Customize the action verbs shown while a turn is in progress. Set `mode` to `"replace"` to use only your verbs, or `"append"` to add them to the defaults                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `{"mode": "append", "verbs": ["Pondering", "Crafting"]}`                                                                        |
 | `sshConfigs`                       | SSH connections to show in the [Desktop](/en/desktop#pre-configure-ssh-connections-for-your-team) environment dropdown. Each entry requires `id`, `name`, and `sshHost`; `sshPort`, `sshIdentityFile`, and `startDirectory` are optional. When set in managed settings, connections are read-only for users. Read from managed and user settings only                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `[{"id": "dev-vm", "name": "Dev VM", "sshHost": "user@dev.example.com"}]`                                                       |
 | `statusLine`                       | Configure a custom status line to display context. The object's optional `padding`, `refreshInterval`, and `hideVimModeIndicator` fields control spacing, periodic re-runs, and whether the built-in vim mode indicator below the prompt is hidden. See [`statusLine` documentation](/en/statusline#manually-configure-a-status-line)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `{"type": "command", "command": "~/.claude/statusline.sh"}`                                                                     |
-| `strictKnownMarketplaces`          | (Managed settings only) Allowlist of plugin marketplace sources. Undefined = no restrictions, empty array = lockdown. Enforced on marketplace add and on plugin install, update, refresh, and auto-update, so a marketplace added before the policy was set cannot be used to fetch plugins. See [Managed marketplace restrictions](/en/plugin-marketplaces#managed-marketplace-restrictions)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `[{ "source": "github", "repo": "acme-corp/plugins" }]`                                                                         |
+| `strictKnownMarketplaces`          | (Managed settings only) Allowlist of plugin marketplace sources. Undefined = no restrictions, empty array = lockdown. Enforced on marketplace add and on plugin install, update, refresh, and auto-update, so a marketplace added before the policy was set cannot be used to fetch plugins. The [`allowedMarketplaces`](#marketplace-key-aliases) alias requires Claude Code v2.1.232 or later. See [Managed marketplace restrictions](/en/plugin-marketplaces#managed-marketplace-restrictions)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `[{ "source": "github", "repo": "acme-corp/plugins" }]`                                                                         |
 | `strictPluginOnlyCustomization`    | (Managed settings only) Block skills, agents, hooks, and MCP servers from user and project sources, so they can only come from plugins or managed settings. `true` locks all four surfaces; an array locks only the named ones. See [`strictPluginOnlyCustomization`](#strictpluginonlycustomization)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `["skills", "hooks"]`                                                                                                           |
 | `subagentStatusLine`               | Configure a custom command that rewrites rows in the subagent task display. See [Subagent status lines](/en/statusline#subagent-status-lines)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `{"type": "command", "command": "~/.claude/subagent-statusline.sh"}`                                                            |
 | `switchModelsOnFlag`               | **Default**: `true`. When a [safety classifier flags a request](/en/model-config#automatic-model-fallback), switch to the fallback model automatically and continue the session. Set to `false` to pause instead and choose between switching and editing the prompt. See [Ask before switching](/en/model-config#ask-before-switching). Appears in `/config` as **Switch models when a message is flagged**. Requires Claude Code v2.1.170 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `false`                                                                                                                         |
@@ -79080,9 +79147,22 @@ Use `source: 'settings'` to declare a small set of plugins inline without settin
 }
 ```
 
+<a />
+
+##### Marketplace key aliases
+
+On Claude Code v2.1.232 or later, you can also write `extraKnownMarketplaces` as `additionalMarketplaces` and `strictKnownMarketplaces` as `allowedMarketplaces`, and Claude Code treats each alias as follows.
+
+* Earlier versions ignore the alias, so keep the canonical spelling in a file that older versions also read. A managed settings file for a fleet with mixed Claude Code versions is one such file.
+* In any settings file that accepts the canonical key, Claude Code reads the alias exactly as it reads the canonical key.
+* Claude Code may rewrite `additionalMarketplaces` to `extraKnownMarketplaces` when it updates the file.
+* If you set both spellings to values in one file, Claude Code uses the canonical value and ignores the alias.
+
 #### `strictKnownMarketplaces`
 
 **Managed settings only**: Controls which plugin marketplaces users are allowed to add and install plugins from. This setting can only be configured in [managed settings](/en/settings#settings-files) and provides administrators with strict control over marketplace sources.
+
+You can also write this key as `allowedMarketplaces`. [Marketplace key aliases](#marketplace-key-aliases) describes how Claude Code treats the alias and which version accepts it.
 
 **Managed settings file locations**:
 
@@ -81045,6 +81125,16 @@ The result of a command moved to the background states what happened:
 * When the timeout triggers the move, the result reports it explicitly: `Command did not complete within its 120s timeout and was moved to the background`, with the seconds matching the timeout that applied, followed by the task ID and the path of the file the output is being written to.
 * A `cd`, `pushd`, `popd`, or `chdir` inside a command that is moved to the background never carries over: the result states `Session cwd remains <dir>; directory changes made by the backgrounded command do not apply to subsequent commands.`, so Claude doesn't act on a directory change that didn't happen.
 
+### Memory limit on Linux and WSL
+
+On Linux and WSL, set [`CLAUDE_CODE_TOOL_MEMORY_LIMIT`](/docs/en/env-vars#variables) to a size such as `4G` to cap the memory that Bash and PowerShell tool commands can use, so one runaway build can't take the memory the rest of the session needs. Requires Claude Code v2.1.233 or later.
+
+* Write the size as a number of bytes or with a `K`, `M`, `G`, or `T` suffix. Set `0`, `off`, `false`, `no`, or `none` to turn the cap off. Claude Code ignores any other value it can't read as a size, such as `4e9`.
+* Claude Code counts all of a session's Bash and PowerShell commands against the one cap, not each command on its own.
+* Claude Code applies the cap with a memory cgroup. When it can't set the cgroup up, commands run without a cap, and the debug log from `claude --debug` says why.
+* After a Bash or PowerShell tool command has turned the cap on, or has turned it off because of an off value or a failed cgroup setup, Claude Code holds that result until you relaunch. To apply a changed or removed value, or a fixed setup, launch `claude` again.
+* When commands can't stay under the cap, the kernel kills a command, and nothing in its result names the cap.
+
 ## Edit tool behavior
 
 The Edit tool performs exact string replacement. It takes an `old_string` and a `new_string` and replaces the first with the second. It doesn't use regex or fuzzy matching.
@@ -81299,7 +81389,7 @@ A few behaviors shape the response Claude receives:
 
 * HTTP URLs are automatically upgraded to HTTPS.
 * Large pages are truncated to a fixed character limit before processing.
-* Responses are cached for 15 minutes, so repeated fetches of the same URL return quickly.
+* WebFetch caches each response for 15 minutes by default, so repeated fetches of the same URL return quickly. On Claude Code v2.1.233 or later, set [`CLAUDE_CODE_WEBFETCH_CACHE_TTL_MS`](/docs/en/env-vars#variables) to change how long WebFetch keeps each response.
 * When a URL redirects to a different host, WebFetch returns a text result that names the original URL and the redirect target instead of following it. Claude then fetches the new URL with a second WebFetch call.
 * When the extraction step hits an overloaded API, Claude Code retries it with backoff; a fetch that still fails returns an error result. Before v2.1.212, the API error text could reach Claude as if it were the extracted page content.
 
