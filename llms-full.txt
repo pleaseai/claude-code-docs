@@ -621,7 +621,7 @@ Agent teams are experimental. Current limitations to be aware of:
 * **Shutdown can be slow**: teammates finish their current request or tool call before shutting down, which can take time.
 * **One team per session**: a session has exactly one team, scoped to that session. You can't create additional named teams or share a team across sessions.
 * **No nested teams**: teammates cannot spawn their own teammates. Only the lead can manage the team.
-* **No background subagents from in-process teammates**: an in-process teammate's own subagents run in the foreground. Asking for a background one, whether with `run_in_background` or a subagent definition that sets `background: true`, returns an error, because a teammate's background work can't outlive the lead's process. Subagents launched from the main conversation follow the [background default](/docs/en/sub-agents#run-subagents-in-foreground-or-background).
+* **No background subagents from in-process teammates**: an in-process teammate's own subagents run in the foreground, because a teammate's background work can't outlive the lead's process. Claude Code returns an error when a teammate spawns a subagent whose definition sets `background: true`. A teammate's `run_in_background: true` request also fails, either with an error or by running silently in the foreground, as described in [how Claude Code picks foreground or background](/docs/en/sub-agents#run-subagents-in-foreground-or-background). Subagents launched from the main conversation follow the [background default](/docs/en/sub-agents#run-subagents-in-foreground-or-background).
 * **Lead is fixed**: the main session is the lead for its lifetime. You can't promote a teammate to lead or transfer leadership.
 * **Permissions set at spawn**: all teammates start with the lead's permission mode. You can change individual teammate modes after spawning, but you can't set per-teammate modes at spawn time.
 * **Split panes require tmux or iTerm2**: the default in-process mode works in any terminal. Split-pane mode isn't supported in VS Code's integrated terminal, Windows Terminal, or Ghostty.
@@ -1963,7 +1963,7 @@ For details, see [Amazon Bedrock IAM documentation](https://docs.aws.amazon.com/
 
 ## 1M token context window
 
-Claude Sonnet 5, Opus 4.6 and later, and Sonnet 4.6 support the [1M token context window](https://platform.claude.com/docs/en/build-with-claude/context-windows#context-window-sizes-by-model) on Amazon Bedrock. Sonnet 5 is served through the [Mantle endpoint](#use-the-mantle-endpoint) and always runs with the 1M window, with no `[1m]` variant to select. For the other models, Claude Code automatically enables the extended context window when you select a 1M model variant.
+Claude Sonnet 5, Opus 4.6 and later, and Sonnet 4.6 support the [1M token context window](https://platform.claude.com/docs/en/build-with-claude/context-windows#context-window-sizes-by-model) on Amazon Bedrock. Sonnet 5 always runs with the 1M window on both the Invoke API and the [Mantle endpoint](#use-the-mantle-endpoint), with no `[1m]` variant to select. For the other models, Claude Code automatically enables the extended context window when you select a 1M model variant.
 
 The [setup wizard](#sign-in-with-bedrock) offers a 1M context option when it pins models. To enable it for a manually pinned model instead, append `[1m]` to the model ID. See [Pin models for third-party deployments](/docs/en/model-config#pin-models-for-third-party-deployments) for details.
 
@@ -3756,6 +3756,28 @@ Release notes for Claude Code, including new features, improvements, and bug fix
 This page is generated from the [CHANGELOG.md on GitHub](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md).
 
 Run `claude --version` to check your installed version.
+
+<Update label="2.1.235" description="August 18, 2026">
+  * Added an optional `spellcheck` setting that underlines misspelled words in the prompt input as you type, using your installed `aspell`, `hunspell`, or `ispell`
+  * Fixed whole-prompt-cache invalidation when a language server disconnected or reconnected mid-session
+  * Fixed nested markdown list items misaligning at depth 3+ and added a hanging indent to wrapped list items in the terminal UI
+  * Fixed prompt input highlights (slash commands, keywords, mentions) appearing shifted by one or more characters in some multi-line prompts
+  * Fixed Shift+Tab inside the permission prompt's comment field approving the edit and granting session-wide edit permission instead of closing the field
+  * Fixed the Agent tool advertising a general-purpose default in sessions where that agent is unavailable: an omitted `subagent_type` there now gets a clear error listing the available agents
+  * Fixed notebook cell delete/replace approval dialogs silently omitting the existing cell content when the notebook or cell could not be read; the dialog now says why
+  * Fixed slash commands run while Claude is responding showing HTML entities instead of the actual characters
+  * Fixed the prompt footer not showing the "Update installed" restart notice after a background auto-update
+  * Fixed the expanded task list (`ctrl+t`) always starting collapsed when resuming or relaunching into a session that still has open tasks
+  * Improved memory and CPU usage while cloud sessions such as `/ultrareview` or `/autofix-pr` run in the background — their event streams are no longer re-scanned and re-rendered on every update
+  * Improved permission dialogs: display text and "don't ask again" options now always match what a grant would cover, and "don't ask again" is withheld when contents cannot be fully displayed
+  * Improved the embedded `grep` in native macOS/Linux builds: pathological patterns now fail fast instead of exhausting memory, and `-m N` with `-A/-C` prints correct context
+  * Improved the context-limit error to say when auto-compact is off and point to `/config` to re-enable it
+  * Vim mode: NORMAL mode and cursor position are now preserved when toggling the detailed transcript (ctrl+o) or closing a panel
+  * Dialogs: arrow keys and Enter pressed in quick succession now select the option you navigated to instead of the previously highlighted one
+  * `SendMessage` now refuses messages too large for cross-session delivery up front instead of silently dropping them
+  * Remote Control: `claude rc` now applies the same enterprise-gateway availability check as interactive startup
+  * \[VSCode] Fixed focus jumping between open Claude tabs on its own when a window with several Claude panels is restored or reloaded
+</Update>
 
 <Update label="2.1.234" description="August 17, 2026">
   * Added the optional `CLAUDE_CODE_PROJECT_DIR_NAME` environment variable: hosts that give each session its own config directory can choose a short name for the per-project transcript directory
@@ -15268,7 +15290,7 @@ For what the message Claude writes looks like when it arrives, including an exam
 
 The receiving Claude reads the message between tool calls during an active turn, so a running tool is never interrupted. When the receiving session is idle, Claude Code starts a new turn with the message.
 
-Between two ordinary interactive sessions with default settings, Claude Code delivers the message. Delivery isn't guaranteed in every configuration, though. The receiving session checks each arriving message against its own [inbound controls](#control-inbound-messages), and the check ends in one of three outcomes:
+Between two ordinary interactive sessions with default settings, Claude Code delivers the message. Delivery isn't guaranteed in every configuration, though. Claude Code refuses a message [over the size cap](#limitations) in the sending session, before it leaves. The receiving session checks each arriving message against its own [inbound controls](#control-inbound-messages), and the check ends in one of three outcomes:
 
 * **Delivered**: Claude Code passes the message to the receiving Claude.
 * **Held**: Claude Code sets the message aside undelivered. A held message reaches Claude only when you approve it or a later mode or settings change allows it.
@@ -15470,6 +15492,7 @@ In a session with messaging, `/status` also shows a `Peer address` row with the 
 The limits here are properties of the messaging channel itself and apply wherever the feature runs. For platform and provider gaps, see [Availability](#availability) instead.
 
 * **Plain text only**: Claude sends only plain text across sessions. Structured [agent team](/docs/en/agent-teams) protocol messages stay within a team.
+* **Same-machine message size is capped**: Claude Code refuses a message to a session on this machine once its serialized form passes about a million characters. The refusal [names the exact sizes](/docs/en/errors#message-too-large-for-cross-session-delivery). Nothing reaches the receiving session.
 * **Message loops are throttled**: Claude Code rate-limits repeated messages per sender, drops identical repeats arriving within a short window, and caps accepted messages waiting for Claude to read them at 50 per session. A message loop between two sessions therefore stops on its own.
 
 ## Related resources
@@ -15659,7 +15682,7 @@ Adherence drops when an instruction is vague enough to interpret multiple ways, 
 
 Settings merge across managed, user, project, and local scopes. Managed settings apply first when present. Among the rest, the closer scope overrides the broader one in the order local, then project, then user. Some settings can also be set by command-line flags or [environment variables](/docs/en/env-vars), which act as another override layer. When a setting doesn't seem to apply, the value you set is usually being overridden by another scope or an environment variable.
 
-Run `/doctor` to check your configuration and installation. It reports what it finds, including invalid settings files, duplicate installations, unused extensions, and checked-in `CLAUDE.md` content Claude can derive from the codebase, then proposes fixes it applies only after you confirm. The `CLAUDE.md` trim check requires Claude Code v2.1.206 or later. Before v2.1.205, `/doctor` opened a read-only diagnostics screen and pressing `f` sent the report to Claude to fix.
+Run [`/doctor`](/docs/en/commands#all-commands) to find invalid settings files.
 
 From the terminal, `claude doctor` prints read-only installation and settings diagnostics without starting a session.
 
@@ -15724,7 +15747,7 @@ Most configuration surprises trace back to a small set of location and syntax ru
 | Subdirectory `CLAUDE.md` instructions seem ignored                   | Subdirectory files load on demand, not at session start                                                                                                                                                                                      | They load when Claude reads a file in that directory with the Read tool, not at launch and not when writing or creating files there. See [how CLAUDE.md files load](/docs/en/memory#how-claude-md-files-load).                                                    |
 | Subagent ignores `CLAUDE.md` instructions                            | The built-in Explore and Plan agents skip `CLAUDE.md`. Custom subagents load it the same way the main conversation does                                                                                                                      | For Explore or Plan, restate the instruction in your delegating prompt. For a custom subagent, put critical instructions in the agent file body, which becomes the agent's system prompt. See [what loads at startup](/docs/en/sub-agents#what-loads-at-startup). |
 | Cleanup logic never runs at session end                              | No `SessionEnd` hook configured                                                                                                                                                                                                              | Add a `SessionEnd` hook in `settings.json`. See the [hook events list](/docs/en/hooks#hook-events).                                                                                                                                                               |
-| MCP servers in `.mcp.json` never load                                | File is under `.claude/` or uses Claude Desktop's config format                                                                                                                                                                              | Project MCP config goes at the repository root as `.mcp.json`, not inside `.claude/`. See [MCP configuration](/docs/en/mcp).                                                                                                                                      |
+| MCP servers in `.mcp.json` never load                                | File is under `.claude/`, or its servers sit under a top-level `servers` key, as in VS Code's `mcp.json`, instead of `mcpServers`                                                                                                            | Project MCP config goes at the repository root as `.mcp.json`, not inside `.claude/`, with servers under the `mcpServers` key. See [MCP configuration](/docs/en/mcp).                                                                                             |
 | MCP servers added under `mcpServers` in `settings.json` never appear | `settings.json` does not read an `mcpServers` key                                                                                                                                                                                            | Define project servers in `.mcp.json` at the repository root, or run `claude mcp add --scope user` for user-scoped servers. See [MCP configuration](/docs/en/mcp).                                                                                                |
 | Project MCP server added but doesn't appear                          | The one-time approval prompt was dismissed                                                                                                                                                                                                   | Project-scoped servers require approval. Run `/mcp` to see status and approve.                                                                                                                                                                               |
 | MCP server fails to start from some directories                      | `command` or `args` uses a relative file path                                                                                                                                                                                                | Use absolute paths for local scripts. Executables on your `PATH` like `npx` or `uvx` work as-is.                                                                                                                                                             |
@@ -16006,7 +16029,7 @@ The prompt box supports two ways to bring in external context:
 
 ### Choose a permission mode
 
-Permission modes control how much autonomy Claude has during a session: whether it asks before editing files, running commands, or both. You can switch modes at any time using the mode selector next to the send button. To approve each change yourself, switch to Manual.
+Permission modes control how much autonomy Claude has during a session: whether it asks before editing files, running commands, or both. You can switch permission modes at any time using the mode selector next to the send button. To approve each change yourself, switch to Manual.
 
 To set a default mode for new local sessions, add `permissions.defaultMode` to your [settings file](/docs/en/settings#settings-files). The desktop app reads the same settings files as the CLI. A mode you pick in the selector is remembered per folder and takes precedence over `defaultMode` for that folder, except Plan, which applies to the current session only.
 
@@ -16174,7 +16197,7 @@ Press **Cmd+/** on macOS or **Ctrl+/** on Windows to see all shortcuts available
 | `Cmd` `Shift` `E`                     | Open effort menu                 |
 | `1`–`9`                               | Select item in an open menu      |
 
-These shortcuts apply only to the Code tab. The terminal-based [interactive mode shortcuts](/docs/en/interactive-mode#keyboard-shortcuts), such as `Shift+Tab` to cycle modes, do not apply in Desktop.
+These shortcuts apply only to the Code tab. The terminal-based [interactive mode shortcuts](/docs/en/interactive-mode#keyboard-shortcuts), such as `Shift+Tab` to cycle permission modes, do not apply in Desktop.
 
 ### Check usage
 
@@ -18289,8 +18312,12 @@ Match the message you see in your terminal to a section below.
 | `Couldn't reconnect to your Remote Control session`                                                                                                                                           | [Network](#couldnt-reconnect-to-your-remote-control-session)                                                                  |
 | `N sessions ended while this machine was offline — the environment was cleaned up on the server and can't be resumed.`                                                                        | [Network](#sessions-ended-while-this-machine-was-offline)                                                                     |
 | `Couldn't share the transcript.`                                                                                                                                                              | [Network](#couldnt-share-the-transcript)                                                                                      |
+| `Couldn't show context usage: the remote sent a reply this version can't display`                                                                                                             | [Network](#the-remote-sent-a-reply-this-version-cant-display)                                                                 |
+| `The remote session sent a reply this version can't display`                                                                                                                                  | [Network](#the-remote-sent-a-reply-this-version-cant-display)                                                                 |
 | `Prompt is too long` / `Input is too long for requested model`                                                                                                                                | [Request errors](#prompt-is-too-long)                                                                                         |
 | `Prompt is too long · automatic compaction failed:`                                                                                                                                           | [Request errors](#prompt-is-too-long)                                                                                         |
+| `Context limit reached · /compact or /clear to continue`                                                                                                                                      | [Request errors](#prompt-is-too-long)                                                                                         |
+| `Context limit reached · /clear to continue`                                                                                                                                                  | [Request errors](#prompt-is-too-long)                                                                                         |
 | `Context exceeds the ...-token limit by ... tokens` in `/context` output                                                                                                                      | [Request errors](#context-exceeds-the-token-limit)                                                                            |
 | `Error during compaction: Conversation too long`                                                                                                                                              | [Request errors](#error-during-compaction-conversation-too-long)                                                              |
 | `Request too large`                                                                                                                                                                           | [Request errors](#request-too-large)                                                                                          |
@@ -18341,10 +18368,12 @@ Match the message you see in your terminal to a section below.
 | `Plugin archive integrity check failed`                                                                                                                                                       | [Plugin errors](#plugin-archive-integrity-check-failed)                                                                       |
 | `would be spawned with zero tools — refusing`                                                                                                                                                 | [Tool errors](#agent-would-be-spawned-with-zero-tools)                                                                        |
 | `File is covered by a Read deny rule in your permission settings`                                                                                                                             | [Tool errors](#file-is-covered-by-a-read-deny-rule)                                                                           |
+| `subagent_type is required: the general-purpose agent is not available in this session`                                                                                                       | [Tool errors](#subagent-type-is-required)                                                                                     |
 | `Error: this write left the memory index at MEMORY.md at ..., over its ... read limit`                                                                                                        | [Tool errors](#memory-index-is-over-its-read-limit)                                                                           |
 | `pkill: refusing to run`                                                                                                                                                                      | [Tool errors](#pkill-pattern-matches-the-claude-code-process)                                                                 |
 | `Failed to write to <name>'s inbox — nothing was sent`                                                                                                                                        | [Tool errors](#failed-to-write-to-a-teammate-inbox)                                                                           |
 | `Failed to write the plan approval request to the lead's inbox — plan not submitted`                                                                                                          | [Tool errors](#failed-to-write-to-a-teammate-inbox)                                                                           |
+| `Message too large for cross-session delivery`                                                                                                                                                | [Tool errors](#message-too-large-for-cross-session-delivery)                                                                  |
 | `Can't open MCP settings while no terminal is attached to this background session`                                                                                                            | [Background session errors](#commands-refused-in-a-background-session)                                                        |
 | `Can't open MCP settings in a background session`                                                                                                                                             | [Background session errors](#commands-refused-in-a-background-session)                                                        |
 | `blocked because the path is spelled in a form that cannot be safely resolved`                                                                                                                | [Background session errors](#write-or-command-blocked-because-the-path-cannot-be-safely-resolved)                             |
@@ -19308,6 +19337,25 @@ Claude Code shows this message in the terminal running [`claude remote-control`]
 * Run `claude remote-control` to start a fresh environment
 
 <h3>
+  The remote sent a reply this version can't display
+</h3>
+
+`/context` shows this line in a terminal [attached to a cloud session](/docs/en/claude-code-on-the-web#send-follow-ups-from-the-cli):
+
+```text theme={null}
+Couldn't show context usage: the remote sent a reply this version can't display
+```
+
+While your terminal is attached, `/context` and `/btw` ask the cloud session for their answer. Sometimes the answer arrives in a form your terminal's Claude Code can't render. The usual cause is a version difference between the two. `/context` then shows the line above instead of the usage breakdown. `/btw` shows `The remote session sent a reply this version can't display` instead of its answer. The cloud session keeps running, and other commands still work.
+
+**What to do:**
+
+* Update Claude Code with `claude update`, reattach, and rerun the command
+* If the line still appears, run `/feedback` and name the command
+
+Before v2.1.235, this case showed a raw JavaScript error instead, such as `undefined is not an object`.
+
+<h3>
   Couldn't share the transcript
 </h3>
 
@@ -19336,6 +19384,22 @@ The conversation plus attached files exceeds the model's context window.
 Prompt is too long
 ```
 
+In an interactive session, Claude Code shows this error as:
+
+```text theme={null}
+Context limit reached · /compact or /clear to continue
+```
+
+The line names only `/clear` when [`DISABLE_COMPACT`](/docs/en/env-vars) is set. Longer forms of the error, such as the compaction-failed form below, keep the `Prompt is too long ·` wording. In `-p` output and the transcript, the text stays `Prompt is too long`.
+
+When you turned auto-compact off in your [user settings](/docs/en/settings#available-settings), the line also says so:
+
+```text theme={null}
+Context limit reached · /compact or /clear to continue · auto-compact is off · /config to turn it on
+```
+
+The **Auto-compact** toggle in `/config` writes `autoCompactEnabled` to user settings. The hint appears only when a `/config` change would take effect. For example, it doesn't appear when [`DISABLE_AUTO_COMPACT`](/docs/en/env-vars) or [`DISABLE_COMPACT`](/docs/en/env-vars) turned auto-compact off. It also doesn't appear when a higher-precedence scope, such as project or managed settings, set `autoCompactEnabled` to `false`. Nor does it appear in a terminal attached to a cloud session, where the cloud session owns auto-compact. Before v2.1.235, the line carried no auto-compact hint.
+
 Amazon Bedrock reports this condition as `Input is too long for requested model.`, which Claude Code handles the same way. Before v2.1.217, Claude Code didn't recognize the Bedrock wording, so auto-compact never triggered on it and `/compact` failed with the same error.
 
 When automatic compaction ran on this turn and failed on an underlying error, such as an unavailable model or an authentication failure, the message names that error after a separator:
@@ -19344,7 +19408,7 @@ When automatic compaction ran on this turn and failed on an underlying error, su
 Prompt is too long · automatic compaction failed: <the underlying error>
 ```
 
-Resolve the named error first; `/compact` fails on the same error until you do. Before v2.1.229, a failed automatic compaction surfaced the bare `Prompt is too long` without the cause.
+Resolve the named error first; `/compact` fails on the same error until you do. Before v2.1.229, a failed automatic compaction surfaced `Prompt is too long` without the cause.
 
 **What to do:**
 
@@ -19353,13 +19417,13 @@ Resolve the named error first; `/compact` fails on the same error until you do. 
 * Disable MCP servers you are not using with `/mcp disable <name>` to remove their tool definitions from context
 * Trim large `CLAUDE.md` memory files, or move instructions into [path-scoped rules](/docs/en/memory#path-specific-rules) that load only when relevant
 * Subagents inherit every MCP tool definition from the parent session, which can fill their context window before the first turn. Disable MCP servers you are not using before spawning subagents.
-* Auto-compact is on by default and normally prevents this error. If you have set [`DISABLE_AUTO_COMPACT`](/docs/en/env-vars), re-enable it or run `/compact` manually before the window fills.
+* Auto-compact is on by default and normally prevents this error. If you turned it off in `/config` or with [`DISABLE_AUTO_COMPACT`](/docs/en/env-vars), turn it back on. If you keep it off, run `/compact` yourself before the window fills.
 
 See [Explore the context window](/docs/en/context-window) for an interactive view of how context fills up.
 
 ### Context exceeds the token limit
 
-`/context` shows this warning at the top of its output when the conversation has grown past the model's context window. Requests fail with [`Prompt is too long`](#prompt-is-too-long) until you free space.
+`/context` shows this warning at the top of its output when the conversation has grown past the model's context window. Requests fail with [`Prompt is too long`](#prompt-is-too-long) until you free space. An interactive session shows that error as the `Context limit reached` line.
 
 ```text theme={null}
 Context exceeds the 200k-token limit by 94k tokens — run /compact or /clear to continue.
@@ -19388,7 +19452,7 @@ Before v2.1.216, `/context` showed usage above 100% with no warning line explain
 Error during compaction: Conversation too long. Press esc twice to go up a few messages and try again.
 ```
 
-This can happen when the window is already full at the moment auto-compact triggers, or when you run `/compact` after seeing `Prompt is too long`.
+This can happen when the window is already full at the moment auto-compact triggers, or when you run `/compact` after seeing [`Prompt is too long`](#prompt-is-too-long). In an interactive session, that error is the `Context limit reached` line.
 
 **What to do:**
 
@@ -20096,6 +20160,26 @@ When Claude Code refuses the Write tool, the message ends `and cannot be written
 * If Claude should be able to change the file, remove or narrow the `Read` deny rule in `/permissions` or in [settings](/docs/en/settings#permission-settings)
 * If the file must stay untouched, keep the rule and add an `Edit` deny rule for the same path to block the NotebookEdit tool too
 
+<h3>
+  subagent\_type is required
+</h3>
+
+```text theme={null}
+subagent_type is required: the general-purpose agent is not available in this session. Available agents: ...
+```
+
+Claude called the [Agent tool](/docs/en/tools-reference#agent-tool-behavior) without a `subagent_type`, and this session has no [general-purpose subagent](/docs/en/sub-agents#built-in-subagents) to fall back on. That is the case in two setups:
+
+* [`CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS=1`](/docs/en/env-vars) is set in non-interactive mode, which removes every built-in subagent
+* The session's main-thread agent has a [`tools: Agent(...)` allowlist](/docs/en/sub-agents#restrict-which-subagents-can-be-spawned) that leaves out `general-purpose`
+
+**What to do:**
+
+* Usually nothing: the message lists the subagents the session does have, so Claude can retry with one of them
+* If Claude keeps failing, add `general-purpose` to the `tools: Agent(...)` allowlist, or unset `CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS`
+
+Before v2.1.235, the same call failed with `Agent type 'general-purpose' not found`.
+
 ### Memory index is over its read limit
 
 Claude wrote to the [auto memory](/docs/en/memory#auto-memory) index `MEMORY.md` and left it over one of its read limits: 200 lines or 25KB. The write succeeded, but only the first 200 lines or 25KB, whichever comes first, load at the start of a session, so everything past the limit is dropped each time the index is read. Before v2.1.210, an over-limit index was silently truncated on the next load with no write-time signal.
@@ -20154,6 +20238,23 @@ When you message a teammate yourself, typing `@name` followed by the message in 
 
 * Ask the sender to resend the message; contention for the inbox lock is transient and clears on retry
 * Check free disk space, and check that `~/.claude/teams` and the files under it are writable by your user
+
+### Message too large for cross-session delivery
+
+Claude's [cross-session message](/docs/en/cross-session-messaging) to another of your sessions on this machine was too long to send. Claude Code refused it, and the receiving session got nothing. The refusal appears in the sending session's tool result, not as a banner in your terminal. It names both sizes and how to make the message fit:
+
+```text wrap theme={null}
+Failed to send to api-worker: Message too large for cross-session delivery: the serialized message is 1,203,844 characters and the limit is 1,048,576. Shorten the message text — put bulk content in a file the recipient can read rather than in the message — or split it into smaller messages.
+```
+
+Resending the same text fails the same way.
+
+**What to do:**
+
+* Ask Claude to summarize the message, or to put the bulk content in a file and send the file's path
+* Ask Claude to split the content across several shorter messages
+
+Before v2.1.235, Claude Code reported an oversized message as sent. The receiving session dropped it unread.
 
 ## Background session errors
 
@@ -22677,9 +22778,9 @@ You can guide Claude in two primary ways:
 # Keep Claude working toward a goal
 Source: https://code.claude.com/docs/en/goal
 
-Set a completion condition with /goal and Claude keeps working across turns until the condition is met or judged impossible.
+Set a completion condition with /goal and Claude keeps working until it's met, a model judges it impossible, or an error you have to fix clears the goal.
 
-The `/goal` command sets a completion condition and Claude keeps working toward it without you prompting each step. After each turn, a small fast model checks whether the condition holds. If the model judges it not yet met, Claude starts another turn instead of returning control to you. The goal clears automatically once the condition is met, or if the model judges the condition impossible to satisfy.
+The `/goal` command sets a completion condition and Claude keeps working toward it without you prompting each step. After each turn, a small fast model checks whether the condition holds. If the model judges it not yet met, Claude starts another turn instead of returning control to you. The goal clears automatically once the condition is met, if the model judges the condition impossible to satisfy, or if a turn fails on [an error you have to fix](#errors-you-have-to-fix-clear-the-goal).
 
 Use a goal for substantial work with a verifiable end state:
 
@@ -22692,11 +22793,11 @@ Use a goal for substantial work with a verifiable end state:
 
 Three approaches keep the current session running between prompts. Pick based on what should start the next turn:
 
-| Approach                                                            | Next turn starts when      | Stops when                                                    |
-| :------------------------------------------------------------------ | :------------------------- | :------------------------------------------------------------ |
-| `/goal`                                                             | The previous turn finishes | A model confirms the condition is met or judges it impossible |
-| [`/loop`](/docs/en/scheduled-tasks#run-a-prompt-repeatedly-with-%2Floop) | A time interval elapses    | You stop it, or Claude decides the work is done               |
-| [Stop hook](/docs/en/hooks-guide#prompt-based-hooks)                     | The previous turn finishes | Your own script or prompt decides                             |
+| Approach                                                            | Next turn starts when      | Stops when                                                                                                                                                                                      |
+| :------------------------------------------------------------------ | :------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/goal`                                                             | The previous turn finishes | A model confirms the condition is met or judges it impossible, or a turn fails on [an error you have to fix](#errors-you-have-to-fix-clear-the-goal), or you run [`/goal clear`](#clear-a-goal) |
+| [`/loop`](/docs/en/scheduled-tasks#run-a-prompt-repeatedly-with-%2Floop) | A time interval elapses    | You stop it, or Claude decides the work is done                                                                                                                                                 |
+| [Stop hook](/docs/en/hooks-guide#prompt-based-hooks)                     | The previous turn finishes | Your own script or prompt decides                                                                                                                                                               |
 
 `/goal` and a Stop hook both fire after every turn. `/goal` is a session-scoped shortcut: you type a condition and it's active for the current session only. A Stop hook lives in your settings file, applies to every session in its scope, and can run a script for deterministic checks or a prompt for model-evaluated ones.
 
@@ -22796,7 +22897,24 @@ Interrupt the process with Ctrl+C to stop a non-interactive goal before it resol
 
 If Claude keeps answering the evaluator without making progress (no tool use for several turns in a row), Claude Code stops the loop, prints a warning, and returns control to you with the goal still set. Evaluation resumes after your next prompt. The [hooks guide](/docs/en/hooks-guide#stop-hook-hits-the-block-cap) explains the underlying mechanism.
 
-If a subagent or a background shell command is still running when a turn ends, Claude Code skips the evaluation for that turn and evaluates when the next turn ends.
+### Errors you have to fix clear the goal
+
+If a turn fails on an error that won't clear until you fix it, Claude Code clears the goal and prints a warning naming the cause. The warning starts with `Goal cleared after an unrecoverable error` and ends with `Run /goal again to continue`. Fix the cause, then [set the goal again](#set-a-goal) with `/goal <condition>`. Four kinds of failure clear the goal:
+
+* An authentication failure, when Claude Code manages its own credentials. When a host manages them for you, such as the desktop app, the VS Code extension, or a [cloud session](/docs/en/claude-code-on-the-web), Claude Code leaves the goal active because the host restores access on its own.
+* An exhausted credit balance
+* A context overflow that [auto-compaction](/docs/en/model-config#set-the-auto-compact-window) couldn't clear
+* A model that isn't available
+
+After any other failure, including transient errors such as rate limits and overloaded servers, Claude Code leaves the goal active.
+
+### Background work defers evaluation
+
+If a subagent or a background shell command is still running when a turn ends, Claude Code skips the evaluation for that turn. It evaluates at the end of the next turn that finishes with no background work running. When the background work finishes, Claude Code delivers the result to Claude as a new turn, so you don't have to prompt.
+
+When a turn ends and background work has kept the goal waiting for 30 minutes or more, Claude Code asks Claude to check on that work. Claude Code lists the running tasks and asks Claude to read their output, keep waiting if they're progressing, and fix or stop any that are stuck. After each further 30 minutes of waiting, Claude Code asks again at the next turn end. To change the interval, set [`CLAUDE_CODE_GOAL_CHECKIN_MINUTES`](/docs/en/env-vars); set it to `0` to turn check-ins off. Check-ins require Claude Code v2.1.234 or later.
+
+### Evaluation model and cost
 
 To evaluate on a different model, set [`ANTHROPIC_DEFAULT_HAIKU_MODEL`](/docs/en/model-config#environment-variables).
 
@@ -26976,6 +27094,66 @@ claude mcp add-json events-server \
 
 The `type: "ws"` entry accepts the same `url`, `headers`, `headersHelper`, `timeout`, and `alwaysLoad` fields as `http`. Authentication is header-only, so pass a static token in `headers` or generate one at connect time with [`headersHelper`](#use-dynamic-headers-for-custom-authentication). The `claude mcp add --transport` flag doesn't accept `ws`.
 
+### Add a server from setup instructions written for another client
+
+MCP servers aren't specific to Claude Code, so a server's setup instructions may be written for Claude Desktop, Cursor, or another MCP client and give no `claude mcp add` command. To add the server anyway, look in those instructions for one of these three things:
+
+* **A URL** such as `https://mcp.example.com/mcp`: the server is remote.
+* **A launch command** such as `npx -y @example/mcp-server`: the server runs on your machine.
+* **An `mcpServers` JSON block**: configuration written for another client's settings file.
+
+Each is one of the inputs the four options in [Installing MCP servers](#installing-mcp-servers) take. Find the shape you have below to turn it into the command Claude Code accepts. Each command writes to [local scope](#local-scope) unless you add `--scope project` or `--scope user`.
+
+#### From a URL
+
+A URL means the server is remote. For an `https://` endpoint, add it with `--transport http`, or with `--transport sse` when the instructions say the endpoint uses SSE. For a `wss://` endpoint, use [Option 4](#option-4-add-a-remote-websocket-server) instead, since `--transport` doesn't accept `ws`:
+
+```bash theme={null}
+claude mcp add --transport http example https://mcp.example.com/mcp
+```
+
+If the instructions also give an API key or token header, pass it with `--header` as shown in [Option 1](#option-1-add-a-remote-http-server).
+
+#### From an `npx`, `uvx`, or binary command
+
+A launch command means the server runs as a local stdio process. Put the whole command after `--`, so Claude Code passes flags such as `-y` to the command that starts the server instead of reading them as its own options. Pass any environment variables the instructions ask for with `--env`, after the server name and before `--`:
+
+```bash theme={null}
+claude mcp add example --env API_KEY=your-key -- npx -y @example/mcp-server
+```
+
+[Option 3](#option-3-add-a-local-stdio-server) covers the `--` separator in full.
+
+#### From an `mcpServers` JSON block
+
+An `mcpServers` block written for another MCP client, such as Claude Desktop, uses the wrapper key and entry shape Claude Code reads. Pass `claude mcp add-json` the object inside `mcpServers`, not the wrapper. Two entries need a repair first:
+
+* **A `url` with no `type`**: add `"type": "http"`, `"type": "sse"`, or `"type": "ws"` to match the endpoint. Claude Code reads an entry with no `type` as a stdio server, so a `url` entry without a `type` fails.
+* **A key with characters other than letters, numbers, hyphens, and underscores**: pick a server name that uses only those characters. Otherwise the key is the server name.
+
+For example, this block:
+
+```json theme={null}
+{
+  "mcpServers": {
+    "example": {
+      "command": "npx",
+      "args": ["-y", "@example/mcp-server"]
+    }
+  }
+}
+```
+
+becomes this command:
+
+```bash theme={null}
+claude mcp add-json example '{"command":"npx","args":["-y","@example/mcp-server"]}'
+```
+
+[Add MCP servers from JSON configuration](#add-mcp-servers-from-json-configuration) covers shell escaping and the `--scope` flag for `add-json`. To share the server with your team instead, add `--scope project`, or add the entry under `mcpServers` in `.mcp.json` at your project root and commit it. [Project scope](#project-scope) covers how Claude Code loads and approves that file.
+
+Each `claude mcp add` and `claude mcp add-json` command prints an `Added ...` line. To check that Claude Code connected, run `claude mcp get <name>`; [Server status](#server-status) covers the statuses it shows and the approval step for `.mcp.json` servers.
+
 ### Managing your servers
 
 Once configured, you can manage your MCP servers with these commands:
@@ -31035,11 +31213,11 @@ Once you've installed Claude Code, these guides help you go deeper.
 # Choose a permission mode
 Source: https://code.claude.com/docs/en/permission-modes
 
-Control whether Claude asks before editing files or running commands. Cycle modes with Shift+Tab in the CLI or use the mode selector in VS Code, Desktop, and claude.ai.
+Control whether Claude asks before acting. Switch permission modes with Shift+Tab in the CLI, the mode indicator in VS Code, or the mode selector in Desktop.
 
 A permission mode sets which actions Claude can take in a session without asking you first. In Manual mode, Claude Code stops and asks you before most actions that edit files, run shell commands, or reach the network. In [auto mode](#eliminate-prompts-with-auto-mode), a second model, the classifier, reviews actions instead of you; [how the classifier evaluates actions](#how-the-classifier-evaluates-actions) lists which actions it reviews and which skip it.
 
-On Pro, Max, and Team plans, the built-in starting mode is auto mode. [Which mode a session starts in](#which-mode-a-session-starts-in) covers the surfaces and settings that change the starting mode. You can also change a running session's permission mode at any time.
+On Pro, Max, and Team plans, the built-in starting permission mode is auto mode. [Which mode a session starts in](#which-mode-a-session-starts-in) covers the surfaces and settings that change the starting permission mode. You can also change a running session's permission mode at any time.
 
 ## Available modes
 
@@ -31081,7 +31259,7 @@ Permission modes decide whether Claude asks before an action, and the [Bash sand
 | Review every action yourself                             | Manual mode: `claude --permission-mode default`                                                                                                                     | None                                                                                                                                                                                         | Sensitive work, unfamiliar code                                                                                                                                                                                            |
 | Iterate locally with fewer prompts, without a classifier | Manual mode plus the Bash sandbox in [auto-allow mode](/docs/en/sandboxing#sandbox-modes): `claude --permission-mode default`, then run `/sandbox` and select auto-allow | The built-in Bash sandbox, on macOS, Linux, and WSL2                                                                                                                                         | Deny rules still apply, and ask rules that name a command, such as `Bash(git push *)`, still prompt. To turn the sandbox on from a settings file instead, set [`sandbox.enabled`](/docs/en/settings#sandbox-settings) to `true` |
 | Explore before changing anything                         | `claude --permission-mode plan`                                                                                                                                     | None                                                                                                                                                                                         | Claude Code blocks edits until you [approve a plan](#review-and-approve-a-plan)                                                                                                                                            |
-| Work hands-off with a classifier reviewing each action   | `claude --permission-mode auto`, the [built-in starting mode](#which-mode-a-session-starts-in) on Pro, Max, and Team                                                | None; a sandbox or container adds defense in depth                                                                                                                                           | Requires a [supported model](#eliminate-prompts-with-auto-mode), and your organization can [turn auto mode off](#eliminate-prompts-with-auto-mode)                                                                         |
+| Work hands-off with a classifier reviewing each action   | `claude --permission-mode auto`, the [built-in starting permission mode](#which-mode-a-session-starts-in) on Pro, Max, and Team                                     | None; a sandbox or container adds defense in depth                                                                                                                                           | Requires a [supported model](#eliminate-prompts-with-auto-mode), and your organization can [turn auto mode off](#eliminate-prompts-with-auto-mode)                                                                         |
 | Run in CI with an exact allowlist                        | `claude -p "run the test suite" --permission-mode dontAsk --allowedTools "Bash(npm test)" "Read"`                                                                   | None beyond what your CI runner provides                                                                                                                                                     | [Claude Code on the web](/docs/en/claude-code-on-the-web) ignores `dontAsk` from settings files                                                                                                                                 |
 | Run fully unattended inside a container                  | `claude -p "<prompt>" --dangerously-skip-permissions`                                                                                                               | Required: a container, VM, or the [sandbox runtime](/docs/en/sandbox-environments#sandbox-runtime); on Linux and macOS, run it as a [non-root user](#skip-all-checks-with-bypasspermissions-mode) | Claude Code on the web ignores this mode from settings files. In this `-p` run, the [few calls that would still prompt](#skip-all-checks-with-bypasspermissions-mode) are denied instead                                   |
 
@@ -31103,16 +31281,16 @@ The built-in `auto` default requires Claude Code v2.1.228 or later on macOS, Lin
 
 The built-in default depends on how you run Claude Code, on your plan, and on whether Claude Code could fetch its feature flags. The first row that matches your session applies. The table covers sessions you start in a terminal or through the VS Code extension; for the desktop app and claude.ai, see the Desktop and Web tabs in [Switch permission modes](#switch-permission-modes).
 
-| How you run Claude Code                                                                                                                                                                                                                                     | Built-in starting mode |
-| :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- |
-| Any settings file sets `disableAutoMode` to `"disable"`                                                                                                                                                                                                     | `default`              |
-| [Feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) is off, or this is your [first session after you install Claude Code or upgrade to a version that adds this default](/docs/en/env-vars#first-session-after-an-install-or-upgrade) | `default`              |
-| `claude -p` or the [Agent SDK](/docs/en/agent-sdk/permissions)                                                                                                                                                                                                   | `default`              |
-| Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, [Claude Platform on AWS](/docs/en/claude-platform-on-aws), or a signed-in [Claude apps gateway](/docs/en/claude-apps-gateway) session                                                               | `default`              |
-| A Pro, Max, or Team plan, in a terminal or through the [VS Code extension](/docs/en/vs-code)                                                                                                                                                                     | `auto`                 |
-| An Enterprise plan or a Claude Console API key                                                                                                                                                                                                              | `default`              |
+| How you run Claude Code                                                                                                                                                                                                                                     | Built-in starting permission mode |
+| :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------- |
+| Any settings file sets `disableAutoMode` to `"disable"`                                                                                                                                                                                                     | `default`                         |
+| [Feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) is off, or this is your [first session after you install Claude Code or upgrade to a version that adds this default](/docs/en/env-vars#first-session-after-an-install-or-upgrade) | `default`                         |
+| `claude -p` or the [Agent SDK](/docs/en/agent-sdk/permissions)                                                                                                                                                                                                   | `default`                         |
+| Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, [Claude Platform on AWS](/docs/en/claude-platform-on-aws), or a signed-in [Claude apps gateway](/docs/en/claude-apps-gateway) session                                                               | `default`                         |
+| A Pro, Max, or Team plan, in a terminal or through the [VS Code extension](/docs/en/vs-code)                                                                                                                                                                     | `auto`                            |
+| An Enterprise plan or a Claude Console API key                                                                                                                                                                                                              | `default`                         |
 
-In those same two cases, feature-flag fetching off or the first session after an install or upgrade, the VS Code extension ignores every settings file when choosing the starting mode and uses `default`.
+In those same two cases, feature-flag fetching off or the first session after an install or upgrade, the VS Code extension ignores every settings file when choosing the starting permission mode and uses `default`.
 
 When the flag, a settings file, or the built-in default selects `auto` but auto mode isn't available to the session, Claude Code starts the session in Manual instead. Auto mode is unavailable when a settings file [turns it off](#eliminate-prompts-with-auto-mode) or the model doesn't support it.
 
@@ -31133,7 +31311,7 @@ You can set the starting permission mode for one session, or as a default for ev
 | :----------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | One session you're about to start                | Pass the permission mode as a flag, for example `claude --permission-mode default`                                                                                                                                                                                                                                                                                         |
 | Every terminal session you start on this machine | Set `permissions.defaultMode` in `~/.claude/settings.json`. For what the VS Code extension reads, see [Switch permission modes](#switch-permission-modes)                                                                                                                                                                                                                  |
-| Every terminal session you start in one project  | Set `permissions.defaultMode` in the project's `.claude/settings.json`. Sessions you start in a terminal honor every value except `auto`; sessions the VS Code extension starts don't read project settings for the starting mode                                                                                                                                          |
+| Every terminal session you start in one project  | Set `permissions.defaultMode` in the project's `.claude/settings.json`. Sessions you start in a terminal honor every value except `auto`; sessions the VS Code extension starts don't read project settings for the starting permission mode                                                                                                                               |
 | Every terminal session in your organization      | Set `permissions.defaultMode` in [managed settings](/docs/en/permissions#managed-settings). Terminal sessions start in that mode and people can still switch to auto mode; for what the VS Code extension reads, see [Switch permission modes](#switch-permission-modes). To remove auto mode so nobody can select it, set `permissions.disableAutoMode` to `"disable"` instead |
 
 This example makes every terminal session on your machine start in Manual mode, whose config value is `default`. Save it in `~/.claude/settings.json`:
@@ -31150,15 +31328,15 @@ The next session you start shows `⏸ manual mode on` in the status bar.
 
 ## Switch permission modes
 
-Each interface has its own control for switching modes during a session and its own way of choosing the permission mode new sessions start in. Asking Claude in chat to change the permission mode doesn't work. Select your interface to see its controls.
+Each interface has its own control for switching permission modes during a session and its own way of choosing the permission mode new sessions start in. Asking Claude in chat to change the permission mode doesn't work. Select your interface to see its controls.
 
 <Tabs>
   <Tab title="CLI">
-    **During a session**: press `Shift+Tab` to cycle modes. From `auto`, the first press switches to `default`, and the cycle then runs `default` → `acceptEdits` → `plan` → back to `default`. Optional modes, described below, slot in after `plan`. The status bar shows the active mode as a gray `⏸ manual mode on` for `default`, or as `⏵⏵ accept edits on`, `⏸ plan mode on`, `⏵⏵ auto mode on`, `⏵⏵ don't ask on`, or `⏵⏵ bypass permissions on`.
+    **During a session**: press `Shift+Tab` to cycle permission modes. From `auto`, the first press switches to `default`, and the cycle then runs `default` → `acceptEdits` → `plan` → back to `default`. Optional modes, described below, slot in after `plan`. The status bar shows the active mode as a gray `⏸ manual mode on` for `default`, or as `⏵⏵ accept edits on`, `⏸ plan mode on`, `⏵⏵ auto mode on`, `⏵⏵ don't ask on`, or `⏵⏵ bypass permissions on`.
 
     Not every mode is in the default cycle:
 
-    * `auto`: appears when your account meets the [auto mode requirements](#eliminate-prompts-with-auto-mode); cycling to it switches modes without a confirmation prompt
+    * `auto`: appears when your account meets the [auto mode requirements](#eliminate-prompts-with-auto-mode); cycling to it switches permission modes without a confirmation prompt
     * `bypassPermissions`: appears after you start with `--permission-mode bypassPermissions`, `--dangerously-skip-permissions`, `--allow-dangerously-skip-permissions`, or `permissions.defaultMode: "bypassPermissions"` in [settings](/docs/en/settings#permission-settings); the `--allow-` variant adds the permission mode to the cycle without activating it
     * `dontAsk`: never appears in the cycle; set it with `--permission-mode dontAsk`
 
@@ -31193,7 +31371,7 @@ Each interface has its own control for switching modes during a session and its 
     3. `permissions.defaultMode` from [managed settings](/docs/en/permissions#managed-settings) or `~/.claude/settings.json`, on Pro, Max, and Team plans with [feature-flag fetching](#which-mode-a-session-starts-in) available
     4. The [built-in default](#which-mode-a-session-starts-in) for your plan, provider, and organization settings
 
-    The extension never reads a project's `.claude/settings.json` or `.claude/settings.local.json` for the starting mode, and in conversations that don't meet item 3's conditions it reads no settings file at all. When `claudeCode.claudeProcessWrapper` is set, items 3 and 4 don't apply either: those conversations start in Manual unless item 1 or item 2 sets a mode.
+    The extension never reads a project's `.claude/settings.json` or `.claude/settings.local.json` for the starting permission mode, and in conversations that don't meet item 3's conditions it reads no settings file at all. When `claudeCode.claudeProcessWrapper` is set, items 3 and 4 don't apply either: those conversations start in Manual unless item 1 or item 2 sets a permission mode.
 
     Auto mode appears in the mode indicator when your account meets every requirement listed in the [auto mode section](#eliminate-prompts-with-auto-mode).
 
@@ -31203,7 +31381,7 @@ Each interface has its own control for switching modes during a session and its 
   </Tab>
 
   <Tab title="JetBrains">
-    The JetBrains plugin runs Claude Code in the IDE terminal, so switching modes works the same as in the CLI: press `Shift+Tab` to cycle, or pass `--permission-mode` when launching.
+    The JetBrains plugin runs Claude Code in the IDE terminal, so switching permission modes works the same as in the CLI: press `Shift+Tab` to cycle, or pass `--permission-mode` when launching.
   </Tab>
 
   <Tab title="Desktop">
@@ -31237,7 +31415,7 @@ Each interface has its own control for switching modes during a session and its 
     * **Cloud sessions** on [Claude Code on the web](/docs/en/claude-code-on-the-web): Accept edits, Plan, and Auto. Accept edits corresponds to `default` mode: cloud sessions pre-approve file edits regardless of mode, so the dropdown shows Accept edits instead of Manual. Cloud sessions still honor `defaultMode: "acceptEdits"` from settings. Auto mode appears only when your organization allows it and the selected model supports it. Bypass permissions isn't available.
     * **[Remote Control](/docs/en/remote-control) sessions** on your local machine: Manual, Accept edits, and Plan. You can't select Auto or Bypass permissions from the app. The dropdown shows the permission mode the local session is in, including a mode set from the terminal, and updates when the permission mode changes in the app or in the terminal. The one exception is Bypass permissions: the session never reports that mode to claude.ai, so switching into it from the terminal doesn't change what the dropdown shows. Before v2.1.202, sessions connected with `/remote-control` or `claude --remote-control` didn't report their mode at all, so claude.ai and the mobile app could show a mode the session wasn't in. The mismatch affected only the label: Claude Code generated permission prompts from the session's actual mode, and they still appeared in the app for approval.
 
-    For Remote Control, the local machine running the session must be signed in with your claude.ai account; API keys aren't supported. You can also set the starting mode when launching that local session:
+    For Remote Control, the local machine running the session must be signed in with your claude.ai account; API keys aren't supported. You can also set the starting permission mode when launching that local session:
 
     ```bash theme={null}
     claude remote-control --permission-mode acceptEdits
@@ -31291,7 +31469,7 @@ Accepting a plan also names the session from the plan content automatically, unl
 
 ### Set plan mode as the default
 
-To make plan mode the default for a project's terminal sessions, set `defaultMode` in `.claude/settings.json`. Conversations the [VS Code extension](/docs/en/vs-code) starts don't read project settings for the starting mode. There, set `claudeCode.initialPermissionMode` to `plan` in your VS Code user settings instead. This example sets the project default:
+To make plan mode the default for a project's terminal sessions, set `defaultMode` in `.claude/settings.json`. Conversations the [VS Code extension](/docs/en/vs-code) starts don't read project settings for the starting permission mode. There, set `claudeCode.initialPermissionMode` to `plan` in your VS Code user settings instead. This example sets the project default:
 
 ```json theme={null}
 {
@@ -31307,7 +31485,7 @@ To make plan mode the default for a project's terminal sessions, set `defaultMod
 
 Auto mode lets Claude execute without routine permission prompts. A separate classifier model reviews actions before they run, blocking anything that escalates beyond your request, targets unrecognized infrastructure, or appears driven by hostile content Claude read. Explicit [ask rules](/docs/en/permissions#manage-permissions) still force a prompt.
 
-On Pro, Max, and Team plans, auto mode is the [built-in starting mode](#which-mode-a-session-starts-in).
+On Pro, Max, and Team plans, auto mode is the [built-in starting permission mode](#which-mode-a-session-starts-in).
 
 The classifier also reviews each message Claude sends to another agent with [`SendMessage`](/docs/en/tools-reference), whether plain text or a structured [agent team](/docs/en/agent-teams) message, before Claude Code delivers it, both in auto mode and in [plan mode while the classifier reviews commands](#analyze-before-you-edit-with-plan-mode); the send review requires Claude Code v2.1.222 or later.
 
@@ -31336,7 +31514,7 @@ If you set `defaultMode: "auto"` in [settings](/docs/en/settings#available-setti
 
 On [Amazon Bedrock](/docs/en/amazon-bedrock), [Google Cloud's Agent Platform](/docs/en/google-vertex-ai), [Microsoft Foundry](/docs/en/microsoft-foundry), and signed-in [Claude apps gateway](/docs/en/claude-apps-gateway) sessions, auto mode appears in the `Shift+Tab` cycle by default. Appearing in the cycle doesn't change the permission mode a session starts in: on these providers, terminal sessions start in your [`defaultMode`](/docs/en/settings#available-settings), which is Manual unless you change it, and conversations in the [VS Code extension](/docs/en/vs-code) start in Manual unless `claudeCode.initialPermissionMode` or a mode you picked in the extension sets one. Only Claude Sonnet 5, Opus 4.7 or later, and Fable 5 are supported on these providers.
 
-To make auto mode the default starting mode, set `"permissions": {"defaultMode": "auto"}` in user or managed settings. In sessions the VS Code extension starts, select **Auto** from the mode indicator instead. [Switch permission modes](#switch-permission-modes) covers what outranks that pick.
+To make auto mode the default starting permission mode, set `"permissions": {"defaultMode": "auto"}` in user or managed settings. In sessions the VS Code extension starts, select **Auto** from the mode indicator instead. [Switch permission modes](#switch-permission-modes) covers what outranks that pick.
 
 The [`/doctor`](/docs/en/commands#all-commands) checkup proposes this user-settings default on these providers the same way it does on the Anthropic API.
 
@@ -34408,19 +34586,19 @@ To install Claude Code, use one of the following methods:
   <Tab title="Native Install (Recommended)">
     **macOS, Linux, WSL:**
 
-    ```bash theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+    ```bash theme={null}
     curl -fsSL https://claude.ai/install.sh | bash
     ```
 
     **Windows PowerShell:**
 
-    ```powershell theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+    ```powershell theme={null}
     irm https://claude.ai/install.ps1 | iex
     ```
 
     **Windows CMD:**
 
-    ```batch theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+    ```batch theme={null}
     curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd
     ```
 
@@ -34436,7 +34614,7 @@ To install Claude Code, use one of the following methods:
   </Tab>
 
   <Tab title="Homebrew">
-    ```bash theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+    ```bash theme={null}
     brew install --cask claude-code
     ```
 
@@ -34448,7 +34626,7 @@ To install Claude Code, use one of the following methods:
   </Tab>
 
   <Tab title="WinGet">
-    ```powershell theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+    ```powershell theme={null}
     winget install Anthropic.ClaudeCode
     ```
 
@@ -38177,7 +38355,7 @@ Each key is a skill name and each value is one of four states:
 
 The `/skills` menu labels the `"user-invocable-only"` state `user-only`.
 
-As of v2.1.199, `"off"` also hides the skill from the command lists advertised to [Remote Control](/docs/en/remote-control) clients and to [Agent SDK](/docs/en/agent-sdk/slash-commands) callers, in addition to the terminal `/` menu. Invoking a hidden skill by its full name still returns the `skillOverrides` error instead of running it.
+As of v2.1.199, `"off"` also hides the skill from the command lists advertised to [Remote Control](/docs/en/remote-control) clients and to [Agent SDK](/docs/en/agent-sdk/skills#discover-available-commands) callers, in addition to the terminal `/` menu. Invoking a hidden skill by its full name still returns the `skillOverrides` error instead of running it.
 
 A skill that is absent from `skillOverrides` is treated as `"on"`. The example below collapses one skill to its name and turns another off entirely:
 
@@ -38792,6 +38970,8 @@ Built-in subagents are registered by default in interactive sessions. To restric
 * To prevent Claude from delegating to any subagent, deny the `Agent` tool itself with [`permissions.deny`](/docs/en/permissions#tool-specific-permission-rules).
 * To remove only the built-in `Explore` and `Plan` subagents, set [`CLAUDE_CODE_DISABLE_EXPLORE_PLAN_AGENTS=1`](/docs/en/env-vars). Claude reads and explores files directly instead of delegating to them. Requires Claude Code v2.1.198 or later.
 * In [non-interactive mode](/docs/en/headless) and the [Agent SDK](/docs/en/agent-sdk/overview), set [`CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS=1`](/docs/en/env-vars) to remove all built-in types and supply only your own.
+
+An Agent tool call that omits `subagent_type` fails with [`subagent_type is required`](/docs/en/errors#subagent-type-is-required) when the session has no `general-purpose` subagent to fall back on.
 
 Beyond these built-in subagents, you can create your own with custom prompts, tool restrictions, permission modes, hooks, and skills. The following sections show how to get started and customize subagents.
 
@@ -39495,7 +39675,7 @@ Subagents can run in the foreground or the background:
 
 For each subagent Claude spawns with the Agent tool, Claude Code picks foreground or background from the first of these cases that applies:
 
-* If an in-process [agent team](/docs/en/agent-teams#limitations) teammate spawned the subagent, Claude Code runs it in the foreground, and refuses with an error to spawn a subagent whose definition sets [`background: true`](#supported-frontmatter-fields).
+* If an in-process [agent team](/docs/en/agent-teams#limitations) teammate spawned the subagent, Claude Code runs it in the foreground. Claude Code refuses with an error to spawn a teammate's subagent whose definition sets [`background: true`](#supported-frontmatter-fields). Where [fork mode](#turn-fork-mode-on-or-off) is off and you haven't [turned background tasks off](/docs/en/env-vars), Claude Code also refuses with an error when a teammate sets `run_in_background: true`.
 * If you set [`CLAUDE_CODE_DISABLE_BACKGROUND_TASKS`](/docs/en/env-vars) to `1`, Claude Code runs the subagent in the foreground, in every kind of session and whether or not fork mode is on.
 * Where [fork mode](#turn-fork-mode-on-or-off) is on, as it is by default in an interactive session, Claude Code runs the subagent in the background, forks and non-fork subagents alike, and Claude can't ask for the foreground.
 * Where fork mode is off, Claude runs the subagent in the background by default and in the foreground when it needs the result before continuing. Fork mode is off in [non-interactive mode](/docs/en/headless) with `-p` and in the Agent SDK unless you turn it on. To keep a particular subagent in the background even when Claude wants the result, set its frontmatter [`background`](#supported-frontmatter-fields) field to `true`.
@@ -39587,7 +39767,7 @@ Use the **main conversation** when:
 * The task needs frequent back-and-forth or iterative refinement
 * Multiple phases share significant context, such as planning, implementation, and testing
 * You're making a quick, targeted change
-* Latency matters. Subagents start fresh and may need time to gather context
+* Latency matters. A subagent that isn't a [fork](#fork-the-current-conversation) starts fresh and may need time to gather context
 
 Use **subagents** when:
 
@@ -39668,7 +39848,7 @@ Some main-conversation state never reaches a non-fork subagent:
 
 #### Resume subagents
 
-Each subagent invocation creates a new instance with fresh context. To continue an existing subagent's work instead of starting over, ask Claude to resume it.
+Each subagent invocation creates a new instance rather than continuing an earlier one. To continue an existing subagent's work instead of starting over, ask Claude to resume it.
 
 Resumed subagents retain their full conversation history, including all previous tool calls, results, and reasoning. The subagent picks up exactly where it stopped rather than starting fresh.
 
@@ -39780,7 +39960,7 @@ Claude Code turns fork mode on by default in interactive sessions and leaves it 
 
 You can tell fork mode is on from how Claude Code handles the Agent tool:
 
-* Claude can spawn a fork by requesting the `fork` subagent type. When Claude doesn't request a type, it gets the [general-purpose](#built-in-subagents) subagent, and subagents spawned from a definition, such as Explore, work as usual.
+* Claude can spawn a fork by requesting the `fork` subagent type. When Claude doesn't request a type, it gets the [general-purpose](#built-in-subagents) subagent, if the session still has that type. Subagents spawned from a definition, such as Explore, work as usual.
 * Claude Code runs the subagents Claude spawns in the background, forks and non-fork subagents alike, apart from the [cases that stay in the foreground](#run-subagents-in-foreground-or-background). Claude Code also removes the Agent tool's `run_in_background` parameter, so Claude can't ask for the foreground.
 
 Set the [`CLAUDE_CODE_FORK_SUBAGENT`](/docs/en/env-vars) environment variable to override the defaults:
@@ -43739,9 +43919,9 @@ Compaction replaces older messages with a summary, so specific instructions from
 
 You can customize compaction behavior in several ways:
 
-* **Summarization instructions in CLAUDE.md:** The compactor reads your CLAUDE.md like any other context, so you can include a section telling it what to preserve when summarizing. The section header is free-form (not a magic string); the compactor matches on intent.
+* **Summarization instructions in CLAUDE.md:** The compactor reads your CLAUDE.md like any other context, so you can include a section telling it what to preserve when summarizing. The compactor matches on intent, so the section header is free-form.
 * **`PreCompact` hook:** Run custom logic before compaction occurs, for example to archive the full transcript. The hook receives a `trigger` field (`manual` or `auto`). See [hooks](/docs/en/agent-sdk/hooks).
-* **Manual compaction:** Send `/compact` as a prompt string to trigger compaction on demand. Commands sent this way are ordinary SDK inputs. See [commands in the SDK](/docs/en/agent-sdk/slash-commands).
+* **Manual compaction:** Send `/compact` as a prompt string to trigger compaction on demand. Commands sent this way are ordinary SDK inputs. See [dispatch commands by name](/docs/en/agent-sdk/skills#dispatch-commands-by-name).
 
 <Accordion title="Example: Summarization instructions in CLAUDE.md">
   Add a section to your project's CLAUDE.md telling the compactor what to preserve. The header name isn't special; use any clear label.
@@ -43804,7 +43984,7 @@ The `usage` field covers only the main agent loop. Use `modelUsage`, or `model_u
 <Note>
   When a query ends on an error result:
 
-  * A single-shot `query()` call yields the final result message, then raises an error that includes the failure text, such as `Reached maximum number of turns`. The raise is intentional — wrap the loop in a try block if your code needs to continue past it. The underlying Claude Code process also exits with a nonzero code.
+  * A single-shot `query()` call yields the final result message, then raises an error that includes the failure text, such as `Reached maximum number of turns`. The raise is intentional. Wrap the loop in a try block if your code needs to continue past it. The underlying Claude Code process also exits with a nonzero code.
   * A streaming input session stays alive, and you can keep sending messages, except after a session crash, which emits a final `error_during_execution` result and exits the process.
 </Note>
 
@@ -49387,16 +49567,16 @@ The SDK is available as a library for Python and TypeScript only. To drive the s
 
 Everything that makes Claude Code powerful is available in the SDK.
 
-| Capability                   | What it does                                                                                 | Learn more                                                                                                                                                                              |
-| ---------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Built-in tools               | Read, write, edit files, run commands, and search the web                                    | [Tools reference](/docs/en/tools-reference)                                                                                                                                                  |
-| Hooks                        | Run custom code at key points in the agent lifecycle                                         | [Hooks](/docs/en/agent-sdk/hooks)                                                                                                                                                            |
-| Subagents                    | Spawn specialized agents for focused subtasks                                                | [Subagents](/docs/en/agent-sdk/subagents)                                                                                                                                                    |
-| MCP                          | Connect external tools and data sources via the Model Context Protocol                       | [MCP](/docs/en/agent-sdk/mcp)                                                                                                                                                                |
-| Permissions                  | Control which tools run automatically, which need approval                                   | [Permissions](/docs/en/agent-sdk/permissions)                                                                                                                                                |
-| Sessions                     | Maintain context across exchanges, resume or fork later                                      | [Sessions](/docs/en/agent-sdk/sessions)                                                                                                                                                      |
-| Skills, commands, and memory | Load automatically from your project's `.claude/` and from `~/.claude/`, same as Claude Code | [Skills](/docs/en/agent-sdk/skills), [Commands](/docs/en/agent-sdk/slash-commands), [Memory](/docs/en/agent-sdk/modifying-system-prompts), [Configuration loading](/docs/en/agent-sdk/claude-code-features) |
-| Plugins                      | Package skills, agents, hooks, and MCP servers, and load them by local path                  | [Plugins](/docs/en/agent-sdk/plugins)                                                                                                                                                        |
+| Capability                   | What it does                                                                                 | Learn more                                                                                                                                                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Built-in tools               | Read, write, edit files, run commands, and search the web                                    | [Tools reference](/docs/en/tools-reference)                                                                                                                                                                         |
+| Hooks                        | Run custom code at key points in the agent lifecycle                                         | [Hooks](/docs/en/agent-sdk/hooks)                                                                                                                                                                                   |
+| Subagents                    | Spawn specialized agents for focused subtasks                                                | [Subagents](/docs/en/agent-sdk/subagents)                                                                                                                                                                           |
+| MCP                          | Connect external tools and data sources via the Model Context Protocol                       | [MCP](/docs/en/agent-sdk/mcp)                                                                                                                                                                                       |
+| Permissions                  | Control which tools run automatically, which need approval                                   | [Permissions](/docs/en/agent-sdk/permissions)                                                                                                                                                                       |
+| Sessions                     | Maintain context across exchanges, resume or fork later                                      | [Sessions](/docs/en/agent-sdk/sessions)                                                                                                                                                                             |
+| Skills, commands, and memory | Load automatically from your project's `.claude/` and from `~/.claude/`, same as Claude Code | [Skills](/docs/en/agent-sdk/skills), [Commands](/docs/en/agent-sdk/skills#commands-in-agent-sdk-sessions), [Memory](/docs/en/agent-sdk/modifying-system-prompts), [Configuration loading](/docs/en/agent-sdk/claude-code-features) |
+| Plugins                      | Package skills, agents, hooks, and MCP servers, and load them by local path                  | [Plugins](/docs/en/agent-sdk/plugins)                                                                                                                                                                               |
 
 ## Get started
 
@@ -50064,7 +50244,7 @@ If plugin skills don't work:
 
 * [Plugins](/docs/en/plugins) - Complete plugin development guide
 * [Plugins reference](/docs/en/plugins-reference) - Technical specifications
-* [Commands](/docs/en/agent-sdk/slash-commands) - Using commands in the SDK
+* [Commands](/docs/en/agent-sdk/skills#dispatch-commands-by-name) - Dispatching commands in the SDK
 * [Subagents](/docs/en/agent-sdk/subagents) - Working with specialized agents
 * [Skills](/docs/en/agent-sdk/skills) - Using Agent Skills
 
@@ -55181,40 +55361,55 @@ Both SDKs also expose functions for looking up and mutating individual sessions:
 * [TypeScript `Options`](/docs/en/agent-sdk/typescript#options): Full session option reference for TypeScript
 
 
-# Agent Skills in the SDK
+# Extend agents with skills
 Source: https://code.claude.com/docs/en/agent-sdk/skills
 
-Extend Claude with specialized capabilities using Agent Skills in the Claude Agent SDK
+Control which skills Claude can invoke in Claude Agent SDK sessions, dispatch commands by name, and author skills your sessions discover
 
-## Overview
+Agent Skills extend Claude with specialized capabilities that Claude invokes when relevant. Skills are packaged as `SKILL.md` files containing instructions, descriptions, and optional supporting resources. This page also covers [commands in Agent SDK sessions](#commands-in-agent-sdk-sessions).
 
-Agent Skills extend Claude with specialized capabilities that Claude autonomously invokes when relevant. Skills are packaged as `SKILL.md` files containing instructions, descriptions, and optional supporting resources.
+For comprehensive information about skills, including benefits, architecture, and authoring guidelines, see the [Agent Skills overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview).
 
-For comprehensive information about Skills, including benefits, architecture, and authoring guidelines, see the [Agent Skills overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview).
+## How skills work with the Agent SDK
 
-## How Skills Work with the SDK
+When using the Claude Agent SDK, skills are:
 
-When using the Claude Agent SDK, Skills are:
+* **Defined as filesystem artifacts**: you create each skill as a `SKILL.md` file in its own directory, such as `.claude/skills/<name>/SKILL.md`
+* **Loaded from filesystem**: the SDK loads skills from the filesystem locations governed by `settingSources` (TypeScript) or `setting_sources` (Python)
+* **Automatically discovered**: once filesystem settings load, the SDK discovers skill metadata at startup from user and project directories, and loads the full content when Claude invokes the skill
+* **Model-invoked**: Claude autonomously chooses when to use them based on context
+* **User-invoked**: you dispatch a skill directly by sending `/<name>` in a prompt. See [Commands in Agent SDK sessions](#commands-in-agent-sdk-sessions)
+* **Scoped via the `skills` option**: discovered skills are enabled by default. Pass a list of skill names, `"all"`, or `[]` to control which skills Claude can invoke
 
-1. **Defined as filesystem artifacts**: you create each Skill as a `SKILL.md` file in its own directory, such as `.claude/skills/<name>/SKILL.md`
-2. **Loaded from filesystem**: the SDK loads Skills from the filesystem locations governed by `settingSources` (TypeScript) or `setting_sources` (Python)
-3. **Automatically discovered**: once filesystem settings load, the SDK discovers Skill metadata at startup from user and project directories, and loads the full content when Claude invokes the Skill
-4. **Model-invoked**: Claude autonomously chooses when to use them based on context
-5. **Filtered via the `skills` option**: discovered skills are enabled by default. Pass a list of skill names, `"all"`, or `[]` to control which are available in the session
-
-Unlike subagents (which can be defined programmatically), Skills must be created as filesystem artifacts. The SDK does not provide a programmatic API for registering Skills.
+Unlike subagents, which you can define in the [`agents` option](/docs/en/agent-sdk/subagents#programmatic-definition-recommended), you create skills as files on disk. The SDK doesn't provide a programmatic API for registering them.
 
 <Note>
   Skills are discovered through the filesystem setting sources. With default `query()` options, the SDK loads user and project sources, so skills in `~/.claude/skills/`, `<cwd>/.claude/skills/`, and `.claude/skills/` in any parent directory of `<cwd>` up to the repository root are available. If you set `settingSources` explicitly, include `'user'` or `'project'` to keep skill discovery, or use the [`plugins` option](/docs/en/agent-sdk/plugins) to load skills from a specific path.
 </Note>
 
-## Using Skills with the SDK
+## Use skills with the Agent SDK
 
-Set the `skills` option on `query()` to control which Skills are available to the session. When omitted, discovered Skills are enabled and the Skill tool is available, matching CLI behavior. Pass `"all"` to enable every discovered Skill, a list of Skill names to enable only those, or `[]` to disable all. When you set `skills`, the SDK adds the Skill tool to `allowedTools` automatically. If you also pass an explicit `tools` list, include `"Skill"` in that list so Claude can invoke skills.
+Set the `skills` option on `query()` to control which skills Claude can invoke in the session. When omitted, discovered skills are enabled and the Skill tool is available, matching CLI behavior. Pass `"all"` to let Claude invoke every discovered skill, a list of skill names to allow only those, or `[]` to let Claude invoke none.
 
-Once configured, Claude automatically discovers Skills from the filesystem and invokes them when relevant to the user's request.
+For example, to let Claude invoke only two named skills:
 
-The following example sets `cwd` to the process's current working directory, so run it from inside a project that has a `.claude/skills/` directory in the current directory or any parent up to the repository root:
+<CodeGroup>
+  ```python Python theme={null}
+  options = ClaudeAgentOptions(skills=["pdf", "docx"])
+  ```
+
+  ```typescript TypeScript theme={null}
+  const options = { skills: ["pdf", "docx"] };
+  ```
+</CodeGroup>
+
+### Set up skills in a session
+
+When you set `skills`, the SDK adds the Skill tool to `allowedTools` automatically. If you also pass an explicit `tools` list, include `"Skill"` in that list so Claude can invoke skills.
+
+Once configured, Claude automatically discovers skills from the filesystem and invokes them when relevant to the user's request.
+
+The following example enables every discovered skill in a session and pre-approves the tools that skills commonly need. The example sets `cwd` to the process's current working directory, so run it from inside a project that has a `.claude/skills/` directory in the current directory or any parent up to the repository root:
 
 <CodeGroup>
   ```python Python theme={null}
@@ -55227,8 +55422,8 @@ The following example sets `cwd` to the process's current working directory, so 
   async def main():
       options = ClaudeAgentOptions(
           cwd=os.getcwd(),  # .claude/skills/ here or in a parent directory
-          setting_sources=["user", "project"],  # Load Skills from filesystem
-          skills="all",  # Enable every discovered Skill
+          setting_sources=["user", "project"],  # Load skills from filesystem
+          skills="all",  # Let Claude invoke every discovered skill
           allowed_tools=["Read", "Write", "Bash"],
       )
 
@@ -55248,8 +55443,8 @@ The following example sets `cwd` to the process's current working directory, so 
     prompt: "Help me process this PDF document",
     options: {
       cwd: process.cwd(), // .claude/skills/ here or in a parent directory
-      settingSources: ["user", "project"], // Load Skills from filesystem
-      skills: "all", // Enable every discovered Skill
+      settingSources: ["user", "project"], // Load skills from filesystem
+      skills: "all", // Let Claude invoke every discovered skill
       allowedTools: ["Read", "Write", "Bash"]
     }
   })) {
@@ -55258,271 +55453,36 @@ The following example sets `cwd` to the process's current working directory, so 
   ```
 </CodeGroup>
 
-Near the start of the stream, the SDK yields a system message with subtype `init`. Check its `skills` array to confirm your Skills loaded before Claude starts working. The array lists user-invocable Skills only. A Skill with [`user-invocable: false`](/docs/en/skills#control-who-invokes-a-skill) in its frontmatter loads and remains available to Claude but doesn't appear in the array.
+### Confirm skills loaded
 
-To enable only specific Skills, pass their names. Names match the `name` field in `SKILL.md` or the Skill's directory name. Use `plugin:skill` for plugin-provided Skills.
+Near the start of the stream, the SDK yields a system message with subtype `init`. Check its `skills` array to confirm your skills loaded before Claude starts working. The array includes the user-invocable skills that you have defined, along with [bundled skills included with Claude Code](/docs/en/skills#bundled-skills).
 
-<Note>
-  Import statements from the first example are assumed in the following code snippets.
-</Note>
+The array lists user-invocable skills only. A skill with [`user-invocable: false`](/docs/en/skills#control-who-invokes-a-skill) in its frontmatter loads and remains available to Claude, but doesn't appear in the array. The array reflects what the session discovered and lists the same skills whether or not they're in your `skills` list.
 
-<CodeGroup>
-  ```python Python theme={null}
-  options = ClaudeAgentOptions(skills=["pdf", "docx"])
-  ```
+### Allow only specific skills
 
-  ```typescript TypeScript theme={null}
-  const options = { skills: ["pdf", "docx"] };
-  ```
-</CodeGroup>
+To let Claude invoke only specific skills, pass their names in the `skills` list. Names match the `name` field in `SKILL.md` or the skill's directory name. Use `plugin:skill` for plugin-provided skills.
 
-The list takes exact Skill names only. In the TypeScript SDK, `query()` throws before starting the Claude Code process when a name can't work as an exact Skill name. In the Python SDK, `query()` raises `ValueError` in the same cases, for example:
+The list takes exact skill names only. If an entry can't work as an exact name, `query()` rejects the list before the session starts. See [Invalid skill name error](#invalid-skill-name-error) for the name rules and the error each SDK raises.
 
-* An empty name
-* A name containing parentheses, commas, or control characters
-* A name padded with whitespace
-* A wildcard form such as a bare `*` or a `:*` suffix
+The model doesn't see unlisted skills and the Skill tool rejects them, while their files remain on disk and stay reachable through Read and Bash. Restricting the list doesn't restrict [dispatch by name](#dispatch-commands-by-name).
 
-To enable every discovered Skill, pass `skills: "all"` rather than a wildcard.
+To let Claude invoke every discovered skill, pass `skills: "all"` rather than a wildcard.
 
-The `skills` option is a context filter, not a sandbox. Unlisted Skills are hidden from the model and rejected by the Skill tool, but their files remain on disk and are reachable through Read and Bash.
+## Commands in Agent SDK sessions
 
-## Creating Skills
+This section is the SDK's command documentation. A command is anything you run by sending `/<name>` in a prompt. Entries on the command surface differ in what backs them:
 
-Create each Skill as a directory containing a `SKILL.md` file with YAML frontmatter and Markdown content. The `description` field determines when Claude invokes your Skill.
+* **Built-in commands**: execute logic coded into the Claude Code process the SDK runs, for example `/compact`
+* **Bundled skills**: prompt artifacts included with Claude Code, for example `/code-review`
+* **Your skills**: prompt artifacts that you author, each a directory holding a `SKILL.md` file. A user-invocable skill's name joins the surface automatically, so dispatching your own `/security-check` and running a built-in work the same way
+* **Custom command files**: an older artifact form with the same behavior, flat Markdown files in `.claude/commands/` whose filenames become command names. Skills are their recommended successor
 
-**Example directory structure**:
+By default, both you and Claude can invoke any skill. You can restrict either path through the skill's [frontmatter](/docs/en/skills#control-who-invokes-a-skill). For a definition of the two terms, see the glossary's [Command](/docs/en/glossary#command) and [Skill](/docs/en/glossary#skill) entries. See [Commands in Claude Code](/docs/en/commands) for every built-in and [Extend Claude with skills](/docs/en/skills) for the complete guide to both artifact forms.
 
-```text theme={null}
-.claude/skills/processing-pdfs/
-└── SKILL.md
-```
+### Discover available commands
 
-For complete guidance on creating Skills, including SKILL.md structure, multi-file Skills, and examples, see:
-
-* [Agent Skills in Claude Code](/docs/en/skills): complete guide with examples
-* [Agent Skills Best Practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices): authoring guidelines and naming conventions
-
-## Tool Restrictions
-
-<Note>
-  The `allowed-tools` frontmatter field in SKILL.md is only supported when using Claude Code CLI directly. **It does not apply when using Skills through the SDK**.
-
-  When using the SDK, control tool access through the main `allowedTools` option in your query configuration.
-</Note>
-
-To control tool access for Skills in SDK applications, use `allowedTools` to pre-approve specific tools. Without a `canUseTool` callback, anything not in the list is denied:
-
-<CodeGroup>
-  ```python Python theme={null}
-  options = ClaudeAgentOptions(
-      setting_sources=["user", "project"],  # Load Skills from filesystem
-      skills="all",
-      allowed_tools=["Read", "Grep", "Glob"],
-      permission_mode="dontAsk",  # Deny anything not pre-approved instead of prompting
-  )
-
-
-  async def main():
-      async for message in query(prompt="Analyze the codebase structure", options=options):
-          print(message)
-
-
-  asyncio.run(main())
-  ```
-
-  ```typescript TypeScript theme={null}
-  for await (const message of query({
-    prompt: "Analyze the codebase structure",
-    options: {
-      settingSources: ["user", "project"], // Load Skills from filesystem
-      skills: "all",
-      allowedTools: ["Read", "Grep", "Glob"],
-      permissionMode: "dontAsk" // Deny anything not pre-approved instead of prompting
-    }
-  })) {
-    console.log(message);
-  }
-  ```
-</CodeGroup>
-
-## Discovering Available Skills
-
-To see which Skills are available in your SDK application, ask Claude. The example below sets only the `skills` option and omits `settingSources`/`setting_sources`. When you leave `settingSources`/`setting_sources` unset, the SDK still loads Skills from the user and project sources, so the `skills` option set to `"all"` on its own makes them available to list.
-
-<CodeGroup>
-  ```python Python theme={null}
-  options = ClaudeAgentOptions(skills="all")
-
-
-  async def main():
-      async for message in query(prompt="What Skills are available?", options=options):
-          print(message)
-
-
-  asyncio.run(main())
-  ```
-
-  ```typescript TypeScript theme={null}
-  for await (const message of query({
-    prompt: "What Skills are available?",
-    options: {
-      skills: "all"
-    }
-  })) {
-    console.log(message);
-  }
-  ```
-</CodeGroup>
-
-Claude will list the available Skills based on your current working directory and installed plugins.
-
-## Testing Skills
-
-Test Skills by asking questions that match their descriptions:
-
-<CodeGroup>
-  ```python Python theme={null}
-  options = ClaudeAgentOptions(
-      cwd=os.getcwd(),
-      setting_sources=["user", "project"],  # Load Skills from filesystem
-      skills="all",
-      allowed_tools=["Read", "Bash"],
-  )
-
-
-  async def main():
-      async for message in query(prompt="Extract text from invoice.pdf", options=options):
-          print(message)
-
-
-  asyncio.run(main())
-  ```
-
-  ```typescript TypeScript theme={null}
-  for await (const message of query({
-    prompt: "Extract text from invoice.pdf",
-    options: {
-      cwd: process.cwd(),
-      settingSources: ["user", "project"], // Load Skills from filesystem
-      skills: "all",
-      allowedTools: ["Read", "Bash"]
-    }
-  })) {
-    console.log(message);
-  }
-  ```
-</CodeGroup>
-
-Claude automatically invokes the relevant Skill if the description matches your request.
-
-## Troubleshooting
-
-### Skills Not Found
-
-**Check settingSources configuration**: Skills are discovered through the `user` and `project` setting sources. If you set `settingSources`/`setting_sources` explicitly and omit those sources, skills are not loaded:
-
-<CodeGroup>
-  ```python Python theme={null}
-  # Skills not loaded: setting_sources excludes user and project
-  options = ClaudeAgentOptions(setting_sources=[], skills="all")
-
-  # Skills loaded: user and project sources included
-  options = ClaudeAgentOptions(
-      setting_sources=["user", "project"],
-      skills="all",
-  )
-  ```
-
-  ```typescript TypeScript theme={null}
-  // Skills not loaded: settingSources excludes user and project
-  const optionsWithoutSkills = {
-    settingSources: [],
-    skills: "all"
-  };
-
-  // Skills loaded: user and project sources included
-  const optionsWithSkills = {
-    settingSources: ["user", "project"],
-    skills: "all"
-  };
-  ```
-</CodeGroup>
-
-For which skill directories each source loads, see the [filesystem sources table](/docs/en/agent-sdk/claude-code-features#control-filesystem-settings-with-settingsources). For more details on `settingSources`/`setting_sources`, see the [TypeScript SDK reference](/docs/en/agent-sdk/typescript#settingsource) or [Python SDK reference](/docs/en/agent-sdk/python#settingsource).
-
-**Check working directory**: The SDK loads Skills from `.claude/skills/` in the `cwd` option and in every parent directory up to the repository root. Ensure `cwd` points at or below the directory containing `.claude/skills/`, within the same repository:
-
-<CodeGroup>
-  ```python Python theme={null}
-  # Ensure your cwd points to the directory containing .claude/skills/
-  options = ClaudeAgentOptions(
-      cwd="/path/to/project",  # .claude/skills/ here or in a parent directory
-      setting_sources=["user", "project"],  # Loads skills from these sources
-      skills="all",
-  )
-  ```
-
-  ```typescript TypeScript theme={null}
-  // Ensure your cwd points to the directory containing .claude/skills/
-  const options = {
-    cwd: "/path/to/project", // .claude/skills/ here or in a parent directory
-    settingSources: ["user", "project"], // Loads skills from these sources
-    skills: "all"
-  };
-  ```
-</CodeGroup>
-
-See the "Using Skills with the SDK" section above for the complete pattern.
-
-**Verify filesystem location**:
-
-```bash theme={null}
-# Check project Skills
-ls .claude/skills/*/SKILL.md
-
-# Check personal Skills
-ls ~/.claude/skills/*/SKILL.md
-```
-
-### Skill Not Being Used
-
-**Check the `skills` option**: If you passed a `skills` list, confirm the skill's name is included. Passing `[]` disables all skills.
-
-**Check the description**: Ensure it's specific and includes relevant keywords. See [Agent Skills Best Practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#writing-effective-descriptions) for guidance on writing effective descriptions.
-
-### Additional Troubleshooting
-
-For general Skills troubleshooting (YAML syntax, debugging, etc.), see the [Claude Code Skills troubleshooting section](/docs/en/skills#troubleshooting).
-
-## Related Documentation
-
-### Skills Guides
-
-* [Agent Skills in Claude Code](/docs/en/skills): complete Skills guide with creation, examples, and troubleshooting
-* [Agent Skills Overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview): conceptual overview, benefits, and architecture
-* [Agent Skills Best Practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices): authoring guidelines for effective Skills
-* [Agent Skills Cookbook](https://platform.claude.com/cookbook/skills-notebooks-01-skills-introduction): example Skills and templates
-
-### SDK Resources
-
-* [Subagents in the SDK](/docs/en/agent-sdk/subagents): similar filesystem-based agents with programmatic options
-* [Commands in the SDK](/docs/en/agent-sdk/slash-commands): user-invoked commands
-* [SDK Overview](/docs/en/agent-sdk/overview): general SDK concepts
-* [TypeScript SDK Reference](/docs/en/agent-sdk/typescript): complete API documentation
-* [Python SDK Reference](/docs/en/agent-sdk/python): complete API documentation
-
-
-# Slash Commands in the SDK
-Source: https://code.claude.com/docs/en/agent-sdk/slash-commands
-
-Learn how to use slash commands to control Claude Code sessions through the SDK
-
-Slash commands provide a way to control Claude Code sessions with special commands that start with `/`. These commands can be sent through the SDK to perform actions like compacting context, listing context usage, or invoking custom commands. Only commands that work without an interactive terminal are dispatchable through the SDK; the `system/init` message lists the ones available in your session.
-
-## Discovering Available Slash Commands
-
-The Claude Agent SDK provides information about available slash commands in the system initialization message. Access this information when your session starts:
+You can dispatch commands that work without an interactive terminal through the SDK. The `system/init` message lists the ones available in your session in its `slash_commands` field. Commands that need an interactive terminal, such as `/theme` and `/terminal-setup`, don't appear in the list. Access the field when your session starts:
 
 <CodeGroup>
   ```typescript TypeScript theme={null}
@@ -55533,9 +55493,7 @@ The Claude Agent SDK provides information about available slash commands in the 
     options: { maxTurns: 1 }
   })) {
     if (message.type === "system" && message.subtype === "init") {
-      console.log("Available slash commands:", message.slash_commands);
-      // Includes built-in commands plus bundled skills, for example:
-      // ["clear", "compact", "context", "usage", "code-review", "verify", ...]
+      console.log("Available commands:", message.slash_commands);
     }
   }
   ```
@@ -55548,97 +55506,32 @@ The Claude Agent SDK provides information about available slash commands in the 
   async def main():
       async for message in query(prompt="Hello Claude", options=ClaudeAgentOptions(max_turns=1)):
           if isinstance(message, SystemMessage) and message.subtype == "init":
-              print("Available slash commands:", message.data["slash_commands"])
-              # Includes built-in commands plus bundled skills, for example:
-              # ["clear", "compact", "context", "usage", "code-review", "verify", ...]
+              print("Available commands:", message.data["slash_commands"])
 
 
   asyncio.run(main())
   ```
 </CodeGroup>
 
-## Sending Slash Commands
+The printed list mixes built-in commands, bundled skills, your user-invocable skills, and `.claude/commands/` files:
 
-Send slash commands by including them in your prompt string, just like regular text. Commands that act on conversation history, such as `/compact`, need prior messages to work with, so the examples below ask a question first and then send the command as a follow-up to the same conversation:
+```text theme={null}
+Available commands: ["clear", "compact", "context", "usage", "code-review", "verify", "security-check", ...]
+```
 
-<CodeGroup>
-  ```typescript TypeScript theme={null}
-  import { query } from "@anthropic-ai/claude-agent-sdk";
+Your user-invocable skills appear in both this list and the `skills` array from [Confirm skills loaded](#confirm-skills-loaded). The `slash_commands` list adds the rest of the commands available in your session. A skill with [`user-invocable: false`](/docs/en/skills#control-who-invokes-a-skill) in its frontmatter doesn't appear in either. Sessions that configure [MCP servers](/docs/en/agent-sdk/mcp) can also expose [MCP prompts as commands](/docs/en/mcp#use-mcp-prompts-as-commands).
 
-  // Build up conversation history first
-  try {
-    for await (const message of query({
-      prompt: "What does the README in this directory cover?",
-      options: { maxTurns: 2 }
-    })) {
-      if (message.type === "result" && message.subtype === "success") {
-        console.log(message.result);
-      }
-    }
-  } catch (error) {
-    // A single-shot query() throws after yielding an error result,
-    // so the follow-up query below still runs.
-    console.error(`Session ended with an error: ${error}`);
-  }
+### Dispatch commands by name
 
-  // Send a slash command as a follow-up to the same conversation
-  for await (const message of query({
-    prompt: "/compact",
-    options: { continue: true, maxTurns: 1 }
-  })) {
-    if (message.type === "result") {
-      console.log("Command executed, result subtype:", message.subtype);
-      // Example output: Command executed, result subtype: success
-    }
-  }
-  ```
-
-  ```python Python theme={null}
-  import asyncio
-  from claude_agent_sdk import query, ClaudeAgentOptions, ResultMessage
-
-
-  async def main():
-      # Build up conversation history first
-      try:
-          async for message in query(
-              prompt="What does the README in this directory cover?",
-              options=ClaudeAgentOptions(max_turns=2),
-          ):
-              if isinstance(message, ResultMessage) and message.subtype == "success":
-                  print(message.result)
-      except Exception as error:
-          # A single-shot query() raises after yielding an error result,
-          # so the follow-up query below still runs.
-          print(f"Session ended with an error: {error}")
-
-      # Send a slash command as a follow-up to the same conversation
-      async for message in query(
-          prompt="/compact",
-          options=ClaudeAgentOptions(continue_conversation=True, max_turns=1),
-      ):
-          if isinstance(message, ResultMessage):
-              print("Command executed, result subtype:", message.subtype)
-              # Example output: Command executed, result subtype: success
-
-
-  asyncio.run(main())
-  ```
-</CodeGroup>
+Send a command by including it in your prompt string, the same way you send regular text. Dispatch doesn't depend on the `skills` option. Sending `/<name>` runs a user-invocable skill even when your `skills` list omits it. Commands that act on conversation history, such as `/compact`, need prior messages to work with.
 
 <Note>
-  A query can end with an error result, for example when the `maxTurns` / `max_turns` limit is reached before the work completes. The final result message then has `is_error: true` and an error subtype such as `error_max_turns` instead of `success`.
-
-  After yielding that final result message, the SDK raises an error, because the CLI process exits with a non-zero code.
-
-  Wrap the loop in a `try`/`catch` in TypeScript or `try`/`except` in Python if your command might hit the limit, as shown in [Single Message Input](/docs/en/agent-sdk/streaming-vs-single-mode#single-message-input), or set `maxTurns` high enough for the work to complete. In Python, catch `Exception`: the SDK surfaces error results as a plain `Exception`.
+  A command can hit the `maxTurns` / `max_turns` limit like any other prompt, ending the query with an error result instead of `success`. For the error-result contract, see [Handle the result](/docs/en/agent-sdk/agent-loop#handle-the-result). If your command might hit the limit, wrap the loop in a `try`/`catch` in TypeScript or `try`/`except` in Python, as shown in [Single Message Input](/docs/en/agent-sdk/streaming-vs-single-mode#single-message-input), or set `maxTurns` high enough for the work to complete.
 </Note>
 
-## Common Slash Commands
+### Compact history with `/compact`
 
-### `/compact` - Compact conversation history
-
-The `/compact` command reduces the size of your conversation history by summarizing older messages while preserving important context. Compaction needs an existing conversation with at least two prior exchanges to summarize. This example has a conversation first, then compacts it and reads the `compact_boundary` system message that reports the result:
+The `/compact` command reduces the size of your conversation history by summarizing older messages while preserving important context. Compaction needs an existing conversation with enough prior messages to summarize. This example has a conversation first, then compacts it and reads the `compact_boundary` system message that reports the result:
 
 <CodeGroup>
   ```typescript TypeScript theme={null}
@@ -55716,58 +55609,43 @@ The `/compact` command reduces the size of your conversation history by summariz
 </CodeGroup>
 
 <Note>
-  A `compact_boundary` message only arrives when compaction ran. With nothing to summarize, `/compact` reports the reason instead of raising: the run still ends with a `success` result, no `compact_boundary` message is emitted, and the result text carries the message, for example `Not enough messages to compact.` after a single short exchange. A fresh one-shot `query()` call starts with empty context, so use this pattern in a session with prior turns, for example in [streaming input mode](/docs/en/agent-sdk/streaming-vs-single-mode) or when resuming a session.
+  A `compact_boundary` message only arrives when compaction ran. With nothing to summarize, `/compact` reports the reason instead of raising. The run still ends with a `success` result and no `compact_boundary` message, and the result text carries the reason, for example `Not enough messages to compact.` after a single short exchange. A fresh one-shot `query()` call starts with empty context, so use this pattern in a session with prior turns, for example in [streaming input mode](/docs/en/agent-sdk/streaming-vs-single-mode) or when resuming a session.
 </Note>
 
-### `/clear` - Reset conversation context
+### Reset context with `/clear`
 
-The `/clear` command resets the conversation to an empty context, so subsequent prompts start with no prior conversation history. The previous conversation remains on disk and can be returned to by passing its session ID to the [`resume` option](/docs/en/agent-sdk/sessions#resume-by-id).
+The `/clear` command resets the conversation to an empty context, so subsequent prompts start with no prior conversation history. The previous conversation remains on disk. You can return to that conversation by passing its session ID to the [`resume` option](/docs/en/agent-sdk/sessions#resume-by-id).
 
-This is useful in [streaming input mode](/docs/en/agent-sdk/streaming-vs-single-mode), where you send multiple prompts over a single connection. For one-shot `query()` calls, each call already starts with empty context, so sending `/clear` has no practical effect; start a new `query()` instead.
+`/clear` is useful in [streaming input mode](/docs/en/agent-sdk/streaming-vs-single-mode), where you send multiple prompts over a single connection. For one-shot `query()` calls, each call already starts with empty context, so sending `/clear` has no practical effect. Start a new `query()` instead.
 
-## Creating Custom Slash Commands
+## Create skills
 
-In addition to using built-in slash commands, you can create your own custom commands that are available through the SDK. You define custom commands as markdown files in specific directories, the same way you configure subagents.
+Create each skill as a directory containing a `SKILL.md` file with YAML frontmatter and Markdown content. The `description` field determines when Claude invokes your skill.
 
-<Note>
-  Custom commands have been merged into skills. A file in `.claude/commands/` and a skill at `.claude/skills/<name>/SKILL.md` both create `/name` and work the same way. For new work, prefer skills, which add features like a directory for supporting files; see [Skills](/docs/en/agent-sdk/skills) for SDK usage. The CLI supports both locations, and the examples below remain accurate for `.claude/commands/`.
-</Note>
+**Example directory structure**:
 
-### File Locations
-
-Save custom slash commands in one of these directories, depending on their scope:
-
-* **Project commands**: `.claude/commands/` - Available only in the current project. For new work, prefer `.claude/skills/`.
-* **Personal commands**: `~/.claude/commands/` - Available across all your projects. For new work, prefer `~/.claude/skills/`.
-
-### File Format
-
-Each custom command is a markdown file where:
-
-* The filename (without `.md` extension) becomes the command name
-* The file content defines what the command does
-* Optional YAML frontmatter provides configuration
-
-#### Basic Example
-
-Create the `.claude/commands` directory in your project if it doesn't exist, then create `.claude/commands/refactor.md`:
-
-```markdown theme={null}
-Refactor the selected code to improve readability and maintainability.
-Focus on clean code principles and best practices.
+```text theme={null}
+.claude/skills/security-check/
+└── SKILL.md
 ```
 
-This creates the `/refactor` command that you can use through the SDK.
+### Choose a discovery level
 
-#### With Frontmatter
+Save skills at either of the two most common [discovery levels](/docs/en/skills#where-skills-live):
 
-Create `.claude/commands/security-check.md`:
+* **Project skills**: `.claude/skills/`, available only in the current project
+* **Personal skills**: `~/.claude/skills/`, available across all your projects
+
+If you have existing custom command files in `.claude/commands/`, they keep working. A command file at `.claude/commands/deploy.md` creates `/deploy` and works the same way as a skill at `.claude/skills/deploy/SKILL.md` would. If a command file and a skill share a name, see [Where skills live](/docs/en/skills#where-skills-live) for which one runs. The SDK loads `.claude/commands/` and `~/.claude/commands/` files from the same two scopes as skills. See [Extend Claude with skills](/docs/en/skills) for the complete guide to both artifact forms.
+
+### Create and dispatch your first skill
+
+To see the full flow, create `.claude/skills/security-check/SKILL.md`:
 
 ```markdown theme={null}
 ---
-allowed-tools: Read, Grep, Glob
-description: Run security vulnerability scan
-model: claude-opus-4-8
+name: security-check
+description: Run a security vulnerability scan
 ---
 
 Analyze the codebase for security vulnerabilities including:
@@ -55777,113 +55655,19 @@ Analyze the codebase for security vulnerabilities including:
 - Insecure configurations
 ```
 
-### Using Custom Commands in the SDK
-
-Once defined in the filesystem, custom commands are automatically available through the SDK:
+Once the file exists, the skill is available through the SDK. Claude invokes it when a request matches its description, and you can dispatch it directly:
 
 <CodeGroup>
   ```typescript TypeScript theme={null}
   import { query } from "@anthropic-ai/claude-agent-sdk";
 
-  // Use a custom command
-  try {
-    for await (const message of query({
-      prompt: "/refactor src/auth/login.ts",
-      options: { maxTurns: 3 }
-    })) {
-      if (message.type === "assistant") {
-        console.log("Refactoring suggestions:", message.message);
-      }
-    }
-  } catch (error) {
-    // A single-shot query() throws after yielding an error result,
-    // so the second query below still runs.
-    console.error(`Session ended with an error: ${error}`);
-  }
-
-  // Custom commands appear in the slash_commands list
   for await (const message of query({
-    prompt: "Hello",
-    options: { maxTurns: 1 }
+    prompt: "/security-check",
+    options: { maxTurns: 10 }
   })) {
-    if (message.type === "system" && message.subtype === "init") {
-      console.log("Available commands:", message.slash_commands);
-      // Includes built-in commands plus bundled skills and your custom commands, for example:
-      // ["clear", "compact", "context", "usage", "code-review", "verify", "refactor", "security-check", ...]
+    if (message.type === "result" && message.subtype === "success") {
+      console.log(message.result);
     }
-  }
-  ```
-
-  ```python Python theme={null}
-  import asyncio
-  from claude_agent_sdk import query, ClaudeAgentOptions, AssistantMessage, SystemMessage
-
-
-  async def main():
-      # Use a custom command
-      try:
-          async for message in query(
-              prompt="/refactor src/auth/login.py", options=ClaudeAgentOptions(max_turns=3)
-          ):
-              if isinstance(message, AssistantMessage):
-                  for block in message.content:
-                      if hasattr(block, "text"):
-                          print("Refactoring suggestions:", block.text)
-      except Exception as error:
-          # A single-shot query() raises after yielding an error result,
-          # so the second query below still runs.
-          print(f"Session ended with an error: {error}")
-
-      # Custom commands appear in the slash_commands list
-      async for message in query(prompt="Hello", options=ClaudeAgentOptions(max_turns=1)):
-          if isinstance(message, SystemMessage) and message.subtype == "init":
-              print("Available commands:", message.data["slash_commands"])
-              # Includes built-in commands plus bundled skills and your custom commands, for example:
-              # ["clear", "compact", "context", "usage", "code-review", "verify", "refactor", "security-check", ...]
-
-
-  asyncio.run(main())
-  ```
-</CodeGroup>
-
-### Advanced Features
-
-#### Arguments and Placeholders
-
-Custom commands support dynamic arguments using placeholders:
-
-Create `.claude/commands/fix-issue.md`:
-
-```markdown theme={null}
----
-argument-hint: [issue-number] [priority]
-description: Fix a GitHub issue
----
-
-Fix issue #$0 with priority $1.
-Check the issue description and implement the necessary changes.
-```
-
-Use in SDK:
-
-<CodeGroup>
-  ```typescript TypeScript theme={null}
-  import { query } from "@anthropic-ai/claude-agent-sdk";
-
-  // Pass arguments to custom command
-  try {
-    for await (const message of query({
-      prompt: "/fix-issue 123 high",
-      options: { maxTurns: 5 }
-    })) {
-      // Command will process with $0="123" and $1="high"
-      if (message.type === "result" && message.subtype === "success") {
-        console.log("Issue fixed:", message.result);
-      }
-    }
-  } catch (err) {
-    // The run ends with an error when it reaches the maxTurns limit
-    console.error("Session ended with an error:", err);
   }
   ```
 
@@ -55893,141 +55677,212 @@ Use in SDK:
 
 
   async def main():
-      # Pass arguments to custom command
-      try:
-          async for message in query(prompt="/fix-issue 123 high", options=ClaudeAgentOptions(max_turns=5)):
-              # Command will process with $0="123" and $1="high"
-              if isinstance(message, ResultMessage):
-                  print("Issue fixed:", message.result)
-      except Exception as error:
-          # The run ends with an error when it reaches the max_turns limit
-          print(f"Session ended with an error: {error}")
+      async for message in query(
+          prompt="/security-check", options=ClaudeAgentOptions(max_turns=10)
+      ):
+          if isinstance(message, ResultMessage) and message.subtype == "success":
+              print(message.result)
 
 
   asyncio.run(main())
   ```
 </CodeGroup>
 
-If the prompt passes fewer arguments than the placeholders reference, unmatched indexed placeholders such as `$1` stay in the command text verbatim. For the full substitution behavior, including named arguments, see [available string substitutions](/docs/en/skills#available-string-substitutions).
+A successful run ends with a `success` result whose text carries the scan findings. Against a small Express app with seeded issues, the result text begins:
 
-#### Bash Command Execution
+```text theme={null}
+**Security scan of `app.js` — 4 findings (most severe first):**
 
-Custom commands can execute bash commands and include their output:
-
-Create `.claude/commands/git-commit.md`:
-
-```markdown theme={null}
----
-allowed-tools: Bash(git add *), Bash(git status *), Bash(git commit *)
-description: Create a git commit
----
-
-## Context
-
-- Current status: !`git status`
-- Current diff: !`git diff HEAD`
-
-## Task
-
-Create a git commit with appropriate message based on the changes.
+1. **SQL Injection** (line 8) — `req.query.name` is concatenated directly into the SQL string. Trivially exploitable (`' OR '1'='1`, `'; DROP TABLE users;--`). **Fix:** use parameterized queries, e.g. `db.query("SELECT * FROM users WHERE name = ?", [req.query.name], cb)`.
+...
 ```
 
-#### File References
-
-Include file contents using the `@` prefix:
-
-Create `.claude/commands/review-config.md`:
-
-```markdown theme={null}
----
-description: Review configuration files
----
-
-Review the following configuration files for issues:
-- Package config: @package.json
-- TypeScript config: @tsconfig.json
-- Environment config: @.env
-
-Check for security issues, outdated dependencies, and misconfigurations.
-```
-
-### Organization with Namespacing
-
-Organize commands in subdirectories for better structure:
-
-```bash theme={null}
-.claude/commands/
-├── frontend/
-│   ├── component.md      # Creates /component (project:frontend)
-│   └── style-check.md     # Creates /style-check (project:frontend)
-├── backend/
-│   ├── api-test.md        # Creates /api-test (project:backend)
-│   └── db-migrate.md      # Creates /db-migrate (project:backend)
-└── review.md              # Creates /review (project)
-```
-
-The subdirectory appears in the command description but doesn't affect the command name itself.
-
-### Practical Examples
-
-#### Pull Request Review Command
-
-Create `.claude/commands/review-pr.md`:
-
-```markdown theme={null}
----
-allowed-tools: Read, Grep, Glob, Bash(git diff *)
-description: Comprehensive code review
----
-
-## Changed Files
-!`git diff --name-only HEAD~1`
-
-## Detailed Changes
-!`git diff HEAD~1`
-
-## Review Checklist
-
-Review the above changes for:
-1. Code quality and readability
-2. Security vulnerabilities
-3. Performance implications
-4. Test coverage
-5. Documentation completeness
-
-Provide specific, actionable feedback organized by priority.
-```
+The skill's name also appears in the init message's `slash_commands` array.
 
 <Note>
-  Claude Code includes bundled `code-review` and `verify` skills. If you name a custom command after one of them, for example `.claude/commands/code-review.md`, your command shadows the bundled skill and `slash_commands` lists the name once.
+  Claude Code includes bundled `code-review` and `verify` skills. If you name a `.claude/commands/` file after one of them, for example `.claude/commands/code-review.md`, the file's command shadows the bundled skill and `slash_commands` lists the name once.
 </Note>
 
-#### Test Runner Command
+## Pre-approve tools for skills
 
-Create `.claude/commands/test.md`:
+<Note>
+  For project and personal skills, the `allowed-tools` frontmatter field applies only when you use the Claude Code CLI directly. In SDK sessions, manage tool approval for these skills through the `allowedTools` option (`allowed_tools` in Python) in your query configuration. Skills [synced from claude.ai](/docs/en/skills#how-claude-code-handles-the-frontmatter-of-a-synced-skill) follow their own frontmatter rules.
+</Note>
 
-```markdown theme={null}
----
-allowed-tools: Bash, Read, Edit
-argument-hint: [test-pattern]
-description: Run tests with optional pattern
----
+Skills run with the session's tools. The example below pre-approves `Read`, `Grep`, and `Glob` with `allowedTools` (`allowed_tools` in Python), so Claude can inspect files while running the [security-check skill](#create-and-dispatch-your-first-skill) without stopping for approval:
 
-Run tests matching pattern: $ARGUMENTS
+<CodeGroup>
+  ```python Python theme={null}
+  import asyncio
 
-1. Detect the test framework (Jest, pytest, etc.)
-2. Run tests with the provided pattern
-3. If tests fail, analyze and fix them
-4. Re-run to verify fixes
+  from claude_agent_sdk import query, ClaudeAgentOptions
+
+  options = ClaudeAgentOptions(
+      setting_sources=["user", "project"],  # Load skills from filesystem
+      skills="all",
+      allowed_tools=["Read", "Grep", "Glob"],
+  )
+
+
+  async def main():
+      async for message in query(prompt="Check this project for security issues", options=options):
+          print(message)
+
+
+  asyncio.run(main())
+  ```
+
+  ```typescript TypeScript theme={null}
+  import { query } from "@anthropic-ai/claude-agent-sdk";
+
+  for await (const message of query({
+    prompt: "Check this project for security issues",
+    options: {
+      settingSources: ["user", "project"], // Load skills from filesystem
+      skills: "all",
+      allowedTools: ["Read", "Grep", "Glob"]
+    }
+  })) {
+    console.log(message);
+  }
+  ```
+</CodeGroup>
+
+In the stream, the skill invocation appears as a Skill tool use, followed by Read calls on the project files. The run ends with a `success` result whose text carries the findings.
+
+The list pre-approves the named tools rather than restricting the others. For the full permission flow, including permission modes and the `canUseTool` callback, see [Permissions](/docs/en/agent-sdk/permissions).
+
+## Troubleshooting
+
+### Skills not found
+
+**Check settingSources configuration**: the SDK discovers skills through the `user` and `project` setting sources. If you set `settingSources`/`setting_sources` explicitly and omit those sources, the SDK doesn't load skills:
+
+<CodeGroup>
+  ```python Python theme={null}
+  # Skills not loaded: setting_sources excludes user and project
+  options = ClaudeAgentOptions(setting_sources=[], skills="all")
+
+  # Skills loaded: user and project sources included
+  options = ClaudeAgentOptions(
+      setting_sources=["user", "project"],
+      skills="all",
+  )
+  ```
+
+  ```typescript TypeScript theme={null}
+  // Skills not loaded: settingSources excludes user and project
+  const optionsWithoutSkills = {
+    settingSources: [],
+    skills: "all"
+  };
+
+  // Skills loaded: user and project sources included
+  const optionsWithSkills = {
+    settingSources: ["user", "project"],
+    skills: "all"
+  };
+  ```
+</CodeGroup>
+
+For which skill directories each source loads, see the [filesystem sources table](/docs/en/agent-sdk/claude-code-features#control-filesystem-settings-with-settingsources). For more details on `settingSources`/`setting_sources`, see the [TypeScript SDK reference](/docs/en/agent-sdk/typescript#settingsource) or [Python SDK reference](/docs/en/agent-sdk/python#settingsource).
+
+**Check working directory**: the SDK loads skills from `.claude/skills/` in the `cwd` option and in every parent directory up to the repository root. Ensure `cwd` points at or below the directory containing `.claude/skills/`, within the same repository:
+
+<CodeGroup>
+  ```python Python theme={null}
+  # Ensure your cwd points to the directory containing .claude/skills/
+  options = ClaudeAgentOptions(
+      cwd="/path/to/project",  # .claude/skills/ here or in a parent directory
+      setting_sources=["user", "project"],  # Loads skills from these sources
+      skills="all",
+  )
+  ```
+
+  ```typescript TypeScript theme={null}
+  // Ensure your cwd points to the directory containing .claude/skills/
+  const options = {
+    cwd: "/path/to/project", // .claude/skills/ here or in a parent directory
+    settingSources: ["user", "project"], // Loads skills from these sources
+    skills: "all"
+  };
+  ```
+</CodeGroup>
+
+See [Use skills with the Agent SDK](#use-skills-with-the-agent-sdk) for the complete pattern.
+
+**Verify filesystem location**:
+
+```bash theme={null}
+# Check project skills
+ls .claude/skills/*/SKILL.md
+
+# Check personal skills
+ls ~/.claude/skills/*/SKILL.md
 ```
 
-## See Also
+### Skill not being used
 
-* [Slash Commands](/docs/en/skills) - Complete slash command documentation
-* [Subagents in the SDK](/docs/en/agent-sdk/subagents) - Similar filesystem-based configuration for subagents
-* [TypeScript SDK reference](/docs/en/agent-sdk/typescript) - Complete API documentation
-* [SDK overview](/docs/en/agent-sdk/overview) - General SDK concepts
-* [CLI reference](/docs/en/cli-reference) - Command-line interface
+**Check the `skills` option**: if you passed a `skills` list, confirm the skill's name is included. When Claude tries to invoke an unlisted skill, the Skill tool returns `Skill <name> is not in this session's skills allowlist`. Add the name to your list, or dispatch the skill directly by sending `/<name>` in a prompt, which works without listing.
+
+**Check the description**: ensure it's specific and includes relevant keywords. See [Agent Skills best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#writing-effective-descriptions) for guidance on writing effective descriptions.
+
+### Invalid skill name error
+
+When a name in your `skills` list can't work as an exact skill name, `query()` rejects the list before starting the Claude Code process. Names that trigger the rejection include:
+
+* An empty name
+* A name containing parentheses, commas, or control characters
+* A name padded with whitespace
+* A wildcard form such as a bare `*` or a `:*` suffix
+
+Each SDK surfaces the rejection differently:
+
+<Tabs>
+  <Tab title="TypeScript">
+    The TypeScript SDK throws an `Error` stating the rule the entry broke. For example, `skills: ["docs:*"]` throws:
+
+    ```text theme={null}
+    Invalid skill name "docs:*": wildcard-suffix names are not allowed; list each skill by its exact name.
+    ```
+
+    An empty name reports `Skill names must be non-empty strings.`
+  </Tab>
+
+  <Tab title="Python">
+    The Python SDK raises `ValueError` stating the rule the entry broke. For example, `skills=["docs:*"]` raises:
+
+    ```text theme={null}
+    ValueError: Invalid skill name 'docs:*': wildcard-suffix names are not allowed; list each skill by its exact name.
+    ```
+
+    An empty name reports `Skill names must be non-empty strings`.
+  </Tab>
+</Tabs>
+
+### Additional troubleshooting
+
+For general skills troubleshooting, such as YAML syntax errors and debugging, see the [Claude Code skills troubleshooting section](/docs/en/skills#troubleshooting).
+
+## Next steps
+
+The [Claude Code skills guide](/docs/en/skills) covers authoring in depth. Its guidance applies to SDK sessions, with one exception: for project and personal skills, [Pre-approve tools for skills](#pre-approve-tools-for-skills) replaces the `allowed-tools` frontmatter field with the `allowedTools` option. Start with these sections:
+
+* [Frontmatter reference](/docs/en/skills#frontmatter-reference): every supported field
+* [Pass arguments to skills](/docs/en/skills#pass-arguments-to-skills): `$ARGUMENTS`, `$0`, `$1`, and skill stacking. The [full substitution table](/docs/en/skills#available-string-substitutions) adds named arguments and the `${CLAUDE_*}` variables
+* [Inject dynamic context](/docs/en/skills#inject-dynamic-context): `` !`command` `` lines that run before Claude sees the skill content
+* [Where skills live](/docs/en/skills#where-skills-live): all discovery levels, plugin namespacing, and what happens when a skill and a command file share a name
+
+## Related resources
+
+* [Commands in Claude Code](/docs/en/commands): the full command surface, including every built-in
+* [Agent Skills overview](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview): conceptual overview, benefits, and architecture
+* [Agent Skills best practices](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices): authoring guidelines for effective skills
+* [Agent Skills cookbook](https://platform.claude.com/cookbook/skills-notebooks-01-skills-introduction): example skills and templates
+* [Subagents in the SDK](/docs/en/agent-sdk/subagents): similar filesystem-based agents with programmatic options
+* [SDK overview](/docs/en/agent-sdk/overview): general SDK concepts
+* [TypeScript SDK reference](/docs/en/agent-sdk/typescript): complete API documentation
+* [Python SDK reference](/docs/en/agent-sdk/python): complete API documentation
 
 
 # Stream responses in real-time
@@ -57365,6 +57220,8 @@ You can also define subagents as markdown files in `.claude/agents/` directories
 
 <Note>
   Even without defining custom subagents, Claude can spawn the built-in `general-purpose` subagent. This is useful for delegating research or exploration tasks without creating specialized agents. Include `Agent` in `allowedTools` so these invocations auto-approve without a permission prompt.
+
+  When Claude calls the Agent tool without a `subagent_type`, it gets this built-in `general-purpose` subagent. If you set [`CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS=1`](/docs/en/env-vars), that default is gone too. Such a call then fails with `subagent_type is required: the general-purpose agent is not available in this session`. The message ends with the subagent types that are still available. Before TypeScript SDK v0.3.235 (Python SDK: bundled Claude Code before v2.1.235), the same call failed with `Agent type 'general-purpose' not found`.
 </Note>
 
 ## What subagents inherit
@@ -66723,7 +66580,7 @@ In the table below, `<arg>` indicates a required argument and `[arg]` indicates 
 | `/fewer-permission-prompts`                                                                   | **[Skill](/docs/en/skills#bundled-skills).** Scan your transcripts for common read-only Bash and MCP tool calls, then add a prioritized allowlist to project `.claude/settings.json` to reduce permission prompts                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `/focus`                                                                                      | Toggle the focus view, which shows only your last prompt, a one-line tool-call summary with edit diffstats, and the final response. The tool-call summary also counts the subagents launched in the turn and collapses completed background-task notifications into a single count. The selection persists across sessions; set [`viewMode`](/docs/en/settings#available-settings) in settings to override it. Only available in [fullscreen rendering](/docs/en/fullscreen). The [VS Code extension](/docs/en/vs-code#use-the-prompt-box) offers its own Focus view as a command-menu toggle, stored as an extension setting, independent of `viewMode`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `/fork [prompt]`                                                                              | [Copy the current conversation](/docs/en/agent-view#copy-the-session-with-%2Ffork) into a new background session and keep working here. Pass a prompt and the copy starts working on it immediately; without one it waits in agent view for its first prompt. Except when the copy [edits in place](/docs/en/agent-view#how-file-edits-are-isolated), Claude Code instructs it to create a worktree of its own before making code changes; the isolation instruction requires Claude Code v2.1.221 or later. To hand a side task to a subagent whose result comes back into this conversation, use `/subtask`; to switch into a copy yourself, use `/branch`. Requires Claude Code v2.1.212 or later; on v2.1.161 through v2.1.211, and whenever [agent view is turned off](/docs/en/agent-view#turn-off-agent-view), `/fork` starts a [forked subagent](/docs/en/sub-agents#fork-the-current-conversation) instead                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `/goal [condition\|clear]`                                                                    | Set a [goal](/docs/en/goal): Claude keeps working across turns until the condition is met or judged impossible. With no argument, shows the current or most recently achieved goal. `clear`, `stop`, `off`, `reset`, `none`, or `cancel` removes an active goal early                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `/goal [condition\|clear]`                                                                    | Set a [goal](/docs/en/goal): Claude keeps working across turns until the condition is met or the goal [clears for another reason](/docs/en/goal#how-evaluation-works). With no argument, shows the current or most recently achieved goal. `clear`, `stop`, `off`, `reset`, `none`, or `cancel` removes an active goal early                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `/heapdump`                                                                                   | Write a JavaScript heap snapshot and a memory breakdown to `~/Desktop`, or your home directory on Linux without a Desktop folder, for diagnosing high memory usage. Attach only the `-diagnostics.json` file when reporting a memory issue; the `.heapsnapshot` contains your full conversation and credentials, so don't share it. Doesn't appear in the command menu; type it in full. See [what to do with the output](/docs/en/troubleshooting#high-cpu-or-memory-usage)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `/help`                                                                                       | Show help and available commands                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `/hooks`                                                                                      | View [hook](/docs/en/hooks) configurations for tool events                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -67520,7 +67377,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDECODE`                                            | Set to `1` in subprocesses Claude Code spawns (Bash and PowerShell tools, tmux sessions, [hook](/docs/en/hooks) commands, [status line](/docs/en/statusline) commands, stdio [MCP server](/docs/en/mcp) subprocesses). IDE extensions also set this in their integrated terminals. Use to detect when a script is running inside a subprocess spawned by Claude Code. To check whether the current process was spawned directly by a tool call or hook, rather than inside a stdio MCP server that Claude Code started, use `CLAUDE_CODE_CHILD_SESSION` instead                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `CLAUDE_AFK_COUNTDOWN_MS`                               | How many milliseconds before auto-continue the on-screen countdown appears on an unanswered [`AskUserQuestion`](/docs/en/tools-reference) dialog. Default `20000` (20 seconds), capped at the auto-continue timeout. Has no effect unless auto-continue is on; see the [`askUserQuestionTimeout`](/docs/en/settings#available-settings) setting and `CLAUDE_AFK_TIMEOUT_MS`. Requires Claude Code v2.1.198 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `CLAUDE_AFK_TIMEOUT_MS`                                 | How many milliseconds of idle time before an unanswered [`AskUserQuestion`](/docs/en/tools-reference) dialog auto-continues without you. Auto-continue is off by default; opt in with the [`askUserQuestionTimeout`](/docs/en/settings#available-settings) setting. This variable is an override for demos and automated tests: when set, it takes precedence over that setting and turns auto-continue on even when the setting is unset or `never`. Setting `0` doesn't turn the timeout off; it closes the dialog immediately. In v2.1.198 and v2.1.199, auto-continue was on by default with a `60000` (60 seconds) timeout. Requires Claude Code v2.1.198 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS`               | Set to `1` to disable all built-in [subagent](/docs/en/sub-agents) types such as Explore and Plan. Only applies in non-interactive mode (the `-p` flag). Useful for SDK users who want a blank slate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS`               | Set to `1` to disable all built-in [subagent](/docs/en/sub-agents) types such as Explore and Plan. Only applies in non-interactive mode (the `-p` flag). Useful for SDK users who want a blank slate. This also removes `general-purpose`, the subagent Claude Code runs when an Agent tool call omits `subagent_type`. Such a call then fails with [`subagent_type is required`](/docs/en/errors#subagent-type-is-required)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `CLAUDE_AGENT_SDK_MCP_NO_PREFIX`                        | Set to `1` to skip the `mcp__<server>__` prefix on tool names from SDK-created MCP servers. Tools use their original names. SDK usage only                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `CLAUDE_ASYNC_AGENT_STALL_TIMEOUT_MS`                   | Stall timeout in milliseconds for background subagents. Default `600000` (10 minutes). The timer resets on each streaming progress event; if no progress arrives within the window, the subagent is aborted and the task is marked failed, surfacing any partial result to the parent                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`                       | Set the percentage (1-100) of the auto-compact window at which auto-compaction triggers. Use lower values like `50` to compact earlier; the variable can't raise the threshold, so values above the default percentage are ignored. It applies only in sessions that [compact before the model's context limit](/docs/en/model-config#context-window-and-auto-compaction). Applies to both main conversations and subagents                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -67613,6 +67470,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_GLOB_HIDDEN`                               | Set to `false` to exclude dotfiles from results when Claude invokes the [Glob tool](/docs/en/tools-reference#glob-tool-behavior). Included by default. Does not affect `@` file autocomplete, `ls`, Grep, or Read                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `CLAUDE_CODE_GLOB_NO_IGNORE`                            | Set to `false` to make the [Glob tool](/docs/en/tools-reference#glob-tool-behavior) respect `.gitignore` patterns. By default, Glob returns all matching files including gitignored ones. Does not affect `@` file autocomplete, which has its own [`respectGitignore` setting](/docs/en/settings#available-settings)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `CLAUDE_CODE_GLOB_TIMEOUT_SECONDS`                      | Timeout in seconds for Glob tool file discovery. Defaults to 20 seconds on most platforms and 60 seconds on WSL                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `CLAUDE_CODE_GOAL_CHECKIN_MINUTES`                      | How many minutes background work can keep an active goal waiting before Claude Code [asks Claude to check on it](/docs/en/goal#background-work-defers-evaluation). Default `30`. Set `0` to turn check-ins off. Give whole minutes in plain digits, at most `10080`, which is one week. Claude Code treats any other value as unset and uses the default. Requires Claude Code v2.1.234 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `CLAUDE_CODE_HIDE_CWD`                                  | Set to `1` to hide the working directory in the startup logo. Useful for screenshares or recordings where the path exposes your OS username                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `CLAUDE_CODE_IDE_HOST_OVERRIDE`                         | Override the host address used to connect to the IDE extension. By default Claude Code auto-detects the correct address, including WSL-to-Windows routing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL`                     | Set to `1` to skip auto-installation of IDE extensions. Equivalent to setting [`autoInstallIdeExtension`](/docs/en/settings#global-config-settings) to `false`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -67802,7 +67660,7 @@ Standard OpenTelemetry exporter variables (`OTEL_METRICS_EXPORTER`, `OTEL_LOGS_E
 Claude Code turns some features on through feature flags it fetches from Anthropic. You turn flag fetching off for a session by setting `DISABLE_GROWTHBOOK`, `DISABLE_TELEMETRY`, `DO_NOT_TRACK`, or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`. Each variable's row says which values do that. With fetching off, you can't:
 
 * [Start sessions in auto mode by default](/docs/en/permission-modes#which-mode-a-session-starts-in) on Pro, Max, and Team plans; Claude Code starts your sessions in Manual instead
-* Have the VS Code extension [read settings files for the starting mode](/docs/en/permission-modes#switch-permission-modes)
+* Have the VS Code extension [read settings files for the starting permission mode](/docs/en/permission-modes#switch-permission-modes)
 * Use [Remote Control](/docs/en/remote-control#requirements)
 * Send or receive [cross-session messages](/docs/en/cross-session-messaging#availability)
 * Run [`claude import` or the `/import` command](/docs/en/cli-reference#cli-commands)
@@ -72459,6 +72317,103 @@ The shortcode must start the input or follow a space, so a `:` inside a word or 
 
 To turn the feature off, set [`emojiCompletionEnabled`](/docs/en/settings#available-settings) to `false` in `settings.json`. This disables both the suggestion popup and the inline replacement.
 
+## Check spelling as you type
+
+Claude Code can underline misspelled words in the prompt input while you type. It checks only the text in the input box, never Claude's replies or your files. It also checks nothing while the input box is in [shell mode](#shell-mode-with-prefix), `Ctrl+R` history search, or [voice dictation](/docs/en/voice-dictation).
+
+Spell checking is off by default, and Claude Code checks nothing in [screen reader mode](/docs/en/accessibility). Requires Claude Code v2.1.235 or later.
+
+### Prerequisites
+
+* Install [aspell](https://github.com/GNUAspell/aspell), [hunspell](https://github.com/hunspell/hunspell), or [ispell](https://en.wikipedia.org/wiki/Ispell) and make sure it's on your `PATH`. Claude Code runs the first of the three it finds, in that order, on every platform, including a `.cmd` shim a package manager installs on Windows.
+* To check that the program is on your `PATH`, run `aspell --version`, `hunspell --version`, or `ispell -v` in your terminal. A "command not found" error means it isn't on your `PATH` yet.
+
+### Turn spell checking on or off
+
+Claude Code reads the [`spellcheck`](/docs/en/settings#available-settings) setting from three places, and ignores it in a project's `.claude/settings.json` and `.claude/settings.local.json`. Turn it on from whichever one you use:
+
+<Tabs>
+  <Tab title="User settings">
+    Add `spellcheck` to `~/.claude/settings.json`. It applies in every project you open, like the rest of your [user settings](/docs/en/settings#settings-files):
+
+    ```json theme={null}
+    {
+      "spellcheck": { "enabled": true }
+    }
+    ```
+  </Tab>
+
+  <Tab title="Command line">
+    Save `spellcheck` in a JSON file, such as `spellcheck.json`:
+
+    ```json theme={null}
+    {
+      "spellcheck": { "enabled": true }
+    }
+    ```
+
+    Then pass the file to `--settings`. It applies to that session only:
+
+    ```bash theme={null}
+    claude --settings spellcheck.json
+    ```
+  </Tab>
+
+  <Tab title="Managed settings">
+    Add `spellcheck` to one of your organization's [managed settings sources](/docs/en/permissions#managed-settings). It applies to every user who receives those settings, and they can't turn it off:
+
+    ```json theme={null}
+    {
+      "spellcheck": { "enabled": true }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+To check that spell checking is on, type a misspelled word and a space. Claude Code underlines the word. If it doesn't, see [When Claude Code underlines nothing](#when-claude-code-underlines-nothing). To turn spell checking off again, set `enabled` to `false` in the same place, or remove `spellcheck`.
+
+To choose which of the three programs Claude Code runs, which dictionary it uses, or the underline color, add any of these fields next to `enabled`, in the same place:
+
+* `checker`: `aspell`, `hunspell`, or `ispell`. Claude Code doesn't fall back from a checker you name, and treats any other value as `auto`.
+* `language`: a dictionary name in your checker's form, such as `en_GB`. Claude Code ignores any value that isn't a plain dictionary name, such as a path or a name with spaces, and the checker uses its default dictionary.
+* `color`: a color name such as `yellow`, or a `#rrggbb`, `#rgb`, `rgb(r,g,b)`, `ansi256(n)`, or `ansi:<name>` value. Claude Code uses your theme's error color by default and for any value it doesn't recognize.
+
+For example, this `spellcheck` setting runs hunspell with its `en_GB` dictionary and underlines words in yellow. It works the same in `~/.claude/settings.json`, in the file you pass to `--settings`, and in managed settings:
+
+```json theme={null}
+{
+  "spellcheck": {
+    "enabled": true,
+    "checker": "hunspell",
+    "language": "en_GB",
+    "color": "yellow"
+  }
+}
+```
+
+If more than one of the three places has a `spellcheck` setting, Claude Code uses only one of them: managed settings first, then `--settings`, then user settings. It doesn't combine fields from two places. For example, when `--settings` sets `spellcheck`, a `language` in your user settings has no effect.
+
+### What Claude Code underlines
+
+Shortly after you pause typing, Claude Code underlines the words the dictionary doesn't know. It leaves the word you're still typing alone until you move past it, and it never changes your text. It also skips text that looks like code:
+
+* Commands such as `/help`, `@` mentions, URLs, file paths, and flags such as `--verbose`
+* Words with digits, underscores, or a capital letter after the first, and text in backticks
+
+Claude Code also skips Chinese, Japanese, Korean, Thai, Lao, Khmer, and Myanmar text.
+
+Claude Code has no word list of its own: a word is misspelled when your checker says so. To stop Claude Code from underlining a word, add the word to your checker's personal dictionary, following the checker's own documentation. Claude Code picks up the new word after you restart it.
+
+### When Claude Code underlines nothing
+
+Claude Code underlines nothing when it can't keep a checker running:
+
+* No checker is installed, or the one you named in `checker` is missing
+* The checker fails twice in a row, at startup or later in the session. Claude Code restarts it after the first failure and stops checking after the second, until you restart Claude Code
+* The checker takes more than 15 seconds to answer, three times. Each time, Claude Code leaves the words it was waiting on unmarked; after the third, it stops checking until you restart Claude Code
+
+To find out which of these happened, start `claude --debug` with spell checking on and type a word. Then look for the `[spellcheck]` lines in the debug log at `~/.claude/debug/<session-id>.txt`. One line names the program Claude Code started, or lists the ones it looked for and didn't find. Later lines say why it stopped. A missing-dictionary error there means the checker has no dictionary for your `language` value, or no default one when `language` is unset. Install one, or set `language` to a dictionary you have.
+
 ## Side questions with /btw
 
 Use `/btw` to ask a question about your current work without adding to the conversation history.
@@ -73656,7 +73611,7 @@ Claude Code checks these plan requirements only when it connects to the Anthropi
 To turn off 1M context, set `CLAUDE_CODE_DISABLE_1M_CONTEXT=1`. Claude Code removes 1M model variants from the model picker. On models with a native 1M window, such as Sonnet 5 and Fable 5, it also treats the model as having a 200K context window:
 
 * With auto-compaction on, sessions compact at the 200K boundary through [auto-compaction](#set-the-auto-compact-window). Setting the auto-compact window above 200K doesn't lift the hold, because Claude Code caps that window at the model's context window.
-* With auto-compaction off, sessions stop at the 200K boundary with a [`Prompt is too long` error](/docs/en/errors#prompt-is-too-long) instead of compacting.
+* With auto-compaction off, sessions stop at the 200K boundary with the [context-limit error](/docs/en/errors#prompt-is-too-long) instead of compacting.
 
 Before v2.1.223, Claude Code held only Sonnet 5, Opus 4.8, and Opus 5 sessions to 200K. See [environment variables](/docs/en/env-vars).
 
@@ -78744,7 +78699,7 @@ A few keys are read once at session start and apply on the next restart instead:
 
 ### Invalid entries in managed settings
 
-Managed settings parse tolerantly. When a managed configuration contains an entry that fails schema validation, Claude Code strips that entry, records a warning, and enforces every remaining valid policy. A single typo cannot disable the rest of your organization's policy. Run [`/doctor`](/docs/en/debug-your-config#check-resolved-settings) to list stripped entries with their source file and field.
+Managed settings parse tolerantly. When a managed configuration contains an entry that fails schema validation, Claude Code strips that entry, records a warning, and enforces every remaining valid policy. A single typo cannot disable the rest of your organization's policy. Run [`/doctor`](/docs/en/commands#all-commands) to list stripped entries with their source file and field.
 
 This behavior is consistent across all three delivery mechanisms: [server-managed settings](/docs/en/server-managed-settings), plist and registry policies deployed through MDM, and `managed-settings.json` files. Requires Claude Code v2.1.169 or later.
 
@@ -78888,6 +78843,7 @@ This tolerance applies only to managed settings. User, project, and local settin
 | `skillListingMaxDescChars`         | **Default**: `1536`. Per-skill character cap on the combined `description` and `when_to_use` text in the [skill listing](/en/skills#skill-descriptions-are-cut-short) Claude sees each turn. Text longer than this is truncated. Raise to keep long descriptions intact at the cost of more context per turn; lower to fit more skills under [`skillListingBudgetFraction`](#available-settings)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `2048`                                                                                                                          |
 | `skillOverrides`                   | Per-skill visibility overrides keyed by skill name. Value is `"on"`, `"name-only"`, `"user-invocable-only"`, or `"off"`. Lets you hide or collapse a skill without editing its SKILL.md. Does not apply to plugin skills, which are managed through `/plugin`. The `/skills` menu writes these to `.claude/settings.local.json`. See [Override skill visibility from settings](/en/skills#override-skill-visibility-from-settings)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `{"legacy-context": "name-only", "deploy": "off"}`                                                                              |
 | `skipWebFetchPreflight`            | Skip the [WebFetch domain safety check](/en/data-usage#webfetch-domain-safety-check) that sends each requested hostname to `api.anthropic.com` before fetching. Set to `true` in environments that block traffic to Anthropic, such as Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry deployments with restrictive egress. When skipped, WebFetch attempts any URL without consulting the blocklist                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `true`                                                                                                                          |
+| `spellcheck`                       | Underline misspelled words in the prompt input as you type, using a spell checker you install. Read from user settings, the `--settings` flag, and managed settings only. See [Check spelling as you type](/en/interactive-mode#check-spelling-as-you-type). Requires Claude Code v2.1.235 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `{"enabled": true, "language": "en_GB"}`                                                                                        |
 | `spinnerTipsEnabled`               | **Default**: `true`. Show tips in the spinner while Claude is working. Set to `false` to disable tips                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `false`                                                                                                                         |
 | `spinnerTipsOverride`              | Override spinner tips with custom strings. `tips`: array of tip strings. `excludeDefault`: if `true`, only show custom tips; if `false` or absent, custom tips are merged with built-in tips                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `{ "excludeDefault": true, "tips": ["Use our internal tool X"] }`                                                               |
 | `spinnerVerbs`                     | Customize the action verbs shown while a turn is in progress. Set `mode` to `"replace"` to use only your verbs, or `"append"` to add them to the defaults                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `{"mode": "append", "verbs": ["Pondering", "Crafting"]}`                                                                        |
@@ -80950,7 +80906,7 @@ Community projects like [ccstatusline](https://github.com/sirmalloc/ccstatusline
 
 * Terminal.app does not support clickable links
 
-* If link text appears but isn't clickable, Claude Code may not have detected hyperlink support in your terminal. This commonly affects Windows Terminal and other emulators not in the auto-detection list. Set the `FORCE_HYPERLINK` environment variable to override detection before launching Claude Code:
+* If link text appears but isn't clickable, Claude Code may not have detected hyperlink support in your terminal. Set the `FORCE_HYPERLINK` environment variable to override detection before launching Claude Code:
 
   ```bash theme={null}
   FORCE_HYPERLINK=1 claude
