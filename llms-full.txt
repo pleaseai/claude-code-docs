@@ -3757,6 +3757,47 @@ This page is generated from the [CHANGELOG.md on GitHub](https://github.com/anth
 
 Run `claude --version` to check your installed version.
 
+<Update label="2.1.237" description="August 20, 2026">
+  * Fixed prompt caching for sessions using an LLM gateway or custom base URL
+  * Added a built-in "Concise" output style: Claude leads with results and skips preamble and narration, while doing the work just as thoroughly. Select it under Output style in /config.
+</Update>
+
+<Update label="2.1.236" description="August 19, 2026">
+  * Added `ANTHROPIC_DEFAULT_MODEL` environment variable: sets the model new sessions start on, while a `/model` pick still overrides it and persists across restarts (unlike `ANTHROPIC_MODEL`)
+  * Added `notify_when_idle` to cross-session `SendMessage`: ask another Claude Code session on this machine to send one notice when it next goes idle — opt-in, one-shot, no polling (macOS and Linux)
+  * Sandbox: on macOS, wildcard read-deny rules (e.g. `**/.env`) now take precedence inside allowed read regions, cover matched directories' contents, and can't be bypassed by renaming the denied file
+  * Fixed clipboard copy, background housekeeping, background sessions, and local MCP logs breaking after the directory a session had switched into was removed (since 2.1.229)
+  * Fixed the fullscreen renderer failing permanently after a single failed start: it now falls back to the classic renderer instead of exiting on every subsequent launch
+  * Fixed the `/model` picker rendering taller than the terminal: it now shows only as many models as fit the window, with the rest reachable by scrolling
+  * Fixed `SendMessage` calls being rejected when a malformed closing tag left the message text inside the summary field
+  * Fixed unhandled promise rejections when a subprocess fails to start, for example `powershell.exe` on WSL with Windows interop disabled (regression in 2.1.234)
+  * Fixed fullscreen mode sometimes not showing a newly sent message until the next update after the terminal was resized
+  * Fixed a blank band that could remain above the prompt after clearing a multi-line prompt, and panes not repainting after resizing the terminal away and back, in fullscreen mode
+  * Fixed the managed-settings approval prompt sometimes not appearing at startup while still capturing the first keypress as approval
+  * Fixed terminal tab titles jumping in tmux (iTerm tmux integration): the title is now written only when its text changes instead of animating every 960ms
+  * Fixed an unclear error when the cloud environments list came back empty or malformed
+  * Fixed the Fable 5 first-time usage-credits prompt auto-selecting the fallback model after 60 seconds with no answer when using Remote Control
+  * Fixed spinner tips never appearing, with a repeated background error, when the cached guest-pass reward in `~/.claude.json` was malformed
+  * Fixed skills hot-reload in SDK/VS Code sessions raising an error on every skills change after the session's working directory was deleted (2.1.229+)
+  * Fixed self-hosted runner sessions released on idle, retire, or startup timeout occasionally resuming on another runner before the post-session hook had finished
+  * Fixed the Clawd mascot's eyes and feet rendering unevenly in iTerm2 at some font sizes
+  * Fixed occasional runaway session recaps: recap text (automatic and `/recap`) is now capped at 400 characters, cut at a word boundary
+  * Improved startup performance: the session counter is now written in the background
+  * Improved auto mode: `Monitor` allow rules are now set aside while auto mode is active, so Monitor commands are reviewed the same way Bash commands are
+  * Improved auto mode on Bedrock, Vertex AI, and Foundry, and when telemetry is disabled: the classifier now uses the same defaults as on the Claude API, including severity-scored classification
+  * Improved auto mode: the git status check can no longer be fooled by a repo's `status.showUntrackedFiles=no` setting into reporting a clean tree
+  * Changed the `/model` picker to highlight only the newest model's name, so the highlight marks the new release rather than an arbitrary subset of the list
+  * `/goal`: an idle session whose goal is parked behind long-running background work now checks in automatically after 30 minutes (then 1h, 2h) instead of waiting for you to return
+  * `/usage` now shows the usage-credits spend row for Team and Enterprise members, and shows a capped row at 0% before anything is spent
+  * SIGTERM in print/SDK mode no longer records an interrupted turn or synthetic tool denials before exiting; running commands are still terminated and the process still exits with code 143
+  * Pressing Enter on a slash-command typo or a command unavailable in this session now reports it instead of running the closest fuzzy match; prefixes and aliases still run
+  * Remote Control now marks a session offline within seconds when the CLI exits or its terminal closes
+  * `SendMessage` now refuses further messages to a session up front once a rapid burst would exceed what that session's inbox accepts, instead of reporting them sent while they were dropped
+  * Aligned the session title chip on the prompt border with the footer's right edge
+  * Right-aligned footer items (goal indicator, session state, background agent status) and truncated notices now share a consistent right margin with the rest of the prompt area
+  * \[VSCode] Added screen reader support for the transcript: live announcements for replies, permission requests, errors, and status changes, plus per-turn heading navigation
+</Update>
+
 <Update label="2.1.235" description="August 18, 2026">
   * Added an optional `spellcheck` setting that underlines misspelled words in the prompt input as you type, using your installed `aspell`, `hunspell`, or `ispell`
   * Fixed whole-prompt-cache invalidation when a language server disconnected or reconnected mid-session
@@ -18662,7 +18703,7 @@ When this error appears mid-conversation because the context grew past 200K toke
 
 * Run `/model` and select the variant without the `[1m]` suffix to fall back to the standard context window
 * Run `/usage-credits` to turn on metered billing for the 1M variant on Pro and Max, or to request it from your admin on Team and Enterprise
-* If the error persists after `/model`, a 1M model ID may be set elsewhere. See [There's an issue with the selected model](#theres-an-issue-with-the-selected-model) for the configuration locations to check in priority order.
+* If the error persists after `/model`, a 1M model ID may be set elsewhere. See [Setting your model](/docs/en/model-config#setting-your-model) for the configuration locations to check in priority order.
 * To remove 1M variants from the model picker entirely, set [`CLAUDE_CODE_DISABLE_1M_CONTEXT=1`](/docs/en/env-vars)
 
 ### Server is temporarily limiting requests
@@ -19564,7 +19605,7 @@ There's an issue with the selected model (claude-...). It may not exist or you m
 * **Non-interactive mode (`-p`)**: pass `--model` with a valid alias or ID, or set [`ANTHROPIC_MODEL`](/docs/en/env-vars). The error text shows `Run --model` on this surface.
 * **Agent SDK**: the error text omits the hint because the model is set programmatically. Set [`model` on `Options`](/docs/en/agent-sdk/typescript#options) in TypeScript or [`ClaudeAgentOptions(model=...)`](/docs/en/agent-sdk/python#claudeagentoptions) in Python, and handle the structured `model_not_found` error to surface your own retry or model picker.
 * Use an alias such as `sonnet` or `opus` instead of a full versioned ID. Aliases resolve to a maintained default so they don't go stale. See [Model configuration](/docs/en/model-config).
-* If the wrong model keeps coming back in the CLI, a stale ID is set somewhere. Check in [priority order](/docs/en/model-config#setting-your-model): the `--model` flag, the `ANTHROPIC_MODEL` environment variable, then the `model` field in `.claude/settings.local.json`, your project's `.claude/settings.json`, and `~/.claude/settings.json`. Remove the stale value and Claude Code falls back to your account default.
+* If the wrong model keeps coming back in the CLI, a stale ID is set somewhere. Check the places you can set a model in [priority order](/docs/en/model-config#setting-your-model) and remove the stale value.
 * A newly launched model can be available on the Anthropic API before Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry offers it. If you pinned a new model ID on one of those providers and see this error, check your provider's model catalog for availability in your region, and keep the previous version pinned until the new one appears there.
 * Claude Code reports an expired claude.ai login as [Login expired](#login-expired), not as this error. Before v2.1.206, an expired login that could no longer be refreshed failed every model with this error; run `/login` if you see that on an older version.
 * For Google Cloud's Agent Platform deployments, see [Google Cloud's Agent Platform troubleshooting](/docs/en/google-vertex-ai#troubleshooting).
@@ -19585,7 +19626,7 @@ Claude Code produces this error locally at the moment the switch is requested, b
 
 * Run `/model` with no argument to open the picker and choose from the models available to your account, then pass the alias or ID shown there
 * If you used an alias that a newer Claude Code version supports, run `claude update`. A full ID that starts with `claude-` passes this check even when the model is newer than your Claude Code version, so upgrading isn't needed for those.
-* A model saved before v2.1.200 isn't repaired by this check. If a stale value keeps coming back, remove it from the locations listed under [There's an issue with the selected model](#theres-an-issue-with-the-selected-model).
+* A model saved before v2.1.200 isn't repaired by this check. If a stale value keeps coming back, remove it from the locations listed under [Setting your model](/docs/en/model-config#setting-your-model).
 * The check runs only on the Anthropic API. On any other provider or gateway, including a custom `ANTHROPIC_BASE_URL`, the provider defines the model names, so Claude Code accepts any string and passes it through. Claude Code can still write the [unrecognized-model diagnostic line](#unrecognized-model-id-on-a-request) at request time, on every provider.
 
 ### Claude Opus is not available with the Claude Pro plan
@@ -20600,7 +20641,7 @@ Claude Code doesn't write the line for provider IDs it resolves to a model it re
 
 * If the ID names a model newer than your Claude Code version, run `claude update`
 
-* If the ID is a typo, fix it where you set it: the `--model` flag, the `ANTHROPIC_MODEL` or `ANTHROPIC_DEFAULT_*_MODEL` environment variables, or the `model` setting. If `query_source` starts with `agent:`, fix it where you set the [subagent's model](/docs/en/sub-agents#choose-a-model) instead.
+* If the ID is a typo, fix it in whichever of the [places you can set a model](/docs/en/model-config#setting-your-model) or [alias variables](/docs/en/model-config#environment-variables) holds it. If `query_source` starts with `agent:`, fix it where you set the [subagent's model](/docs/en/sub-agents#choose-a-model) instead.
 
 Before v2.1.233, Claude Code wrote no line when it sent a request for a model ID it didn't recognize.
 
@@ -21537,7 +21578,7 @@ For details on how the Claude Code GitHub Action limits what Claude can do with 
 The Claude Code GitHub Action detects how to run from your workflow configuration:
 
 * **Interactive mode**: when the workflow provides no `prompt` input, Claude waits for the trigger phrase, `@claude` by default, in an issue or pull request comment, in a pull request review, or in the body or title of a newly opened issue, then responds to that request. Progress and results appear as a comment on the triggering issue or PR.
-* **Automation mode**: when the workflow provides a `prompt` input, Claude runs without waiting for a mention, subject only to the [access checks](#who-can-trigger-runs). By default, results appear in the workflow run log rather than a comment. Claude can post to the issue or pull request when the prompt directs it to and it has a tool that can post, as in the [code-review example](#run-a-skill).
+* **Automation mode**: when the workflow provides a `prompt` input, Claude runs without waiting for a mention, subject only to the [checks on who can trigger runs](#who-can-trigger-runs). By default, results appear in the workflow run log rather than a comment. Claude can post to the issue or pull request when the prompt directs it to and it has a tool that can post, as in the [code-review example](#run-a-skill).
 
 ### Who can trigger runs
 
@@ -23726,6 +23767,8 @@ To test the hook, ask Claude to add a line with single-quoted strings to a JavaS
 
 When the hook succeeds, Claude Code shows nothing in the conversation. To confirm the hook ran, check that the edited file is reformatted, or see [Debug techniques](#debug-techniques).
 
+To reformat a specific file however it changes, including when a `Bash` command rewrites it, use a [FileChanged](/docs/en/hooks#filechanged) hook instead.
+
 <Note>
   The Bash examples on this page use `jq` for JSON parsing. Install it with `brew install jq` on macOS, `apt-get install jq` on Debian and Ubuntu, or see [`jq` downloads](https://jqlang.org/download/).
 </Note>
@@ -24159,7 +24202,7 @@ Without a matcher, a hook fires on every occurrence of its event. Matchers let y
 The `"Edit|Write"` matcher fires only when Claude uses the `Edit` or `Write` tool, not when it uses `Bash`, `Read`, or any other tool. On Claude Code v2.1.191 or later, a comma separates alternatives the same way, so `"Edit, Write"` is equivalent. See [Matcher patterns](/docs/en/hooks#matcher-patterns) for how plain names and regular expressions are evaluated.
 
 <Note>
-  Claude can also create or modify files by running shell commands. If your hook must see every file change, such as for compliance scanning or audit logging, add a [`Stop`](/docs/en/hooks#stop) hook that scans the working tree once per turn. For per-call coverage instead, also match `Bash|PowerShell` and have your script list modified and untracked files with `git status --porcelain`. The [PowerShell hook input section](/docs/en/hooks#powershell) explains why matching `Bash` alone is not enough.
+  Claude can also create or modify files by running shell commands. If your hook must see every file change, such as for compliance scanning or audit logging, add a [`Stop`](/docs/en/hooks#stop) hook that scans the working tree once per turn. For per-call coverage instead, also match `Bash|PowerShell` and have your script list modified and untracked files with `git status --porcelain`. The [PowerShell hook input section](/docs/en/hooks#powershell) explains why matching `Bash` alone is not enough. To run a hook when a specific file changes on disk, whatever wrote it, use a [FileChanged](/docs/en/hooks#filechanged) hook.
 </Note>
 
 Each event type matches on a specific field:
@@ -29033,6 +29076,8 @@ To disable auto memory via environment variable, set `CLAUDE_CODE_DISABLE_AUTO_M
 
 Each project gets its own memory directory at `~/.claude/projects/<project>/memory/`. The `<project>` path is derived from the git repository, so all worktrees and subdirectories within the same repo share one auto memory directory. Outside a git repo, the project root is used instead.
 
+If you set [`CLAUDE_CODE_PROJECT_DIR_NAME`](/docs/en/sessions#name-the-project-directory-yourself) beside `CLAUDE_CONFIG_DIR`, Claude Code uses that name as the `<project>` directory under `<config dir>/projects/` instead, whichever repository you launch it in, so projects launched with that config directory share one auto memory directory. Requires Claude Code v2.1.234 or later.
+
 To store auto memory in a different location, set `autoMemoryDirectory` in your `settings.json`. It is read from any [settings scope](/docs/en/settings#settings-precedence): user, project, local, policy, or `--settings`.
 
 ```json theme={null}
@@ -30182,7 +30227,7 @@ Logged when a tool permission decision is made (accept/reject).
   * `"config"`: Decided automatically without prompting, based on project settings, allow or deny rules in the user's personal settings, enterprise managed policy, `--allowedTools` or `--disallowedTools` flags, the active permission mode, a session-scoped grant from an earlier prompt in the same interactive CLI session, or because the tool is inherently safe. The event doesn't indicate which of these sources matched. Claude Code also reports `"config"` when the permission prompt request itself fails, for example when the Agent SDK's [`canUseTool`](/docs/en/agent-sdk/typescript#canusetool) callback or the [`--permission-prompt-tool`](/docs/en/cli-reference#cli-flags) tool returns an invalid result, or when the input stream closes while the request is pending. Before v2.1.216, Claude Code reported these failures as `"user_reject"`.
   * `"hook"`: A `PreToolUse` or `PermissionRequest` hook returned the decision.
   * `"user_permanent"`: Emitted when the user chose "Yes, and don't ask again for ..." at a permission prompt, which saves an allow rule to their personal settings. In the interactive CLI this is emitted only for that choice itself; later calls that match the saved rule emit `"config"` instead. In Agent SDK or non-interactive `-p` sessions, both the initial choice and later rule matches emit `"user_permanent"`. Treated as an accept.
-  * `"user_temporary"`: Emitted when the user chose "Yes" at a permission prompt for a one-time approval, or chose one of the "... during this session" options on a file edit or read prompt. In the interactive CLI this is emitted only for the choice itself; later calls allowed by that session-scoped grant emit `"config"` instead. In Agent SDK or non-interactive `-p` sessions, both the choice and later matches emit `"user_temporary"`. Treated as an accept.
+  * `"user_temporary"`: Emitted when the user chose "Yes" at a permission prompt for a one-time approval, or chose an option that grants access for the rest of the session on a file edit or read prompt. In the interactive CLI this is emitted only for the choice itself; later calls allowed by that session-scoped grant emit `"config"` instead. In Agent SDK or non-interactive `-p` sessions, both the choice and later matches emit `"user_temporary"`. Treated as an accept.
   * `"user_abort"`: Emitted when the user dismissed the permission prompt without answering. In Agent SDK and non-interactive `-p` sessions, this includes interrupting the turn while a `canUseTool` or `--permission-prompt-tool` permission request is pending; before v2.1.216, Claude Code reported that interrupt as `"user_reject"`. Treated as a reject.
   * `"user_reject"`: Emitted when the user chose "No" when prompted. In the interactive CLI this is emitted only for that choice itself; calls that match a deny rule in the user's personal settings emit `"config"` instead. In Agent SDK or non-interactive `-p` sessions, calls that match a deny rule in personal settings emit `"user_reject"`. Treated as a reject.
 * `tool_parameters` (when `OTEL_LOG_TOOL_DETAILS=1`): JSON string containing tool-specific parameters. Same shape as the [Tool result event](#tool-result-event), minus post-execution fields such as `git_commit_id`. Values may differ from `tool_result` for an accepted call if the permission decision rewrites the tool input via `updatedInput`. Use this attribute to see which command was rejected when `decision` is `"reject"`.
@@ -31413,7 +31458,10 @@ Each interface has its own control for switching permission modes during a sessi
     Use the mode dropdown next to the prompt box on [claude.ai/code](https://claude.ai/code) or in the mobile app. Permission prompts appear in claude.ai for approval. Which modes appear depends on where the session runs:
 
     * **Cloud sessions** on [Claude Code on the web](/docs/en/claude-code-on-the-web): Accept edits, Plan, and Auto. Accept edits corresponds to `default` mode: cloud sessions pre-approve file edits regardless of mode, so the dropdown shows Accept edits instead of Manual. Cloud sessions still honor `defaultMode: "acceptEdits"` from settings. Auto mode appears only when your organization allows it and the selected model supports it. Bypass permissions isn't available.
-    * **[Remote Control](/docs/en/remote-control) sessions** on your local machine: Manual, Accept edits, and Plan. You can't select Auto or Bypass permissions from the app. The dropdown shows the permission mode the local session is in, including a mode set from the terminal, and updates when the permission mode changes in the app or in the terminal. The one exception is Bypass permissions: the session never reports that mode to claude.ai, so switching into it from the terminal doesn't change what the dropdown shows. Before v2.1.202, sessions connected with `/remote-control` or `claude --remote-control` didn't report their mode at all, so claude.ai and the mobile app could show a mode the session wasn't in. The mismatch affected only the label: Claude Code generated permission prompts from the session's actual mode, and they still appeared in the app for approval.
+    * **[Remote Control](/docs/en/remote-control) sessions** on your local machine: Manual, Accept edits, and Plan. You can't select Auto or Bypass permissions from the app.
+      * Except for Bypass permissions, the dropdown shows the permission mode the local session is in, including one set from the terminal. It updates when the permission mode changes in the app or in the terminal. The session never reports Bypass permissions to claude.ai, so switching into it from the terminal doesn't change what the dropdown shows.
+      * Sessions hosted by the [desktop app](/docs/en/desktop) or the [VS Code extension](/docs/en/vs-code) report permission mode changes to claude.ai as they happen, the same as sessions hosted in a terminal.
+      * Before v2.1.202, sessions connected with `/remote-control` or `claude --remote-control` didn't report their permission mode at all, so claude.ai and the mobile app could show a permission mode the session wasn't in. The mismatch affected only the label. Claude Code generated permission prompts from the session's actual permission mode, and they still appeared in the app for approval.
 
     For Remote Control, the local machine running the session must be signed in with your claude.ai account; API keys aren't supported. You can also set the starting permission mode when launching that local session:
 
@@ -31457,7 +31505,7 @@ Press `Shift+Tab` again to leave plan mode without approving a plan.
 
 When the plan is ready, Claude presents it and asks how to proceed. From that prompt you can choose:
 
-* **Yes, and use auto mode**: approve and start in [auto mode](#eliminate-prompts-with-auto-mode). When auto mode is unavailable, this option reads **Yes, auto-accept edits**. Sessions started with bypass permissions enabled show **Yes, and bypass permissions** instead.
+* **Yes, and use auto mode**: approve and start in [auto mode](#eliminate-prompts-with-auto-mode). When auto mode is unavailable, this option reads **Yes, auto-accept edits**. If you started the session with bypass permissions enabled, the option reads **Yes, and switch to BYPASS PERMISSIONS (no further prompts) for this session** instead.
 * **Yes, manually approve edits**: approve and review each edit individually.
 * **No, keep planning**: stay in plan mode and tell Claude what to change.
 
@@ -33466,7 +33514,7 @@ Both `remove` and `update` fail when run against a seed-managed marketplace, whi
 
 * Verify the marketplace URL is accessible
 * Check that `.claude-plugin/marketplace.json` exists at the specified path
-* Ensure JSON syntax is valid using `claude plugin validate .` or `/plugin validate .` from the marketplace directory. To check skill, agent, and command frontmatter, run the command against each plugin directory
+* Ensure JSON syntax is valid using `claude plugin validate .` or `/plugin validate .` from the marketplace directory. To check skill, agent, and command frontmatter, see [Validate a plugin or a directory without a manifest](#validate-a-plugin-or-a-directory-without-a-manifest)
 * For private repositories, confirm you have access permissions
 
 ### Marketplace validation errors
@@ -33481,16 +33529,14 @@ As of Claude Code v2.1.196, the per-entry pass also:
 
 Earlier versions skip plugins at the marketplace root and only descend from a `.claude-plugin/marketplace.json`.
 
-To validate an individual plugin's `plugin.json` and its skill, agent, command, and hook files, run the command against the plugin directory itself, for example `claude plugin validate ./plugins/my-plugin`. Common errors:
+From a marketplace directory, Claude Code doesn't open the plugins' skill, agent, command, or hook files. To find errors in those files, see [Validate a plugin or a directory without a manifest](#validate-a-plugin-or-a-directory-without-a-manifest). The table below lists the most common errors from a marketplace directory, with the cause and fix for each:
 
-| Error                                             | Cause                                           | Solution                                                                                                                                    |
-| :------------------------------------------------ | :---------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
-| `File not found: .claude-plugin/marketplace.json` | Missing manifest                                | Create `.claude-plugin/marketplace.json` with required fields                                                                               |
-| `Invalid JSON syntax: Unexpected token...`        | JSON syntax error in marketplace.json           | Check for missing commas, extra commas, or unquoted strings                                                                                 |
-| `Duplicate plugin name "x" found in marketplace`  | Two plugins share the same name                 | Give each plugin a unique `name` value                                                                                                      |
-| `plugins[0].source: Path contains ".."`           | Source path contains `..`                       | Use paths relative to the marketplace root without `..`. See [Relative paths](#relative-paths)                                              |
-| `YAML frontmatter failed to parse: ...`           | Invalid YAML in a skill, agent, or command file | Fix the YAML syntax in the frontmatter block. At runtime this file loads with no metadata. Reported only when validating a plugin directory |
-| `Invalid JSON syntax: ...` (hooks.json)           | Malformed `hooks/hooks.json`                    | Fix JSON syntax. A malformed `hooks/hooks.json` prevents the entire plugin from loading. Reported only when validating a plugin directory   |
+| Error                                                                                                    | Cause                                                                                                                             | Solution                                                                                            |
+| :------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------- |
+| `No manifest found in directory. Expected .claude-plugin/marketplace.json or .claude-plugin/plugin.json` | The directory you named has no `.claude-plugin/marketplace.json` or `plugin.json`, and no skill, agent, or command files to check | Run from the marketplace root, or create `.claude-plugin/marketplace.json` with the required fields |
+| `Invalid JSON syntax: Unexpected token...`                                                               | JSON syntax error in marketplace.json                                                                                             | Check for missing commas, extra commas, or unquoted strings                                         |
+| `Duplicate plugin name "x" found in marketplace`                                                         | Two plugins share the same name                                                                                                   | Give each plugin a unique `name` value                                                              |
+| `plugins[0].source: Path contains ".."`                                                                  | Source path contains `..`                                                                                                         | Use paths relative to the marketplace root without `..`. See [Relative paths](#relative-paths)      |
 
 **Warnings** (non-blocking):
 
@@ -33499,6 +33545,35 @@ To validate an individual plugin's `plugin.json` and its skill, agent, command, 
 * `Plugin name "x" is not kebab-case`: the plugin name contains uppercase letters, spaces, or special characters. Rename to lowercase letters, digits, and hyphens only (for example, `my-plugin`). Claude Code accepts other forms, but the claude.ai marketplace sync rejects them.
 * `Marketplace name "x" is reserved in Claude Desktop`: the marketplace is named `org`, `org-provisioned`, or `unknown`, in any casing. Claude Code accepts these names, but Claude Desktop's managed marketplace sync rejects the whole marketplace. Rename the marketplace. Before v2.1.221, `claude plugin validate` didn't run this check.
 * `Marketplace name "x" is not accepted by Claude Desktop` or `Plugin name "x" is not accepted by Claude Desktop`: Claude Desktop accepts names of up to 128 characters made of letters, digits, `.`, `_`, and `-`, starting with a letter or digit. Claude Code accepts other forms, but Claude Desktop's managed marketplace sync rejects a marketplace whose name fails the check and silently drops a plugin entry whose name does. Rename the marketplace or plugin. Before v2.1.221, `claude plugin validate` didn't run these checks.
+
+#### Validate a plugin or a directory without a manifest
+
+To find skill, agent, and command files whose frontmatter doesn't parse, run `claude plugin validate` and name the directory that holds them. Claude Code doesn't look outside the directory you name. Every run except one against a plugin that has a `plugin.json` requires Claude Code v2.1.233 or later.
+
+Pick the directory by what you want to check:
+
+| To check                                                                                     | Run                                                                                             | Claude Code checks                                                                                                                                                       |
+| :------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A plugin that has a `plugin.json`                                                            | `claude plugin validate ./plugins/my-plugin`                                                    | `plugin.json`, `hooks/hooks.json`, and the `skills`, `agents`, and `commands` directories at the plugin root                                                             |
+| One directory of skills, agents, or commands, such as a plugin that has no `plugin.json` yet | `claude plugin validate .claude/skills`, `~/.claude/agents`, or `./my-plugin/agents`            | Every skill, agent, or command file in that directory                                                                                                                    |
+| A folder whose skill is its root `SKILL.md`                                                  | `claude plugin validate ./skills`, naming the `skills` directory that holds the folder          | Each folder's root `SKILL.md`. The holding directory must be named `skills`; a folder under another name, such as `plugins/`, has no run that checks its root `SKILL.md` |
+| A project's three directories at once                                                        | `claude plugin validate .claude`, or the project root when it has no `.claude-plugin/` manifest | `.claude/skills`, `.claude/agents`, and `.claude/commands`                                                                                                               |
+| Your user-level directories                                                                  | `claude plugin validate ~/.claude`                                                              | `~/.claude/skills`, `~/.claude/agents`, and `~/.claude/commands`                                                                                                         |
+
+A plugin run also warns about a `CLAUDE.md` at the plugin root. For paths you set through the [component path fields](/docs/en/plugins-reference#component-path-fields) in `plugin.json`, it checks that each path exists but doesn't read the files there, and it doesn't check a `SKILL.md` at the plugin root. To check a plugin whose skill is its root `SKILL.md`, run the command twice when the plugin sits in a directory named `skills`: name that `skills` directory to check the root `SKILL.md`, and name the plugin directory to check the rest. When the plugin sits under another name, such as `plugins/`, only the second run is available, and no run checks its root `SKILL.md`.
+
+Claude Code doesn't follow symlinks inside the directory you name. What it does depends on where the link is:
+
+* **A linked `skills`, `agents`, or `commands` directory under the plugin or `.claude` root**: Claude Code warns that nothing in it was read.
+* **A linked entry inside a `skills`, `agents`, or `commands` directory**: Claude Code skips it and warns, per directory, how many entries it skipped that a session would load. A plugin whose `skills` directory [links to a sibling plugin's skills](/docs/en/plugins-reference#share-files-within-a-marketplace-with-symlinks) passes with warnings; to check the linked skills, name the sibling plugin's directory. The same applies to a [symlinked skill entry](/docs/en/skills#where-skills-live) in `~/.claude/skills` or `.claude/skills`, which a session does follow; to check it, name a directory called `skills` that holds the real folder.
+* **The `skills`, `agents`, or `commands` directory you name is itself a symlink, or its parent `.claude` directory is**: Claude Code reports an error and checks nothing in it. Name the real directory instead.
+
+A clean run ends with `Validation passed`. `No manifest found in directory` means Claude Code found no `plugin.json` or `marketplace.json` there, and no skill, agent, or command file in the directories it probes under it. Name the `skills`, `agents`, or `commands` directory that holds your files instead.
+
+Two of the errors Claude Code reports from these runs, with the fix for each:
+
+* `YAML frontmatter failed to parse: ...`: fix the YAML in the frontmatter block of the skill, agent, or command file. Until you do, a session reads no frontmatter fields from the file
+* `Invalid JSON syntax: ...` on `hooks/hooks.json`: fix the JSON syntax. Until you do, a session loads the plugin without the hooks in that file. Claude Code reports this error only in a plugin run
 
 ### Plugin installation failures
 
@@ -34330,15 +34405,37 @@ Editing your MCP config does not by itself change the cache. The new config take
 
 ### Enabling or disabling a plugin
 
-[Plugins](/docs/en/plugins) bundle several component types, and the cost of a change depends on which components the plugin provides. Skills, commands, agents, hooks, LSP servers, monitors, and themes never invalidate the cache: anything they add to the request is appended after the existing conversation, so the next request pays for the new content but still reads everything before it from the cache.
+When you enable or disable a [plugin](/docs/en/plugins), what the change costs depends on which component types the plugin provides. The cases below cover each component type, when Claude Code applies the change, and what happens when you disable a plugin again in the same session.
 
-The exception is a plugin that provides [MCP servers](/docs/en/plugins-reference#mcp-servers). Enabling or disabling one follows the same rules as [connecting or disconnecting an MCP server](#connecting-or-disconnecting-an-mcp-server): the cache survives when the server's tools are deferred, and the next request re-reads the entire conversation when they load into the prefix.
+#### Plugin components that keep the cache
 
-Plugin changes apply when you run [`/reload-plugins`](/docs/en/discover-plugins#apply-plugin-changes-without-restarting) or start a new session. For a plugin with a `command` source, Claude Code [can reload the plugin itself](/docs/en/plugin-marketplaces#when-claude-code-re-runs-the-command). Claude Code can also activate a plugin you [install from the `/plugin` interface](/docs/en/discover-plugins#install-plugins) during the install; the install summary tells you whether it did or whether to run `/reload-plugins`. If that reload would trigger the full re-read below, the command warns first and applies when you rerun it with `--force`.
+Claude Code never invalidates the cache for a plugin's skills, commands, agents, hooks, monitors, or themes. It appends their content after the existing conversation, so the next request pays for that content and still reads everything before it from the cache.
 
-The cost, whether appended announcements or a full re-read, shows up on the first turn after the change applies, not when you run `/plugin enable` or `/plugin disable`. When a reload would trigger the full re-read, `/reload-plugins` shows a warning and doesn't apply the reload. Pass `--force` to apply anyway.
+#### Plugins that provide MCP servers
 
-Disabling a plugin you enabled earlier in the session restores the previous request shape. If that prefix is still within its [cache lifetime](#cache-lifetime), the next request reads the older cache entry instead of rebuilding.
+When you enable or disable a plugin that provides [MCP servers](/docs/en/plugins-reference#mcp-servers), Claude Code follows the same rules as when you [connect or disconnect an MCP server](#connecting-or-disconnecting-an-mcp-server):
+
+* If Claude Code defers the server's tools, it keeps the cache.
+* If Claude Code loads them into the prefix, the next request re-reads the entire conversation.
+
+#### Code intelligence plugins
+
+When you enable a [code intelligence plugin](/docs/en/discover-plugins#code-intelligence), Claude gets the [LSP tool](/docs/en/tools-reference#lsp-tool-behavior).
+
+If you enable one mid-session, Claude Code changes the tool set at most once in that session. Once Claude Code has had a language server available, it keeps the LSP tool in the request for the rest of the session. Claude Code doesn't change the tool set or invalidate the cache when a language server stops, fails, or reconnects later. Before v2.1.235, Claude Code removed the tool from the request whenever every language server had crashed or failed to start and added it back when one recovered.
+
+#### When plugin changes apply
+
+Claude Code applies a plugin change when you run [`/reload-plugins`](/docs/en/discover-plugins#apply-plugin-changes-without-restarting) or start a new session. You pay the cost, whether appended announcements or a full re-read, on the first turn after the change applies, not when you run `/plugin enable` or `/plugin disable`. Claude Code can also apply a change on its own in two cases:
+
+* For a plugin with a `command` source, Claude Code [can reload the plugin itself](/docs/en/plugin-marketplaces#when-claude-code-re-runs-the-command).
+* When you [install a plugin from the `/plugin` interface](/docs/en/discover-plugins#install-plugins), Claude Code can activate it during the install. Claude Code tells you in the install summary whether it did or whether to run `/reload-plugins`.
+
+When you run `/reload-plugins` and the reload would trigger a full re-read, Claude Code shows a warning and doesn't apply the reload. Rerun it with `--force` to apply the reload anyway.
+
+#### Plugins you enable and then disable in one session
+
+When you disable a plugin you enabled earlier in the session, Claude Code restores the previous request shape, apart from the [LSP tool](#code-intelligence-plugins), which Claude Code keeps for the rest of the session. If that prefix is still within its [cache lifetime](#cache-lifetime), the next request reads the older cache entry instead of rebuilding.
 
 ### Denying an entire tool
 
@@ -35080,6 +35177,7 @@ A connected device shows the conversation in your terminal as it happens. These 
 * **Compaction and `/clear`**: while Claude Code [compacts the conversation](/docs/en/context-window#what-survives-compaction), connected devices show the progress and then where the conversation was compacted. When you run `/clear`, the conversation resets on connected devices too.
 * **Switching conversations with `/resume`**: the connected device doesn't receive the switched-to conversation's title or earlier history, but new messages in both directions go to and from whichever conversation is open in your terminal. To work on the original conversation from the device again, run `/resume` in your terminal and switch back to it.
 * **Messages from your other sessions**: with [cross-session messaging](/docs/en/cross-session-messaging), the same connection carries messages between your own sessions on different machines and from your [Claude Code on the web](/docs/en/claude-code-on-the-web) sessions, through Anthropic servers like the rest of Remote Control traffic. [Message sessions on other machines](/docs/en/cross-session-messaging#message-sessions-on-other-machines) covers the delivery rules and [Control inbound messages](/docs/en/cross-session-messaging#control-inbound-messages) covers the inbound controls. Requires Claude Code v2.1.224 or later.
+* **Effort level**: when you set the [effort level](/docs/en/model-config#adjust-effort-level) from a connected device, with `/effort` or the device's effort control, Claude Code applies it to the session on your machine, and claude.ai/code shows the level the session is using. If you pinned a level with `CLAUDE_CODE_EFFORT_LEVEL`, the session keeps that level, and Claude Code refuses a different pick from the effort control. A level you pick from the effort control applies to the current session only and doesn't change your saved default. Picking a level from the effort control requires Claude Code v2.1.234 or later on your machine.
 * **Reconnecting after a connection failure**: run `/remote-control` to reconnect. If compaction rewrote the conversation or you switched conversations with `/resume` in the meantime, Claude Code archives the server session it was using instead of leaving it in the session list. You can still find it by [filtering for archived sessions](/docs/en/claude-code-on-the-web#archive-sessions). Switching conversations while a device is still connected doesn't archive the session.
 
 ### Enable Remote Control for all sessions
@@ -36877,12 +36975,33 @@ Each line is a JSON object for a message, tool use, or metadata entry. The entry
 
 The location, retention, and write behavior are configurable:
 
-| To                                          | Set                                                    | Where                     |
-| ------------------------------------------- | ------------------------------------------------------ | ------------------------- |
-| Move storage off `~/.claude`                | [`CLAUDE_CONFIG_DIR`](/docs/en/env-vars)                    | Environment variable      |
-| Change the 30-day retention                 | [`cleanupPeriodDays`](/docs/en/settings#available-settings) | `settings.json`           |
-| Suppress transcript writes in all modes     | [`CLAUDE_CODE_SKIP_PROMPT_HISTORY`](/docs/en/env-vars)      | Environment variable      |
-| Suppress writes for one non-interactive run | [`--no-session-persistence`](/docs/en/cli-reference)        | CLI flag with `claude -p` |
+| To                                                                              | Set                                                    | Where                     |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------- |
+| Move storage off `~/.claude`                                                    | [`CLAUDE_CONFIG_DIR`](/docs/en/env-vars)                    | Environment variable      |
+| [Name the `<project>` directory yourself](#name-the-project-directory-yourself) | [`CLAUDE_CODE_PROJECT_DIR_NAME`](/docs/en/env-vars)         | Environment variable      |
+| Change the 30-day retention                                                     | [`cleanupPeriodDays`](/docs/en/settings#available-settings) | `settings.json`           |
+| Suppress transcript writes in all modes                                         | [`CLAUDE_CODE_SKIP_PROMPT_HISTORY`](/docs/en/env-vars)      | Environment variable      |
+| Suppress writes for one non-interactive run                                     | [`--no-session-persistence`](/docs/en/cli-reference)        | CLI flag with `claude -p` |
+
+### Name the project directory yourself
+
+By default, Claude Code derives the `<project>` name from the whole working directory path. To choose the name yourself, set `CLAUDE_CODE_PROJECT_DIR_NAME` alongside `CLAUDE_CONFIG_DIR`. Claude Code then stores that session's transcripts and [auto memory](/docs/en/memory#auto-memory) under your name. This suits a host that embeds Claude Code and gives each session its own config directory. Requires Claude Code v2.1.234 or later.
+
+For example, this launch keeps tenant A's data under `/srv/tenant-a` and names its project directory `work`:
+
+```bash theme={null}
+CLAUDE_CONFIG_DIR=/srv/tenant-a CLAUDE_CODE_PROJECT_DIR_NAME=work claude
+```
+
+Claude Code writes the session's transcripts to `/srv/tenant-a/projects/work/` and its auto memory to `/srv/tenant-a/projects/work/memory/`, whatever the working directory is.
+
+Three rules apply when you set it:
+
+* **Set `CLAUDE_CONFIG_DIR` too**: the name doesn't vary with the working directory, so under the default `~/.claude` it would merge every project's transcripts and auto memory into one directory. Claude Code ignores `CLAUDE_CODE_PROJECT_DIR_NAME` when `CLAUDE_CONFIG_DIR` is unset.
+* **Use 1-64 letters, digits, hyphens, or underscores**: don't use a Windows device name such as `con`. Claude Code ignores any other value and uses the derived name.
+* **Set it in the shell environment that starts `claude`**: Claude Code reads it once at startup from that environment, so an `env` block in a settings file can't set it.
+
+Once you've named a config directory's project directory, keep launching with that name. If you start Claude Code with the same `CLAUDE_CONFIG_DIR` but without `CLAUDE_CODE_PROJECT_DIR_NAME`, it reads and writes the derived directory again. The sessions stored under your name stay on disk: press `Ctrl+A` in the [session picker](#use-the-session-picker) to list sessions from every project directory under that config directory, the pinned one included, and whichever way you launch, [`claude --resume <session-id>`](#resume-a-session) finds a session stored under either name.
 
 ## See also
 
@@ -39188,6 +39307,19 @@ The following fields can be used in the YAML frontmatter. Only `name` and `descr
 | `color`           | No       | Display color for the subagent in the task list and transcript. Accepts `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, or `cyan`                                                                                                                                                                                                                                                                             |
 | `initialPrompt`   | No       | Auto-submitted as the first user turn when this agent runs as the main session agent (via `--agent` or the `agent` setting). [Commands](/docs/en/commands) and [skills](/docs/en/skills) are processed. Prepended to any user-provided prompt                                                                                                                                                                                         |
 
+#### Subagent files Claude Code skips
+
+Claude Code skips a file in a project, user, or managed `agents` directory, or in one under a directory you add with `--add-dir`, without reporting it in the session, when the frontmatter has any of these problems:
+
+* **No `name`**: Claude Code treats the file as documentation kept beside your agents.
+* **A `name` that starts with `-` or contains `:`**: Claude Code skips the file and writes an error to the debug log. See the `name` row in the table above.
+* **A `name` but no `description`**: Claude Code skips the file and writes the reason to the debug log.
+* **YAML that doesn't parse**: Claude Code reads no fields from the file, skips it, and writes the parse error to the debug log.
+
+To see the debug log, run Claude Code with `--debug`. A [plugin subagent](/docs/en/plugins-reference#agents) whose frontmatter has no `name` or doesn't parse still loads, under its filename.
+
+To find files in an `agents` directory whose frontmatter doesn't parse, run `claude plugin validate` against the directory, for example `.claude/agents` or `~/.claude/agents`. Claude Code checks only [the directory you name](/docs/en/plugin-marketplaces#validate-a-plugin-or-a-directory-without-a-manifest), and doesn't flag a file whose frontmatter parses but has no `name`. Requires Claude Code v2.1.233 or later.
+
 ### Choose a model
 
 The `model` field controls which [AI model](/docs/en/model-config) the subagent uses:
@@ -39682,7 +39814,7 @@ For each subagent Claude spawns with the Agent tool, Claude Code picks foregroun
 
 For a skill with `context: fork`, Claude Code follows the rules in [Run skills in a subagent](/docs/en/skills#run-skills-in-a-subagent) instead, whether or not fork mode is on.
 
-Background subagents run with a [smaller built-in tool set](#available-tools) than foreground subagents, except for conversation forks, and they surface every permission prompt in your main session. When you answer one of those prompts with a choice that lasts beyond that one tool call, such as "Yes, allow all edits during this session", Claude Code applies your answer to the whole session, including your main conversation.
+Background subagents run with a [smaller built-in tool set](#available-tools) than foreground subagents, except for conversation forks, and they surface every permission prompt in your main session. When you answer one of those prompts with a choice that lasts beyond that one tool call, such as a grant that lasts for the rest of the session, Claude Code applies your answer to the whole session, including your main conversation.
 
 A background subagent's results reach Claude as a completion notification in a later turn. Claude waits for that notification before reporting the subagent's results, and if you ask about progress first, it reports that the subagent is still running. Before v2.1.211, Claude sometimes reported results for a background subagent that hadn't finished.
 
@@ -47642,11 +47774,11 @@ To isolate tenants inside a shared container:
 
 * Pass `settingSources: []` in TypeScript or `setting_sources=[]` in Python so no filesystem settings load.
 * Set `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` in `env`. [Auto memory](/docs/en/memory#auto-memory) at `~/.claude/projects/<project>/memory/` loads into the system prompt regardless of `settingSources`. See [What settingSources does not control](/docs/en/agent-sdk/claude-code-features#what-settingsources-does-not-control) for the other inputs that load unconditionally.
-* Point `CLAUDE_CONFIG_DIR` at a per-tenant directory so tenants do not share the `~/.claude.json` global config.
+* Point `CLAUDE_CONFIG_DIR` at a per-tenant directory so tenants do not share the `~/.claude.json` global config. When each config directory serves one working directory, you can also set [`CLAUDE_CODE_PROJECT_DIR_NAME`](/docs/en/sessions#name-the-project-directory-yourself) in `env` to keep the transcript paths under it short. Requires TypeScript Agent SDK v0.3.234 or later.
 * Use a per-tenant working directory. Pass `cwd` explicitly on every `query()` call.
 * Apply per-tenant egress rules at your proxy, such as distinct outbound IPs, credentials, or domain allowlists, so a compromised tenant cannot exfiltrate data via another tenant's outbound policy.
 
-The example below applies the four SDK-level options together. Construct `tenantDir` and `configDir` so each tenant gets a path no other tenant can read. In TypeScript, `env` replaces the subprocess environment, so spread `...process.env` to keep inherited variables like `PATH` and `ANTHROPIC_API_KEY`. In Python, `env` is merged on top of the inherited environment.
+The example below applies the settings, auto memory, config directory, and working directory options together. Construct `tenantDir` and `configDir` so each tenant gets a path no other tenant can read. In TypeScript, `env` replaces the subprocess environment, so spread `...process.env` to keep inherited variables like `PATH` and `ANTHROPIC_API_KEY`. In Python, `env` is merged on top of the inherited environment.
 
 <CodeGroup>
   ```typescript TypeScript theme={null}
@@ -49216,7 +49348,7 @@ The four customization methods differ in where they live, how they're shared, an
 
 ## Combine approaches
 
-These methods compose. A persistent output style or CLAUDE.md sets the long-lived behavior, and `append` layers session-specific instructions on top without touching the saved configuration.
+The approaches compose. A persistent output style or CLAUDE.md sets the long-lived behavior, and `append` layers session-specific instructions on top without touching the saved configuration.
 
 ### Combine an output style with session-specific additions
 
@@ -50543,13 +50675,14 @@ def get_session_messages(
 
 #### Return type: `SessionMessage`
 
-| Property             | Type                           | Description               |
-| :------------------- | :----------------------------- | :------------------------ |
-| `type`               | `Literal["user", "assistant"]` | Message role              |
-| `uuid`               | `str`                          | Unique message identifier |
-| `session_id`         | `str`                          | Session identifier        |
-| `message`            | `Any`                          | Raw message content       |
-| `parent_tool_use_id` | `None`                         | Reserved for future use   |
+| Property             | Type                           | Description                                                                                                                                                                                                           |
+| :------------------- | :----------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`               | `Literal["user", "assistant"]` | Message role                                                                                                                                                                                                          |
+| `uuid`               | `str`                          | Unique message identifier                                                                                                                                                                                             |
+| `session_id`         | `str`                          | Session identifier                                                                                                                                                                                                    |
+| `message`            | `Any`                          | Raw message content                                                                                                                                                                                                   |
+| `parent_tool_use_id` | `str \| None`                  | For subagent messages, the id of the spawning `Agent` tool-use block. `None` for main-session messages and older sessions                                                                                             |
+| `parent_agent_id`    | `str \| None`                  | For messages from a [nested subagent](/docs/en/sub-agents#let-subagents-spawn-their-own-subagents), the agent id of the parent subagent. `None` for main-session messages, top-level subagent messages, and older sessions |
 
 #### Example
 
@@ -51024,6 +51157,7 @@ class ClaudeAgentOptions:
     user: str | None = None
     include_partial_messages: bool = False
     include_hook_events: bool = False
+    forward_subagent_text: bool = False
     fork_session: bool = False
     resume_session_at: str | None = None
     resume_drops_turn: str | None = None
@@ -51076,6 +51210,7 @@ class ClaudeAgentOptions:
 | `user`                        | `str \| None`                                                                         | `None`                             | User identifier                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `include_partial_messages`    | `bool`                                                                                | `False`                            | Include partial message streaming events. When enabled, [`StreamEvent`](#streamevent) messages are yielded                                                                                                                                                                                                                                                                                                                                 |
 | `include_hook_events`         | `bool`                                                                                | `False`                            | Include hook lifecycle events in the message stream as `HookEventMessage` objects                                                                                                                                                                                                                                                                                                                                                          |
+| `forward_subagent_text`       | `bool`                                                                                | `False`                            | Forward subagent text and thinking blocks in the message stream. By default only subagent `tool_use` and `tool_result` blocks are emitted                                                                                                                                                                                                                                                                                                  |
 | `fork_session`                | `bool`                                                                                | `False`                            | When resuming with `resume`, fork to a new session ID instead of continuing the original session                                                                                                                                                                                                                                                                                                                                           |
 | `resume_session_at`           | `str \| None`                                                                         | `None`                             | When resuming, load the conversation only up to and including the message with this UUID. Use with `resume`, and usually `fork_session`, to branch from an earlier point                                                                                                                                                                                                                                                                   |
 | `resume_drops_turn`           | `str \| None`                                                                         | `None`                             | UUID of the user prompt whose turn a `resume_session_at` truncation discards. When set, the CLI refuses the resume if the discarded range holds entries not attributable to that turn. Requires Claude Code v2.1.223 or later; the bundled CLI satisfies this                                                                                                                                                                              |
@@ -54691,7 +54826,11 @@ A `SessionStore` is an object with two required methods, `append` and `load`, an
   ```
 </CodeGroup>
 
-`SessionKey` addresses one transcript. `projectKey` is a stable, filesystem-safe encoding of the working directory, `sessionId` is the session UUID, and `subpath` is set when the entry belongs to a subagent transcript or sidecar file rather than the main conversation. Because `projectKey` encodes the working directory, resume or continue from the store from a working directory matching the original run's. Treat `subpath` as an opaque key suffix; it follows the on-disk layout, for example `subagents/agent-<id>`. When `subpath` is undefined the key refers to the main transcript.
+`SessionKey` addresses one transcript. `projectKey` is a stable, filesystem-safe encoding of the working directory, `sessionId` is the session UUID, and `subpath` is set when the entry belongs to a subagent transcript or sidecar file rather than the main conversation.
+
+Because `projectKey` encodes the working directory, resume or continue from the store from a working directory matching the original run's. In TypeScript, if you set [`CLAUDE_CODE_PROJECT_DIR_NAME`](/docs/en/sessions#name-the-project-directory-yourself) beside `CLAUDE_CONFIG_DIR` in a query's [`env` option](/docs/en/agent-sdk/typescript#options), the SDK keys that query's entries, and its `resume` and `continue` lookups, by that name instead. Requires Agent SDK v0.3.234 or later.
+
+Treat `subpath` as an opaque key suffix; it follows the on-disk layout, for example `subagents/agent-<id>`. When `subpath` is undefined the key refers to the main transcript.
 
 | Method                 | Required | Called when                                                                                                                                                                                                                                                                                               |
 | :--------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -55215,7 +55354,11 @@ This example resumes the session from [Capture the session ID](#capture-the-sess
 You should see a response that builds on the earlier analysis instead of starting fresh. That confirms the agent resumed the session with its prior context intact.
 
 <Tip>
-  Claude Code stores sessions under `~/.claude/projects/<encoded-cwd>/*.jsonl`. If you set the `CLAUDE_CONFIG_DIR` environment variable, look under `$CLAUDE_CONFIG_DIR/projects/` instead. To find your session's directory, replace every non-alphanumeric character in the absolute working directory with `-`: `/Users/me/proj` becomes `-Users-me-proj`. For a working directory whose converted name exceeds 200 characters, Claude Code [truncates the name and appends a hash](/docs/en/sessions#where-transcripts-are-stored), so match the first 200 characters of the converted name when you list `projects/`.
+  Claude Code stores sessions under `~/.claude/projects/<encoded-cwd>/*.jsonl`. If you set the `CLAUDE_CONFIG_DIR` environment variable, look under `$CLAUDE_CONFIG_DIR/projects/` instead.
+
+  To find your session's directory, replace every non-alphanumeric character in the absolute working directory with `-`: `/Users/me/proj` becomes `-Users-me-proj`. For a working directory whose converted name exceeds 200 characters, Claude Code [truncates the name and appends a hash](/docs/en/sessions#where-transcripts-are-stored), so match the first 200 characters of the converted name when you list `projects/`.
+
+  If you set [`CLAUDE_CODE_PROJECT_DIR_NAME`](/docs/en/sessions#name-the-project-directory-yourself) beside `CLAUDE_CONFIG_DIR`, look under that name in `projects/` instead. Requires TypeScript Agent SDK v0.3.234 or later.
 
   You can resume from any working directory:
 
@@ -59690,6 +59833,7 @@ type SDKSystemMessage = {
   plugins: { name: string; path: string }[];
   fast_mode_state?: FastModeState;
   fast_mode_disabled_reason?: FastModeDisabledReason;
+  effort?: "low" | "medium" | "high" | "xhigh" | "max" | null;
   capabilities?: string[];
 };
 ```
@@ -59697,6 +59841,8 @@ type SDKSystemMessage = {
 `fast_mode_state` reports the session's [fast mode](/docs/en/fast-mode) state. When something blocks fast mode, `fast_mode_disabled_reason` names the check that blocked it; the field requires Claude Code v2.1.219 or later. For the reason codes and their meanings, see [`fast_mode_disabled_reason`](#sdkresultmessage) on the result message.
 
 `terminal_slash_commands` names the entries in `slash_commands` whose interface is bound to the local terminal, such as `exit`. You can send them like any other entry in `slash_commands`; the field exists so a remote or mobile client can hide them from its command menus. The field is present only when non-empty, and requires Agent SDK v0.3.229 or later.
+
+* `effort`: the [effort level](/docs/en/model-config#adjust-effort-level) Claude Code sends on the session's next request, or `null` when it sends none. Claude Code sets the field only on the init message it sends to [Remote Control](/docs/en/remote-control) clients, and omits it from the init message your application reads. Requires Agent SDK v0.3.234 or later.
 
 The `capabilities` array names the protocol behaviors this CLI implements, so you can feature-detect instead of comparing `claude_code_version` strings. It is an open set: ignore values you don't recognize, and check for the specific capability whose behavior you rely on. The field requires Claude Code v2.1.205 or later and is absent on earlier CLIs.
 
@@ -59929,6 +60075,7 @@ type SDKMessageOrigin =
   | {
       kind: "peer";
       from: string;
+      fromMode?: "bypass" | "prompting";
       name?: string;
       fromSession?: string;
       senderTaskId?: string;
@@ -59968,6 +60115,7 @@ Every other task notification has no `subkind`. That includes [scheduled tasks](
 A `peer` origin identifies which agent sent the message: an in-process [teammate](/docs/en/agent-teams) sending to `main` with `SendMessage`, or a [cross-session peer](/docs/en/cross-session-messaging), another of your Claude Code sessions. A cross-session peer can run on the same machine, or on [another of your machines](/docs/en/cross-session-messaging#message-sessions-on-other-machines) or [Claude Code on the web](/docs/en/claude-code-on-the-web) when its message arrives through Remote Control. The two kinds of sender fill the fields differently:
 
 * `from`: the teammate's name, or the sender address for a cross-session peer. For a [one-way cross-machine message](/docs/en/cross-session-messaging#message-sessions-on-other-machines), the sender has no reply address and `from` is `"unknown"`. The value is sender-authored; `verifiedPeerPid` is the verified identity.
+* `fromMode`: the sending session's permission class, `bypass` or `prompting`, declared by a host that relays a peer message between your sessions, such as the [desktop app](/docs/en/desktop#work-across-sessions). Claude Code reads it in the receiving session when it applies the [inbound controls](/docs/en/cross-session-messaging#control-inbound-messages). Requires Agent SDK v0.3.234 or later.
 * `senderTaskId`: the teammate's task ID. Absent for a cross-session peer.
 * `name`: the sender's display name, normalized by Claude Code: it strips Unicode control, format, surrogate, and line or paragraph separator code points, then trims the result and caps it at 64 code points with an ellipsis. Requires Claude Code v2.1.205 or later.
 * `body`: the decoded message body with the peer envelope stripped, byte-exact with what the model sees. Always present for a teammate message; for a cross-session peer, present only when the turn is exactly one peer envelope formed by Claude Code. Render `name` and `body` instead of re-parsing the message text. Requires Claude Code v2.1.205 or later.
@@ -61284,12 +61432,17 @@ type ArtifactInput = {
   label?: string;
   url?: string;
   force?: boolean;
+  capabilities?: Record<string, unknown>;
+  contract?: "latest" | string;
 };
 ```
 
 Publishes a local `.html` or `.md` file as a hosted artifact page, or lists the user's published artifacts. Omit `action` or pass `"publish"` to publish `file_path`, which is required for the publish action along with `favicon`, one or two emoji for the browser tab. `title` names the published page in the browser tab and gallery when the HTML file has no `<title>` tag. `url` targets an existing artifact to update in place instead of minting a new one, and `force` is a last-resort overwrite that discards another session's published version; on a 409 conflict the normal fix is to re-read, merge, and publish again rather than pass `force`.
 
 Pass `"list"` to enumerate the user's published artifacts; only `limit` and `scope` may accompany it. `scope` defaults to `"mine"`, which lists artifacts the user owns; `"shared"` lists artifacts other people shared with the user, and `"all"` lists both.
+
+* `capabilities`: the runtime capabilities the published page uses, keyed by capability name, such as the [connectors the page may call](/docs/en/artifacts#pull-live-data-with-mcp-connectors). The artifact service validates the declaration and rejects a publish that names a capability the account can't use or gives one an invalid config. Pass `{}` to clear a stored declaration, and omit the field on a redeploy to keep it. Requires Agent SDK v0.3.235 or later.
+* `contract`: the runtime version the published page runs against. Omit it to keep the artifact's current version, pass `"latest"` to upgrade, or pass a specific version to pin or roll back. Requires Agent SDK v0.3.235 or later.
 
 The types are exported, but the tool is off by default in Agent SDK sessions. Publishing also requires every condition in the [artifacts availability table](/docs/en/artifacts#availability), which sessions authenticated with an API key don't meet.
 
@@ -61550,13 +61703,13 @@ type BashOutput = {
   staleReadFileStateHint?: string;
   ghRateLimitHint?: string;
   gitOperation?: {
-    commit?: { sha: string; kind: "committed" | "amended" | "cherry-picked" };
+    commit?: { sha: string; kind: "committed" | "amended" | "cherry-picked"; branch?: string };
     push?: { branch: string };
     branch?: { ref: string; action: "merged" | "rebased" };
     pr?: {
       number: number;
       url?: string;
-      action: "created" | "edited" | "merged" | "commented" | "closed" | "ready" | "draft" | "auto-merge-enabled" | "auto-merge-disabled";
+      action: "created" | "edited" | "merged" | "commented" | "closed" | "reopened" | "ready" | "draft" | "auto-merge-enabled" | "auto-merge-disabled";
     };
   };
 };
@@ -61573,6 +61726,8 @@ The `stdout`, `stderr`, and `backgroundTaskId` fields carry:
 `timedOutAfterMs` is the timeout in milliseconds, set when the command reached its timeout and moved to the background rather than starting there explicitly. `backgroundCwdHint` is set when the backgrounded command contained a directory-change builtin such as `cd`, `pushd`, `popd`, or `chdir`, and notes that the session working directory didn't change. Both fields require Claude Code v2.1.210 or later.
 
 When a subagent running in the foreground owns a backgrounded command, Claude Code terminates the command when that subagent gives its final response. Claude Code sets `backgroundEndsWithFinalResponse` to `true` on such commands, and omits the field when the command survives the turn, as commands started by the main conversation or by background subagents do. The field requires Claude Code v2.1.227 or later.
+
+Claude Code sets `gitOperation.commit.branch` to the branch named in git's commit summary line, and omits it for a commit made on a detached HEAD. The field requires Agent SDK v0.3.227 or later. Claude Code reports a `gh pr reopen` command as the `reopened` PR action, which requires Agent SDK v0.3.234 or later.
 
 ### Monitor
 
@@ -62456,13 +62611,31 @@ type PermissionRuleValue = {
 
 ### `ApiKeySource`
 
+Where the API key for the session's requests came from, reported as `apiKeySource` on the [`SDKSystemMessage`](#sdksystemmessage) init message.
+
 ```typescript theme={null}
-type ApiKeySource = "user" | "project" | "org" | "temporary" | "oauth";
+type ApiKeySource =
+  | "ANTHROPIC_API_KEY"
+  | "apiKeyHelper"
+  | "/login managed key"
+  | "none"
+  | "user"
+  | "project"
+  | "org"
+  | "temporary"
+  | "oauth";
 ```
 
-<Note>
-  At runtime, the `apiKeySource` field on the [`SDKSystemMessage`](#sdksystemmessage) init message can also be the string `"none"` when no API key is in use, for example when the session authenticates with an OAuth token. Handle values outside this union defensively.
-</Note>
+Claude Code reports one of four values:
+
+| Value                | Key in use                                                                                                                      |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`  | The key in the `ANTHROPIC_API_KEY` environment variable                                                                         |
+| `apiKeyHelper`       | The key returned by your [`apiKeyHelper`](/docs/en/settings#available-settings) command                                              |
+| `/login managed key` | The key Claude Code stored when you logged in with a [Claude Console account](/docs/en/authentication#claude-console-authentication) |
+| `none`               | No API key. The session authenticates another way, such as a claude.ai login, a bearer token, or a cloud provider               |
+
+Agent SDK v0.3.234 and later list these four values in the type. The type also keeps `user`, `project`, `org`, `temporary`, and `oauth` so older code still compiles, and Claude Code doesn't report them.
 
 ### `SdkBeta`
 
@@ -65249,6 +65422,8 @@ Clients on Claude Code v2.1.211 or later sanitize `description` and `input_previ
 
 For `input_preview`, Claude Code applies the 3,500 limit to each top-level field of the arguments separately and keeps the JSON's own structural quotes. Clients before v2.1.211 relay `description` raw and cut `input_preview` to 200 UTF-16 units with a trailing ellipsis.
 
+Clients on Claude Code v2.1.234 or later relay the marker `(value unserializable)` in place of an `input_preview` field value they can't serialize safely, such as a circular structure or an extremely large array. You still receive the field's key, and the preview's other fields are unchanged.
+
 Clients on Claude Code v2.1.234 or later also mask credentials in `description` and `input_preview`. You receive `[REDACTED]` in place of a recognizable provider credential token, such as an API key or a personal access token. Expect three effects of the masking when you render the fields:
 
 * Claude Code masks key names inside `input_preview` as well as their values. A key name you display may not match the key name in the input.
@@ -67289,7 +67464,7 @@ See [Settings files](/docs/en/settings#settings-files) for where each file lives
 
 ## Precedence
 
-Some behaviors have both an environment variable and a dedicated settings key. If you set both, the environment variable takes precedence. For example, `ANTHROPIC_MODEL` overrides the `model` setting, and `CLAUDE_CODE_AUTO_CONNECT_IDE` overrides `autoConnectIde`. Claude Code uses the settings key only when the environment variable is unset.
+Some behaviors have both an environment variable and a dedicated settings key. If you set both, the environment variable takes precedence, except for [`ANTHROPIC_DEFAULT_MODEL`](/docs/en/model-config#set-a-default-model-for-new-sessions). For example, `ANTHROPIC_MODEL` overrides the `model` setting, and `CLAUDE_CODE_AUTO_CONNECT_IDE` overrides `autoConnectIde`.
 
 When the same variable is set in both your shell and a settings file `env` block, the settings file value applies. Claude Code writes each `env` entry into the process environment at startup and again when the file changes, replacing the value inherited from the shell. A few variables are special-cased; the [`env` setting](/docs/en/settings#available-settings) lists the exceptions.
 
@@ -67346,6 +67521,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `ANTHROPIC_DEFAULT_HAIKU_MODEL_DESCRIPTION`             | Display description for the pinned Haiku model in the `/model` picker. Defaults to `Custom Haiku model` when not set. See [Model configuration](/docs/en/model-config#customize-pinned-model-display-and-capabilities)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME`                    | Display name for the pinned Haiku model in the `/model` picker. Defaults to the model ID when not set. See [Model configuration](/docs/en/model-config#customize-pinned-model-display-and-capabilities)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `ANTHROPIC_DEFAULT_HAIKU_MODEL_SUPPORTED_CAPABILITIES`  | Comma-separated list of [capabilities](/docs/en/model-config#customize-pinned-model-display-and-capabilities) the pinned Haiku model supports, for example `effort,thinking`. See [Model configuration](/docs/en/model-config#customize-pinned-model-display-and-capabilities)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `ANTHROPIC_DEFAULT_MODEL`                               | Model that new sessions start on by default. Requires Claude Code v2.1.236 or later. See [Set a default model for new sessions](/docs/en/model-config#set-a-default-model-for-new-sessions)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `ANTHROPIC_DEFAULT_OPUS_MODEL`                          | Model ID that the `opus` alias resolves to, and that `opusplan` uses while Plan Mode is active. See [Model configuration](/docs/en/model-config#environment-variables)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `ANTHROPIC_DEFAULT_OPUS_MODEL_DESCRIPTION`              | Display description for the pinned Opus model in the `/model` picker. When not set, defaults to `Custom Opus model`, or `Custom Opus model (1M context)` if the pinned model ID has the `[1m]` suffix and `CLAUDE_CODE_DISABLE_1M_CONTEXT` isn't turned on. See [Model configuration](/docs/en/model-config#customize-pinned-model-display-and-capabilities)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `ANTHROPIC_DEFAULT_OPUS_MODEL_NAME`                     | Display name for the pinned Opus model in the `/model` picker. Defaults to the model ID when not set. See [Model configuration](/docs/en/model-config#customize-pinned-model-display-and-capabilities)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
@@ -67511,6 +67687,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_POWERSHELL_RESPECT_EXECUTION_POLICY`       | Set to `1` to stop Claude Code from passing `-ExecutionPolicy Bypass` when spawning PowerShell for tool calls, hooks, and status line commands, and respect the machine's effective execution policy instead. By default Claude Code bypasses execution policy at process scope so `.ps1` scripts and module imports work on default-Restricted Windows installs. Process-scope bypass never overrides Group Policy `MachinePolicy` or `UserPolicy` regardless of this setting                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS`                  | Maximum time in milliseconds that [non-interactive mode](/docs/en/headless#background-tasks-at-exit) with the `-p` flag waits after the final turn for background subagents and workflows whose result is part of the output. Default: `600000`, or 10 minutes. When the cap is exceeded, remaining background tasks are terminated and the process exits. Set to `0` to wait indefinitely. This cap is separate from the five-second grace period that applies to plain background shells                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `CLAUDE_CODE_PROCESS_WRAPPER`                           | Launch the processes Claude Code starts from its own binary, such as the background service that hosts [agent view](/docs/en/agent-view) sessions, through a corporate launcher given as an argv prefix like `/opt/corp/launcher`. Set it in the `env` block of user or [managed settings](/docs/en/permissions#managed-settings), not as a shell export, so the detached background service inherits it; project and local settings can't set it. Equivalent to the [`processWrapper` setting](/docs/en/settings#available-settings), which requires Claude Code v2.1.210 or later; this variable takes precedence when both are set. The VS Code extension configures its own launcher separately through its `claudeProcessWrapper` setting. Ignored on Windows. See [Run Claude Code behind a corporate launcher](/docs/en/corporate-launcher) for the value format, what the launcher covers, and the contract the launcher must satisfy. Requires Claude Code v2.1.208 or later                                                                                                                                                                                                  |
+| `CLAUDE_CODE_PROJECT_DIR_NAME`                          | Set together with `CLAUDE_CONFIG_DIR` to choose the `projects/` directory name Claude Code stores that session's transcripts and auto memory under, in place of one derived from the working directory path. For example, starting Claude Code with `CLAUDE_CONFIG_DIR=/srv/tenant-a CLAUDE_CODE_PROJECT_DIR_NAME=work claude` stores them under `/srv/tenant-a/projects/work/`. Claude Code ignores this variable when `CLAUDE_CONFIG_DIR` is unset, and reads it only from the environment you start `claude` from, never from a [settings file `env` block](#in-settings-files). See [Name the project directory yourself](/docs/en/sessions#name-the-project-directory-yourself). Requires Claude Code v2.1.234 or later                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `CLAUDE_CODE_PROPAGATE_TRACEPARENT`                     | Set to `1` to propagate W3C trace context when `ANTHROPIC_BASE_URL` points at a custom proxy. Propagation covers the `traceparent` header on model and HTTP MCP requests and the `TRACEPARENT` environment variable for Bash, PowerShell, and hook subprocesses. By default, propagation is enabled only when connected directly to the Anthropic API. Added in v2.1.152. See [Traces (beta)](/docs/en/monitoring-usage#traces-beta)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST`                  | Set by host platforms that embed Claude Code and manage model provider routing on its behalf. When set, Claude Code ignores provider-selection, endpoint, and authentication variables such as `CLAUDE_CODE_USE_BEDROCK`, `ANTHROPIC_BASE_URL`, and `ANTHROPIC_API_KEY` in settings files, so user settings can't override the host's routing. Claude Code also ignores model-selection keys such as `model`, `fallbackModel`, and `modelOverrides` in [managed settings](/docs/en/permissions#managed-settings), whichever managed source delivers them, so the host's model configuration takes precedence over an out-of-date managed model pin; an [`availableModels`](/docs/en/model-config#restrict-model-selection) allowlist in managed settings still applies unless the host supplies its own. Claude Code also skips the automatic telemetry opt-out it otherwise applies on third-party providers such as Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform, and Microsoft Foundry, so telemetry follows the standard `DISABLE_TELEMETRY` opt-out. See [Default behaviors by API provider](/docs/en/data-usage#default-behaviors-by-api-provider) |
 | `CLAUDE_CODE_PROXY_RESOLVES_HOSTS`                      | Set to `1` to allow the proxy to perform DNS resolution instead of the caller. Opt-in for environments where the proxy should handle hostname resolution                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -67674,7 +67851,7 @@ With fetching off, you can still type `/code-review` yourself, but [Claude can't
 
 ### First session after an install or upgrade
 
-You can also miss a feature in this list in your first session after you install Claude Code, or after you upgrade to a version that adds the feature, even with none of these variables set. Claude Code fetches the flags during that session, so a feature that's otherwise available to you is there in your next session. Two features behave differently in that first session:
+You can also miss a [flag-gated feature](#features-that-need-feature-flag-fetching) in your first session after you install Claude Code, or after you upgrade to a version that adds the feature, even when none of the variables that disable flag fetching are set. Claude Code fetches the flags during that session, so a feature that's otherwise available to you is there in your next session. Two features behave differently in that first session:
 
 * Claude Code [binds the session's inbox socket](/docs/en/cross-session-messaging#the-sessions-inbox-socket) and exports the messaging variables partway through the session, as soon as the fetch completes, so other sessions can message it before you restart.
 * Claude Code checks the `claude import` flag before it starts a session, so if `claude import` is the first thing you run after installing, it prints [`claude import is not yet available in this build`](/docs/en/errors#claude-import-is-not-yet-available-in-this-build). Start a session, then run it again.
@@ -67972,6 +68149,15 @@ Selected text copies to your clipboard automatically on mouse release. To turn t
 With Copy on select off, press `Ctrl+Shift+c` to copy manually. On terminals that support the kitty keyboard protocol, such as kitty, WezTerm, Ghostty, and iTerm2, `Cmd+c` also works. If you have a selection active, `Ctrl+c` copies instead of cancelling.
 
 With a selection active, hold `Shift` and press the arrow keys to extend it from the keyboard. `Shift+↑` and `Shift+↓` scroll the viewport when the selection reaches the top or bottom edge. `Shift+Home` and `Shift+End` extend to the start or end of the current line.
+
+In the normal prompt view, what happens to an active selection depends on the key you press:
+
+* **`Esc`**: Claude Code performs the key's usual action, such as interrupting the running response or dismissing an open dialog, and the selection stays highlighted.
+* **`PgUp`, `PgDn`, `Ctrl+Home`, `Ctrl+End`, or `Shift`, `Alt` or `Option`, or `Cmd`, `Win`, or `Super` with an arrow, `Home`, or `End` key**: the selection stays.
+* **Any other key, including plain arrow keys, `Enter`, and typed characters**: Claude Code clears the selection.
+* **A key bound to [`selection:clear`](/docs/en/keybindings#scroll-actions)**: Claude Code clears the selection, even when the key is `Esc` or another key that otherwise keeps it. The action has no default binding.
+
+In [transcript mode](#search-and-review-the-conversation), the navigation and search keys listed there also keep the selection.
 
 ## Scroll the conversation
 
@@ -68556,7 +68742,7 @@ The table below summarizes when each event fires. The [Hook events](#hook-events
 
 ### How a hook resolves
 
-To see how these pieces fit together, consider this `PreToolUse` hook that blocks destructive shell commands.
+To see how the event, the matcher, and the handler fit together, consider this `PreToolUse` hook that blocks destructive shell commands.
 
 <Tabs>
   <Tab title="macOS/Linux">
@@ -69999,6 +70185,8 @@ Batches with no markdown pass through unchanged. If the script fails, for exampl
 
 Runs after Claude creates tool parameters and before processing the tool call. Matches on tool name: `Bash`, `PowerShell`, `Edit`, `Write`, `Read`, `Glob`, `Grep`, `Agent`, `WebFetch`, `WebSearch`, `AskUserQuestion`, `ExitPlanMode`, and any [MCP tool names](#match-mcp-tools).
 
+To run a hook when a specific file changes on disk, whatever wrote it, use [FileChanged](#filechanged) instead of matching file-editing tools by name. Unlike PreToolUse, Claude Code runs FileChanged hooks after the change, and they have no decision control, so they can't block the write.
+
 <Warning>
   PreToolUse runs only when Claude calls a tool. Files you [reference with `@` in your prompt](/docs/en/common-workflows#reference-files-and-directories) are added without any tool call: Claude Code inserts their contents while building the prompt, so no PreToolUse hook fires for them, including hooks matching `Read`. To block specific paths from `@` references, use a [`Read` deny rule](/docs/en/permissions#read-and-edit) instead.
 
@@ -70371,6 +70559,11 @@ A hook can echo one of the `permission_suggestions` it received as its own `upda
 Runs immediately after a tool completes successfully.
 
 Matches on tool name, same values as PreToolUse.
+
+Match more broadly when the tool name isn't the right filter:
+
+* To run a hook after any tool completes successfully, omit the `matcher` or set it to `"*"`. Your hook can then discover what changed itself, for example by running `git status --porcelain`, which also lists untracked files that `git diff` misses. For tool calls that fail, add the same hook under [PostToolUseFailure](#posttoolusefailure).
+* To run a hook when a specific file changes on disk, whatever wrote it, use [FileChanged](#filechanged). Claude Code doesn't run a `PostToolUse` hook matching `Edit|Write` when a `Bash` command or a process outside Claude Code rewrites the same file.
 
 #### PostToolUse input
 
@@ -71193,12 +71386,46 @@ DirectoryAdded hooks have no decision control. They can't block the add, which h
 
 ### FileChanged
 
-Runs when a watched file changes on disk. Useful for reloading environment variables when project configuration files are modified.
+Runs when a watched file changes on disk. Claude Code detects changes with a filesystem watcher, not by inspecting tool calls, so it runs the hook no matter what changed the file: an `Edit` or `Write` tool call, a script Claude runs with `Bash`, or a process outside Claude Code entirely. A common use is reloading environment variables when project configuration files change.
 
 The `matcher` for this event serves two roles:
 
 * **Build the watch list**: the value is split on `|` and each segment is registered as a literal filename in the working directory, so `".envrc|.env"` watches exactly those two files. Regex patterns are not useful here: a value like `^\.env` would watch a file literally named `^\.env`.
 * **Filter which hooks run**: when a watched file changes, the same value filters which hook groups run using the standard [matcher rules](#matcher-patterns) against the changed file's basename.
+
+This example normalizes line endings in `data.csv` after any change, including a `Bash` command or an external script rewriting the file:
+
+```json theme={null}
+{
+  "hooks": {
+    "FileChanged": [
+      {
+        "matcher": "data.csv",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/normalize-line-endings.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The hook reads the changed file's absolute path from the `file_path` field of the [JSON input](#filechanged-input) on stdin. Its `grep` guard tests for the same thing `perl` removes, a CR at the end of a line, so the run after a normalization exits without touching the file. A looser guard loops forever, because `perl -i` rewrites the file even when it substitutes nothing and Claude Code runs the hook again after every rewrite. Save this script at `/path/to/normalize-line-endings.sh` and make it executable:
+
+```bash theme={null}
+#!/bin/bash
+FILE=$(jq -r .file_path)
+if grep -q $'\r$' "$FILE"; then
+  perl -pi -e 's/\r$//' "$FILE"
+fi
+```
+
+To confirm the hook works, ask Claude to append a CRLF line to `data.csv` with a `Bash` command. Claude Code runs the hook and the file ends up with LF endings.
+
+To watch files you can't name up front, return [`watchPaths`](#filechanged-output) from a hook to update the watch list dynamically. Claude Code starts the watcher only when something names a file to watch, so seed the list with a FileChanged group whose matcher names at least one file, or with a [SessionStart](#sessionstart-decision-control) or [CwdChanged](#cwdchanged) hook that returns `watchPaths`. The matcher still filters which hook groups run when a watched file changes, so give the group that handles dynamic paths an omitted matcher, which matches every watched file and adds nothing to the watch list. A `"*"` matcher also matches every file, but Claude Code registers it in the watch list like any other value, as a literal file named `*`.
 
 FileChanged hooks have access to `CLAUDE_ENV_FILE`. Variables written to that file persist into subsequent Bash commands for the session, just as in [SessionStart hooks](#persist-environment-variables).
 
@@ -72852,7 +73079,7 @@ Actions available in the `Scroll` context when [fullscreen rendering](/docs/en/f
 | `scroll:fullPageUp`         | (unbound)            | Scroll up the full viewport height                                                                        |
 | `scroll:fullPageDown`       | (unbound)            | Scroll down the full viewport height                                                                      |
 | `selection:copy`            | Ctrl+Shift+C / Cmd+C | Copy the selected text to the clipboard                                                                   |
-| `selection:clear`           | (unbound)            | Clear the active text selection                                                                           |
+| `selection:clear`           | (unbound)            | Clear the active text selection. Requires v2.1.234 or later                                               |
 | `selection:extendLeft`      | Shift+Left           | Extend the active selection one column left                                                               |
 | `selection:extendRight`     | Shift+Right          | Extend the active selection one column right                                                              |
 | `selection:extendUp`        | Shift+Up             | Extend the active selection one row up. Scrolls the viewport when the selection reaches the top edge      |
@@ -73079,7 +73306,7 @@ Use a model alias to select model settings without remembering exact version num
 
 | Model alias      | Behavior                                                                                                                                                                                                                                                                                                                                 |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`default`**    | Special value that clears any model override and reverts to the recommended model for your account type, or to the [organization default model](#organization-default-model) when an admin has set one. Not itself a model alias                                                                                                         |
+| **`default`**    | Special value that clears any model override and reverts to the [runtime default for your account](#default-model-setting). Not itself a model alias                                                                                                                                                                                     |
 | **`best`**       | Uses Fable 5 where your organization has access to it, otherwise the latest Opus model                                                                                                                                                                                                                                                   |
 | **`fable`**      | Uses Claude Fable 5 for your hardest and longest-running tasks                                                                                                                                                                                                                                                                           |
 | **`sonnet`**     | Uses the latest Sonnet model for daily coding tasks                                                                                                                                                                                                                                                                                      |
@@ -73148,6 +73375,7 @@ You can configure your model in several ways, listed in order of priority:
 2. **At startup**: launch with `claude --model <alias|name>`
 3. **Environment variable**: set `ANTHROPIC_MODEL=<alias|name>`
 4. **Settings**: configure permanently in your settings file using the `model` field
+5. **[Default for new sessions](#set-a-default-model-for-new-sessions)**: set `ANTHROPIC_DEFAULT_MODEL=<alias|name>`
 
 As of v2.1.153, `/model` saves your choice as the default for new sessions by writing the `model` field in your user settings. In the picker:
 
@@ -73164,7 +73392,7 @@ Prices in the `/model` picker appear when Claude Code talks to the Anthropic API
 
 Resumed sessions started with `claude --resume`, `--continue`, or the `/resume` picker keep the model they were using when the transcript was saved, regardless of the current `model` setting. If the restored model has been retired or is excluded by [`availableModels`](#restrict-model-selection), the session falls through to the normal precedence order. This prevents another session's `/model` choice from changing the model on resume. On providers that use provider-specific deployment IDs rather than Anthropic model IDs, such as Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry, the transcript model isn't restored at all and the session resolves its model through the normal precedence order.
 
-A model you pick for the new launch with `--model` or `ANTHROPIC_MODEL` still takes precedence over the restored model. As of v2.1.195, so does an [`ANTHROPIC_DEFAULT_OPUS_MODEL`](#environment-variables) family variable.
+A model you pick for the new launch with `--model` or `ANTHROPIC_MODEL` still takes precedence over the restored model. As of v2.1.195, so does an [`ANTHROPIC_DEFAULT_OPUS_MODEL`](#environment-variables) family variable. [`ANTHROPIC_DEFAULT_MODEL`](#set-a-default-model-for-new-sessions) can too, under the conditions listed in its section.
 
 When the active model at startup comes from project or managed settings rather than your own selection, the startup header shows which settings file set it. Run `/model` to override; the project or managed setting reapplies on the next launch. On platforms that embed Claude Code and set [`CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST`](/docs/en/env-vars), the host's model configuration takes precedence over managed model settings, while a managed `availableModels` allowlist stays in force unless the host supplies its own; the key-level enumeration is under [Settings precedence](/docs/en/settings#settings-precedence).
 
@@ -73204,6 +73432,30 @@ Example settings file:
 }
 ```
 
+#### Set a default model for new sessions
+
+Set `ANTHROPIC_DEFAULT_MODEL=<alias|name>` to choose the model your sessions start on by default. Requires Claude Code v2.1.236 or later.
+
+Claude Code starts a new session on the variable's model only when none of these selects a model:
+
+* The `--model` flag
+* `ANTHROPIC_MODEL`
+* A `model` value in any settings file, including the choice you save with `/model`
+* An [organization default model](#organization-default-model)
+
+A choice you save with `/model` takes precedence over the variable on later launches too. With `ANTHROPIC_MODEL` set instead, Claude Code returns to that variable's model on the next launch, whatever you saved with `/model`.
+
+Claude Code also resolves the Default option to the variable's model, unless an organization default model applies. When the Default option resolves to the variable's model, the Default row in the `/model` picker shows the label Set by ANTHROPIC\_DEFAULT\_MODEL.
+
+Claude Code ignores the variable in these cases, and the Default option resolves as if you hadn't set it:
+
+* You set it to `default`, `inherit`, `opusplan`, or `haiku`
+* [`enforceAvailableModels`](#enforce-the-allowlist-for-the-default-model) is on
+* [`availableModels`](#restrict-model-selection) or [organization model restrictions](#organization-model-restrictions) exclude the model
+* The model isn't available to your account
+
+When a new session would start on the variable's model, a session you resume with `claude --resume`, `--continue`, or the `/resume` picker starts on it too. Claude Code doesn't restore the model saved in that session's transcript. Otherwise Claude Code doesn't use the variable when you [resume a session](#setting-your-model).
+
 ## Restrict model selection
 
 Enterprise administrators can use `availableModels` in [managed or policy settings](/docs/en/settings#settings-files) to restrict which models users can select. Entries match a model family such as `sonnet`, a version prefix such as `claude-sonnet-4-5`, or a full model ID such as `claude-sonnet-4-5-20250929`.
@@ -73212,7 +73464,7 @@ On platforms that embed Claude Code and set [`CLAUDE_CODE_PROVIDER_MANAGED_BY_HO
 
 When `availableModels` is set, the allowlist applies everywhere a user can specify a model:
 
-* **Main session model**: `/model`, the `--model` flag, the `ANTHROPIC_MODEL` environment variable, the `model` setting, and the model restored when [resuming a session](#setting-your-model)
+* **Main session model**: `/model`, the `--model` flag, the `ANTHROPIC_MODEL` environment variable, the `model` setting, [`ANTHROPIC_DEFAULT_MODEL`](#set-a-default-model-for-new-sessions), and the model restored when [resuming a session](#setting-your-model)
 * **Alias resolution**: the `ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL`, `ANTHROPIC_DEFAULT_HAIKU_MODEL`, and `ANTHROPIC_DEFAULT_FABLE_MODEL` environment variables cannot redirect an allowed alias to a model outside the list
 * **Fast mode**: `/fast` refuses to toggle when it would implicitly switch to an Opus model outside the list, with the message "is not in your organization's allowed models"
 * **Subagent and teammate models**: the `model` field in [subagent](/docs/en/sub-agents#choose-a-model) frontmatter, the Agent tool's `model` parameter, [agent team](/docs/en/agent-teams#specify-teammates-and-models) teammate models, `CLAUDE_CODE_SUBAGENT_MODEL`, and, on v2.1.197 and earlier, the model picker in the `/agents` wizard&#x20;
@@ -73228,6 +73480,7 @@ Claude Code handles any other blocked selection according to where the model was
 
 * **`/model`**: Claude Code rejects the switch with an error
 * **`--model` flag, `ANTHROPIC_MODEL`, or the `model` setting**: Claude Code replaces the value at startup with a warning naming both the requested and substituted models, and the session starts on the default model
+* **[`ANTHROPIC_DEFAULT_MODEL`](#set-a-default-model-for-new-sessions)**: Claude Code ignores the variable
 * **Subagent or teammate override**: Claude Code falls back to the [subagent's inherited model](/docs/en/sub-agents#choose-a-model) or the [lead's model for a teammate](/docs/en/agent-teams#specify-teammates-and-models) rather than failing the request. In interactive sessions, Claude Code warns you when it substitutes a subagent's model, by this fallback or by the newest-permitted-version substitution above, naming the requested and substituted models; it doesn't report a teammate's fallback. Where the newest-permitted-version substitution above operates, a blocked family alias follows it instead; before v2.1.222, an alias fell back like any other blocked value on every provider
 * **Skill or command override**: Claude Code ignores the override, including a blocked family alias, and the skill or command runs on the session model. A skill or command that [runs in a subagent](/docs/en/skills#run-skills-in-a-subagent) follows the subagent behavior above instead
 * **`advisorModel` setting**: the advisor is disabled for the session
@@ -73267,7 +73520,7 @@ Every surface enforces the allowlist it receives. Which delivery mechanism reach
 
 ### Default model behavior
 
-The Default option in the model picker is not affected by `availableModels` unless [`enforceAvailableModels`](#enforce-the-allowlist-for-the-default-model) is also set. On its own, `availableModels` leaves Default available, resolving to the system's [runtime default](#default-model-setting) for the account. If that default is a model you intend to restrict, set `enforceAvailableModels` as well.
+On its own, `availableModels` leaves the Default option on the system's [runtime default](#default-model-setting) for the account until you also set [`enforceAvailableModels`](#enforce-the-allowlist-for-the-default-model). If that default is a model you intend to restrict, set `enforceAvailableModels` as well.
 
 An empty `availableModels` array never engages the Default-model enforcement: with `availableModels: []`, named model selections are blocked but the Default model for the account type remains usable regardless of `enforceAvailableModels`.
 
@@ -73284,7 +73537,7 @@ Set `enforceAvailableModels: true` alongside a non-empty `availableModels` in ma
 
 The Default option resolves to the account-type default, or to the [organization default model](#organization-default-model) when an admin has set one. When that model is not in the allowlist, the Default option instead resolves to the first `availableModels` entry that names an allowed, available model, and the `/model` picker's Default row shows that model. This applies everywhere the default is reached: session startup, selecting Default in `/model`, the `"default"` keyword in [fallback model chains](#fallback-model-chains), and the fallback used when an excluded selection is dropped.
 
-`enforceAvailableModels` has no effect when `availableModels` is unset or empty: with `availableModels: []`, the Default model for the account type remains usable, so the setting cannot lock users out of every model. When `availableModels` is non-empty but no entry resolves to an allowed and available model, enforcement is skipped and Default resolves to the account-type default, with a warning visible only under `--debug`. Keep at least one guaranteed-available entry in the list to avoid this.
+`enforceAvailableModels` remaps the Default option only when `availableModels` is non-empty. With `availableModels: []`, the Default model for the account type remains usable, so the setting cannot lock users out of every model. When `availableModels` is non-empty but no entry resolves to an allowed and available model, enforcement is skipped and Default resolves to the account-type default, with a warning visible only under `--debug`. Keep at least one guaranteed-available entry in the list to avoid this.
 
 Deploy both keys in the [highest-precedence managed source](/docs/en/settings#precedence-within-the-managed-tier): these keys don't merge across managed sources, so a pair placed in a managed settings file is ignored when the admin console delivers any settings.
 
@@ -73297,7 +73550,7 @@ To fully control the model experience, combine these settings:
 * **`availableModels`**: restricts which named models users can switch to
 * **`enforceAvailableModels`**: extends the `availableModels` allowlist to the Default option, so Default cannot resolve to a model outside the list
 * **`model`**: sets the initial model selection when a session starts
-* **`ANTHROPIC_DEFAULT_SONNET_MODEL`** / **`ANTHROPIC_DEFAULT_OPUS_MODEL`** / **`ANTHROPIC_DEFAULT_HAIKU_MODEL`** / **`ANTHROPIC_DEFAULT_FABLE_MODEL`**: control what the Default option and the `sonnet`, `opus`, `haiku`, and `fable` aliases resolve to
+* **`ANTHROPIC_DEFAULT_SONNET_MODEL`** / **`ANTHROPIC_DEFAULT_OPUS_MODEL`** / **`ANTHROPIC_DEFAULT_HAIKU_MODEL`** / **`ANTHROPIC_DEFAULT_FABLE_MODEL`**: control what the `sonnet`, `opus`, `haiku`, and `fable` aliases resolve to, and which version the [account-type default](#default-model-setting) uses
 
 This example starts users on Sonnet 4.5, limits the picker to Sonnet and Haiku, and ensures Default resolves to a model on the allowlist rather than the tier default:
 
@@ -73312,7 +73565,7 @@ This example starts users on Sonnet 4.5, limits the picker to Sonnet and Haiku, 
 }
 ```
 
-Without `enforceAvailableModels` or the `env` block, a user who selects Default in the picker would get the latest release for their tier, bypassing the version pin in `model` and `availableModels`. The two settings cover different scopes: `enforceAvailableModels` makes Default obey the allowlist, while the `env` block pins which version a permitted alias such as `sonnet` resolves to. Use `enforceAvailableModels` alone when restricting model families is enough; add the `env` block when you also need to pin a specific version.
+Without `enforceAvailableModels` or the `env` block, a user who selects Default in the picker gets the [runtime default](#default-model-setting) rather than the version pinned in `model`. The two settings cover different scopes: `enforceAvailableModels` makes Default obey the allowlist, while the `env` block pins which version a permitted alias such as `sonnet` resolves to. Use `enforceAvailableModels` alone when restricting model families is enough; add the `env` block when you also need to pin a specific version.
 
 ### Merge behavior
 
@@ -73347,11 +73600,11 @@ Both restrictions apply together: a model is selectable only when it is permitte
 
 ## Organization default model
 
-Organization admins on Claude Enterprise plans can set a default model for Claude Code members from the claude.ai admin console, for the whole organization or per custom role. When one is set, the Default option resolves to that model instead of the [account-type default](#default-model-setting). Requires Claude Code v2.1.196 or later.
+Organization admins on Claude Enterprise plans can set a default model for Claude Code members from the claude.ai admin console, for the whole organization or per custom role. When one is set, the Default option resolves to that model. Requires Claude Code v2.1.196 or later.
 
 The Default row in the `/model` picker shows the organization default's name with the label Org default. The label reads Org default whether the admin set the default for the whole organization or for your role. A role default covers members of that custom role and takes precedence over the organization-wide default; when several of your roles set different defaults, the most capable model applies.
 
-The organization default is a starting point, not a restriction, and any other model selection takes precedence over it:
+The organization default is a starting point, not a restriction. These selections take precedence over it:
 
 * the `--model` flag and the `ANTHROPIC_MODEL` environment variable
 * a `model` value in [managed settings](/docs/en/settings#settings-files) or supplied through `--settings`
@@ -73365,11 +73618,11 @@ Claude Code reads the organization default once at startup, so a default the adm
 
 When the organization default doesn't override user selection, the first interactive launch after the admin changes it clears the `model` key from your user settings once, so the new default applies. It changes nothing else in the file, and a model you save with `/model` after that launch is kept.
 
-The organization default passes through the same restriction checks as any other Default model before it is adopted:
+The organization default passes through these restriction checks before it is adopted:
 
-* [`availableModels`](#restrict-model-selection) on its own never constrains the Default option, so an organization default outside the allowlist still applies. When [`enforceAvailableModels`](#enforce-the-allowlist-for-the-default-model) is also set, an organization default outside the allowlist is remapped to the first allowlist entry, like any other Default
+* [`availableModels`](#restrict-model-selection) on its own doesn't apply to the organization default, so an organization default outside the allowlist still applies. When [`enforceAvailableModels`](#enforce-the-allowlist-for-the-default-model) is also set, an organization default outside the allowlist is remapped to the first allowlist entry, like any other Default
 * an organization default that [organization model restrictions](#organization-model-restrictions) deny for your account is replaced by the newest allowed model in its family, or a lower-cost family when every version of it is restricted
-* an organization default that isn't available to your account at all, such as Fable 5 under [zero data retention](/docs/en/zero-data-retention), is skipped, and the Default option resolves to the account-type default
+* an organization default that isn't available to your account at all, such as Fable 5 under [zero data retention](/docs/en/zero-data-retention), is skipped, and the Default option resolves as it would [without an organization default](#default-model-setting)
 
 As of v2.1.199, when the organization default is a different model family from your account type's usual default, the `/model` picker keeps a separate row for that usual family, so you can still switch to it for a session. In v2.1.196 through v2.1.198 that row is missing from the picker.
 
@@ -73396,11 +73649,11 @@ Enterprise pay-as-you-go means an Enterprise organization billed by usage rather
 
 Before v2.1.219, `default` resolved to Opus 4.8 on the Anthropic API, Max, Team Premium, and Enterprise pay-as-you-go from v2.1.154, and on Claude Platform on AWS, Amazon Bedrock, and Google Cloud's Agent Platform from v2.1.207. Before v2.1.207, `default` resolved to Opus 4.7 on Claude Platform on AWS and to Sonnet 4.5 on Amazon Bedrock and Google Cloud's Agent Platform.
 
-When an admin has set an [organization default model](#organization-default-model), `default` resolves to that model instead of the account-type default above. Requires Claude Code v2.1.196 or later.
+When an admin has set an [organization default model](#organization-default-model), `default` resolves to that model instead of the account-type default above. Requires Claude Code v2.1.196 or later. `default` can also resolve to the model you set with [`ANTHROPIC_DEFAULT_MODEL`](#set-a-default-model-for-new-sessions), under the conditions listed in its section.
 
 When managed settings [enforce the allowlist for the Default model](#enforce-the-allowlist-for-the-default-model) and the account-type default is not in `availableModels`, `default` resolves to the enforced Default instead of the account-type default above. When both apply, the organization default replaces the account-type default first and enforcement then applies to it: an allowlisted organization default is kept, while one outside the list resolves to the enforced Default.
 
-Fable 5 is not the default model on any account type. Sessions use Fable 5 only after you choose it, with `/model fable`, a `model` setting, or the `best` alias where Fable 5 is available. Choosing it with `/model` saves it as the selected model in your user settings, so later sessions start on Fable 5 until you change models.
+Fable 5 is not the default model on any account type. Sessions use Fable 5 only after you choose it, for example with `/model fable`, a `model` setting, or the `best` alias where Fable 5 is available. Choosing it with `/model` saves it as the selected model in your user settings, so later sessions start on Fable 5 until you change models.
 
 ### `opusplan` model setting
 
@@ -73518,6 +73771,10 @@ When you first run Fable 5, Opus 4.8, or Opus 4.7, Claude Code applies that mode
 
 `low`, `medium`, `high`, and `xhigh` persist across sessions when you set them in an interactive session. `max` provides the deepest reasoning. Unless you set it through the `CLAUDE_CODE_EFFORT_LEVEL` environment variable, `max` applies to the current session only.
 
+<Note>
+  A level you pick from the effort control on a phone or browser connected through [Remote Control](/docs/en/remote-control#what-connected-devices-see) applies to that session only.
+</Note>
+
 A level set with `/effort` in [non-interactive mode](/docs/en/headless), with the `-p` flag, applies to the current session only and isn't saved as your default. It also can't release the model-default hold: while the hold is in force, a non-interactive `/effort` reports `Not applied`, so pass `--effort` at launch instead.
 
 The `/effort` menu also offers `ultracode`. Ultracode is a Claude Code setting rather than a model effort level: it sends `xhigh` to the model and additionally has Claude orchestrate [dynamic workflows](/docs/en/workflows) for substantive tasks. It applies to the current session only.
@@ -73562,6 +73819,7 @@ You can change effort through any of the following:
 * **`--effort` flag**: pass a level name to set it for a single session when launching Claude Code
 * **Environment variable**: set `CLAUDE_CODE_EFFORT_LEVEL` to a level name or `auto`
 * **Settings**: set `effortLevel` to `low`, `medium`, `high`, or `xhigh` in your settings file. `max` and `ultracode` are [session-only](#adjust-effort-level) and are not accepted here
+* **From a connected device**: in a [Remote Control](/docs/en/remote-control#what-connected-devices-see) session, pick a level from the effort control on your phone or in your browser. The level applies to the current session only. Requires Claude Code v2.1.234 or later
 * **Skill and subagent frontmatter**: set `effort` in a [skill](/docs/en/skills#frontmatter-reference) or [subagent](/docs/en/sub-agents#supported-frontmatter-fields) markdown file to override the effort level when that skill or subagent runs
 
 The environment variable takes precedence over all other methods, then your configured level, then the model default. Frontmatter effort applies when that skill or subagent is active, overriding the session level but not the environment variable.
@@ -73677,7 +73935,7 @@ On an [LLM gateway](/docs/en/llm-gateway) or other custom deployment, Claude Cod
 * If the ID doesn't start with `claude-` but contains `[1m]`, in any casing, and Claude Code can't resolve it to a Claude model, Claude Code assumes a 1M window for it and the variable doesn't apply on its own. To correct the window while keeping proactive compaction, also set [`CLAUDE_CODE_DISABLE_1M_CONTEXT=1`](/docs/en/env-vars). With a declared window above 200K, Claude Code then shows a [startup warning](/docs/en/errors#the-200k-limit-isnt-enforced) that the 200K limit isn't enforced. The warning is expected in this configuration.
 * If the ID starts with `claude-` in any casing or resolves to a Claude model, the variable takes effect only when [`DISABLE_COMPACT`](/docs/en/env-vars) is also set, which disables all compaction. For example, Claude Code resolves an ID that contains a Claude model name, such as `anthropic/claude-opus-4-8` or `us.anthropic.claude-…-v1:0`, to that model. This includes IDs that also contain `[1m]`: Claude Code resolves `claude-opus-4-8[1m]` to Opus 4.8 even with `CLAUDE_CODE_DISABLE_1M_CONTEXT` set.
 
-For a model ID Claude Code doesn't recognize, set [`CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1`](/docs/en/env-vars) to have Claude Code compact only after the API rejects the conversation with Anthropic's too-long error; that recovery doesn't run when a gateway [rewrites the error](/docs/en/llm-gateway-connect#troubleshoot-gateway-errors).
+For a model ID Claude Code doesn't recognize, set [`CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1`](/docs/en/env-vars) to have Claude Code compact only after the API rejects the conversation with a [too-long error Claude Code recognizes](/docs/en/errors#prompt-is-too-long). Claude Code doesn't run that recovery when a gateway [rewrites the error](/docs/en/llm-gateway-connect#troubleshoot-gateway-errors) to wording Claude Code doesn't recognize.
 
 ## Checking your current model
 
@@ -73708,7 +73966,7 @@ A custom ID that embeds a family name, such as `my-gateway/claude-opus-5`, count
 
 ## Environment variables
 
-Use the following environment variables to control the model names that the aliases map to. Each value must be a full model name, or the equivalent identifier for your API provider.
+Use the following environment variables to control the model names that the aliases map to. Each value must be a full model name, or the equivalent identifier for your API provider. To choose the model your sessions start on, set [`ANTHROPIC_DEFAULT_MODEL`](#set-a-default-model-for-new-sessions), which this table omits.
 
 | Environment variable             | Description                                                                                                                                                                                                                                                                                                                                                                    |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -73727,7 +73985,7 @@ When deploying Claude Code through [Amazon Bedrock](/docs/en/amazon-bedrock), [G
 
 Without pinning, Claude Code uses model aliases such as `fable`, `opus`, `sonnet`, and `haiku` that resolve to a built-in default model ID for each provider. That default can lag the newest Anthropic release, and the model it points to may not yet be enabled in a user's account. When the default is unavailable, Amazon Bedrock and Google Cloud's Agent Platform users see a notice and the session falls back to an earlier version of the default model, or to the default Sonnet model when the default is an Opus model and no Opus version is available. Microsoft Foundry users see errors instead, because Microsoft Foundry has no equivalent startup check.
 
-On Amazon Bedrock and Google Cloud's Agent Platform, a user who starts the session on a specific Sonnet or Opus version, with `--model`, `ANTHROPIC_MODEL`, or the `model` setting, pins that version as the session's default for the matching alias: the startup check skips the built-in default it replaces and shows no fallback notice. Before v2.1.211, the check ran and could show a notice even when a session model was explicitly configured.
+On Amazon Bedrock and Google Cloud's Agent Platform, a user who starts the session on a specific Sonnet or Opus version, for example with `--model`, `ANTHROPIC_MODEL`, or the `model` setting, pins that version as the session's default for the matching alias: the startup check skips the built-in default it replaces and shows no fallback notice. Before v2.1.211, the check ran and could show a notice even when a session model was explicitly configured.
 
 <Warning>
   Set the model environment variables to specific version IDs as part of your initial setup. Pinning lets you control when your users move to a new model.
@@ -73994,6 +74252,8 @@ When you choose "Yes, and don't ask again" and the approval saves permanently, s
 
 Before v2.1.211, Claude Code always saved the rule in the starting directory, so an approval granted in a worktree or subdirectory didn't apply to the rest of the repository. Rules that earlier versions saved in a subdirectory or worktree still apply to sessions started there.
 
+Sometimes a permission prompt offers only a one-time approval, with no "don't ask again" option and no option to allow the action for the rest of the session. Claude Code offers those options only when the prompt can show you everything they would allow, so a rule you save from a prompt covers only what its option named. Claude Code leaves the options out when the command or edit is too large to show in full, or when the option's label can't fit every command or path the rule would cover. Approve the action once, or add the rule yourself in [`/permissions`](#manage-permissions).
+
 On a Bash or PowerShell permission prompt, press `Ctrl+E` to show an explanation of the command: what it does, why Claude is running it, and what could go wrong, labeled **Low risk**, **Med risk**, or **High risk**. Claude Code sends the command and Claude's own description of the call to the model to generate the explanation only when you press `Ctrl+E`, not on every prompt. Showing the explanation doesn't run the command; press `Ctrl+E` again to hide it.
 
 To turn the shortcut off, set [`permissionExplainerEnabled`](/docs/en/settings#global-config-settings) to `false` in `~/.claude.json`.
@@ -74169,6 +74429,8 @@ Exec wrappers such as `watch`, `setsid`, `ionice`, and `flock` can't be auto-app
 
 Claude Code recognizes a built-in set of Bash commands as read-only and runs them without a permission prompt in every mode. These include `ls`, `cat`, `echo`, `pwd`, `head`, `tail`, `grep`, `find`, `wc`, `which`, `diff`, `stat`, `du`, `cd`, and read-only forms of `git`. The set is not configurable; to require a prompt for one of these commands, add an `ask` or `deny` rule for it.
 
+A redirect such as `ls > out.txt` adds a check on the target. See [Redirections](#redirections).
+
 Unquoted glob patterns are permitted for commands whose every flag is read-only, so `ls *.ts` and `wc -l src/*.py` run without a prompt.
 
 In Manual mode, commands from this set still prompt in these cases:
@@ -74201,6 +74463,10 @@ A `cd` into a path inside your working directory or an [additional directory](#w
 
   Note that using WebFetch alone doesn't prevent network access. If Bash is allowed, Claude can still use `curl`, `wget`, or other tools to reach any URL.
 </Warning>
+
+#### Redirections
+
+Claude Code checks the target of an output redirection, such as `>`, `>>`, or `2>`, as a file write. The check covers your `Edit` allow and deny rules, [protected paths](/docs/en/permission-modes#protected-paths), and the [working directories](#working-directories). A rule such as `Bash(git commit *)` allows the command, not the target. A `/dev/null` target isn't checked. A target that starts with `~` or contains a glob character needs approval.
 
 ### PowerShell
 
@@ -75754,14 +76020,14 @@ This shows:
 
 ### Common issues
 
-| Issue                               | Cause                           | Solution                                                                                                                                                                                                                               |
-| :---------------------------------- | :------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plugin not loading                  | Invalid `plugin.json`           | Run `claude plugin validate ./my-plugin` or `/plugin validate ./my-plugin`, where `./my-plugin` is your plugin directory, to check `plugin.json`, skill/agent/command frontmatter, and `hooks/hooks.json` for syntax and schema errors |
-| Skills not appearing                | Wrong directory structure       | Ensure `skills/` or `commands/` is at the plugin root, not inside `.claude-plugin/`                                                                                                                                                    |
-| Hooks not firing                    | Script not executable           | Run `chmod +x script.sh`                                                                                                                                                                                                               |
-| MCP server fails                    | Missing `${CLAUDE_PLUGIN_ROOT}` | Use variable for all plugin paths                                                                                                                                                                                                      |
-| Path errors                         | Absolute paths used             | Make paths relative, starting with `./`; see [Path behavior rules](#path-behavior-rules), which cover the `skills` field's `"."` exception                                                                                             |
-| LSP `Executable not found in $PATH` | Language server not installed   | Install the binary (e.g., `npm install -g typescript-language-server typescript`)                                                                                                                                                      |
+| Issue                               | Cause                           | Solution                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| :---------------------------------- | :------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plugin not loading                  | Invalid `plugin.json`           | Run `claude plugin validate ./my-plugin` or `/plugin validate ./my-plugin`, where `./my-plugin` is your plugin directory, to check `plugin.json`, `hooks/hooks.json`, and the frontmatter of the skills, agents, and commands in the plugin's default directories for syntax and schema errors. See [Validate a plugin or a directory without a manifest](/docs/en/plugin-marketplaces#validate-a-plugin-or-a-directory-without-a-manifest) for what a run covers |
+| Skills not appearing                | Wrong directory structure       | Ensure `skills/` or `commands/` is at the plugin root, not inside `.claude-plugin/`                                                                                                                                                                                                                                                                                                                                                                          |
+| Hooks not firing                    | Script not executable           | Run `chmod +x script.sh`                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| MCP server fails                    | Missing `${CLAUDE_PLUGIN_ROOT}` | Use variable for all plugin paths                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Path errors                         | Absolute paths used             | Make paths relative, starting with `./`; see [Path behavior rules](#path-behavior-rules), which cover the `skills` field's `"."` exception                                                                                                                                                                                                                                                                                                                   |
+| LSP `Executable not found in $PATH` | Language server not installed   | Install the binary (e.g., `npm install -g typescript-language-server typescript`)                                                                                                                                                                                                                                                                                                                                                                            |
 
 ### Example error messages
 
@@ -76020,7 +76286,7 @@ Use this approach when you want full VM isolation without provisioning infrastru
 
 ## Enforce isolation across an organization
 
-Individual developers can opt into any approach above. What an organization can enforce, and with which tools, depends on the approach:
+Individual developers can opt into any of the sandboxing approaches on this page. What an organization can enforce, and with which tools, depends on the approach:
 
 * **Built-in Bash sandbox**: the only approach Claude Code enforces itself. Deliver the `sandbox` settings keys through [managed settings](/docs/en/settings#settings-files), either as a file managed by your MDM or through [server-managed settings](/docs/en/server-managed-settings) on Claude.ai. See [Enforce sandboxing with managed settings](/docs/en/sandboxing#enforce-sandboxing-with-managed-settings) for the keys to deploy and how to keep developers from widening the policy.
 * **Dev containers**: commit the [example dev container](/docs/en/devcontainer) to your repositories to standardize the environment across a team. This is a convention rather than an enforcement boundary, because Claude Code does not require a container. If developers should not be able to run Claude Code outside it, enforce that with your organization's device management or software allowlisting tools.
@@ -76028,7 +76294,7 @@ Individual developers can opt into any approach above. What an organization can 
 
 ## See also
 
-These pages cover configuration and policy details for the approaches above.
+These pages cover configuration and policy details for the sandboxing approaches on this page.
 
 * [Sandboxing](/docs/en/sandboxing): configure the built-in sandboxed Bash tool
 * [Dev container](/docs/en/devcontainer): the preconfigured Docker development container
@@ -78757,7 +79023,7 @@ This tolerance applies only to managed settings. User, project, and local settin
 | `autoMode.classifyAllShell`        | **Default**: `false`. When `true`, suspends every Bash and PowerShell allow rule while auto mode is active so all shell commands route through the classifier, not only rules that match arbitrary-code-execution patterns. See [Route all shell commands through the classifier](/docs/en/auto-mode-config#route-all-shell-commands-through-the-classifier). Requires Claude Code v2.1.193 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `true`                                                                                                                          |
 | `autoScrollEnabled`                | **Default**: `true`. In [fullscreen rendering](/docs/en/fullscreen), follow new output to the bottom of the conversation. Appears in `/config` as **Auto-scroll**. Permission prompts still scroll into view when this is off                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `false`                                                                                                                         |
 | `autoUpdatesChannel`               | **Default**: `"latest"`. Release channel to follow for updates. Use `"stable"` for a version that is typically about one week old and skips versions with major regressions, or `"latest"` for the most recent release. To disable auto-updates entirely, set [`DISABLE_AUTOUPDATER`](/docs/en/setup#disable-auto-updates) in `env`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `"stable"`                                                                                                                      |
-| `availableModels`                  | Restrict which models users can select for the main session, [subagents](/docs/en/sub-agents), [skills](/docs/en/skills), and the [advisor](/docs/en/advisor). Does not affect the Default option unless `enforceAvailableModels` is also set. See [Restrict model selection](/docs/en/model-config#restrict-model-selection)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `["sonnet", "haiku"]`                                                                                                           |
+| `availableModels`                  | Restrict which models users can select for the main session, [subagents](/docs/en/sub-agents), [skills](/docs/en/skills), and the [advisor](/docs/en/advisor). See [Default model behavior](/docs/en/model-config#default-model-behavior) for the Default option. See [Restrict model selection](/docs/en/model-config#restrict-model-selection)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `["sonnet", "haiku"]`                                                                                                           |
 | `awaySummaryEnabled`               | Show a one-line session recap when you return to the terminal after a few minutes away. Set to `false` or turn off Session recap in `/config` to disable. Same as [`CLAUDE_CODE_ENABLE_AWAY_SUMMARY`](/docs/en/env-vars)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `true`                                                                                                                          |
 | `awsAuthRefresh`                   | Custom script that modifies the `.aws` directory (see [advanced credential configuration](/docs/en/amazon-bedrock#advanced-credential-configuration))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `aws sso login --profile myprofile`                                                                                             |
 | `awsCredentialExport`              | Custom script that outputs JSON with AWS credentials (see [advanced credential configuration](/docs/en/amazon-bedrock#advanced-credential-configuration))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `/bin/generate_aws_grant.sh`                                                                                                    |
@@ -78794,8 +79060,8 @@ This tolerance applies only to managed settings. User, project, and local settin
 | `enableAllProjectMcpServers`       | Automatically approve all MCP servers defined in project `.mcp.json` files. As of v2.1.196, `claude mcp list` and `claude mcp get` honor this key in an untrusted folder only from [settings files that aren't checked into the repository](/en/mcp#managing-your-servers)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `true`                                                                                                                          |
 | `enableArtifact`                   | Enable or disable the [Artifact](/en/artifacts) tool for this user. When unset, the default follows the feature's [availability](/en/artifacts#availability) for your account. The **Artifacts** row in `/config` writes this key. A managed `disableArtifact` and your organization's [admin setting](/en/artifacts#manage-artifacts-for-your-organization) take precedence, and the key is ignored in project and local settings (`.claude/settings.json`, `.claude/settings.local.json`), which a repository could otherwise commit. Requires Claude Code v2.1.196 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `true`                                                                                                                          |
 | `enabledMcpjsonServers`            | List of specific MCP servers from `.mcp.json` files to approve. As of v2.1.196, `claude mcp list` and `claude mcp get` honor this key in an untrusted folder only from [settings files that aren't checked into the repository](/en/mcp#managing-your-servers)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | `["memory", "github"]`                                                                                                          |
-| `enforceAvailableModels`           | Extend the `availableModels` allowlist to the Default model. When `true` in managed settings and `availableModels` is a non-empty array, the Default option falls back to the first allowlisted entry that is available, but only when the model Default would resolve to (the [organization default](/en/model-config#organization-default-model) when one applies, otherwise the account-type default) is not in the allowlist; an allowlisted default is kept as-is. Has no effect when `availableModels` is unset or empty. See [Enforce the allowlist for the Default model](/en/model-config#enforce-the-allowlist-for-the-default-model). Requires Claude Code v2.1.175 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `true`                                                                                                                          |
-| `env`                              | Environment variables applied to every session and to subprocesses Claude Code spawns from it. Set a variable to `""` to override a shell export with an empty string, which Claude Code treats as unset for provider selection. Subprocesses still inherit the empty value. `NO_COLOR` and `FORCE_COLOR` set here reach only subprocesses; to change Claude Code's own interface colors, set them in your shell before launching `claude`. Claude Code ignores identity variables set here that its hosting environments own, such as `CLAUDE_CODE_REMOTE` and `CLAUDE_CODE_ACCOUNT_UUID`. It also ignores [`CLAUDE_CODE_MESSAGING_SOCKET` and `CLAUDE_CODE_MESSAGING_TOKEN`](/en/env-vars#variables), which it exports itself. Ignoring the socket variable requires Claude Code v2.1.224 or later, and ignoring the token requires v2.1.228 or later                                                                                                                                                                                                                                                                                                                                                                                                         | `{"FOO": "bar"}`                                                                                                                |
+| `enforceAvailableModels`           | Extend the `availableModels` allowlist to the Default model. When `true` in managed settings and `availableModels` is a non-empty array, a Default model outside the allowlist falls back to the first allowlisted entry that is available. See [Enforce the allowlist for the Default model](/en/model-config#enforce-the-allowlist-for-the-default-model). Requires Claude Code v2.1.175 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `true`                                                                                                                          |
+| `env`                              | Environment variables Claude Code sets in every session and passes to the processes it starts, such as Bash commands and hooks. To override a shell export you can't unset, set that variable to `""` here; Claude Code treats the empty value as unset for provider selection, and processes it starts still inherit the empty value. `NO_COLOR` and `FORCE_COLOR` set here reach only subprocesses; to change Claude Code's own interface colors, set them in your shell before launching `claude`. Claude Code ignores identity variables set here that its hosting environments own, such as `CLAUDE_CODE_REMOTE` and `CLAUDE_CODE_ACCOUNT_UUID`. It also ignores [`CLAUDE_CODE_MESSAGING_SOCKET` and `CLAUDE_CODE_MESSAGING_TOKEN`](/en/env-vars#variables), which it exports itself. Ignoring the socket variable requires Claude Code v2.1.224 or later, and ignoring the token requires v2.1.228 or later. Ignoring [`CLAUDE_CODE_PROJECT_DIR_NAME`](/en/sessions#name-the-project-directory-yourself), which it reads from the launch environment only, requires v2.1.234 or later                                                                                                                                                                     | `{"FOO": "bar"}`                                                                                                                |
 | `fallbackModel`                    | Fallback model(s) to try in order when the primary model is overloaded or unavailable. Claude Code switches to the next available model in the chain for the rest of the turn and shows a notice. `"default"` expands to the default model. Chains are capped at three models; extra entries are ignored. Unlike most array settings, this key does not merge across settings files: the highest-precedence file that defines it supplies the entire chain. The [`--fallback-model`](/en/cli-reference#cli-flags) flag overrides this for one session. See [Fallback model chains](/en/model-config#fallback-model-chains)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `["claude-sonnet-5", "claude-haiku-4-5"]`                                                                                       |
 | `fastMode`                         | Turn [fast mode](/en/fast-mode) on for sessions where it's available. Toggling with `/fast` writes `true` here in user settings and removes the key when you turn fast mode off                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `true`                                                                                                                          |
 | `fastModePerSessionOptIn`          | When `true`, fast mode does not persist across sessions. Each session starts with fast mode off, requiring users to enable it with `/fast`. The user's fast mode preference is still saved. See [Require per-session opt-in](/en/fast-mode#require-per-session-opt-in)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `true`                                                                                                                          |
@@ -79594,7 +79860,10 @@ Use host pattern matching when you want to allow all marketplaces from a specifi
 Host extraction by source type:
 
 * `github`: always matches against `github.com`
-* `git`: extracts hostname from the URL (supports both HTTPS and SSH formats)
+* `git`: extracts the hostname from the marketplace's [git URL](https://git-scm.com/docs/git-clone#_git_urls), depending on the URL's form:
+  * A URL with a scheme, such as `https://` or `ssh://`: the hostname in the URL.
+  * An SSH address without a scheme, in git's `user@host:path` form, such as `git@git.example.com:tools/plugins.git`: the host between `@` and `:`, which is the host git connects to.
+  * Any other form without a scheme: no host, so no `strictKnownMarketplaces` `hostPattern` entry matches it. For a `blockedMarketplaces` `hostPattern`, Claude Code takes a host from a wider set of forms, so a blocklist entry can still match such a form. Before v2.1.234, a `strictKnownMarketplaces` `hostPattern` also matched some forms that git doesn't treat as SSH addresses.
 * `url`: extracts hostname from the URL
 * `npm`, `file`, `directory`: not supported for host pattern matching
 
@@ -81556,7 +81825,9 @@ The LSP tool gives Claude code intelligence from a running language server. Afte
 * Find implementations of an interface
 * Trace call hierarchies
 
-The tool is inactive until you install a [code intelligence plugin](/docs/en/discover-plugins#code-intelligence) for your language. The plugin bundles the language server configuration, and you install the server binary separately.
+Claude Code keeps the tool inactive until you install a [code intelligence plugin](/docs/en/discover-plugins#code-intelligence) for your language. Claude Code takes the language server's configuration from the plugin, and you install the server binary yourself.
+
+Claude Code keeps the tool active for the rest of a session once it has had a language server available in that session. Claude Code returns an error result for each LSP call on a file whose language server it can't start. Before v2.1.235, Claude Code deactivated the tool whenever every language server had crashed or failed to start and reactivated it when one recovered.
 
 ## Monitor tool
 
