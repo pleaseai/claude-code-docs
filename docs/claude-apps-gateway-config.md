@@ -524,7 +524,7 @@ An authenticated user who matches no policy gets the gateway's defaults, which m
 
   Two propagation clocks apply:
 
-  * **Policy contents**: editing a policy and redeploying reaches connected clients on their next managed-settings poll, within an hour
+  * **Policy contents**: editing a policy and redeploying reaches connected clients on their next managed-settings poll, within an hour, apart from the [changes that apply only at the next launch](/docs/en/server-managed-settings#fetch-and-caching-behavior)
   * **Group membership**: changing a user's group membership changes which policy matches them. This takes effect on the next session re-mint, meaning the next silent refresh, bounded by `session.ttl_hours`.
 </Note>
 
