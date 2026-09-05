@@ -3091,7 +3091,7 @@ For most organizations, `autoMode.environment` is the only field you need to set
 
 As of Claude Code v2.1.198, `claude auto-mode defaults` prints three kinds of environment entry. Versions before v2.1.195 print only the first five trust slots.
 
-* **Context slots**: describe your organization, stack, and security posture so the classifier reads the other rules in your context. Unlike the other two kinds, context slots have no rules of their own that target them. Each defaults to `None configured` or to the conservative assumption named next to it:
+* **Context slots**: describe your organization, stack, and security posture so the classifier reads the other rules in your context. Each defaults to `None configured` or to the conservative assumption named next to it:
   * **Organization**
   * **Primary use of Claude Code**: defaults to software development
   * **Cloud provider(s)**
@@ -3101,6 +3101,7 @@ As of Claude Code v2.1.198, `claude auto-mode defaults` prints three kinds of en
   * **Secrets management**
   * **CI/CD deploy targets**
   * **Network posture**
+  * **Host containment**: defaults to an ordinary developer machine or CI runner with open internet. If Claude Code runs in a container, VM, or pod with an egress allow-list or neighbors it must not touch, name the allowed hosts, whether the cloud metadata endpoint should be reachable, and which cloud project, cluster, or registry the task uses and under what identity. Until this entry names that identity, the classifier [blocks](/docs/en/permission-modes#what-the-classifier-blocks-by-default) requests for the host's own credentials. Requires Claude Code v2.1.257 or later
   * **Protected deployment namespaces / environments**: falls back to the Sensitive remote targets heuristic until you name them
   * **Data retention / declassification**
 * **Trust slots**: name what the classifier treats as inside your boundary. The slots are Trusted repo, Source control, Trusted internal domains, Trusted cloud buckets, Key internal services, and Internal package registry. The repo and source-control entries default to the working repository and its configured remotes. Every other trust slot defaults to `None configured`, so nothing else is trusted until you add it. A repository's visibility scopes only confidential material: a private repository is an acceptable destination for confidential material, but making a repository private never clears secrets or personal or entrusted data into it, and the classifier treats content ported, repointed, or first read from outside the working repository as not that repository's own work. This scoping requires Claude Code v2.1.203 or later.
@@ -3992,6 +3993,76 @@ Release notes for Claude Code, including new features, improvements, and bug fix
 This page is generated from the [CHANGELOG.md on GitHub](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md).
 
 Run `claude --version` to check your installed version.
+
+<Update label="2.1.261" description="September 4, 2026">
+  * Added an "Organization policy" line to `/status` and `claude doctor` that says why your organization's policy could not be loaded, such as a proxy not passing the endpoint through
+  * Added `bashOutputMaxChars` and `taskOutputMaxChars` settings to raise how much command and background-task output Claude receives inline before it is saved to a file, up to 128K characters
+  * Added `--append-subagent-system-prompt-file` to read the subagent system prompt from a file, for prompts too large to pass on the command line
+  * Added `/skill-doctor` to show which loaded skills go unused and what they cost in context, so you can prune them
+  * Fixed typed or pasted characters occasionally landing out of order or being dropped during fast input or key repeat
+  * Fixed `/add-dir <subdirectory>` printing a false "couldn't be resolved" error when the working directory is on a `/net` automount
+  * Fixed the Bedrock setup wizard hanging when AWS or an AWS credential helper never responds (it now times out with a clear error), and its model checks failing behind a TLS-inspecting proxy
+  * Fixed cloud sessions discarding a plugin synced from claude.ai when managed settings force-enable it in `enabledPlugins`, then falling back to a marketplace clone that could fail
+  * Fixed being unable to delete the character immediately before an inline `[Image #N]` chip in the prompt input
+  * Fixed resuming a session losing hook output and other context around parallel tool calls, which changed the resumed request
+  * Fixed Remote Control showing a stale permission mode when a phone, browser, or claude.ai app attaches to a terminal session or after the mode changes in the terminal
+  * Fixed Remote Control sessions showing as still working (stuck spinner and Stop button) after stopping a turn from a connected phone or browser, or after a local slash command like `/clear`
+  * Fixed SDK and cloud sessions ignoring a Stop or interrupt sent just after the first prompt, before the turn had started; the turn now stops instead of running to completion
+  * Fixed Remote Control uploading a session pulled with `/teleport` into the connected session, which appeared appended to the original on phone and web
+  * Fixed Remote Control's inbound event stream failing behind TLS-inspecting corporate proxies on native Windows
+  * Fixed Remote Control sessions showing the default effort level on claude.ai when the effort comes from settings
+  * Fixed `gcpAuthRefresh` opening a browser at startup when the Google credential check was slow, even though the credential was still valid
+  * Fixed claude.ai connectors staying absent for the whole session when the startup connector fetch timed out — the CLI now retries in the background
+  * Fixed sustained high CPU usage when a background agent could not be resumed and its wake-up was retried in a tight loop
+  * Fixed feature flags gated to a newer version occasionally applying to an older Claude Code version running on the same machine
+  * Fixed `/usage` and the VS Code usage panel dropping a model-specific weekly limit row when the usage endpoint is rate limited or when opened right after startup
+  * Fixed `claude -p --resume <file>` adopting a malformed session ID recorded in the transcript; it now resumes under a fresh session ID instead
+  * Fixed the terminal progress indicator (iTerm2, Ghostty, ConEmu) showing the session as finished while a background workflow or agent was still running
+  * Fixed a rare layout glitch where a box could render with the wrong height after its container switched between row and column direction
+  * Fixed Claude apps gateway client IP when a trusted proxy appends a port to `X-Forwarded-For`; with an access list set, an unreadable entry now gets 403
+  * Fixed Claude apps gateway telling Claude Desktop to export OpenTelemetry as JSON even when the terminal CLI uses protobuf, so protobuf-only collectors rejected Desktop's data
+  * Fixed Desktop and web showing a session as busy while it only watches an artifact for updates
+  * Fixed Claude in Chrome `file_upload` failing with "paths: expected array, received undefined" in local Cowork sessions run from the Claude Desktop app
+  * Fixed `SendMessage` to an offline Remote Control session on another machine reading as delivered; the result now says delivery is queued until that machine reconnects
+  * Fixed plugin install hints from CLIs run in background Bash commands: they are now detected, and the raw `<claude-code-hint>` tag no longer leaks into the conversation
+  * Fixed in-process agent-team teammates re-sending their first-turn tool and skill announcements on the second turn, which changed the request prefix and missed the prompt cache
+  * Improved the `/model` picker and the VS Code model pill to show a model's name instead of its raw Bedrock, Vertex AI, or LLM gateway ID when Claude Code recognizes it
+  * Improved startup on Google Vertex AI when `GOOGLE_APPLICATION_CREDENTIALS` is set: API client creation no longer re-runs Google Cloud project discovery or spawns extra `gcloud` processes
+  * Improved streaming performance: already-rendered blocks are no longer re-checked by layout on each update
+  * Improved the dangerous-`rm` safety prompt to also catch `rm -rf` on positional parameters and inside double-quoted `sh -c` scripts
+  * Improved handling when the API sends no response headers: the retry now waits up to `API_TIMEOUT_MS` (10 minutes by default) instead of another 3 minutes, and the messages say what to change
+  * Changed a Claude apps gateway 403 on the managed settings load (at startup or after `/login`) to say Claude Code may not be enabled for the organization, instead of advising a new sign-in
+  * Changed machines whose managed settings pin `forceLoginMethod: "gateway"` to ignore a leftover API key or claude.ai login and ask for `/login`; Bedrock, Vertex AI, and Foundry sessions are unaffected
+  * Changed auto mode to treat a link that packs content into a public diagram renderer's URL as an upload to that site: no longer auto-approved unless you asked for it
+  * Changed the prompt's word-editing keys to match Bash: Ctrl+W deletes back to whitespace, Alt+F and Alt+D stop at word end, punctuation separates words; `keybindingFlavor` no longer has any effect
+  * Changed `/context` token counting to use a local estimate when the token-counting API is unavailable, instead of extra small-model requests
+  * \[VSCode] Added a "Build a custom style" walkthrough to the Output styles menu that writes a custom output style file and lists it right away
+  * \[VSCode] Added an Add server form and a Remove action to the MCP servers dialog, so MCP servers can be added and removed without leaving the IDE
+  * \[VSCode] Added a hollow ring in the session list for sessions open in a terminal, another VS Code window, or Claude Desktop, so they no longer look closed
+  * \[VSCode] Added a fold button to permission and question prompts so the conversation behind them can be read without dismissing them; the space beside the prompt now scrolls the conversation
+  * \[VSCode] Added "Archive session" to the session list's right-click menu and gave Unarchive its own icon
+  * \[VSCode] Fixed a session teleported from Claude Code on the web treating a question that was cut off when the cloud session shut down as declined
+  * \[VSCode] Fixed the session tab's Rename box opening empty for a tab restored with the window; it now starts with the current name
+  * \[VSCode] Fixed collapsed sections in the session list panel briefly showing expanded each time the panel loaded
+  * \[VSCode] Fixed Focus view showing a tool call as still running after Claude had moved on, such as while a question waited for your answer
+  * \[VSCode] Fixed the session list's active-row highlight going stale when an unfocused Claude tab's session ID is corrected
+  * \[VSCode] Fixed Cmd/Ctrl+Shift+T reopen and deep-link opens placing the Claude tab outside the Claude editor group when a Claude tab has focus
+  * \[VSCode] Fixed the session tab's "Add to group" putting a session opened from Claude Code on the Web in two groups; it now moves the entry the session list shows
+  * \[VSCode] Fixed the model picker showing models an organization has since disabled until the window was reloaded twice
+  * \[VSCode] Fixed a tab opened from the session list jumping back to that session, and a tab opened from a Web session restarting its teleport or staying empty, after VS Code reloads the tab's view
+  * \[VSCode] Fixed `/btw` side-question history from earlier sessions being overwritten when a question is asked right after a window reload or while a settings file has errors
+  * \[VSCode] Fixed the pending question card not reappearing after the Claude panel reloads when signed in with a Claude.ai or Console account
+  * \[VSCode] Fixed claude.ai-only features staying visible in a window's other Claude panels after one panel picked up a third-party provider from a settings file
+  * \[VSCode] Fixed the sign-in screen appearing despite the Disable Login Prompt setting when Claude Code reports no login or a request fails for lack of one
+  * \[VSCode] Fixed the next queued permission prompt keeping text typed on the previous prompt and accepting an immediate second click
+  * \[VSCode] Fixed install-plugin links opening the Claude sidebar without the install dialog in a window where only the session list had been shown
+  * \[VSCode] Fixed the sidebar usage meter staying empty on a new window until the Account & usage dialog was opened, and a 0% usage limit being left out of the meter
+  * \[VSCode] Fixed "Start new session in this group" losing the group after New conversation, and a missing unread dot for a session that finished before the sidebar's unread list loaded
+  * \[VSCode] Fixed the editor tab badge showing unread during a running turn or missing on a tab opened from the session list, and "Add Session Tab to Group" doing nothing for an archived session
+  * \[VSCode] Fixed "Enable Remote Control for all sessions" so flipping it also applies right away to sessions open in other VS Code windows
+  * \[VSCode] Fixed the session list's Open filter for sessions continued from claude.ai whose tab was still recorded under the web session, and labeled the filter menu's sections for screen readers
+  * \[VSCode] Changed the model picker to one flat list of every model, with rows kept for older model spellings listed last
+</Update>
 
 <Update label="2.1.260" description="September 3, 2026">
   * Added a diff panel that opens beside the conversation in fullscreen mode and shows your uncommitted changes as Claude edits; toggle it with `/diff`
@@ -13891,7 +13962,7 @@ Each cloud session is separated from your machine and from other sessions throug
 * **Isolated virtual machines**: each session runs in an isolated, Anthropic-managed VM. Sessions your organization routes to a [self-hosted environment](/docs/en/self-hosted-environments) run on your own infrastructure instead, where isolation is your deployment's responsibility
 * **Network access controls**: in Anthropic-hosted environments, network access is limited by default and can be disabled. In a self-hosted environment, you restrict session egress at your own network boundary. When running with network access disabled, Claude Code can still communicate with the Anthropic API, which may allow data to exit the VM.
 * **Credential protection**: in Anthropic-hosted environments, git credentials and signing keys stay outside the sandbox, and a proxy authenticates on the session's behalf with scoped credentials. In a self-hosted environment, your deployment supplies git credentials; see [Configure git](/docs/en/self-hosted-environments-deploy#configure-git)
-* **API credentials**: in Anthropic-hosted environments, keys you [add to a cloud environment](/docs/en/cloud-environments#add-api-credentials) stay outside the sandbox the same way, attached to matching requests after they leave the session. A self-hosted environment doesn't have API credentials
+* **API credentials**: in Anthropic-hosted environments on Pro and Max plans, keys you [add to a cloud environment](/docs/en/cloud-environments#add-api-credentials) stay outside the sandbox the same way, attached to matching requests after they leave the session. A self-hosted environment doesn't have API credentials, and Team and Enterprise plans don't have them yet
 * **Secure analysis**: code is analyzed and modified within the session's isolated environment before creating PRs
 
 ## Troubleshooting
@@ -14048,12 +14119,12 @@ Claude Code deletes the files in the paths below once they're older than [`clean
 | `projects/<project>/<session>/tool-results/`                                                                                    | Large tool outputs spilled to separate files                                                                                                                                                                                                                                                                   |
 | `file-history/<session>/`                                                                                                       | Pre-edit snapshots of files Claude changed, used for [checkpoint restore](/docs/en/checkpointing). Holds snapshots for the 100 most recent checkpoints; snapshot files that no retained checkpoint references are deleted, except each file's first snapshot                                                   |
 | `plans/`                                                                                                                        | Plan files written during [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode)                                                                                                                                                                                                        |
-| `debug/`                                                                                                                        | Per-session debug logs, written only when you start with `--debug` or run `/debug`                                                                                                                                                                                                                             |
+| `debug/`                                                                                                                        | Per-session debug logs, written while debug logging is on, such as when you start with [`--debug`](/docs/en/cli-reference#cli-flags) or run `/debug`                                                                                                                                                           |
 | `paste-cache/`                                                                                                                  | Contents of large pastes                                                                                                                                                                                                                                                                                       |
 | `image-cache/<session>/`                                                                                                        | Attached images. On each sweep, Claude Code removes the directories of all other sessions, whatever their age.                                                                                                                                                                                                 |
 | `uploads/<session>/`                                                                                                            | Files you attach from the web or mobile app, and photos you attach from the mobile app, when messaging a [Remote Control](/docs/en/remote-control) session. An attachment to a [cloud session](/docs/en/claude-code-on-the-web) is saved in that session's own cloud environment instead, not on your machine. |
 | `session-env/`                                                                                                                  | Per-session environment metadata                                                                                                                                                                                                                                                                               |
-| `tasks/`                                                                                                                        | Per-session task lists written by the task tools                                                                                                                                                                                                                                                               |
+| `tasks/`                                                                                                                        | Task lists written by the task tools, one directory per list                                                                                                                                                                                                                                                   |
 | `shell-snapshots/`                                                                                                              | Aliases, functions, and shell options captured at startup and applied by the [Bash tool](/docs/en/tools-reference#bash-tool-behavior) to each command. Removed on clean exit. The sweep clears any left after a crash.                                                                                         |
 | `backups/`                                                                                                                      | Earlier versions of `~/.claude.json`, copied when Claude Code rewrites the file. Claude Code keeps the five newest, plus a copy of any version it couldn't parse.                                                                                                                                              |
 | `feedback-bundles/`                                                                                                             | Redacted transcript archives written by `/feedback` on third-party providers or when no Anthropic credentials are configured, for sending to your Anthropic account team                                                                                                                                       |
@@ -14064,7 +14135,7 @@ Claude Code deletes the files in the paths below once they're older than [`clean
 Session files in `sessions/`, auto memory, and Claude Desktop and Cowork transcripts each follow their own retention rule:
 
 * **`sessions/`**: holds one small file per running session, used to detect concurrent sessions and crashes. It isn't part of the age-based sweep: Claude Code removes each file when its session exits and clears crash leftovers on the next launch.
-* **Auto memory**: Claude Code excludes a project's [auto memory](/docs/en/memory#auto-memory) directory, `projects/<project>/memory/`, from this sweep, and removes the directory itself only after it has been empty for the whole retention period. Before v2.1.228, the sweep treated folders inside the memory directory as session data and could delete old files beneath it.
+* **Auto memory**: the sweep doesn't delete the memory files in a project's [auto memory](/docs/en/memory#auto-memory) directory, `projects/<project>/memory/`. Claude Code removes that directory only if it has been empty for the whole retention period. Before v2.1.228, the sweep treated folders inside the memory directory as session data and could delete old files beneath it.
 * **Claude Desktop and Cowork transcripts**: Claude Code keeps the transcript of a session you started or most recently continued in Claude Desktop or Cowork at any age. To give these transcripts an age limit, set [`desktopSessionCleanupPeriodDays`](/docs/en/settings-reference#desktopsessioncleanupperioddays). When [managed settings](/docs/en/managed-settings) set `cleanupPeriodDays`, Claude Code deletes these transcripts after that period instead. Requires Claude Code v2.1.248 or later; earlier versions delete them after `cleanupPeriodDays`.
 
 Claude Code skips the sweep entirely in these cases:
@@ -14074,17 +14145,23 @@ Claude Code skips the sweep entirely in these cases:
 
 ### Kept until you delete them
 
-The retention cleanup sweep doesn't cover the following paths. Claude Code keeps them until you delete them, apart from the two caches whose rows say that logging out deletes them.
+The retention cleanup sweep doesn't remove the paths below. Claude Code keeps them until you delete them, apart from the two caches it deletes when you log out.
 
 | Path under `~/.claude/` | Contents                                                                                                                                                                                                                                                                                                                                                                    |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `history.jsonl`         | Every prompt you've typed, with timestamp and project path. Used for up-arrow recall.                                                                                                                                                                                                                                                                                       |
+| `history.jsonl`         | Every prompt you've typed, with timestamp and project path. Used for up-arrow recall, `Ctrl+R` history search, and `!` shell-command completion.                                                                                                                                                                                                                            |
 | `stats-cache.json`      | Aggregated token and cost counts shown by `/usage`                                                                                                                                                                                                                                                                                                                          |
 | `remote-settings.json`  | Cached copy of [server-managed settings](/docs/en/server-managed-settings) for your organization, or `{}` when your organization has configured none. Only present when the session [fetches them](/docs/en/server-managed-settings#platform-availability). Claude Code checks for updates at startup and hourly during a session. Claude Code deletes it when you log out. |
 | `cache/changelog.md`    | Cached copy of the Claude Code changelog, shown by `/release-notes`. Refreshed in the background.                                                                                                                                                                                                                                                                           |
 | `policy-limits.json`    | Cached feature policy settings for your organization. Only present for some account types. Refreshed automatically. Claude Code deletes it when you log out.                                                                                                                                                                                                                |
 
-Other small cache and lock files appear depending on which features you use and are safe to delete.
+<span />
+
+Other files appear depending on which features you use. Caches and lock files are safe to delete. Keep these state files:
+
+* `.credentials.json`: your [login credentials](/docs/en/authentication#credential-management)
+* `agent-memory/`: [subagent memory](/docs/en/sub-agents#enable-persistent-memory)
+* `jobs/` and `daemon/`: [background session](/docs/en/agent-view#where-state-is-stored) state
 
 ### Plaintext storage
 
@@ -14151,24 +14228,25 @@ Pass `--all` instead of a path to purge state for every project at once, which d
 
 The command leaves `shell-snapshots/` and `backups/` alone because those are not project-scoped, and warns about them in the plan output.
 
-You can also delete any of the application-data paths above by hand. New sessions are unaffected. The table below shows what you lose for past sessions.
+You can also delete any of the application-data paths above by hand, apart from the [state files to keep](#state-files-to-keep). New sessions are unaffected. The table below shows what you lose for past sessions.
 
-| Delete                                                                                                                                                             | You lose                                                                                                               |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| `~/.claude/projects/`                                                                                                                                              | Resume, continue, and rewind for past sessions, and auto memory for every project                                      |
-| `~/.claude/history.jsonl`                                                                                                                                          | Up-arrow prompt recall                                                                                                 |
-| `~/.claude/paste-cache/`                                                                                                                                           | Pasted text in recalled prompts; see [paste large content](/docs/en/terminal-config#paste-large-content)               |
-| `~/.claude/uploads/`                                                                                                                                               | Attachments that past [Remote Control](/docs/en/remote-control) sessions refer to by path                              |
-| `~/.claude/file-history/`                                                                                                                                          | Checkpoint restore for past sessions                                                                                   |
-| `~/.claude/stats-cache.json`                                                                                                                                       | Historical totals shown by `/usage`                                                                                    |
-| `~/.claude/usage-data/`                                                                                                                                            | Past [`/insights`](/docs/en/costs#analyze-your-usage-patterns) reports and the cached analysis data used to build them |
-| `~/.claude/feedback-bundles/`                                                                                                                                      | Feedback and bug-report archives you haven't yet sent to your Anthropic account team                                   |
-| `~/.claude/feedback/drafts/`                                                                                                                                       | [Claude-drafted feedback](/docs/en/tools-reference#sendfeedback-tool-behavior) you haven't sent                        |
-| `~/.claude/remote-settings.json`                                                                                                                                   | Nothing. Re-fetched on next launch.                                                                                    |
-| `~/.claude/cache/changelog.md`                                                                                                                                     | Nothing. Refreshed in the background.                                                                                  |
-| `~/.claude/policy-limits.json`                                                                                                                                     | Nothing. Refreshed automatically.                                                                                      |
-| `~/.claude/debug/`, `~/.claude/plans/`, `~/.claude/image-cache/`, `~/.claude/session-env/`, `~/.claude/tasks/`, `~/.claude/shell-snapshots/`, `~/.claude/backups/` | Nothing user-facing                                                                                                    |
-| `~/.claude/todos/`, `~/.claude/statsig/`, `~/.claude/logs/`                                                                                                        | Nothing. Legacy directories not written by current versions.                                                           |
+| Delete                                                                                                                                         | You lose                                                                                                               |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `~/.claude/projects/`                                                                                                                          | Resume, continue, and rewind for past sessions, and auto memory for every project                                      |
+| `~/.claude/history.jsonl`                                                                                                                      | Up-arrow prompt recall, `Ctrl+R` history search, and `!` shell-command completion                                      |
+| `~/.claude/paste-cache/`                                                                                                                       | Pasted text in recalled prompts; see [paste large content](/docs/en/terminal-config#paste-large-content)               |
+| `~/.claude/uploads/`                                                                                                                           | Attachments that past [Remote Control](/docs/en/remote-control) sessions refer to by path                              |
+| `~/.claude/file-history/`                                                                                                                      | Checkpoint restore for past sessions                                                                                   |
+| `~/.claude/stats-cache.json`                                                                                                                   | Historical totals shown by `/usage`                                                                                    |
+| `~/.claude/usage-data/`                                                                                                                        | Past [`/insights`](/docs/en/costs#analyze-your-usage-patterns) reports and the cached analysis data used to build them |
+| `~/.claude/feedback-bundles/`                                                                                                                  | Feedback and bug-report archives you haven't yet sent to your Anthropic account team                                   |
+| `~/.claude/feedback/drafts/`                                                                                                                   | [Claude-drafted feedback](/docs/en/tools-reference#sendfeedback-tool-behavior) you haven't sent                        |
+| `~/.claude/remote-settings.json`                                                                                                               | Nothing. Re-fetched on next launch.                                                                                    |
+| `~/.claude/cache/changelog.md`                                                                                                                 | Nothing. Refreshed in the background.                                                                                  |
+| `~/.claude/policy-limits.json`                                                                                                                 | Nothing. Refreshed automatically.                                                                                      |
+| `~/.claude/tasks/`                                                                                                                             | Task lists that a resumed session would pick up                                                                        |
+| `~/.claude/debug/`, `~/.claude/plans/`, `~/.claude/image-cache/`, `~/.claude/session-env/`, `~/.claude/shell-snapshots/`, `~/.claude/backups/` | Nothing user-facing                                                                                                    |
+| `~/.claude/todos/`, `~/.claude/statsig/`, `~/.claude/logs/`                                                                                    | Nothing. Legacy directories not written by current versions.                                                           |
 
 Don't delete `~/.claude.json`, `~/.claude/settings.json`, or `~/.claude/plugins/`: those hold your auth, preferences, and installed plugins.
 
@@ -15914,7 +15992,7 @@ Prompt cache (main):   14 requests · 91% of input tokens from cache · 2 misses
 
 The misses, expected rebuilds, and warm or cold parts of the line mean the following:
 
-* **Misses**: requests that re-processed content the cache already held, with the time of the last miss and how many tokens those requests wrote back to the cache. Claude Code counts a request as a miss when the request re-processed more than 5% and at least 2,000 tokens of what it could have read from cache. [Actions that invalidate the cache](/docs/en/prompt-caching#actions-that-invalidate-the-cache) lists the usual causes.
+* **Misses**: requests that re-processed content the cache already held, with the time of the last miss and how many tokens those requests wrote back to the cache. Claude Code counts a request as a miss when the request re-processed more than 5% and at least 2,000 tokens of what it could have read from cache. [Actions that invalidate the cache](/docs/en/prompt-caching#actions-that-invalidate-the-cache) lists the usual causes. When Claude Code can identify a likely cause for the last miss, the line names it too, for example `likely cause: tool definitions changed`. The likely-cause text requires Claude Code v2.1.260 or later.
 * **Expected rebuilds**: when Claude Code has itself just rewritten the conversation, by [compaction](/docs/en/prompt-caching#compacting-the-conversation) or by clearing old tool results from context, it counts the same kind of miss as an expected rebuild instead. This part appears only after at least one expected rebuild has happened.
 * **Warm or cold**: whether the cached prefix is still within its [cache lifetime](/docs/en/prompt-caching#cache-lifetime), with the TTL in effect. When the cache is cold, the line shows how long the session has been idle. When no response has reported cache tokens, the line ends with `no prompt caching reported by the API` instead.
 
@@ -18975,12 +19053,13 @@ Anthropic also maintains a [demo plugins marketplace](https://github.com/anthrop
   </Step>
 
   <Step title="Browse available plugins">
-    Run `/plugin` to open the plugin manager. This opens a tabbed interface with four tabs you can cycle through using **Tab**, or **Shift+Tab** to go backward:
+    Run `/plugin` to open the plugin manager. This opens a tabbed interface you can cycle through using **Tab**, or **Shift+Tab** to go backward:
 
     * **Discover**: browse available plugins from all your marketplaces
     * **Installed**: view and manage your installed plugins
     * **Marketplaces**: add, remove, or update your added marketplaces
     * **Errors**: view any plugin loading errors
+    * **Stats**: see [what each of your skills costs in context and how often it gets used](/docs/en/skills#find-unused-skills), in sessions where `/skill-doctor` is available
 
     Go to the **Discover** tab to see plugins from the marketplace you just added. When your administrator has allowlisted the marketplace via the [`pluginSuggestionMarketplaces`](/docs/en/settings-reference#pluginsuggestionmarketplaces) managed setting, plugins marked as relevant to your current working directory are pinned at the top with a **suggested for this directory** label.
   </Step>
@@ -19531,6 +19610,7 @@ Match the message you see to a section below.
 | `Cannot switch renderers while work is running in the background`                                                                                                                                     | [Command-line errors](#cannot-switch-renderers-in-this-session)                                                               |
 | `Couldn't read your Zed keymap` / `Couldn't back up your Zed keymap` / `Couldn't update your Zed keymap`                                                                                              | [Command-line errors](#terminal-setup-left-your-zed-keymap-unchanged)                                                         |
 | `Your Zed keymap isn't a readable list of keybindings`                                                                                                                                                | [Command-line errors](#terminal-setup-left-your-zed-keymap-unchanged)                                                         |
+| `Skill usage reports are not available on this connection.`                                                                                                                                           | [Command-line errors](#skill-usage-reports-are-not-available-on-this-connection)                                              |
 | `Marketplace "<name>" is registered from an untrusted source`                                                                                                                                         | [Plugin errors](#marketplace-is-registered-from-an-untrusted-source)                                                          |
 | `references ${user_config.*} in a shell-form command`                                                                                                                                                 | [Plugin errors](#plugin-command-references-user-config)                                                                       |
 | `Monitor "<name>" from plugin <plugin> references ${user_config.*} in its command`                                                                                                                    | [Plugin errors](#plugin-command-references-user-config)                                                                       |
@@ -19556,6 +19636,7 @@ Match the message you see to a section below.
 | `Refusing to write <path>: its parent-directory symlink resolution changed after permission was checked` / `Refusing to write <path>: it is a symbolic link. Write to the link's target path instead` | [Tool errors](#refusing-after-a-symlink-changed)                                                                              |
 | `Refusing to search <path>: a path one of its Read deny rules is written through changed while the search was being prepared` / `Refusing to search <path>: it could not be opened`                   | [Tool errors](#refusing-after-a-symlink-changed)                                                                              |
 | `its permission check expired before it ran (too many concurrent file operations)` / `ripgrep was found only by name on PATH`                                                                         | [Tool errors](#refusing-after-a-symlink-changed)                                                                              |
+| `task output swap refused (tasks dir moved or linked)`                                                                                                                                                | [Tool errors](#task-output-swap-refused)                                                                                      |
 | `Can't open MCP settings while no terminal is attached to this background session`                                                                                                                    | [Background session errors](#commands-refused-in-a-background-session)                                                        |
 | `Can't open MCP settings in a background session`                                                                                                                                                     | [Background session errors](#commands-refused-in-a-background-session)                                                        |
 | `blocked because the path is spelled in a form that cannot be safely resolved`                                                                                                                        | [Background session errors](#write-or-command-blocked-because-the-path-cannot-be-safely-resolved)                             |
@@ -19575,7 +19656,8 @@ Match the message you see to a section below.
 | `exited before it became reachable`                                                                                                                                                                   | [Background session errors](#background-service-exited-before-it-became-reachable)                                            |
 | `Claude Code process exited with code N`                                                                                                                                                              | [Wrapper and IDE errors](#claude-code-process-exited-with-code-n)                                                             |
 | `Could not locate the Claude CLI on PATH`                                                                                                                                                             | [Wrapper and IDE errors](#could-not-locate-the-claude-cli-on-path)                                                            |
-| `Restored the code, but skipped N files`                                                                                                                                                              | [Rewind warnings](#restored-the-code-but-skipped-files)                                                                       |
+| `Restored the code, but skipped N files`                                                                                                                                                              | [Rewind warnings and errors](#restored-the-code-but-skipped-files)                                                            |
+| `No files were restored: N files failed (backup missing, or the file could not be updated)`                                                                                                           | [Rewind warnings and errors](#no-files-were-restored)                                                                         |
 | `Transcript writes are failing (...)`                                                                                                                                                                 | [Session saving warnings](#transcript-writes-are-failing)                                                                     |
 | `Transcript saving is off — CLAUDE_CODE_SKIP_PROMPT_HISTORY is set`                                                                                                                                   | [Session saving warnings](#transcript-saving-is-off-skip-prompt-history)                                                      |
 | `Transcript saving is off — inherited CLAUDE_CODE_CHILD_SESSION marker`                                                                                                                               | [Session saving warnings](#transcript-saving-is-off-child-session-marker)                                                     |
@@ -21698,6 +21780,18 @@ The first line of the message names the cause:
 
 Before v2.1.247, `/terminal-setup` couldn't parse a Zed keymap that used `//` comments or trailing commas, and it replaced the entire file with only its own binding while reporting the binding as installed. To restore a keymap an earlier version replaced, use the `.bak` backup file described under [Enter multiline prompts](/docs/en/terminal-config#enter-multiline-prompts).
 
+### Skill usage reports are not available on this connection
+
+You ran [`/skill-doctor`](/docs/en/skills#find-unused-skills) over [Remote Control](/docs/en/remote-control), from your phone or browser. Claude Code doesn't send the skill usage report over Remote Control and replies with this message instead:
+
+```text theme={null}
+Skill usage reports are not available on this connection.
+```
+
+**What to do:**
+
+* Run `/skill-doctor` in the terminal on the machine where the session is running, or run `claude -p "/skill-doctor"` there
+
 ## Plugin errors
 
 These errors come from [plugin](/docs/en/plugins) and [marketplace](/docs/en/plugin-marketplaces) configuration. For plugin problems that don't produce one of the messages on this page, such as a marketplace URL that doesn't load or a plugin that installs but doesn't appear, see [Plugin troubleshooting](/docs/en/discover-plugins#troubleshooting).
@@ -21803,7 +21897,7 @@ Before v2.1.246, `claude plugin install` didn't report this failure.
 
 ## Tool errors
 
-These errors come from Claude's built-in tools. Claude corrects most tool errors on its own; the first two below need a change from you, because they come from a subagent definition or a permission rule you control.
+These errors come from Claude's built-in tools. Claude corrects most tool errors on its own. When one needs a change from you, that error's **What to do** list says what to change.
 
 ### Agent would be spawned with zero tools
 
@@ -22004,6 +22098,20 @@ The text after the path names the reason:
 * For the ripgrep refusal, install ripgrep with your package manager so `rg` resolves to an absolute path on `PATH`, or keep searches under the working directory
 
 Before v2.1.251, Claude Code re-checked a path's resolution only for file writes, so a link replaced after the permission check could redirect a read or search to a different location without a message. Of these refusals, only the parent-directory write refusal appears on earlier versions.
+
+### Task output swap refused
+
+Claude Code saves each Bash command's output to a file under its temp directory. This message means a directory on that file's path is a symbolic link or has been moved, so Claude Code refused to run the command rather than write its output through that path. The message appears in the Bash tool result:
+
+```text wrap theme={null}
+task output swap refused (tasks dir moved or linked): /private/tmp/claude-501/-Users-you-my-project/1f0e62dc-4b0a-4f5e-9c2d-8a7b6c5d4e3f/tasks/b7k2f9m3q.output. To recover: restart Claude Code with CLAUDE_CODE_TMPDIR set to a fresh directory; or, if /private/tmp/claude-501/-Users-you-my-project is a stray directory or a symbolic link that should not be there, remove that entry itself (not what it points to) and restart.
+```
+
+**What to do:**
+
+* Upgrade to v2.1.260 or later. Earlier versions sometimes showed this message when no link or moved directory was present
+* Restart Claude Code with [`CLAUDE_CODE_TMPDIR`](/docs/en/env-vars) set to a fresh directory
+* Or check your project's directory under the Claude Code temp directory, `/private/tmp/claude-501/-Users-you-my-project` in the example message. If that path is a symbolic link, or a directory that shouldn't be there, remove the link or directory itself rather than the link's target, and restart Claude Code
 
 ## Background session errors
 
@@ -22323,9 +22431,9 @@ Failed to run Claude Code: Error: Could not locate the Claude CLI on PATH. Launc
 * Set the PATH entry as a user or system environment variable, not in your PowerShell profile. The extension doesn't run your profile, so a PATH edit that lives only there never reaches it.
 * Restart VS Code after changing PATH. The extension checks the PATH that VS Code captured at startup, so a PATH change takes effect only after a restart.
 
-## Rewind warnings
+## Rewind warnings and errors
 
-This warning comes from a [`/rewind`](/docs/en/checkpointing) code restore. It reports paths the restore refused to touch; the restore completed for every other tracked file.
+These messages come from a [`/rewind`](/docs/en/checkpointing) code restore. `Restored the code, but skipped N files` is a warning that Claude Code skipped some paths. `No files were restored` is an error that means it restored nothing.
 
 ### Restored the code, but skipped files
 
@@ -22346,6 +22454,25 @@ Restored the code, but skipped 2 files: the tracked path is (or became) a link o
 * Identify which files were skipped so you can handle each one with the steps below. The message gives only a count; the debug log at `~/.claude/debug/<session-id>.txt` names each skipped path as the restore runs, so turn on debug logging with `/debug` before your next restore. On macOS or Linux, you can instead find the links directly: `find . -type l` for symlinks and `find . -type f -links +1` for hard-linked files.
 * If a skipped file is a link you created on purpose, such as a config file managed by a dotfile manager or a file hard-linked by tools like pnpm, the rewind left its contents alone. To undo the session's changes to it, ask Claude to reverse the edit or edit the file yourself
 * If you didn't create the link, inspect the path before trusting its contents: something replaced the file after the checkpoint
+
+### No files were restored
+
+Claude Code shows this message when you restore code with [`/rewind`](/docs/en/checkpointing) and it can't restore any of the files in that checkpoint. For each file, either the backup Claude Code saved before editing it is missing, or Claude Code couldn't write to or delete the file.
+
+```text theme={null}
+Failed to restore the code:
+No files were restored: 1 file failed (backup missing, or the file could not be updated)
+```
+
+Claude Code deletes a session's backups in the [retention sweep](/docs/en/claude-directory#cleaned-up-automatically), by default about 30 days after the session last saved one. If you resume a session after that, `/rewind` still lists its checkpoints, but rewinding to one of them can fail with this error. If the message also says `N paths were skipped for link safety`, see [Restored the code, but skipped files](#restored-the-code-but-skipped-files) for those paths.
+
+**What to do:**
+
+* Undo the changes another way: ask Claude to reverse its edits, or restore the files from version control. When the backups are gone, running `/rewind` again fails the same way.
+* If Claude Code couldn't write or delete a file, fix what blocks the write, such as file permissions, then run `/rewind` again.
+* To keep backups longer in future sessions, raise [`cleanupPeriodDays`](/docs/en/settings-reference#cleanupperioddays).
+
+Before v2.1.260, Claude Code silently skipped files whose backups were missing, and the rewind appeared to succeed.
 
 ## Session saving warnings
 
@@ -25285,9 +25412,13 @@ In bare mode Claude has access to the Bash, file read, and file edit tools. Pass
 
 ### Background tasks at exit
 
-If Claude starts a [background Bash task](/docs/en/tools-reference#bash-tool-behavior) during a `claude -p` run, for example a dev server or a watch build, that shell is terminated about five seconds after Claude has returned its final result and stdin has closed. The grace period lets a task that finishes right after the result still deliver its output. Before v2.1.163, a never-exiting background process would hold the `claude -p` invocation open indefinitely.
+If Claude starts a [background Bash task](/docs/en/tools-reference#bash-tool-behavior) during a `claude -p` run, for example a dev server or a watch build, that shell is terminated about five seconds after Claude has returned its final result and stdin has closed. The grace period lets a task that finishes right after the result still deliver its output.
 
-Background [subagents](/docs/en/sub-agents) and workflows are exempt from the five-second grace because their result is part of the final output, so `claude -p` waits for them to complete. From v2.1.182, that wait is capped at ten minutes of continuous idle waiting by default, so a stuck background agent can't hold the process open indefinitely. Adjust the cap with [`CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS`](/docs/en/env-vars), or set it to `0` to wait without a limit.
+If Claude starts a background [subagent](/docs/en/sub-agents) or workflow, `claude -p` instead stays open until that work completes, because its result is part of the final output.
+
+By default the wait ends after 10 minutes of continuous idle waiting, so a stuck subagent or workflow can't hold the process open indefinitely. At that point Claude Code stops whatever is still running and drops its partial result. To change the limit, set [`CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS`](/docs/en/env-vars), or set it to `0` to wait without one.
+
+If Claude starts a [Monitor](/docs/en/tools-reference#monitor-tool) watch during a `claude -p` run, Claude Code waits for the watch until it times out or the ten-minute cap ends the wait, whichever comes first. While it waits, Claude keeps responding to what the watch reports. By default, a watch times out five minutes after Claude starts it.
 
 ### Stop a run with SIGTERM
 
@@ -31669,7 +31800,7 @@ The directory contains a `MEMORY.md` index and one topic file per memory:
 
 Auto memory is machine-local. All worktrees and subdirectories within the same git repository share one auto memory directory. Files are not shared across machines or cloud environments.
 
-Claude Code deletes old session transcripts after the [`cleanupPeriodDays`](/docs/en/settings-reference#cleanupperioddays) retention period, but excludes the files in the memory directory from that [retention sweep](/docs/en/claude-directory#cleaned-up-automatically). `MEMORY.md` and topic files stay until you or Claude edits or deletes them.
+Claude Code deletes old session transcripts after the [`cleanupPeriodDays`](/docs/en/settings-reference#cleanupperioddays) retention period, but excludes the memory files in the memory directory from that [retention sweep](/docs/en/claude-directory#cleaned-up-automatically). `MEMORY.md` and topic files stay until you or Claude edits or deletes them.
 
 ### How it works
 
@@ -33158,7 +33289,7 @@ When Claude Code can't safely determine the retention period, it pauses the swee
 * `used_default`: `"true"` when no readable settings source sets `cleanupPeriodDays`, `"false"` otherwise. On complete events, `"true"` means the 30-day default applied
 * `skip_reason`: Why Claude Code paused the sweep. Present only when `result` is `"skipped"`:
   * `"user_source_disabled"`: User settings are excluded, for example by the [`--setting-sources`](/docs/en/cli-reference#cli-flags) flag or the SDK's [`settingSources`](/docs/en/agent-sdk/typescript#options) option, and no enabled source provides `cleanupPeriodDays`
-  * `"settings_unknowable"`: A settings file couldn't be read or parsed, so `cleanupPeriodDays` may be set to a value Claude Code can't see
+  * `"settings_unknowable"`: A settings file couldn't be read or parsed, so `cleanupPeriodDays` or `desktopSessionCleanupPeriodDays` may be set to a value Claude Code can't see
   * `"settings_invalid_key_set"`: Settings have validation errors and `cleanupPeriodDays` or `desktopSessionCleanupPeriodDays` is explicitly set, so falling back to the default could delete or keep files against that setting
 * `transcripts_deleted`: Number of session transcripts, the top-level `~/.claude/projects/*/*.jsonl` files, that the sweep deleted
 * `transcripts_exempted_desktop`: Number of transcripts past the retention period that the sweep kept under the [Claude Desktop and Cowork rule](/docs/en/claude-directory#cleaned-up-automatically). These don't count toward `files_past_cutoff`. Requires Claude Code v2.1.248 or later
@@ -36786,6 +36917,8 @@ A high read-to-creation ratio means caching is working well. If creation stays h
 
 For a per-session summary, run `/usage`. After the main conversation's first response, Claude Code adds a [`Prompt cache (main)` line](/docs/en/costs#prompt-cache-statistics) to the Session block, showing the session's hit ratio, miss count, and whether the cache is warm right now. A status line script can read the same numbers from the [`prompt_cache` object](/docs/en/statusline#prompt-cache-fields). Both require Claude Code v2.1.251 or later.
 
+The `Prompt cache (main)` line also names the likely cause of the last miss when Claude Code can identify one, for example `likely cause: tool definitions changed`. The likely-cause text requires Claude Code v2.1.260 or later.
+
 For visibility across an organization, the OpenTelemetry exporter reports cache read and creation tokens per user and session. See [Monitor usage](/docs/en/monitoring-usage) for the metric and event attribute reference.
 
 ## Subagents and the cache
@@ -37626,9 +37759,10 @@ The message names what routed the session away from the Anthropic API, such as `
 
 ### "Remote Control is disabled by your organization's policy"
 
-A policy blocks Remote Control. The message's own text tells you which:
+A policy blocks Remote Control. Check these causes in order:
 
 * **The error mentions `disableRemoteControl`**: your IT administrator has disabled Remote Control on this device through [managed settings](/docs/en/managed-settings), independent of the organization-wide toggle and of how you're signed in.
+* **Your claude.ai plan is Pro or Max**: Claude Code is still signed in under a Team or Enterprise organization from an earlier login, so it checks that organization's Remote Control policy. Run `/status` to see which plan and organization your sign-in uses. Run `claude auth logout` then `claude auth login` to sign in again under your current plan.
 * **Otherwise, an Owner hasn't enabled it for your organization**: this form appears when you're signed in with an eligible claude.ai account but Remote Control is off, the default on Team and Enterprise plans. An Owner can enable it at [claude.ai/admin-settings/claude-code](https://claude.ai/admin-settings/claude-code) by turning on the **Remote Control** toggle. This toggle is a server-side organization setting.
 
 ### "Remote Control isn't available for your organization due to its compliance policy"
@@ -37787,7 +37921,7 @@ Routines belong to your individual claude.ai account. They are not shared with t
     Pick a [cloud environment](/docs/en/cloud-environments) for the routine. Environments control what the cloud session has access to:
 
     * **Network access**: set the level of internet access available during each run
-    * **Environment variables**: provide values Claude can use during each run. They're [visible to anyone who uses the environment](/docs/en/cloud-environments#what-carries-over-from-your-setup), so store keys for the APIs Claude calls during a run as [API credentials](/docs/en/cloud-environments#add-api-credentials) instead. That section also lists the requests that never get a credential
+    * **Environment variables**: provide values Claude can use during each run. They're [visible to anyone who uses the environment](/docs/en/cloud-environments#what-carries-over-from-your-setup), so on Pro and Max plans, store keys for the APIs Claude calls during a run as [API credentials](/docs/en/cloud-environments#add-api-credentials) instead. That section also lists the requests that never get a credential
     * **Setup script**: install dependencies and tools the routine needs. The result is [cached](/docs/en/cloud-environments#environment-caching), so the script doesn't re-run on every session
 
     A **Default** environment is provided with **Trusted** network access, which allows only the [default allowlist](/docs/en/cloud-environments#default-allowed-domains) of package registries, cloud provider APIs, container registries, and common development domains through the session's network. Connectors you add to the routine reach their services through Anthropic's servers, so they don't need allowlist changes. If your routine needs to reach your own services directly, or a domain outside that list, edit the environment's [network access](/docs/en/cloud-environments#network-access) before running. To use a separate environment, [create one](/docs/en/cloud-environments#configure-your-environment) first.
@@ -40784,6 +40918,14 @@ A skill that is absent from `skillOverrides` is treated as `"on"`. The example b
 
 Plugin skills are not affected by `skillOverrides`. Manage those through `/plugin` instead.
 
+### Find unused skills
+
+Every skill in the [skill listing](#skill-descriptions-are-cut-short) adds to your context on every turn, whether or not Claude ever uses it. Run `/skill-doctor` to see what each of your skills costs and how often it gets used, so you can decide which ones to turn off. In an interactive session, the report opens in the `/plugin` manager's **Stats** tab. In [non-interactive mode](/docs/en/headless) with `-p`, Claude Code prints it as text.
+
+The report covers the skills in your session other than bundled skills and enterprise skills. It flags skills in the listing that have never been invoked and says where to turn them off. It also lists plugins you haven't used recently.
+
+`/skill-doctor` requires Claude Code v2.1.252 or later and isn't available in sessions that skip [feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching). If you run `/skill-doctor` over [Remote Control](/docs/en/remote-control) from your phone or browser, Claude Code replies [`Skill usage reports are not available on this connection.`](/docs/en/errors#skill-usage-reports-are-not-available-on-this-connection) instead. Run `/skill-doctor` in the terminal on the machine where the session is running.
+
 ## Evaluate and iterate on a skill
 
 Seeing a skill trigger tells you Claude found it, not that it did what you intended. To know a skill is working, measure two things separately: whether Claude invokes it on the prompts it should, and whether the output matches what you expect when it does.
@@ -41040,7 +41182,7 @@ If Claude uses your skill when you don't want it:
 
 Claude Code loads a listing of skill names and descriptions into context so Claude knows what's available. The listing always contains every skill name, but if you have many skills, Claude Code shortens descriptions to fit the listing's character budget, which can strip the keywords Claude needs to match your request. The budget scales at 1% of the model's context window. When the listing overflows, Claude Code drops descriptions starting with the skills you invoke least, so the skills you use most keep their full text.
 
-Run `/doctor` for an estimate of the listing's context cost and its biggest contributors. When the listing exceeds its budget, Claude Code also writes a warning to the debug log, visible with [`--debug`](/docs/en/cli-reference#cli-flags).
+Run `/doctor` for an estimate of the listing's context cost and its biggest contributors. To find skills worth turning off, run [`/skill-doctor`](#find-unused-skills). When the listing exceeds its budget, Claude Code also writes a warning to the debug log, visible with [`--debug`](/docs/en/cli-reference#cli-flags).
 
 The Skills row in `/context` reports the size of the listing after the budget is applied, so it matches what the model receives. Before v2.1.196, the row counted the full text of every description and could show a value several times larger than the configured budget.
 
@@ -44000,6 +44142,20 @@ Restarting doesn't lose your conversation. Run `claude --resume` in the same dir
 ### Garbled or corrupted text in an editor's integrated terminal
 
 If characters render as boxes, smears, or the wrong glyphs when running Claude Code in the VS Code, Cursor, or Devin Desktop integrated terminal, the terminal's GPU renderer is likely the cause. Run `/terminal-setup` inside Claude Code to set `terminal.integrated.gpuAcceleration` to `"off"`, or set it manually in your editor settings and reload the window. See [Terminal configuration](/docs/en/terminal-config) for the other settings `/terminal-setup` writes.
+
+### Mouse wheel scrolls one line at a time in fullscreen rendering
+
+In [fullscreen rendering](/docs/en/fullscreen), Claude Code scrolls the conversation itself rather than leaving it to your terminal. If each wheel notch moves fewer lines than you want, run `/scroll-speed` to raise the number of lines per notch and save it, or set the `CLAUDE_CODE_SCROLL_SPEED` environment variable, except in the JetBrains IDE terminal, where Claude Code applies its own scroll handling and neither takes effect. See [Mouse wheel scrolling](/docs/en/fullscreen#mouse-wheel-scrolling) for the values each accepts.
+
+To move faster without changing the speed, press `PgUp` and `PgDn` to scroll half a screen at a time. To hand scrolling back to your terminal's native scrollback instead, run `/tui default` to switch to the classic renderer.
+
+### Clipboard commands such as `pbcopy` fail inside the sandbox
+
+When [sandboxing](/docs/en/sandboxing) is on, clipboard utilities such as `pbcopy`, `xclip`, and `wl-copy` can fail to reach the system clipboard from inside a sandboxed Bash command, leaving your clipboard unchanged after Claude pipes text to them.
+
+To put Claude's output on your clipboard, ask Claude to print the content in its response, then run [`/copy`](/docs/en/commands). `/copy` writes to the clipboard from the Claude Code process itself rather than from a sandboxed command, so sandboxing doesn't block it. It can copy a single code block instead of the whole response, and it also writes what it copied to a file and prints the path, which gives you a fallback when the clipboard write doesn't reach your terminal, for example over SSH.
+
+To let a piped command reach the clipboard directly instead, add `pbcopy *`, `wl-copy *`, or `xclip *` to [`excludedCommands`](/docs/en/settings-reference#sandbox-excludedcommands) so the command runs outside the sandbox.
 
 ### Search and discovery issues
 
@@ -51284,6 +51440,8 @@ Guide for migrating the Claude Code TypeScript and Python SDKs to the Claude Age
 
 The Claude Code SDK has been renamed to the **Claude Agent SDK** and its documentation has been reorganized. This change reflects the SDK's broader capabilities for building AI agents beyond just coding tasks.
 
+Migrating from the OpenAI Agents SDK instead? The [OpenAI Agents SDK migration recipe](https://platform.claude.com/cookbook/claude-agent-sdk-04-migrating-from-openai-agents-sdk) maps each primitive onto the Claude Agent SDK through a single worked example.
+
 ## What's Changed
 
 | Aspect                     | Old                         | New                                                                           |
@@ -52262,6 +52420,7 @@ Use of the Claude Agent SDK is governed by [Anthropic's Commercial Terms of Serv
 These resources cover deeper technical detail and example projects for building with the Agent SDK.
 
 * [Quickstart](/docs/en/agent-sdk/quickstart): build your first agent that finds and fixes bugs
+* [Migration guide](/docs/en/agent-sdk/migration-guide): migrate from the Claude Code SDK packages to the Agent SDK
 * [Agent loop](/docs/en/agent-sdk/agent-loop): how Claude plans, calls tools, and decides when a task is done
 * [Example agents](https://github.com/anthropics/claude-agent-sdk-demos): demo apps for local development
 * [TypeScript SDK](/docs/en/agent-sdk/typescript): full TypeScript API reference and examples
@@ -60201,7 +60360,9 @@ In a session that has the task-tracking tools, Claude keeps a written todo list,
 ## Model availability
 
 <Note>
-  On TypeScript Agent SDK 0.3.233 and later, or Python Agent SDK 0.2.139 and later, the following tools aren't available on Opus 4.8, Sonnet 5, Fable 5, Mythos 5, or later versions of those families unless you opt in:
+  On TypeScript Agent SDK 0.3.233 and later, or Python Agent SDK 0.2.139 and later, the following restriction applies.
+
+  The following tools aren't available on Opus 4.8, Sonnet 5, Fable 5, Mythos 5, or later versions of those families unless you opt in:
 
   * `TodoWrite`
   * `TaskCreate`
@@ -60734,7 +60895,7 @@ For the full set of system prompt options, see [Modifying system prompts](/docs/
 * [Python SDK reference](/docs/en/agent-sdk/python): Full API reference
 
 
-# Troubleshooting
+# Troubleshoot the Agent SDK
 Source: https://code.claude.com/docs/en/agent-sdk/troubleshooting
 
 Fix Agent SDK errors by the exact message you see, with the cause and fix for each error in the TypeScript and Python SDKs.
@@ -62135,6 +62296,10 @@ type SDKResultMessage =
       ttft_stream_ms?: number;
       user_message_uuid?: string;
       request_sent_wall_ms?: number;
+      first_content_frame_ms?: number;
+      first_stream_post_ms?: number;
+      first_stream_post_ack_ms?: number;
+      first_stream_post_wall_ms?: number;
       total_cost_usd: number;
       usage: NonNullableUsage;
       modelUsage: { [modelName: string]: ModelUsage };
@@ -62182,6 +62347,8 @@ Several fields on the result carry diagnostic detail beyond `subtype`:
 * `ttft_stream_ms`: time in milliseconds until the first `message_start` stream event, when the response stream opens. Lower than `ttft_ms`; the gap between the two is time spent streaming the first message. Present on the success arm only.
 * `user_message_uuid`: the `uuid` of the message you sent that started this turn. See [`user_message_uuid`](#user_message_uuid) for which results carry it.
 * `request_sent_wall_ms`: epoch milliseconds at which Claude Code dispatched the API request, for joins against server-side timestamps. Present on the success arm only, together with `user_message_uuid`, when `is_error` is false.
+* `first_content_frame_ms`: time in milliseconds until the first `content_block_start` or `content_block_delta` stream event, counting thinking blocks as content. Present on the success arm only, when `is_error` is false. Requires Agent SDK v0.3.260 or later.
+* `first_stream_post_ms`, `first_stream_post_ack_ms`, `first_stream_post_wall_ms`: timings for uploading the turn's first stream event. Claude Code records them only in sessions it streams to claude.ai, such as [cloud sessions](/docs/en/claude-code-on-the-web), and the results `query()` yields don't carry them. Requires Agent SDK v0.3.260 or later.
 * `usage`: main agent loop only. Excludes subagent and auxiliary model calls, and is per-turn in streaming-input sessions. Prefer `modelUsage` for token/cost accounting.
 * `modelUsage`: per-model totals for every model call made through the query pipeline during this `query()` call, including the main loop, subagents, and internal calls such as compaction and Workflow agents. Helper calls outside that pipeline, such as the permission classifier and token-counting requests, are excluded. In streaming-input sessions the totals are cumulative across turns, so read the latest result rather than summing across results. See [Track costs in streaming input mode](/docs/en/agent-sdk/cost-tracking#track-costs-in-streaming-input-mode) for resets and [Recover totals after a session crash](/docs/en/agent-sdk/cost-tracking#recover-totals-after-a-session-crash) for zeroed results.
 * `total_cost_usd`: cumulative estimated cost in USD for this `query()` call, covering the same calls as `modelUsage` and reset at the same points. It is an estimate, not a billing statement. See [Track cost and usage](/docs/en/agent-sdk/cost-tracking) for accuracy caveats.
@@ -62215,10 +62382,11 @@ When a `PreToolUse` hook returns `permissionDecision: "defer"`, the result has `
 
 #### `user_message_uuid`
 
-The `uuid` of the [`SDKUserMessage`](#sdkusermessage) that started the turn, echoed so you can match Claude Code's reply to the message you sent. Claude Code echoes it only if you set `uuid` on that message. The field is optional on `SDKUserMessage`, and a string prompt passed to `query()` carries none. When you set it, Claude Code echoes it on two kinds of frame:
+The `uuid` of the [`SDKUserMessage`](#sdkusermessage) that started the turn, echoed so you can match Claude Code's reply to the message you sent. Claude Code echoes it only if you set `uuid` on that message. The field is optional on `SDKUserMessage`, and a string prompt passed to `query()` carries none. When you set it, Claude Code echoes it on these frames:
 
 * **The result**: on the success arm with `is_error` false, together with `request_sent_wall_ms`, which requires Agent SDK v0.3.216 or later. On an error result that answers a message you sent, Claude Code echoes the field alone, which requires Agent SDK v0.3.246 or later.
-* **The turn's first reply**: the first [assistant message](#sdkassistantmessage), or with `includePartialMessages` the first [stream event](#sdkpartialassistantmessage) whose `event.type` isn't `ping`, so you can bind the reply before the result arrives. When a turn streams nothing, Claude Code sets it on the first assistant message instead. One frame per turn carries it. Requires Agent SDK v0.3.246 or later.
+* **The turn's first reply**: the first [assistant message](#sdkassistantmessage), or with `includePartialMessages` the first [stream event](#sdkpartialassistantmessage) whose `event.type` isn't `ping`, so you can bind the reply before the result arrives. When a turn streams nothing, Claude Code sets it on the first assistant message instead. One reply frame per turn carries it. Requires Agent SDK v0.3.246 or later.
+* **Every [`thinking_tokens`](#sdkthinkingtokensmessage) frame of the turn**: so you can attribute thinking progress to the message you sent without waiting for the turn's first reply. Requires Agent SDK v0.3.260 or later.
 
 Claude Code omits the field in these cases:
 
@@ -65805,6 +65973,7 @@ type SDKThinkingTokensMessage = {
   subtype: "thinking_tokens";
   estimated_tokens: number;
   estimated_tokens_delta: number;
+  user_message_uuid?: string;
   uuid: UUID;
   session_id: string;
 };
@@ -68331,7 +68500,7 @@ Claude Code tracks all changes made by its file editing tools:
 * Every user prompt creates a new checkpoint
 * Claude Code keeps file snapshots for the 100 most recent checkpoints in a session. Discarding an older checkpoint deletes the snapshot files that no remaining checkpoint references, except each file's first snapshot, which the VS Code extension uses as the baseline for its session diffs.
 * Claude Code saves checkpoints with the conversation, so you can still run `/rewind` after you resume a session
-* Claude Code deletes checkpoints along with sessions after 30 days, following the [retention sweep rules](/docs/en/claude-directory#cleaned-up-automatically); change the period with [`cleanupPeriodDays`](/docs/en/settings-reference#cleanupperioddays)
+* Claude Code deletes a session's file snapshots in the [retention sweep](/docs/en/claude-directory#cleaned-up-automatically), by default about 30 days after the session last saved one. Rewinding to a checkpoint whose snapshots are gone can fail with [`No files were restored`](/docs/en/errors#no-files-were-restored). To keep snapshots longer, set [`cleanupPeriodDays`](/docs/en/settings-reference#cleanupperioddays).
 
 ### Rewind and summarize
 
@@ -68589,7 +68758,7 @@ Configure cloud environments for Claude Code cloud sessions: network access leve
   Cloud environments require [Claude Code on the web](/docs/en/claude-code-on-the-web), which is in research preview for Pro, Max, and Team users, and for Enterprise users with [premium seats or Chat + Claude Code seats](https://support.claude.com/en/articles/11845131-use-claude-code-with-your-team-or-enterprise-plan).
 </Note>
 
-Each [cloud session](/docs/en/claude-code-on-the-web) runs in a cloud environment. You can configure an environment to allow or deny [network access](#access-levels), [set environment variables](#set-environment-variables) for the session, store [API credentials](#add-api-credentials) that sessions use without seeing them, and run a [setup script](#setup-scripts) before Claude starts working.
+Each [cloud session](/docs/en/claude-code-on-the-web) runs in a cloud environment. You can configure an environment to allow or deny [network access](#access-levels), [set environment variables](#set-environment-variables) for the session, on Pro and Max plans store [API credentials](#add-api-credentials) that sessions use without seeing them, and run a [setup script](#setup-scripts) before Claude starts working.
 
 The same environments apply wherever you start a cloud session: [Claude Code on the web](/docs/en/claude-code-on-the-web), the terminal with [`claude --cloud`](/docs/en/claude-code-on-the-web#from-terminal-to-web), [Claude Tag](https://claude.com/docs/claude-tag/overview), [routines](/docs/en/routines), the [Claude mobile app](/docs/en/mobile), and the [Desktop app](/docs/en/desktop). Each of these surfaces can also route to a [self-hosted environment](/docs/en/self-hosted-environments). [Availability and limitations](/docs/en/self-hosted-environments#availability-and-limitations) covers what Claude can't use yet when a Claude Tag session runs in one.
 
@@ -68631,7 +68800,7 @@ Create, edit, and archive environments from the environment selector at [claude.
   </Step>
 
   <Step title="Add or edit an environment">
-    Select **Add cloud environment**, or hover over an existing environment and select the settings icon that appears on the right. The dialog includes the name, network access level, environment variables, and setup script. When you edit an existing cloud environment, the dialog also includes [API credentials](#add-api-credentials).
+    Select **Add cloud environment**, or hover over an existing environment and select the settings icon that appears on the right. The dialog includes the name, network access level, environment variables, and setup script. When you edit an existing cloud environment on a Pro or Max plan, the dialog also includes [API credentials](#add-api-credentials).
 
     <Frame>
       <img alt="The New cloud environment dialog. A Name field with the placeholder Default, a Network access selector set to Trusted with links to the network policy and access levels, an Environment variables box showing .env-format placeholder text with a note that values are visible to anyone using the environment, a Setup script box described as a Bash script that runs when a new session starts before Claude Code launches, and Cancel and Create environment buttons." />
@@ -68655,11 +68824,13 @@ Each session copies the environment's values once, at startup, into ordinary env
 
 Claude Code on the web also sets some variables itself when it starts a session. For [`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`](/docs/en/claude-code-on-the-web#manage-context), the value Claude Code on the web sets overrides one you add here, so adding that key here has no effect.
 
-Anyone who uses the environment can read the values. For a key the agent proxy can attach to a request, use an [API credential](#add-api-credentials) instead. The [requests that never get a credential](#requests-that-never-get-the-credential) are listed there.
+Anyone who uses the environment can read the values. On Pro and Max plans, use an [API credential](#add-api-credentials) instead for a key the agent proxy can attach to a request. The [requests that never get a credential](#requests-that-never-get-the-credential) are listed there.
 
 ### Add API credentials
 
 An API credential is an API key or token you store on a cloud environment so Claude can call that API from any session in the environment without seeing the key. Anthropic's agent proxy adds the key to requests for the hosts you list, after each request leaves the session's VM. The key never reaches Claude, the commands it runs, or the session's environment variables.
+
+API credentials are available on Pro and Max plans. They aren't available on Team or Enterprise plans yet, so the **API credentials** section doesn't appear in the environment dialog on those plans.
 
 #### Requirements
 
@@ -68734,9 +68905,9 @@ Archiving affects new sessions, not running ones:
 
 On Team and Enterprise plans, an Owner can create cloud environments that are shared with every member of the organization. The same role manages everything else on the **Cloud environments** admin page, including [self-hosted environments](/docs/en/self-hosted-environments); the Admin role can't open the page. The full list of roles that can open it is the one for [managing server-managed settings](/docs/en/server-managed-settings#access-control). Shared environments appear in each member's environment selector alongside their personal ones, so a team can standardize on one configuration instead of each member recreating it.
 
-Create, edit, and archive shared environments from the **Cloud environments** page in [admin settings](https://claude.ai/admin-settings). A shared environment also opens from the [environment selector](#configure-your-environment) at [claude.ai/code](https://claude.ai/code): an Owner can edit it there, and that dialog is where [API credentials](#add-api-credentials) are added. Other members see it read-only. Each shared environment has a name, a [network access level](#access-levels), [environment variables](#set-environment-variables) in `.env` format, and a [setup script](#setup-scripts). Owners choose the organization's [default environment](#the-default-environment) separately, at [claude.ai/admin-settings/claude-code](https://claude.ai/admin-settings/claude-code).
+Create, edit, and archive shared environments from the **Cloud environments** page in [admin settings](https://claude.ai/admin-settings). A shared environment also opens from the [environment selector](#configure-your-environment) at [claude.ai/code](https://claude.ai/code): an Owner can edit it there. Other members see it read-only. Each shared environment has a name, a [network access level](#access-levels), [environment variables](#set-environment-variables) in `.env` format, and a [setup script](#setup-scripts). Owners choose the organization's [default environment](#the-default-environment) separately, at [claude.ai/admin-settings/claude-code](https://claude.ai/admin-settings/claude-code).
 
-Every member's sessions in a shared environment read its variables, so don't include secrets in them. To give those sessions a key they can't read, [add an API credential](#add-api-credentials) from that dialog.
+Every member's sessions in a shared environment read its variables, so don't include secrets in them. [API credentials](#add-api-credentials), which give sessions a key they can't read, aren't available on Team or Enterprise plans yet.
 
 ### Set the environment a Claude Tag channel uses
 
@@ -68822,26 +68993,26 @@ In Anthropic-hosted environments, each session gets a fresh virtual machine (VM)
 
 Cloud sessions start from a fresh clone of your repository. Anything you commit to the repo is available. Anything you've installed or configured only on your own machine isn't available in the session. Your organization's policy arrives separately through [server-managed settings](/docs/en/server-managed-settings).
 
-|                                                                                                                                                                                                | Available in cloud sessions                     | Why                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Your repo's `CLAUDE.md`                                                                                                                                                                        | Yes                                             | Part of the clone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Your repo's `.claude/settings.json` hooks                                                                                                                                                      | Yes                                             | Part of the clone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Your repo's `.mcp.json` MCP servers                                                                                                                                                            | Yes                                             | Part of the clone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Your repo's `.claude/rules/`                                                                                                                                                                   | Yes                                             | Part of the clone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Your repo's `.claude/skills/`, `.claude/agents/`, `.claude/commands/`                                                                                                                          | Yes                                             | Part of the clone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| Plugins declared in `.claude/settings.json`                                                                                                                                                    | Yes                                             | Installed at session start from the [marketplace](/docs/en/plugin-marketplaces) you declared. Requires network access to reach the marketplace source                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| Your organization's [server-managed settings](/docs/en/server-managed-settings)                                                                                                                | Yes                                             | Fetched from Anthropic's servers when the session starts. See [Surface coverage](/docs/en/model-config#surface-coverage) for how `availableModels` is enforced in cloud sessions. Settings deployed to your device through MDM or managed settings files don't apply, because the session runs on an Anthropic-managed VM; in a [self-hosted environment](/docs/en/self-hosted-environments), sessions also read the managed settings file in the runner image, per [how Claude Code combines managed sources](/docs/en/managed-settings#how-claude-code-combines-managed-sources) |
-| Your user `~/.claude/CLAUDE.md`                                                                                                                                                                | No                                              | Lives on your machine, not in the repo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| Your user `~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/commands/`                                                                                                                      | No                                              | Live on your machine, not in the repo. Commit them to the repo's `.claude/` directory instead. Cloud sessions automatically load skills you enable on claude.ai                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| Plugins enabled only in your user settings                                                                                                                                                     | No                                              | User-scoped `enabledPlugins` lives in `~/.claude/settings.json`. Declare them in the repo's `.claude/settings.json` instead, or enable them for your claude.ai account so Claude Code loads them as [synced plugins](/docs/en/plugins-reference#synced-plugins)                                                                                                                                                                                                                                                                                                                    |
-| MCP servers you added with `claude mcp add` at the default local scope or the user scope                                                                                                       | No                                              | Those write to `~/.claude.json` on your machine, not the repo. Add the server with `claude mcp add --scope project`, which writes the repo's [`.mcp.json`](/docs/en/mcp#project-scope), and commit that file                                                                                                                                                                                                                                                                                                                                                                       |
-| Transport variables in your repo's `.claude/settings.json` `env` block, such as `NODE_EXTRA_CA_CERTS` and the [mTLS client certificate variables](/docs/en/network-config#mtls-authentication) | No                                              | The hosting environment manages the session's API connection, so Claude Code ignores these keys and notes each ignored key in the session's debug log                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| API keys and tokens for services Claude calls                                                                                                                                                  | Yes, as [API credentials](#add-api-credentials) | You add the key once on the environment and the agent proxy attaches it to requests for the hosts you list. A key the agent proxy [can't attach](#requests-that-never-get-the-credential) stays in an environment variable                                                                                                                                                                                                                                                                                                                                                         |
-| Interactive auth like AWS SSO                                                                                                                                                                  | No                                              | Not supported. SSO requires browser-based login that can't run in a cloud session                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+|                                                                                                                                                                                                | Available in cloud sessions                                      | Why                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Your repo's `CLAUDE.md`                                                                                                                                                                        | Yes                                                              | Part of the clone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Your repo's `.claude/settings.json` hooks                                                                                                                                                      | Yes                                                              | Part of the clone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Your repo's `.mcp.json` MCP servers                                                                                                                                                            | Yes                                                              | Part of the clone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Your repo's `.claude/rules/`                                                                                                                                                                   | Yes                                                              | Part of the clone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Your repo's `.claude/skills/`, `.claude/agents/`, `.claude/commands/`                                                                                                                          | Yes                                                              | Part of the clone                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Plugins declared in `.claude/settings.json`                                                                                                                                                    | Yes                                                              | Installed at session start from the [marketplace](/docs/en/plugin-marketplaces) you declared. Requires network access to reach the marketplace source                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Your organization's [server-managed settings](/docs/en/server-managed-settings)                                                                                                                | Yes                                                              | Fetched from Anthropic's servers when the session starts. See [Surface coverage](/docs/en/model-config#surface-coverage) for how `availableModels` is enforced in cloud sessions. Settings deployed to your device through MDM or managed settings files don't apply, because the session runs on an Anthropic-managed VM; in a [self-hosted environment](/docs/en/self-hosted-environments), sessions also read the managed settings file in the runner image, per [how Claude Code combines managed sources](/docs/en/managed-settings#how-claude-code-combines-managed-sources) |
+| Your user `~/.claude/CLAUDE.md`                                                                                                                                                                | No                                                               | Lives on your machine, not in the repo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Your user `~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/commands/`                                                                                                                      | No                                                               | Live on your machine, not in the repo. Commit them to the repo's `.claude/` directory instead. Cloud sessions automatically load skills you enable on claude.ai                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Plugins enabled only in your user settings                                                                                                                                                     | No                                                               | User-scoped `enabledPlugins` lives in `~/.claude/settings.json`. Declare them in the repo's `.claude/settings.json` instead, or enable them for your claude.ai account so Claude Code loads them as [synced plugins](/docs/en/plugins-reference#synced-plugins)                                                                                                                                                                                                                                                                                                                    |
+| MCP servers you added with `claude mcp add` at the default local scope or the user scope                                                                                                       | No                                                               | Those write to `~/.claude.json` on your machine, not the repo. Add the server with `claude mcp add --scope project`, which writes the repo's [`.mcp.json`](/docs/en/mcp#project-scope), and commit that file                                                                                                                                                                                                                                                                                                                                                                       |
+| Transport variables in your repo's `.claude/settings.json` `env` block, such as `NODE_EXTRA_CA_CERTS` and the [mTLS client certificate variables](/docs/en/network-config#mtls-authentication) | No                                                               | The hosting environment manages the session's API connection, so Claude Code ignores these keys and notes each ignored key in the session's debug log                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| API keys and tokens for services Claude calls                                                                                                                                                  | On Pro and Max plans, as [API credentials](#add-api-credentials) | You add the key once on the environment and the agent proxy attaches it to requests for the hosts you list. A key the agent proxy [can't attach](#requests-that-never-get-the-credential), or any key on a Team or Enterprise plan, stays in an environment variable                                                                                                                                                                                                                                                                                                               |
+| Interactive auth like AWS SSO                                                                                                                                                                  | No                                                               | Not supported. SSO requires browser-based login that can't run in a cloud session                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
 To make your own configuration available in cloud sessions, commit it to the repo.
 
-Anyone who uses the environment can read its environment variables and setup script. The dialog's note under **Environment variables** says so and warns against putting secrets there. Store a key the agent proxy can attach as an [API credential](#add-api-credentials) instead.
+Anyone who uses the environment can read its environment variables and setup script. The dialog's note under **Environment variables** says so and warns against putting secrets there. On Pro and Max plans, store a key the agent proxy can attach as an [API credential](#add-api-credentials) instead.
 
 ### Installed tools
 
@@ -69391,7 +69562,7 @@ In the table below, `<arg>` indicates a required argument and `[arg]` indicates 
 | `/design-login`                                                                               | Authorize design-system access for `/design-sync` with your claude.ai account                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `/design-sync [hint]`                                                                         | **[Skill](/docs/en/skills#bundled-skills).** Convert your repo's React design system and upload it to [Claude Design](https://claude.ai/design), so designs it produces use your real components. Optionally name the design system, for example `/design-sync Acme DS`. A first-time sync verifies every component and can take a few hours on a large repo. Available on the Anthropic API; on Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, and Claude Platform on AWS the underlying tool can't reach claude.ai, so the command is unavailable                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `/desktop`                                                                                    | Continue the current session in the Claude Code Desktop app. Requires macOS or x64 Windows and a Claude subscription. Alias: `/app`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `/diff`                                                                                       | Open an interactive diff viewer showing uncommitted changes and per-turn diffs. Use left/right arrows to switch between the current git diff and individual Claude turns, and up/down to browse files. Press Enter to open the selected file's diff, scroll it with up/down or PageUp/PageDown, and press Esc to return to the file list. Claude Code computes these diffs from raw git blob content, so diff drivers and `textconv` filters configured in `.gitattributes` or git config don't apply. Before v2.1.222, workspace-configured drivers and filters could rewrite the viewer's output. The open viewer also refreshes automatically when the repository's git state changes outside the session, such as a branch switch or commit in another terminal; the auto-refresh requires Claude Code v2.1.198 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `/diff`                                                                                       | Review the changes in your working tree, including the edits Claude has made so far. See [Review changes with /diff](/docs/en/interactive-mode#review-changes-with-%2Fdiff)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `/doctor`                                                                                     | **[Skill](/docs/en/skills#bundled-skills).** Run a setup checkup that diagnoses issues and can fix them. Checks installation health, including duplicate or leftover installs, `PATH` problems, and unparseable settings files. Finds unused skills, MCP servers, and plugins versus their context cost, flags slow [hooks](/docs/en/hooks), and checks for a newer version on your [release channel](/docs/en/setup#configure-release-channel). Deduplicates local `CLAUDE.md` files against checked-in ones, trims checked-in [`CLAUDE.md`](/docs/en/memory#my-claude-md-is-too-large) files by cutting content Claude could derive from the codebase, and migrates the always-loaded guidance that remains into [skills](/docs/en/skills) and nested `CLAUDE.md` files that load on demand. Also offers to make [auto mode](/docs/en/permissions#permission-modes) your default and to [pre-approve](/docs/en/permissions) frequently denied read-only commands. Reports findings first and asks for confirmation before changing anything. From the terminal, `claude doctor` prints read-only installation diagnostics without starting a session. Alias: `/checkup`. The `CLAUDE.md` trim check requires Claude Code v2.1.206 or later. Before v2.1.205, `/doctor` opened a read-only diagnostics screen and pressing `f` sent the report to Claude |
 | `/effort [level\|auto\|status]`                                                               | Set the [effort level](/docs/en/model-config#adjust-effort-level): `low` to `xhigh`, `max`, [`ultracode`](/docs/en/workflows#let-claude-decide-with-ultracode), or `auto`; `status` prints it. `max` and `ultracode` are session-only; the [`ultracode`](/docs/en/settings-reference#ultracode) key persists. Run it while Claude is responding and, once you confirm the [cache warning](/docs/en/prompt-caching#changing-effort-level), if Claude Code shows one, Claude Code applies the new level to the next request in that turn. Before v2.1.242, Claude Code decided from a feature flag it fetched from Anthropic whether to run the command mid-turn or queue it until the turn finished, and always queued it in a session that doesn't [fetch feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching), such as on a [third-party provider](/docs/en/third-party-integrations). Works in `-p` outside the [effort hold](/docs/en/model-config#adjust-effort-level)                                                                                                                                                                                                                                                                                                                                                          |
 | `/exit`                                                                                       | Exit the CLI. In an attached [background session](/docs/en/agent-view#attach-to-a-session), this detaches and the session keeps running. Alias: `/quit`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -69448,6 +69619,7 @@ In the table below, `<arg>` indicates a required argument and `[arg]` indicates 
 | `/setup-bedrock`                                                                              | Configure [Amazon Bedrock](/docs/en/amazon-bedrock) authentication, region, and model pins through an interactive wizard. [Hidden from the command menu](#how-the-command-menu-matches-what-you-type) until `CLAUDE_CODE_USE_BEDROCK=1` is set; type it in full. First-time Amazon Bedrock users can also access this wizard from the login screen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `/setup-vertex`                                                                               | Configure [Google Cloud's Agent Platform](/docs/en/google-vertex-ai) authentication, project, region, and model pins through an interactive wizard. [Hidden from the command menu](#how-the-command-menu-matches-what-you-type) until `CLAUDE_CODE_USE_VERTEX=1` is set; type it in full. First-time Google Cloud's Agent Platform users can also access this wizard from the login screen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `/simplify [target]`                                                                          | **[Skill](/docs/en/skills#bundled-skills).** Review the changed code for cleanup opportunities and apply the fixes. Four review [agents](/docs/en/sub-agents) run in parallel, covering reuse of existing helpers, simplification, efficiency, and whether the change is at the right level of abstraction. The review doesn't look for correctness bugs. Use `/code-review` to find bugs. Pass a path or PR reference to review a specific target                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `/skill-doctor`                                                                               | Show what each of your [skills](/docs/en/skills) costs in context and how often it gets used, so you can [find skills to turn off](/docs/en/skills#find-unused-skills). Requires Claude Code v2.1.252 or later and [feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `/skills`                                                                                     | List available [skills](/docs/en/skills). Type to filter the list by name, description, or source. Press `t` to sort by token count, `Space` or `Enter` to [cycle a skill's visibility to Claude and the `/` menu](/docs/en/skills#override-skill-visibility-from-settings), and `Esc` to save and close. You can't cycle plugin skills, skills whose frontmatter sets `disable-model-invocation: true`, or skills with a `skillOverrides` entry in managed settings or the `--settings` flag                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `/stats`                                                                                      | Alias for `/usage`. Opens on the Stats tab                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `/status`                                                                                     | Open the Settings interface on the Status tab, showing version, model, account, and connectivity. A `Session kind` row reads `background job · attached` or `background job · unattended` in a [background session](/docs/en/agent-view), depending on whether a terminal is attached, and `interactive` in any other session. Before v2.1.221, `/status` didn't show this row. Works while Claude is responding                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -70349,7 +70521,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_PLUGIN_PREFER_HTTPS`                       | Set to `1` to clone GitHub `owner/repo` shorthand sources over HTTPS instead of SSH. Applies to plugin install and update, and to `/plugin marketplace add` and `update`. Useful in CI runners, containers, or any environment without a configured SSH key for `github.com`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `CLAUDE_CODE_PLUGIN_SEED_DIR`                           | Path to one or more read-only plugin seed directories, separated by `:` on Unix or `;` on Windows. Use this to bundle a pre-populated plugins directory into a container image. Claude Code registers marketplaces from these directories at startup and uses pre-cached plugins without re-cloning. See [Pre-populate plugins for containers](/docs/en/plugin-marketplaces#pre-populate-plugins-for-containers)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `CLAUDE_CODE_POWERSHELL_RESPECT_EXECUTION_POLICY`       | Set to `1` to stop Claude Code from passing `-ExecutionPolicy Bypass` when spawning PowerShell for tool calls, hooks, and status line commands, and respect the machine's effective execution policy instead. By default Claude Code bypasses execution policy at process scope so `.ps1` scripts and module imports work on default-Restricted Windows installs. Process-scope bypass never overrides Group Policy `MachinePolicy` or `UserPolicy` regardless of this setting                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS`                  | Ceiling in milliseconds on continuous idle waiting after the final turn in [non-interactive mode](/docs/en/headless#background-tasks-at-exit) with the `-p` flag, while background subagents and workflows whose result is part of the output finish. Each turn that handles queued background results starts the count again. Default: `600000`, or 10 minutes. When idle waiting reaches the ceiling, Claude Code stops waiting for the remaining background tasks and exits. Set to `0` to wait indefinitely. This cap is separate from the five-second grace period that applies to plain background shells. Requires Claude Code v2.1.182 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS`                  | Ceiling in milliseconds on idle waiting for background subagents and workflows after the final turn in [non-interactive mode](/docs/en/headless#background-tasks-at-exit) with the `-p` flag. Idle waiting starts over each time Claude takes a turn to handle a background result. Default: `600000`, or 10 minutes. When idle waiting reaches the ceiling, Claude Code stops waiting for the remaining background tasks and exits. Set to `0` to wait indefinitely. This cap is separate from the five-second grace period that applies to plain background shells. Requires Claude Code v2.1.182 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `CLAUDE_CODE_PROCESS_WRAPPER`                           | Launch the processes Claude Code starts from its own binary, such as the background service that hosts [agent view](/docs/en/agent-view) sessions, through a corporate launcher given as an argv prefix like `/opt/corp/launcher`. Set it in the `env` block of user or [managed settings](/docs/en/managed-settings), not as a shell export, so the detached background service inherits it; project and local settings can't set it. Equivalent to the [`processWrapper` setting](/docs/en/settings-reference#processwrapper), which requires Claude Code v2.1.210 or later; this variable takes precedence when both are set. The VS Code extension configures its own launcher separately through its `claudeProcessWrapper` setting. Ignored on Windows. See [Run Claude Code behind a corporate launcher](/docs/en/corporate-launcher) for the value format, what the launcher covers, and the contract the launcher must satisfy. Requires Claude Code v2.1.208 or later                                                                                                                                                                                                                                                                                                                                         |
 | `CLAUDE_CODE_PROJECT_DIR_NAME`                          | Set together with `CLAUDE_CONFIG_DIR` to choose the `projects/` directory name Claude Code stores that session's transcripts and auto memory under, in place of one derived from the working directory path. For example, starting Claude Code with `CLAUDE_CONFIG_DIR=/srv/tenant-a CLAUDE_CODE_PROJECT_DIR_NAME=work claude` stores them under `/srv/tenant-a/projects/work/`. Claude Code ignores this variable when `CLAUDE_CONFIG_DIR` is unset, and reads it only from the environment you start `claude` from, never from a [settings file `env` block](#in-settings-files). See [Name the project directory yourself](/docs/en/sessions#name-the-project-directory-yourself). Requires Claude Code v2.1.234 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `CLAUDE_CODE_PROMPT_CACHE_TTL`                          | Set `5m` or `1h`, the only values Claude Code accepts, to choose the [prompt cache TTL](/docs/en/prompt-caching#cache-lifetime) for the main conversation: your interactive, `-p`, and SDK turns, plus the helpers that run inline with them. Takes precedence over the `promptCacheTtl` setting and over `ENABLE_PROMPT_CACHING_1H`, and `FORCE_PROMPT_CACHING_5M` overrides it. The API bills 1-hour cache writes at a higher rate. Requires Claude Code v2.1.242 or later                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -70525,6 +70697,7 @@ With fetching off, you can't:
 * Use [Remote Control](/docs/en/remote-control#requirements)
 * [Message sessions beyond this machine](/docs/en/cross-session-messaging#message-sessions-on-other-machines); messaging between sessions on this machine works with fetching off
 * Run [`claude import` or the `/import` command](/docs/en/cli-reference#cli-commands)
+* Run [`/skill-doctor`](/docs/en/skills#find-unused-skills) or open its report in the `/plugin` **Stats** tab
 * Use [the advisor tool](/docs/en/advisor#requirements)
 * Read or reply to [comments on an artifact](/docs/en/artifacts#collect-comments-on-an-artifact)
 * Get the [v2 MCP client runtime](/docs/en/mcp#mcp-client-runtimes) and its protocol probe without setting `MCP_SDK_GENERATION` and `MCP_PROTOCOL_NEGOTIATION`; Claude Code uses the v1 runtime unless you set `MCP_SDK_GENERATION=v2`, and skips the probe unless you set `MCP_PROTOCOL_NEGOTIATION=auto`
@@ -70948,11 +71121,17 @@ Your terminal's `Cmd+f` and tmux search don't see the conversation because it li
 * **`[`**: writes the full conversation into your terminal's native scrollback buffer, with all tool output expanded. The conversation is now ordinary text in your terminal, so `Cmd+f`, tmux copy mode, and any other native tool can search or select it. Long sessions may pause for a moment while this happens. This lasts until you exit transcript mode with `Esc` or `q`, which returns you to fullscreen rendering. The next `Ctrl+o` starts fresh.
 * **`v`**: writes the conversation to a temporary file and opens it in `$VISUAL` or `$EDITOR`.
 
+## Watch your changes in the diff panel
+
+In fullscreen rendering, [`/diff`](/docs/en/interactive-mode#review-changes-with-%2Fdiff) opens a panel beside the conversation rather than a viewer you have to close, so you can watch the changes accumulate while Claude works. In a wide terminal the panel can also open on its own once Claude starts editing files. [Diff panel](/docs/en/interactive-mode#diff-panel) covers what it shows, how to keep it closed, and how to change what it compares against.
+
 ## Clear the conversation
 
-Run `/clear` to start a new conversation. Pressing `Ctrl+L` or `Cmd+K` doesn't clear the conversation; Claude Code redraws the screen and keeps it. Before v2.1.238, Claude Code ran `/clear` when you pressed `Ctrl+L` or `Cmd+K` twice within two seconds.
+Run `/clear` to start a new conversation.
 
-On iTerm2 and Terminal.app, your terminal handles `Cmd+K` itself and clears its own screen without telling Claude Code. Claude Code detects the cleared screen and repaints the conversation.
+To clear the screen and keep the conversation, press `Ctrl+L`. The earlier messages scroll up out of view, and you can scroll back with `PgUp` or the mouse wheel to read them again. Before v2.1.260, `Ctrl+L` redrew the screen without clearing it. Before v2.1.238, pressing it twice within two seconds ran `/clear`.
+
+`Cmd+K` does the same as `Ctrl+L` when your terminal passes it through to Claude Code. iTerm2 and Terminal.app handle `Cmd+K` themselves, and Claude Code redraws the conversation instead of clearing it, so press `Ctrl+L` on those terminals.
 
 ## Use with tmux
 
@@ -75190,7 +75369,7 @@ Complete reference for keyboard shortcuts, input modes, and interactive features
 | `Ctrl+X Ctrl+K`                                                                              | Stop all running [background subagents](/docs/en/sub-agents#run-subagents-in-foreground-or-background) in this session, and turn off [artifact auto-replies](/docs/en/artifacts#let-claude-reply-to-comments-on-its-own) for the rest of it. Press twice within 3 seconds to confirm | Subagent control                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `Ctrl+D`                                                                                     | Exit Claude Code session                                                                                                                                                                                                                                                             | The first press shows a confirmation hint and a second press within 800ms exits. When the prompt has text, `Ctrl+D` deletes the character after the cursor instead                                                                                                                                                                                                                                                                                                                                                                         |
 | `Ctrl+G` or `Ctrl+X Ctrl+E`                                                                  | Open in default text editor                                                                                                                                                                                                                                                          | Edit your prompt or custom response in your default text editor. `Ctrl+X Ctrl+E` is the readline-native binding. Turn on **Show last response in external editor** in `/config` to prepend Claude's previous reply as `#`-commented context above your prompt; Claude Code strips the comment block when you save                                                                                                                                                                                                                          |
-| `Ctrl+L`                                                                                     | Redraw screen                                                                                                                                                                                                                                                                        | Forces a full terminal redraw, keeping input and conversation history. Use this to recover if the display becomes garbled or partially blank                                                                                                                                                                                                                                                                                                                                                                                               |
+| `Ctrl+L`                                                                                     | Redraw or clear the screen                                                                                                                                                                                                                                                           | Forces a full terminal redraw, keeping input and conversation history. Use this to recover if the display becomes garbled or partially blank. In [fullscreen rendering](/docs/en/fullscreen#clear-the-conversation), it also clears the screen, and you can scroll up to see the earlier messages                                                                                                                                                                                                                                          |
 | `Ctrl+O`                                                                                     | Toggle transcript viewer                                                                                                                                                                                                                                                             | Shows detailed tool usage and execution, with a timestamp and the model used on each assistant message. Also expands lines that collapse by default, such as MCP calls, shown as a single `Called slack 3 times` line, and [messages from your other sessions](/docs/en/cross-session-messaging#what-a-message-looks-like), shown as a one-line `Message from @<sender>` preview                                                                                                                                                           |
 | `Ctrl+R`                                                                                     | Reverse search command history                                                                                                                                                                                                                                                       | Search through previous commands interactively                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `Ctrl+V` or `Cmd+V` (iTerm2) or `Alt+V` (Windows and WSL)                                    | Paste image from clipboard                                                                                                                                                                                                                                                           | Inserts an `[Image #N]` chip at the cursor so you can reference it positionally in your prompt. On WSL, both `Ctrl+V` and `Alt+V` are bound; use `Alt+V` if your terminal intercepts `Ctrl+V`                                                                                                                                                                                                                                                                                                                                              |
@@ -75465,7 +75644,8 @@ To run commands in the background, you can either:
 
 * Output is written to a file and Claude can retrieve it using the Read tool
 * Background tasks have unique IDs for tracking and output retrieval
-* Background tasks are automatically cleaned up when Claude Code exits. If you background the session instead of exiting it, Claude Code hands them to the background session, where they keep running. See [background a running session](/docs/en/agent-view#from-inside-a-session)
+* Background tasks are automatically cleaned up when Claude Code exits. On macOS and Linux, when you stop a background task from [`/tasks`](/docs/en/commands) or Claude Code stops it at exit, processes that detached from the task's shell, such as ones started under `setsid` or `timeout`, stop too
+* If you background the session instead of exiting it, your background tasks keep running in the background session. See [background a running session](/docs/en/agent-view#from-inside-a-session)
 * Background tasks are automatically terminated if output exceeds 5GB, with a note in stderr explaining why
 * On macOS and Linux, Claude Code terminates running background tasks when the operating system signals memory pressure, provided the session has been idle for at least 30 minutes and no turn or subagent is running. Set [`CLAUDE_CODE_DISABLE_BG_SHELL_PRESSURE_REAP`](/docs/en/env-vars) to `1` to turn this off. Requires Claude Code v2.1.193 or later. Background commands owned by a [subagent](/docs/en/sub-agents) are instead terminated after 60 minutes, configurable in milliseconds with [`CLAUDE_SUBAGENT_BG_SHELL_MAX_MS`](/docs/en/env-vars). A command owned by a subagent running in the foreground also ends when that subagent gives its final response; see [Background commands](/docs/en/tools-reference#background-commands) in the tools reference. Before v2.1.218, neither the memory-pressure reap nor the 60-minute limit covered commands moved to the background with `Ctrl+B`
 
@@ -75674,6 +75854,49 @@ Claude Code underlines nothing when it can't keep a checker running:
 
 To find out which of these happened, start `claude --debug` with spell checking on and type a word. Then look for the `[spellcheck]` lines in the debug log at `~/.claude/debug/<session-id>.txt`. One line names the program Claude Code started, or lists the ones it looked for and didn't find. Later lines say why it stopped. A missing-dictionary error there means the checker has no dictionary for your `language` value, or no default one when `language` is unset. Install one, or set `language` to a dictionary you have.
 
+## Review changes with /diff
+
+Run `/diff` to look over the changes in your working tree without leaving Claude Code. You see the edits Claude has made so far alongside anything else you haven't committed.
+
+In [fullscreen rendering](/docs/en/fullscreen), `/diff` opens the [diff panel](#diff-panel) beside the conversation, which stays open and updates while you keep working. In the classic renderer, `/diff` opens the [diff viewer](#diff-viewer) in place of the prompt, and you close it when you're done reading.
+
+### Diff panel
+
+The diff panel lists the changed files with their added and removed line counts, and shows each file's diff under the list. Claude Code refreshes it each time Claude edits a file or runs a shell command. To close it, run `/diff` again or click the `✕` in its header.
+
+To use the panel you need:
+
+* [Fullscreen rendering](/docs/en/fullscreen)
+* A git repository
+* A terminal at least 110 columns wide
+* Claude Code v2.1.260 or later
+
+When the panel can't open, `/diff` opens the diff viewer instead or tells you why.
+
+The panel also opens on its own once Claude starts editing files, if your terminal is at least 144 columns wide. After you've opened it yourself with `/diff`, later sessions open it as soon as Claude edits a file in any terminal wide enough to fit it. Close the panel and it stays closed, in this session and later ones, until you run `/diff` again.
+
+While the panel is open, you can:
+
+* **Jump to a file**: click its row in the list. Scroll the panel with the mouse wheel. When the file list itself is too long to fit, scroll it with `Alt+Up` and `Alt+Down`, or `Ctrl+Up` and `Ctrl+Down`.
+* **Ask Claude about specific lines**: select them in the panel with the mouse. Claude Code attaches the selection to your next prompt and shows a line count next to the input until you send it.
+* **Show the files the panel leaves out**: the list skips test files and generated files, and collapses changes from before this session into one line at the bottom. Click either count line to expand it.
+* **Change what the panel compares against**: press `Ctrl+X B` to cycle from this session's changes, to your uncommitted changes as one list, to everything since your branch split from the default branch. Claude Code remembers the choice for each project.
+
+To bind keys to these actions, see [Diff panel actions](/docs/en/keybindings#diff-panel-actions).
+
+### Diff viewer
+
+The diff viewer takes the place of the prompt until you close it. Its **Current** view shows your uncommitted changes from git, or, when there are none, what your branch adds on top of the default branch. The viewer also has a turn view for each prompt after which Claude edited files, showing just those edits. Claude Code builds the turn views from Claude's file edits rather than from git, so a change Claude makes through a shell command appears only under Current.
+
+Use these keys in the viewer:
+
+* **Left and Right**: move between Current and the turn views.
+* **Up and Down**: select a file.
+* **Enter**: open the selected file's diff. Scroll it with Up and Down, or PageUp and PageDown.
+* **Esc**: return from a file's diff to the list, or close the viewer from the list.
+
+To rebind these keys, see [Diff actions](/docs/en/keybindings#diff-actions).
+
 ## Side questions with /btw
 
 Use `/btw` to ask a question about your current work without adding to the conversation history.
@@ -75877,27 +76100,28 @@ This example binds `Ctrl+E` to open an external editor in the chat context, and 
 
 Each binding block specifies a **context** where the bindings apply:
 
-| Context           | Description                                                  |
-| :---------------- | :----------------------------------------------------------- |
-| `Global`          | Applies everywhere in the app                                |
-| `Chat`            | Main chat input area                                         |
-| `Autocomplete`    | Autocomplete menu is open                                    |
-| `Settings`        | Settings menu                                                |
-| `Confirmation`    | Permission and confirmation dialogs                          |
-| `Tabs`            | Tab navigation components                                    |
-| `Help`            | Help menu is visible                                         |
-| `Transcript`      | Transcript viewer                                            |
-| `HistorySearch`   | History search mode (Ctrl+R)                                 |
-| `Task`            | Background task is running                                   |
-| `ThemePicker`     | Theme picker dialog                                          |
-| `Attachments`     | Image attachment navigation in select dialogs                |
-| `Footer`          | Footer indicator navigation (tasks, teams, diff, artifacts)  |
-| `MessageSelector` | Rewind and summarize dialog message selection                |
-| `DiffDialog`      | Diff viewer navigation                                       |
-| `ModelPicker`     | Model picker effort level                                    |
-| `Select`          | Generic select/list components                               |
-| `Plugin`          | Plugin dialog (browse, discover, manage)                     |
-| `Scroll`          | Conversation scrolling and text selection in fullscreen mode |
+| Context           | Description                                                    |
+| :---------------- | :------------------------------------------------------------- |
+| `Global`          | Applies everywhere in the app                                  |
+| `Chat`            | Main chat input area                                           |
+| `Autocomplete`    | Autocomplete menu is open                                      |
+| `Settings`        | Settings menu                                                  |
+| `Confirmation`    | Permission and confirmation dialogs                            |
+| `Tabs`            | Tab navigation components                                      |
+| `Help`            | Help menu is visible                                           |
+| `Transcript`      | Transcript viewer                                              |
+| `HistorySearch`   | History search mode (Ctrl+R)                                   |
+| `Task`            | Background task is running                                     |
+| `ThemePicker`     | Theme picker dialog                                            |
+| `Attachments`     | Image attachment navigation in select dialogs                  |
+| `Footer`          | Footer indicator navigation (tasks, teams, diff, artifacts)    |
+| `MessageSelector` | Rewind and summarize dialog message selection                  |
+| `DiffDialog`      | Diff viewer navigation                                         |
+| `DiffPanel`       | The [diff panel](/docs/en/interactive-mode#diff-panel) is open |
+| `ModelPicker`     | Model picker effort level                                      |
+| `Select`          | Generic select/list components                                 |
+| `Plugin`          | Plugin dialog (browse, discover, manage)                       |
+| `Scroll`          | Conversation scrolling and text selection in fullscreen mode   |
 
 Before v2.1.205, a `Doctor` context and a `doctor:fix` action existed for the `/doctor` diagnostics screen.
 
@@ -75934,8 +76158,8 @@ Actions available in the `Chat` context:
 | Action                | Default                           | Description                                                                                                                                                                                                                                                                                                   |
 | :-------------------- | :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `chat:cancel`         | Escape                            | Cancel current input                                                                                                                                                                                                                                                                                          |
-| `chat:clearInput`     | Ctrl+L                            | Force a full screen redraw, preserving input and conversation                                                                                                                                                                                                                                                 |
-| `chat:clearScreen`    | Cmd+K                             | Force a full screen redraw, preserving input and conversation. See [Clear the conversation](/docs/en/fullscreen#clear-the-conversation) for how Cmd+K behaves on iTerm2 and Terminal.app                                                                                                                      |
+| `chat:clearInput`     | Ctrl+L                            | Force a full screen redraw, preserving input and conversation. In [fullscreen rendering](/docs/en/fullscreen#clear-the-conversation), also clear the screen                                                                                                                                                   |
+| `chat:clearScreen`    | Cmd+K                             | Same as `chat:clearInput`. See [Clear the conversation](/docs/en/fullscreen#clear-the-conversation) for how Cmd+K behaves on iTerm2 and Terminal.app                                                                                                                                                          |
 | `chat:killAgents`     | Ctrl+X Ctrl+K                     | Stop all running [background subagents](/docs/en/sub-agents#run-subagents-in-foreground-or-background) in this session and turn off [artifact auto-replies](/docs/en/artifacts#let-claude-reply-to-comments-on-its-own) for the rest of it                                                                    |
 | `chat:cycleMode`      | Shift+Tab\*                       | Cycle permission modes                                                                                                                                                                                                                                                                                        |
 | `chat:modelPicker`    | Meta+P                            | Open model picker                                                                                                                                                                                                                                                                                             |
@@ -76109,6 +76333,19 @@ The diff detail view also binds pager-style keys to the standard [scroll actions
 | `scroll:top`          | G, Home        | Jump to the top             |
 | `scroll:bottom`       | Shift+G, End   | Jump to the bottom          |
 
+### Diff panel actions
+
+Actions for the [diff panel](/docs/en/interactive-mode#diff-panel) that `/diff` opens in fullscreen rendering. `app:cycleDiffBase` is in the `DiffPanel` context, which is active while the panel is open; the others are `Global`. The panel requires Claude Code v2.1.260 or later.
+
+| Action                      | Default              | Description                                                               |
+| :-------------------------- | :------------------- | :------------------------------------------------------------------------ |
+| `app:toggleReplTab`         | (unbound)            | Open or close the diff panel, the same as running `/diff`                 |
+| `app:cycleDiffBase`         | Ctrl+X B             | Cycle the panel's comparison base: this session, uncommitted, then branch |
+| `app:diffFileListUp`        | Ctrl+Up, Meta+Up     | Scroll the panel's file list up when it overflows                         |
+| `app:diffFileListDown`      | Ctrl+Down, Meta+Down | Scroll the panel's file list down when it overflows                       |
+| `app:toggleDiffNoiseFilter` | (unbound)            | Show or hide test and generated files in the panel                        |
+| `app:toggleDiffPreSession`  | (unbound)            | Expand or collapse the changes from before this session                   |
+
 ### Model picker actions
 
 Actions available in the `ModelPicker` context:
@@ -76266,7 +76503,7 @@ Set an action to `null` to unbind a default shortcut:
 
 This also works for chord bindings. Unbinding every chord that shares a prefix frees that prefix for use as a single-key binding. A chord in any active context keeps its prefix reserved, so you must unbind each chord in the context that defines it.
 
-Claude Code binds these default chords on the `ctrl+x` prefix: `ctrl+x ctrl+k`, `ctrl+x ctrl+e`, and `ctrl+x enter` in `Chat`, and `ctrl+x ctrl+b` in `Task`. The `ctrl+x enter` chord requires v2.1.247 or later. To reclaim `ctrl+x` itself as a single-key binding, unbind all of them:
+Claude Code binds these default chords on the `ctrl+x` prefix: `ctrl+x ctrl+k`, `ctrl+x ctrl+e`, and `ctrl+x enter` in `Chat`, `ctrl+x ctrl+b` in `Task`, and `ctrl+x b` in `DiffPanel`. The `ctrl+x enter` chord requires v2.1.247 or later, and `ctrl+x b` requires v2.1.260 or later. To reclaim `ctrl+x` itself as a single-key binding, unbind all of them:
 
 ```json theme={null}
 {
@@ -76275,6 +76512,12 @@ Claude Code binds these default chords on the `ctrl+x` prefix: `ctrl+x ctrl+k`, 
       "context": "Task",
       "bindings": {
         "ctrl+x ctrl+b": null
+      }
+    },
+    {
+      "context": "DiffPanel",
+      "bindings": {
+        "ctrl+x b": null
       }
     },
     {
@@ -76494,7 +76737,7 @@ To get the most from Fable:
   Fable 5.1 requires Claude Code v2.1.255 or later. If a request for it from an older version fails, see [Claude Code does not support this model](/docs/en/errors#claude-code-does-not-support-this-model). Fable 5 requires v2.1.170 or later. Run `claude update` to upgrade. For availability under zero data retention, see [Model availability under ZDR](/docs/en/zero-data-retention#model-availability-under-zdr).
 </Note>
 
-On the Anthropic API, the `/model` picker lists a Fable model only after the server reports it available for your organization. When you type `/model fable` or a Fable model ID, Claude Code checks availability with the server directly, so the selection can succeed before the picker lists the entry.
+On the Anthropic API, the `/model` picker lists a Fable model only after the server reports it available for your organization. When you type `/model fable` or a Fable model ID, Claude Code checks availability with the server directly, so a typed selection can succeed even when the picker doesn't list the entry.
 
 #### Fable and usage credits
 
@@ -76605,6 +76848,15 @@ Claude Code ignores the variable in these cases, and the Default option resolves
 * The model isn't available to your account
 
 When a new session would start on the variable's model, a session you resume with `claude --resume`, `--continue`, or the `/resume` picker starts on it too. Claude Code doesn't restore the model saved in that session's transcript. Otherwise Claude Code doesn't use the variable when you [resume a session](#setting-your-model).
+
+#### A new session starts on a different model than you picked
+
+When you pick a model with `/model` and your next session starts on something else, these are the usual causes:
+
+* **You chose it for one session.** Pressing `s` in the picker, launching with `--model`, and running `/model` in non-interactive mode all apply to the current session and leave your saved default alone.
+* **Something with higher priority sets the model.** A `model` value in project or managed settings, `ANTHROPIC_MODEL` in your shell, or an [organization default](#organization-default-model) your admin set to override user choices applies again at every launch. Your `/model` choice is still saved; it's outranked. When project or managed settings set the model, the startup header names the file.
+* **Claude Code couldn't save your choice.** `/model` writes `model` to `~/.claude/settings.json`. If you can't write to that file, for example because another tool generates it or links it to a read-only copy, the model you chose lasts for the session and the next launch reads the old value. Set `model` in the tool that generates the file, or make the file writable. See [A change you made in Claude Code is lost in new sessions](/docs/en/settings#a-change-you-made-in-claude-code-is-lost-in-new-sessions).
+* **You resumed a session.** A session you resume with `claude --resume` or `--continue` usually [keeps the model it was using](#setting-your-model) rather than your current default.
 
 ## Restrict model selection
 
@@ -77758,6 +78010,15 @@ Claude Code v2.1.205 and later also block these by default:
 
 * Writing to Claude Code session transcripts, the `.jsonl` history files under `~/.claude/projects/` or your configured config directory, whether directly or through a shell command. The rule also covers the metadata lines Claude Code appends to each transcript entry for its own checks. Reading a transcript isn't blocked
 * A recursive forced delete such as `rm -rf "$VAR"` or `Remove-Item -Recurse -Force $dir` whose target is a shell variable, or a glob rooted at one, that isn't assigned anywhere in the conversation the classifier sees. The value came only from earlier command output, which the classifier never receives, so the classifier can't verify the deletion target against the other deletion rules. The block clears when you name the exact path being deleted, or when Claude re-runs the delete with the resolved literal path written into the command. Deletes whose target the classifier can resolve aren't affected. `Remove-Item` targets that are a bare `*` or end in `/*` or `\*` never reach the classifier: Claude Code [denies them outright](#remove-item-in-powershell)
+
+Claude Code v2.1.257 and later also block these by default:
+
+* Requesting credentials from the cloud instance-metadata endpoint, such as `169.254.169.254`, or explicitly authenticating a cloud, cluster, or registry call with the machine's own service-account or node identity
+* Reaching a public host by a route other than a direct request, such as a tunnel, a reverse shell, or a resolver or proxy configuration rewritten to point outside
+* Reading credentials that belong to the host rather than to your task, such as node certificates or the node's container-registry auth
+* Connecting to or scanning sibling containers, pods, or VMs that Claude didn't start, or the node beneath the container
+
+If Claude Code runs somewhere that is meant to allow one of these, describe that setup in a [Host containment entry](/docs/en/auto-mode-config#define-trusted-infrastructure) in `autoMode.environment`.
 
 **Allowed by default**:
 
@@ -80880,6 +81141,7 @@ Some commands fail inside the sandbox even though they work outside it. The fixe
 * **Go-based CLIs fail TLS verification on macOS**: tools such as `gh`, `gcloud`, and `terraform` may fail TLS verification under Seatbelt. List these tools in `excludedCommands` to run them outside the sandbox. If you are using `httpProxyPort` with a MITM proxy and custom CA, set [`enableWeakerNetworkIsolation`](/docs/en/settings-reference#sandbox-enableweakernetworkisolation) to `true` instead.
 * **`open`, `osascript`, or browser-based auth flows fail with error `-600` on macOS**: the sandbox blocks Apple Events by default. Set [`allowAppleEvents`](/docs/en/settings-reference#sandbox-allowappleevents) to `true` in your user, managed, or CLI settings to allow them. Project settings are ignored for this key. Enabling it removes code-execution isolation, since sandboxed commands can then launch other applications unsandboxed with no user prompt and send AppleScript commands to running applications, subject to the macOS automation-consent prompt (TCC). Alternatively, add the command to `excludedCommands` to run it outside the sandbox.
 * **`docker` commands fail**: `docker` is incompatible with the sandbox. Add `docker *` to `excludedCommands` to run it outside the sandbox.
+* **`pbcopy`, `xclip`, or `wl-copy` doesn't update the clipboard**: these clipboard utilities can fail to reach the system clipboard from inside the sandbox, in which case the text piped to them doesn't arrive. To put Claude's output on your clipboard, ask Claude to print it in its response, then run [`/copy`](/docs/en/commands), which writes to the clipboard from the Claude Code process rather than from a sandboxed command. Alternatively, add `pbcopy *`, `wl-copy *`, or `xclip *` to `excludedCommands` to run the command outside the sandbox.
 * **A git command fails with `unable to unlink old`**: `git merge`, `git checkout`, and similar commands fail this way when they need to replace a file the sandbox denies writes to, whether that file is under a [protected path](#protected-paths) such as `.claude/skills`, under one of your `denyWrite` entries, or outside the directories the sandbox lets commands write to at all. On Linux and WSL2 the error ends with `Read-only file system`. After the failure, Claude may [offer to rerun the command outside the sandbox](#sandbox-modes); approve that retry, or run the git command yourself in another terminal. If you've set `allowUnsandboxedCommands` to `false`, Claude can't offer the retry, so run the command yourself or, if the same git command fails often, add that command to [`excludedCommands`](/docs/en/settings-reference#sandbox-excludedcommands).
 * **Bubblewrap fails to start inside a container**: in an unprivileged container, bubblewrap can't mount a fresh `/proc` filesystem, so sandboxed commands fail with a `bwrap` error such as `Can't mount proc on /newroot/proc: Operation not permitted`. Set [`enableWeakerNestedSandbox`](/docs/en/settings-reference#sandbox-enableweakernestedsandbox) to `true` so the inner sandbox bind-mounts the container's existing `/proc` instead. Only use this setting when the outer container already provides the isolation boundary you need, since it exposes process information to sandboxed commands that a fresh `/proc` mount would hide.
 * **`--dangerously-skip-permissions` fails as root**: this flag is blocked when running as root or via sudo on Linux and macOS, because root access combined with no permission prompts can modify any file or service on the system. The check is skipped automatically inside a recognized sandbox. To run autonomously in a container, use the [dev container](/docs/en/devcontainer) configuration, which runs Claude Code as a non-root user.
@@ -83244,6 +83506,12 @@ Something else is setting the same key, the file can't set that value, or the fi
 * **A security key keeps its strict value.** For a few keys Claude Code honors the restrictive value from any file, so a project `true` for [`disableClaudeAiConnectors`](/docs/en/settings-reference#disableclaudeaiconnectors) stays on; see [Exceptions to managed settings precedence](#exceptions-to-managed-settings-precedence).
 * **The file can't set that value.** [`permissions.defaultMode`](/docs/en/settings-reference#permissions-defaultmode) values `auto` and `bypassPermissions` don't take effect from project or local settings; set them in user or managed settings instead, or pass `--permission-mode` for one session. Before v2.1.257, `bypassPermissions` took effect from any file.
 * **The file is broken.** Invalid JSON or a rejected value makes Claude Code skip the file or the entry; see [Fix a broken settings file](#fix-a-broken-settings-file).
+
+#### A change you made in Claude Code is lost in new sessions
+
+When you save a choice for new sessions from inside Claude Code, such as a default model with `/model`, Claude Code writes it to your user settings file, `~/.claude/settings.json`. If you can't write to that file, for example because another tool generates it or links it to a read-only copy, the change applies to the current session and is gone in the next one. Set the key in the tool that generates the file, or replace the file with one you can write to.
+
+If you can write to the file and the change still doesn't last, check whether the change was [for one session only](#change-a-setting-for-one-session) or [a higher level sets the same key](#a-value-you-set-is-ignored). For the `model` key, [A new session starts on a different model than you picked](/docs/en/model-config#a-new-session-starts-on-a-different-model-than-you-picked) lists more causes.
 
 #### A managed change hasn't reached you
 
@@ -89225,6 +89493,14 @@ Claude Code sends the following JSON fields to your script via stdin:
       "cache_write_tokens": 352000,
       "miss_recache_tokens": 310200,
       "last_miss_at": 1738425230,
+      "last_miss_cause": {
+        "causes": ["tools_changed"],
+        "tools_added": 2,
+        "tools_removed": 0
+      },
+      "miss_causes": {
+        "tools_changed": 2
+      },
       "recache_tokens_if_cold": 45000
     },
     "fast_mode": false,
@@ -89334,9 +89610,20 @@ The table lists each field with its meaning. Timestamps are Unix epoch seconds, 
 | `cache_write_tokens`     | All tokens written to the cache this session, the first request's initial write included                                                                                                                                             |
 | `miss_recache_tokens`    | Tokens written to the cache by the requests counted as misses                                                                                                                                                                        |
 | `last_miss_at`           | When the last miss happened, in epoch seconds. `null` while the session has no misses                                                                                                                                                |
+| `last_miss_cause`        | What Claude Code identified as the likely cause of the last miss, described under [Last miss cause](#last-miss-cause). Requires Claude Code v2.1.260 or later                                                                        |
+| `miss_causes`            | How many of this session's diagnosed misses had each cause, keyed by the same cause names as `last_miss_cause`. Requires Claude Code v2.1.260 or later                                                                               |
 | `recache_tokens_if_cold` | Tokens the next request re-caches if the cache has gone cold by then. `null` right after a compaction or a clearing of old tool results, until the next request records the rewritten conversation's size                            |
 
 Claude Code shows the same statistics in the terminal, on the [`/usage` command's `Prompt cache (main)` line](/docs/en/costs#prompt-cache-statistics).
+
+#### Last miss cause
+
+The `last_miss_cause` object reports what Claude Code identified as the likely cause of the most recent miss. Its `causes` array holds one or more cause names, such as `tools_changed`, `system_prompt_changed`, `ttl_expired_5m`, or `likely_server_side`. The object is `null` until the session's first miss, and again whenever Claude Code couldn't identify a cause for the most recent miss. Requires Claude Code v2.1.260 or later.
+
+Two causes add counts to the object:
+
+* `tools_added` and `tools_removed`: with `tools_changed`, how many tools were added to or removed from the request
+* `system_char_delta`: with `system_prompt_changed`, the change in the system prompt's length, in characters
 
 ## Examples
 
@@ -90628,7 +90915,9 @@ A command that exits 1 counts as a valid result for the Bash tool only when Clau
 
 ### Background commands
 
-For long-running processes such as dev servers or watch builds, Claude can set `run_in_background: true` to start the command as a background task and continue working while it runs. List and stop background tasks with `/tasks`. When a [subagent running in the foreground](/docs/en/sub-agents#run-subagents-in-foreground-or-background) started the command, Claude Code ends it when that subagent gives its final response. Commands started by the main conversation or by a background subagent keep running. In non-interactive mode with the `-p` flag, [background tasks end shortly after the run's final result](/docs/en/headless#background-tasks-at-exit).
+For long-running processes such as dev servers or watch builds, Claude can set `run_in_background: true` to start the command as a background task and continue working while it runs. List and stop background tasks with `/tasks`. After you stop one there, or from a connected client such as the desktop app, Claude moves on instead of waiting for it. If a subagent started the command, it's that subagent that moves on.
+
+A command that a [foreground subagent](/docs/en/sub-agents#run-subagents-in-foreground-or-background) started stops when that subagent gives its final response. A command that the main conversation or a background subagent started keeps running after a final response. In non-interactive mode with the `-p` flag, [background commands end shortly after the run's final result](/docs/en/headless#background-tasks-at-exit).
 
 When a command reaches its timeout without finishing, Claude Code moves it to the background instead of stopping it. Claude keeps working while the command continues. Claude Code applies the same lifetime rules to a moved command as to any other background command, so it still ends a foreground subagent's command at that subagent's final response. Setting [`CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`](/docs/en/env-vars#variables) disables auto-backgrounding along with the rest of the background task functionality.
 
@@ -90775,7 +91064,9 @@ The Monitor tool lets Claude watch something in the background and react when it
 
 For most watches, Claude writes a small script, runs it in the background, and receives each output line as it arrives. For a server that already pushes events, Claude can open a [WebSocket](#websocket-source) instead of running a script.
 
-You keep working in the same session and Claude interjects when an event arrives. Stop a monitor by asking Claude to cancel it or by ending the session.
+You keep working in the same session and Claude interjects when an event arrives.
+
+Stop a monitor by asking Claude to cancel it or by ending the session. When you stop a [subagent](/docs/en/sub-agents) that started monitors, for example from `/tasks`, those monitors stop with it.
 
 When Monitor runs a command, it uses the same [permission rules as Bash](/docs/en/permissions#tool-specific-permission-rules), so `allow` and `deny` patterns you have set for Bash apply here too. While [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) is active, Claude Code sets aside allow rules that name `Monitor` itself, along with the other [broad allow rules it drops](/docs/en/permission-modes#how-the-classifier-evaluates-actions), so the classifier reviews Monitor commands the same way it reviews Bash commands.
 
