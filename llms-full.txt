@@ -11276,12 +11276,9 @@ Site-level permissions are inherited from the Chrome extension. Manage permissio
 
 ### Browser tools in plan mode
 
-In [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode), browser tool calls that only read the page or browser state run without a permission prompt, and calls that change state prompt for approval.
+In [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode), a permission prompt appears before Claude records a GIF, opens a new tab, or runs a shortcut. If [bypass permissions mode is available](/docs/en/permission-modes#skip-all-checks-with-bypasspermissions-mode) in your session and [feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) is off, these calls run without a prompt.
 
-* **Read-only calls**: `read_page`, `get_page_text`, `find`, reading console messages or network requests, and taking a screenshot
-* **State-changing calls**: clicks, typing, navigation, tab and window management, and recording a GIF
-
-An otherwise read-only call also prompts for approval when it sets a state-changing input flag, such as `createIfEmpty` on `tabs_context_mcp`, `clear` on the console and network readers, or `save_to_disk` on a screenshot. A `browser_batch` call runs without a prompt only when every action inside it is read-only.
+A `tabs_context_mcp` call also prompts when it sets `createIfEmpty`, and so does a `browser_batch` call that includes any of these actions.
 
 ## Example workflows
 
@@ -14278,7 +14275,7 @@ While the cloud container starts, the CLI shows a live checklist of setup steps,
   `--cloud` creates cloud sessions. `--remote-control` is unrelated: it exposes a local CLI session for monitoring from the web. See [Remote Control](/docs/en/remote-control).
 </Note>
 
-Use `/tasks` in the Claude Code CLI to check progress, or open the session on claude.ai or the Claude mobile app to interact directly. From there you can steer Claude, provide feedback, or answer questions as in any other conversation.
+Open the session on claude.ai or the Claude mobile app to check progress or interact directly. From there you can steer Claude, provide feedback, or answer questions as in any other conversation.
 
 If Claude asks a question and the session sits idle, you can still answer when you come back, up to [environment expiry](#environment-expired), and the session continues from your answer.
 
@@ -14304,7 +14301,7 @@ claude --cloud "Update the API documentation"
 claude --cloud "Refactor the logger to use structured output"
 ```
 
-Monitor all sessions with `/tasks` in the Claude Code CLI. When a session completes, you can create a PR from the web interface or [teleport](#from-web-to-terminal) the session to your terminal to continue working.
+When a session completes, you can create a PR from the web interface or [teleport](#from-web-to-terminal) the session to your terminal to continue working.
 
 #### Send local repositories without GitHub
 
@@ -14321,7 +14318,7 @@ CCR_FORCE_BUNDLE=1 claude --cloud "Run the test suite and fix any failures"
 Bundled repositories must meet these limits:
 
 * The directory must be a git repository with at least one commit
-* The bundled repository must be under 100 MB. Larger repositories fall back to bundling only the current branch, then to a single squashed snapshot of the working tree, and fail only if the snapshot is still too large
+* The bundled repository must be under 100 MB. Larger repositories fall back to bundling only the current branch, then to a single squashed snapshot of the working tree, and fail if the snapshot is still too large
 * Untracked files are not included; run `git add` on files you want the cloud session to see
 * Sessions created from a bundle can push back to a GitHub remote only when your [GitHub connection](#github-authentication-options) has push access to that repository
 
@@ -14384,12 +14381,12 @@ When you teleport a session, Claude verifies you're in the correct repository, f
 
 Teleport checks these requirements before resuming a session. If any requirement isn't met, you'll see an error or be prompted to resolve the issue.
 
-| Requirement        | Details                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Clean git state    | Your working directory must have no uncommitted changes. Teleport prompts you to stash changes if needed.                                                                                                                                                                                                                                                                                                                                                                          |
-| Correct repository | You must run `--teleport` from a checkout of the same repository, not a fork. If you run it from a checkout of a different repository, Claude Code shows an error that names both the session's repository and your checkout's. If Claude Code can't parse your remote into a hostname, for example an SSH host alias like `git@work:owner/repo.git`, it asks you to confirm, and accepts the checkout when the remote's owner and repository name match the session's repository. |
-| Branch available   | The branch from the cloud session must have been pushed to the remote. Teleport automatically fetches and checks it out.                                                                                                                                                                                                                                                                                                                                                           |
-| Same account       | You must be authenticated to the same claude.ai account used in the cloud session.                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Requirement        | Details                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Clean git state    | Your working directory must have no uncommitted changes. Teleport prompts you to stash changes if needed.                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Correct repository | You must run `--teleport` from a checkout of the same repository, not a fork. If you run it from a checkout of a different repository, Claude Code shows an error that names both the session's repository and your checkout's. Before v2.1.219, the error didn't name your checkout's repository. If Claude Code can't parse your remote into a hostname, for example an SSH host alias like `git@work:owner/repo.git`, it asks you to confirm, and accepts the checkout when the remote's owner and repository name match the session's repository. |
+| Branch available   | The branch from the cloud session must have been pushed to the remote. Teleport automatically fetches and checks it out.                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Same account       | You must be authenticated to the same claude.ai account used in the cloud session.                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 #### `--teleport` is unavailable
 
@@ -16167,7 +16164,7 @@ Understanding the flow helps you anticipate what Claude will do and how to inter
 
 ### One session at a time
 
-Only one session at a time can use your computer. A session takes a machine-wide lock at its first computer use action and releases it when the session exits, not when the task finishes. A second session's computer use fails with an error naming the session that holds the lock. Exit that session first.
+Only one session at a time can use your computer. A session takes a lock at its first computer use action and releases it when the session exits, not when the task finishes. A second session's computer use fails with an error naming the session that holds the lock. Exit that session first.
 
 ### Apps are hidden while Claude works
 
@@ -16183,7 +16180,7 @@ There is no setting to change the target size. If on-screen text or controls are
 
 ### Stop at any time
 
-When Claude acquires the lock, a macOS notification appears: "Claude is using your computer · press Esc to stop." Press `Esc` anywhere to abort the current action immediately, or press `Ctrl+C` in the terminal. Either way, Claude stops, unhides your apps, and returns control to you. The session keeps the [computer use lock](#one-session-at-a-time) until it exits.
+The first time Claude uses your computer in each turn, a macOS notification appears: "Claude is using your computer · press Esc to stop." Press `Esc` anywhere to abort the current action immediately, or press `Ctrl+C` in the terminal. Either way, Claude stops, unhides your apps, and returns control to you. The session keeps the [computer use lock](#one-session-at-a-time) until it exits.
 
 A second notification appears when Claude is done.
 
@@ -18059,7 +18056,7 @@ Claude can also suggest new sessions. When it notices something worth fixing tha
 
 For large refactors, test suites, migrations, or other long-running tasks, select **Cloud** instead of **Local** when starting a session. Cloud sessions run on Anthropic-managed infrastructure by default and continue even if you close the app or shut down your computer. Check back anytime to see progress or steer Claude in a different direction. You can also monitor cloud sessions from [claude.ai/code](https://claude.ai/code) or the [Claude mobile app](/docs/en/mobile).
 
-Cloud sessions also support multiple repositories. After selecting a cloud environment, click the **+** button next to the repo pill to add additional repositories to the session. Each repo gets its own branch selector. This is useful for tasks that span multiple codebases, such as updating a shared library and its consumers.
+Cloud sessions also support multiple repositories. After selecting a cloud environment, click the **+** button next to the selected repository to add more repositories to the session. Each repo gets its own branch selector. This is useful for tasks that span multiple codebases, such as updating a shared library and its consumers.
 
 See [Claude Code on the web](/docs/en/claude-code-on-the-web) for more on how cloud sessions work.
 
@@ -25481,7 +25478,7 @@ Then start a web session. Claude detects the GHES host from your git remote and 
 claude --cloud "Add retry logic to the payment webhook handler"
 ```
 
-The session clones your repository from GHES and pushes changes back to a branch. Monitor progress with `/tasks` or at [claude.ai/code](https://claude.ai/code). See [Claude Code on the web](/docs/en/claude-code-on-the-web) for the full cloud session workflow including diff review, auto-fix, and routines.
+The session clones your repository from GHES and pushes changes back to a branch. Monitor progress at [claude.ai/code](https://claude.ai/code). See [Claude Code on the web](/docs/en/claude-code-on-the-web) for the full cloud session workflow including diff review, auto-fix, and routines.
 
 ### Teleport sessions to your terminal
 
@@ -26059,11 +26056,11 @@ Use a goal for substantial work with a verifiable end state:
 
 Three approaches keep the current session running between prompts. Pick based on what should start the next turn:
 
-| Approach                                                                 | Next turn starts when                                                                                                                                                                         | Stops when                                                                                                                                                                                      |
-| :----------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/goal`                                                                  | The previous turn finishes, or an [idle check-in](#background-work-defers-evaluation) comes due while background work keeps the goal waiting, up to three times per goal between your prompts | A model confirms the condition is met or judges it impossible, or a turn fails on [an error you have to fix](#errors-you-have-to-fix-clear-the-goal), or you run [`/goal clear`](#clear-a-goal) |
-| [`/loop`](/docs/en/scheduled-tasks#run-a-prompt-repeatedly-with-%2Floop) | A time interval elapses                                                                                                                                                                       | You stop it, or Claude decides the work is done                                                                                                                                                 |
-| [Stop hook](/docs/en/hooks-guide#prompt-based-hooks)                     | The previous turn finishes                                                                                                                                                                    | Your own script or prompt decides                                                                                                                                                               |
+| Approach                                                                 | Next turn starts when                                                                                                                                                                      | Stops when                                                                                                                                                                                      |
+| :----------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/goal`                                                                  | The previous turn finishes, or, in an interactive session, an [idle check-in](#background-work-defers-evaluation) or an [automatic retry](#other-errors-retry-or-pause-the-goal) comes due | A model confirms the condition is met or judges it impossible, or a turn fails on [an error you have to fix](#errors-you-have-to-fix-clear-the-goal), or you run [`/goal clear`](#clear-a-goal) |
+| [`/loop`](/docs/en/scheduled-tasks#run-a-prompt-repeatedly-with-%2Floop) | A time interval elapses                                                                                                                                                                    | You stop it, or Claude decides the work is done                                                                                                                                                 |
+| [Stop hook](/docs/en/hooks-guide#prompt-based-hooks)                     | The previous turn finishes                                                                                                                                                                 | Your own script or prompt decides                                                                                                                                                               |
 
 `/goal` and a Stop hook both fire after every turn. `/goal` is a session-scoped shortcut: you type a condition and it's active for the current session only. A Stop hook lives in your settings file, applies to every session in its scope, and can run a script for deterministic checks or a prompt for model-evaluated ones.
 
@@ -26165,7 +26162,11 @@ Interrupt the process with Ctrl+C to stop a non-interactive goal before it resol
 
 If Claude keeps answering the evaluator without making progress (no tool use for several turns in a row), Claude Code stops the loop, prints a warning, and returns control to you with the goal still set. Evaluation resumes after your next prompt. The [hooks guide](/docs/en/hooks-guide#stop-hook-hits-the-block-cap) explains the underlying mechanism.
 
-### Errors you have to fix clear the goal
+### When a turn fails
+
+When a turn fails, Claude Code clears the goal if the error is one you have to fix. After any other error the goal stays set.
+
+#### Errors you have to fix clear the goal
 
 If a turn fails on an error that won't clear until you fix it, Claude Code clears the goal and prints a warning naming the cause. The warning starts with `Goal cleared after an unrecoverable error` and ends with `Run /goal again to continue`. Fix the cause, then [set the goal again](#set-a-goal) with `/goal <condition>`. Four kinds of failure clear the goal:
 
@@ -26174,7 +26175,14 @@ If a turn fails on an error that won't clear until you fix it, Claude Code clear
 * A context overflow that [auto-compaction](/docs/en/model-config#set-the-auto-compact-window) couldn't clear
 * A model that isn't available
 
-After any other failure, including transient errors such as rate limits and overloaded servers, Claude Code leaves the goal active.
+#### Other errors retry or pause the goal
+
+After any other failure the goal stays set. In an interactive session on Claude Code v2.1.269 or later, Claude Code also prints a line naming the cause and either retries on its own or waits for you:
+
+* **Retry**: after a failure that tends to clear on its own, such as an overloaded server or a dropped connection, a notice starting with `Goal still active` shows the wait before the next attempt. After three automatic retries, the goal pauses instead.
+* **Pause**: after a failure that a retry would only repeat, such as an API rate limit, a claude.ai [usage limit](/docs/en/errors#youve-hit-your-session-limit), or a hook that ended the turn, a notice starting with `Goal paused` names the cause. If the session is [waiting to continue automatically when a usage limit resets](/docs/en/interactive-mode#wait-for-a-usage-limit-to-reset), Claude resumes work toward the goal then.
+
+Send a message at any time to start the next turn immediately. To turn automatic retries off, set [`CLAUDE_CODE_GOAL_CHECKIN_MINUTES`](/docs/en/env-vars) to `0`, which also turns [check-ins](#background-work-defers-evaluation) off.
 
 ### Background work defers evaluation
 
@@ -26187,7 +26195,9 @@ Once background work has kept the goal waiting for 30 minutes, a check-in is due
 
 Before v2.1.239, only idle check-ins backed off this way; a check-in delivered at a turn end recurred at the first interval.
 
-To change the first interval, set [`CLAUDE_CODE_GOAL_CHECKIN_MINUTES`](/docs/en/env-vars). Claude Code uses your value in place of the 30-minute interval and scales the later intervals with it. Set it to `0` to turn check-ins off. Check-ins require Claude Code v2.1.234 or later.
+To change the first interval, set [`CLAUDE_CODE_GOAL_CHECKIN_MINUTES`](/docs/en/env-vars). Claude Code uses your value in place of the 30-minute interval and scales the later intervals with it. Set it to `0` to turn off check-ins and [automatic retries](#other-errors-retry-or-pause-the-goal).
+
+Check-ins require Claude Code v2.1.234 or later.
 
 ### Evaluation model and cost
 
@@ -33407,7 +33417,7 @@ Open a session in the app to check progress, answer Claude's questions, or steer
 
 ### Continue a local session with Remote Control
 
-Remote Control connects the Claude app to a Claude Code session running on your machine, so code execution and filesystem access stay local while you drive the session from your phone. Start the session on your computer with `claude remote-control`, or run `/remote-control` in a session that's already open. Then scan the session QR code the terminal can display, or open the Claude app, tap **Code**, and pick the session from the list. See [connect from another device](/docs/en/remote-control#connect-from-another-device) for each option.
+Remote Control connects the Claude app to a Claude Code session running on your machine, so code execution and filesystem access stay local while you drive the session from your phone. Start the session on your computer with `claude remote-control`, or run `/remote-control` in a session that's already open. Then scan the QR code the terminal can display, or open the Claude app, tap **Code**, and pick the session from the list. See [connect from another device](/docs/en/remote-control#connect-from-another-device) for each option.
 
 When you add an attachment in the Claude app, it reaches the local session too:
 
@@ -42299,14 +42309,14 @@ These loads depend on the `project` [setting source](/docs/en/agent-sdk/claude-c
 
 When two skills share a name, where each one came from decides which one `/name` runs. The table covers the enterprise, personal, project, nested, plugin, and claude.ai locations, bundled skills, and command files:
 
-| Same name in                                                  | Which one runs                                                                                                                                                             |
-| :------------------------------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Two of enterprise, personal, and project                      | Enterprise over personal, and personal over project. With `deploy` in both `~/.claude/skills/` and the project's `.claude/skills/`, `/deploy` runs the personal one        |
-| Any of those locations and a [bundled skill](#bundled-skills) | Your skill replaces the bundled command, but not its aliases. A project `code-review` skill replaces `/code-review`, and the bundled alias `/review` never runs your skill |
-| A skill and a file in `.claude/commands/`                     | The skill                                                                                                                                                                  |
-| A project-root skill and a nested skill                       | Both load. See [monorepos and subdirectories](#discovery-from-parent-and-nested-directories)                                                                               |
-| A plugin skill and a skill at any of the locations above      | Both load, because plugin skills are namespaced as `/plugin-name:skill-name`                                                                                               |
-| Any of the above and a skill synced from claude.ai            | The other skill or command. See [When a synced skill name matches another command](#when-a-synced-skill-name-matches-another-command)                                      |
+| Same name in                                                                                 | Which one runs                                                                                                                                                                                   |
+| :------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Two of enterprise, personal, and project                                                     | Enterprise over personal, and personal over project. With `deploy` in both `~/.claude/skills/` and the project's `.claude/skills/`, `/deploy` runs the personal one                              |
+| Any of those locations and a [bundled skill](#bundled-skills)                                | Your skill replaces the bundled command, but not its aliases. A project `code-review` skill replaces `/code-review`, and the bundled alias `/review` never runs your skill                       |
+| A skill and a file in `.claude/commands/`                                                    | The skill                                                                                                                                                                                        |
+| A project-root skill and a nested skill                                                      | Both load. See [monorepos and subdirectories](#discovery-from-parent-and-nested-directories)                                                                                                     |
+| A plugin skill and a skill at any of the locations above                                     | Both load, because plugin skills are namespaced as `/plugin-name:skill-name`                                                                                                                     |
+| Any of the above and a skill [synced from your claude.ai account](#how-synced-skills-behave) | The other skill or command. The synced skill still runs as `/anthropic-skills:<name>`. See [When a synced skill name matches another command](#when-a-synced-skill-name-matches-another-command) |
 
 ### Use skills in Cowork and cloud sessions
 
@@ -42353,11 +42363,20 @@ In any other session on your machine, Claude Code loads them only after you down
 
 #### When a synced skill name matches another command
 
-Claude Code skips a synced skill whose name matches any other command, and that other command runs. The other command can be a built-in command, a [bundled skill](#bundled-skills), a skill at any [local level](#where-skills-live), a plugin skill, a file in `.claude/commands/`, or an [MCP prompt](/docs/en/mcp#use-mcp-prompts-as-commands). Claude Code also reserves the names of its own built-in commands and bundled skills even when they're unavailable in your session, for example after you turn bundled skills off, so it skips a synced skill with one of those names too.
+You can invoke a synced skill by its full name, `/anthropic-skills:<name>`, or by its short name, `/<name>`. When another command uses that short name, `/<name>` runs the other command, and the synced skill runs only as `/anthropic-skills:<name>`. With a local `deploy` skill and a synced `deploy`, `/deploy` runs the local skill and `/anthropic-skills:deploy` runs the synced one. Before v2.1.269, a synced skill had only its short name.
+
+The other command can be any of these:
+
+* A built-in command or a [bundled skill](#bundled-skills), including one that's unavailable in your session, for example after you turn bundled skills off
+* A skill at any [local level](#where-skills-live) or a file in `.claude/commands/`
+* A plugin skill
+* An [MCP prompt](/docs/en/mcp#use-mcp-prompts-as-commands)
 
 Claude Code labels synced skills so you can tell where they came from. The `/skills` menu and `/context` group synced skills under `claude.ai sync`, and the `/` command menu marks them as coming from claude.ai.
 
-When it compares names, Claude Code ignores case, spacing, and invisible characters, and treats compatibility forms such as fullwidth letters and dash variants as their plain equivalents, so a synced `Commit` can't load beside a local `commit`. A name that differs only by a look-alike letter from another alphabet counts as a different name, and the `claude.ai sync` label is how you tell the two apart. These checks and labels require Claude Code v2.1.228 or later.
+When it compares names, Claude Code ignores case, spacing, and invisible characters, and treats compatibility forms such as fullwidth letters and dash variants as their plain equivalents. For example, a local `commit` skill keeps `/commit`, and a synced `Commit` runs only as `/anthropic-skills:Commit`.
+
+A name that differs only by a look-alike letter from another alphabet counts as a different name, and the `claude.ai sync` label is how you tell the two apart. These checks and labels require Claude Code v2.1.228 or later.
 
 #### How Claude Code handles the frontmatter of a synced skill
 
@@ -42509,10 +42528,11 @@ The table below shows where the command name comes from for each layout:
 | File in a subdirectory of `.claude/commands/`                                                      | Subdirectory path relative to `commands/` with each `/` replaced by `:`, then the file name without extension | `.claude/commands/frontend/component.md` → `/frontend:component`                                                                          |
 | Plugin `skills/` subdirectory                                                                      | Frontmatter `name` or the directory name, namespaced by plugin                                                | `my-plugin/skills/review/SKILL.md` → `/my-plugin:review`, or `/my-plugin:fancy` with `name: fancy`                                        |
 | Plugin root `SKILL.md`                                                                             | Frontmatter `name`, with the plugin directory name as a fallback                                              | `my-plugin/SKILL.md` with `name: review` → `/my-plugin:review`. See [Path behavior rules](/docs/en/plugins-reference#path-behavior-rules) |
+| Skill [synced from claude.ai](#how-synced-skills-behave)                                           | The skill's name on your claude.ai account, prefixed with `anthropic-skills:`                                 | Account skill `deploy` → `/anthropic-skills:deploy`, or `/deploy` while no other command uses that name                                   |
 
 In a plugin skill, the frontmatter `name` replaces the directory name in the last segment of the command, so `my-plugin/skills/review/SKILL.md` with `name: fancy` becomes `/my-plugin:fancy`. The bare `/fancy` also invokes the skill unless another command already uses that name. If the `name` you write already starts with the plugin's own prefix, Claude Code doesn't add the prefix again on v2.1.246 or later. For example, `name: my-plugin:fancy` still becomes `/my-plugin:fancy`. From v2.1.216 through v2.1.245, Claude Code doubled the prefix when the `name` already carried it.
 
-In [non-interactive sessions](/docs/en/headless), the names `help` and `feedback` aren't reserved for their terminal-only built-in commands, so a plugin skill with one of those names keeps its bare command there. Every other terminal-only built-in's name, such as `/login`, stays reserved even though the command can't run in those sessions. A synced skill named `help` or `feedback` is still skipped there, because Claude Code [skips a synced skill](#when-a-synced-skill-name-matches-another-command) whose name matches any built-in command whether or not that command can run.
+In [non-interactive sessions](/docs/en/headless), the names `help` and `feedback` aren't reserved for their terminal-only built-in commands, so a plugin skill with one of those names keeps its bare command there. Every other terminal-only built-in's name, such as `/login`, stays reserved even though the command can't run in those sessions.
 
 For a plugin-root `SKILL.md`, there is no skill directory to take the name from, so `name` supplies the whole final segment. Without a `name` field, Claude Code falls back to the plugin's directory name.
 
@@ -46532,13 +46552,20 @@ The prompt box supports several features:
   * Select **Output styles** in the Customize section to pick an [output style](/docs/en/output-styles), including your custom styles. Requires Claude Code v2.1.257 or later.
 
     To create a custom style instead, select **Build a custom style** from the **Output styles** menu. Claude Code writes the [style file](/docs/en/output-styles#create-a-custom-output-style) for you at the project or user level. Requires Claude Code v2.1.261 or later.
+  * Select **Hooks** in the Customize section to view the [hooks](/docs/en/hooks) loaded in the session, grouped by event. You can add, edit, or remove hooks saved in your user, project, and local settings files. Hooks from other sources, such as managed settings or plugins, are read-only. Requires Claude Code v2.1.269 or later.
+  * Select **Permissions** in the Customize section to view the session's [permission rules](/docs/en/permissions), grouped into Allow, Ask, and Deny. You can add rules to your user, project, or local settings and remove rules saved there. Rules from other sources, such as managed settings or approvals made for this session only, are read-only. Requires Claude Code v2.1.269 or later.
   * The Settings section includes **Enable Remote Control for all sessions**, which sets [`remoteControlAtStartup`](/docs/en/settings-reference#remotecontrolatstartup) to control whether [new interactive sessions connect to Remote Control automatically](/docs/en/remote-control#enable-remote-control-for-all-sessions). Requires Claude Code v2.1.203 or later.
 
     When you turn the toggle on or off in a VS Code window, the change applies to the sessions already open in that VS Code window, not only to sessions you start afterwards. If you turn it off, the open sessions disconnect. With Claude Code v2.1.261 or later, the change also reaches sessions open in your other VS Code windows.
-  * The Settings section also includes **Focus view**, which hides tool calls, tool results, and thinking behind expandable rows, leaving your prompts and Claude's responses. Claude's latest to-do list stays visible, and so does the text a pending question from Claude is asking about; this requires Claude Code v2.1.225 or later. Toggle it there, with `Ctrl+Option+F` (Mac) / `Ctrl+Alt+F` (Windows/Linux), or from the Command Palette with **Claude Code: Toggle Focus view**. The change applies to every open session and persists across sessions. Requires Claude Code v2.1.221 or later.
+  * The Settings section also includes **Focus view**, which hides tool calls, tool results, and thinking behind expandable rows, leaving your prompts and Claude's responses. Toggle it there, with `Ctrl+Option+F` (Mac) / `Ctrl+Alt+F` (Windows/Linux), or from the Command Palette with **Claude Code: Toggle Focus view**. The change applies to every open session and persists across sessions. Requires Claude Code v2.1.221 or later.
+
+    Claude's latest to-do list stays visible, and so does the text a pending question from Claude is asking about; this requires Claude Code v2.1.225 or later. While Claude runs [subagents](/docs/en/sub-agents), live progress rows with their latest activity appear under the tool-call group that started them. This requires Claude Code v2.1.269 or later.
   * To report a bug, click **Report a problem** at the bottom of the menu, or type `/bug` or `/feedback` with an optional description that prefills the report. When you submit the report and you're signed in to Anthropic on a first-party connection, Claude Code sends it to Anthropic. On a third-party provider, or without Anthropic credentials, the dialog still opens, but submitting shows an error and sends nothing: unlike the CLI's `/bug`, the extension doesn't write a local archive. Requires Claude Code v2.1.229 or later.
 * **Side questions**: type `/btw` followed by a question to ask about your session [without adding to the conversation](/docs/en/interactive-mode#side-questions-with-%2Fbtw). The answer opens in a panel beside the chat, where you can ask follow-up questions. The thread survives window reloads. Claude Code keeps the newest 20 exchanges and expires stored threads on the [`cleanupPeriodDays`](/docs/en/settings-reference#cleanupperioddays) schedule, as long as Claude Code can [safely determine the retention period](/docs/en/claude-directory#cleaned-up-automatically). To clear a thread, click the trash icon in the panel. Requires Claude Code v2.1.227 or later.
 * **Context indicator**: the prompt box shows how much of Claude's context window you're using. Claude automatically compacts when needed, or you can run `/compact` manually.
+* **Agent map**: when the conversation includes [subagents](/docs/en/sub-agents), an agent count such as **2 agents** appears at the bottom of the prompt box. Its dot shows whether any subagent is working or waiting for your permission.
+
+  Click the agent count to open the agent map, which draws the conversation's subagents as a tree under the main agent, each with its status, elapsed time, and token count. Click a subagent to see its prompt and tool calls, open its read-only transcript, or stop it while it runs. Requires Claude Code v2.1.269 or later.
 * **Extended thinking**: lets Claude spend more time reasoning through complex problems. Toggle it on via the command menu (`/`). Claude's reasoning appears in the conversation as collapsed blocks: click a block to read it, or press `Ctrl+O` to expand or collapse every thinking block in the session. See [Extended thinking](/docs/en/model-config#extended-thinking) for details.
 * **Multi-line input**: press `Shift+Enter` to add a new line without sending. This also works in the "Other" free-text input of question dialogs.
 
@@ -46553,7 +46580,7 @@ What's in @src/components/ (include a trailing slash for folders)
 
 For large PDFs, you can ask Claude to read specific pages instead of the whole file: a single page, a range like pages 1-10, or an open-ended range like page 3 onward.
 
-When you select text in the editor, Claude can see your highlighted code automatically. The prompt box footer shows how many lines are selected. Press `Option+K` (Mac) / `Alt+K` (Windows/Linux) to insert an @-mention with the file path and line numbers (e.g., `@app.ts#5-10`). Click the selection indicator to toggle whether Claude can see your highlighted text - the eye-slash icon means the selection is hidden from Claude.
+When you select text in the editor, Claude can see your highlighted code automatically. The prompt box footer shows how many lines are selected. Press `Option+K` (Mac) / `Alt+K` (Windows/Linux) to insert an @-mention with the file path and line numbers (e.g., `@app.ts#5-10`). Click the **X** on the selection indicator to remove it so Claude doesn't receive the selection. The indicator comes back when you select other text or switch to a different file.
 
 To attach an image, paste it from your clipboard into the prompt box. You can also hold `Shift` while dragging files into the prompt box to add them as attachments. Click the X on any attachment to remove it from context.
 
@@ -46638,7 +46665,7 @@ In the sessions list in the Activity Bar, you can collect related sessions into 
 
 * **Group or ungroup a session**: right-click a session to create a group from it, move it into an existing group, or remove it from its group. Each session belongs to one group at a time, so moving it into another group removes it from the first.
 * **Move several sessions at once**: `Cmd`-click (Mac) / `Ctrl`-click (Windows/Linux) each session, or `Shift`-click to select a range, then right-click the selection.
-* **Group a session from its tab**: run **Claude Code: Add Session Tab to Group** from the Command Palette, or right-click the session's editor tab, then pick or create a group. Requires Claude Code v2.1.257 or later.
+* **Group a session from its tab**: run **Claude Code: Add Session Tab to Group** from the Command Palette, then pick or create a group. Requires Claude Code v2.1.257 or later.
 * **Rename or delete a group**: right-click a group header. Deleting a group removes only the group, and its sessions return to the ungrouped list.
 
 The extension saves groups per workspace folder, so they survive window reloads and appear in every window where you open the same folder. When you search the list, the extension shows matches in one flat list across all groups.
@@ -46734,22 +46761,22 @@ Some shortcuts depend on which panel is "focused" (receiving keyboard input). Wh
   These are VS Code commands for controlling the extension. Not all built-in Claude Code commands are available in the extension. See [VS Code extension vs. Claude Code CLI](#vs-code-extension-vs-claude-code-cli) for details.
 </Note>
 
-| Command                    | Shortcut                                                 | Description                                                                                                                                                                                                      |
-| -------------------------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Focus Input                | `Cmd+Esc` (Mac) / `Ctrl+Esc` (Windows/Linux)             | Toggle focus between editor and Claude                                                                                                                                                                           |
-| Open in Side Bar           | -                                                        | Open Claude in the sidebar                                                                                                                                                                                       |
-| Open in Terminal           | -                                                        | Open Claude in terminal mode                                                                                                                                                                                     |
-| Open in New Tab            | `Cmd+Shift+Esc` (Mac) / `Ctrl+Shift+Esc` (Windows/Linux) | Open a new conversation as an editor tab                                                                                                                                                                         |
-| Open in New Window         | -                                                        | Open a new conversation in a separate window                                                                                                                                                                     |
-| New Conversation           | `Cmd+N` (Mac) / `Ctrl+N` (Windows/Linux)                 | Start a new conversation. Requires Claude to be focused and `enableNewConversationShortcut` set to `true`                                                                                                        |
-| Reopen Closed Session      | `Cmd+Shift+T` (Mac) / `Ctrl+Shift+T` (Windows/Linux)     | Reopen the most recently closed Claude session tab. Falls through to VS Code's normal reopen-closed-editor when the last closed tab wasn't a Claude session. Disable with `enableReopenClosedSessionShortcut`    |
-| Insert @-Mention Reference | `Option+K` (Mac) / `Alt+K` (Windows/Linux)               | Insert a reference to the current file and selection (requires editor to be focused)                                                                                                                             |
-| Toggle Focus view          | `Ctrl+Option+F` (Mac) / `Ctrl+Alt+F` (Windows/Linux)     | Hide or show tool activity in the conversation. Works while a Claude panel or sidebar is visible. Requires Claude Code v2.1.221 or later                                                                         |
-| Rename Session Tab         | -                                                        | Rename the session in the active Claude tab. The command also appears in the tab's right-click menu. Requires Claude Code v2.1.257 or later                                                                      |
-| Add Session Tab to Group   | -                                                        | Add the session in the active Claude tab to a [session group](#organize-sessions-into-groups) you pick or create. The command also appears in the tab's right-click menu. Requires Claude Code v2.1.257 or later |
-| Mark Session as Unread     | -                                                        | Mark the session in the active Claude tab as unread in the sessions list. The command also appears in the tab's right-click menu. Requires Claude Code v2.1.257 or later                                         |
-| Show Logs                  | -                                                        | View extension debug logs                                                                                                                                                                                        |
-| Logout                     | -                                                        | Sign out of your Anthropic account                                                                                                                                                                               |
+| Command                    | Shortcut                                                 | Description                                                                                                                                                                                                   |
+| -------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Focus Input                | `Cmd+Esc` (Mac) / `Ctrl+Esc` (Windows/Linux)             | Toggle focus between editor and Claude                                                                                                                                                                        |
+| Open in Side Bar           | -                                                        | Open Claude in the sidebar                                                                                                                                                                                    |
+| Open in Terminal           | -                                                        | Open Claude in terminal mode                                                                                                                                                                                  |
+| Open in New Tab            | `Cmd+Shift+Esc` (Mac) / `Ctrl+Shift+Esc` (Windows/Linux) | Open a new conversation as an editor tab                                                                                                                                                                      |
+| Open in New Window         | -                                                        | Open a new conversation in a separate window                                                                                                                                                                  |
+| New Conversation           | `Cmd+N` (Mac) / `Ctrl+N` (Windows/Linux)                 | Start a new conversation. Requires Claude to be focused and `enableNewConversationShortcut` set to `true`                                                                                                     |
+| Reopen Closed Session      | `Cmd+Shift+T` (Mac) / `Ctrl+Shift+T` (Windows/Linux)     | Reopen the most recently closed Claude session tab. Falls through to VS Code's normal reopen-closed-editor when the last closed tab wasn't a Claude session. Disable with `enableReopenClosedSessionShortcut` |
+| Insert @-Mention Reference | `Option+K` (Mac) / `Alt+K` (Windows/Linux)               | Insert a reference to the current file and selection (requires editor to be focused)                                                                                                                          |
+| Toggle Focus view          | `Ctrl+Option+F` (Mac) / `Ctrl+Alt+F` (Windows/Linux)     | Hide or show tool activity in the conversation. Works while a Claude panel or sidebar is visible. Requires Claude Code v2.1.221 or later                                                                      |
+| Rename Session Tab         | -                                                        | Rename the session in the active Claude tab. Requires Claude Code v2.1.257 or later                                                                                                                           |
+| Add Session Tab to Group   | -                                                        | Add the session in the active Claude tab to a [session group](#organize-sessions-into-groups) you pick or create. Requires Claude Code v2.1.257 or later                                                      |
+| Mark Session as Unread     | -                                                        | Mark the session in the active Claude tab as unread in the sessions list. Requires Claude Code v2.1.257 or later                                                                                              |
+| Show Logs                  | -                                                        | View extension debug logs                                                                                                                                                                                     |
+| Logout                     | -                                                        | Sign out of your Anthropic account                                                                                                                                                                            |
 
 ### Launch a VS Code tab from other tools
 
@@ -47152,7 +47179,7 @@ Connecting GitHub is a one-time step. If you already use the GitHub CLI, you can
 
 ### Connect from your terminal
 
-If you already use the GitHub CLI (`gh`), you can set up Claude Code on the web without opening a browser. This requires the [Claude Code CLI](/docs/en/quickstart). On Team and Enterprise plans, `/web-setup` is available only after an Owner turns on [Quick web setup](/docs/en/claude-code-on-the-web#github-authentication-options).
+If you already use the GitHub CLI (`gh`), you can set up Claude Code on the web from your terminal. This requires the [Claude Code CLI](/docs/en/quickstart). On Team and Enterprise plans, `/web-setup` is available only after an Owner turns on [Quick web setup](/docs/en/claude-code-on-the-web#github-authentication-options).
 
 When you run `/web-setup`, Claude Code reads the token that `gh auth token` prints, asks you to confirm, and sends the token to Anthropic. Anthropic stores it encrypted with your claude.ai account, and your cloud sessions use it for GitHub access until you [remove it](#remove-the-web-setup-token). A cloud session can then access any repository that token can access, with no Claude GitHub App installation.
 
@@ -48367,14 +48394,16 @@ If you start a [background session](/docs/en/agent-view) with `--advisor` and on
 
 The advisor must be at least as capable as the main model. The accepted advisors for each main model are:
 
-| Main model           | Accepted advisors            | Notes                                                                                                                                                                         |
-| -------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Haiku 4.5            | Fable, Opus, Sonnet          | Haiku can call the advisor but cannot act as one                                                                                                                              |
-| Sonnet 4.6           | Fable, Opus, Sonnet          |                                                                                                                                                                               |
-| Sonnet 5             | Fable, Opus, Sonnet 5        | A Sonnet 4.6 advisor is rejected                                                                                                                                              |
-| Opus 4.6             | Fable, Opus, Sonnet 5        | Sonnet 5 and Opus 4.6 are ranked as equally capable, so an Opus 4.6 main accepts a Sonnet 5 advisor                                                                           |
-| Opus 4.7 or later    | Fable, and Opus 4.7 or later | Opus 4.7 and later Opus models are ranked as equally capable, so any of them accepts another as an advisor. An Opus 4.7 main with an Opus 4.6 or Sonnet 5 advisor is rejected |
-| Fable 5.1 or Fable 5 | Fable 5.1 or Fable 5         | An Opus or Sonnet advisor is rejected                                                                                                                                         |
+| Main model           | Accepted advisors                  | Notes                                                                                                               |
+| -------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Haiku 4.5            | Fable, Opus, Sonnet                | Haiku can call the advisor but cannot act as one                                                                    |
+| Sonnet 4.6           | Fable, Opus, Sonnet                |                                                                                                                     |
+| Sonnet 5             | Fable, Opus 4.7 or later, Sonnet 5 | A Sonnet 4.6 advisor is rejected, and requests with an Opus 4.6 advisor fail with an API error                      |
+| Opus 4.6             | Fable, Opus, Sonnet 5              | A Sonnet 4.6 advisor is rejected                                                                                    |
+| Opus 4.7 or Opus 4.8 | Fable, and Opus 4.7 or later       | An Opus 4.6 or Sonnet advisor is rejected                                                                           |
+| Opus 5               | Fable, Opus 5                      | An Opus 4.6 or Sonnet advisor is rejected, and requests with an Opus 4.7 or Opus 4.8 advisor fail with an API error |
+| Fable 5              | Fable 5.1 or Fable 5               | An Opus or Sonnet advisor is rejected                                                                               |
+| Fable 5.1            | Fable 5.1                          | An Opus or Sonnet advisor is rejected, and requests with a Fable 5 advisor fail with an API error                   |
 
 Fable 5.1 requires Claude Code v2.1.257 or later. Both Fable models require [Fable access](/docs/en/model-config#work-with-fable).
 
@@ -48382,9 +48411,10 @@ Set the advisor as `fable`, `opus`, or `sonnet`. These aliases resolve to Claude
 
 Subagents inherit the configured advisor and apply the same pairing check against their own model.
 
-Claude Code validates the pairing before sending a request:
+Claude Code validates the pairing before sending a request, and the API validates it again:
 
-* If the advisor is less capable than the main model, the advisor is not attached to the main model's requests. The `/advisor` command output and a notification show this. Subagents whose own model satisfies the pairing may still use the advisor.
+* For an advisor the table lists as rejected, Claude Code doesn't attach it to the main model's requests. The `/advisor` command output and a notification show this. Subagents whose own model satisfies the pairing may still use the advisor.
+* For an advisor the table lists as failing with an API error, Claude Code attaches it and the API refuses it. Every request fails with `'<advisor model>' cannot be used as an advisor when the request model is '<main model>'` until you change the advisor with `/advisor` or turn it off.
 * If the main model or the advisor is a model Claude Code does not recognize, the advisor is not attached.
 
 ### Fable advisor and usage credits
@@ -48536,7 +48566,7 @@ As the loop runs, the SDK yields a stream of messages. Each message carries a ty
   * `"init"`: session metadata for the run. When a `SessionStart` or `Setup` hook runs during session startup, its [hook lifecycle messages](/docs/en/agent-sdk/typescript#sdkhookstartedmessage) arrive before the `init` message
   * `"compact_boundary"`: fires after [compaction](#automatic-compaction)
   * `"informational"`: plain-text status banners from the loop
-  * `"worker_shutting_down"`: the loop will end after the current turn because the host is exiting or Remote Control disconnected
+  * `"worker_shutting_down"`: the host is exiting or Remote Control disconnected
 
   In TypeScript, each subtype other than `"init"` is its own type in the [`SDKMessage` union](/docs/en/agent-sdk/typescript#sdkmessage) rather than a subtype of `SDKSystemMessage`.
 * **`AssistantMessage`:** emitted for each content block in Claude's responses, including the final text-only one. Each carries a single content block, such as text or a tool call, and the messages from one response share a message ID.
@@ -48696,7 +48726,7 @@ The `effort` option controls how much reasoning Claude applies. Lower effort lev
 | `"xhigh"`  | Extended reasoning depth          | Coding and agentic tasks on the [models that support it](/docs/en/model-config#adjust-effort-level) |
 | `"max"`    | Maximum reasoning depth           | Multi-step problems requiring deep analysis                                                         |
 
-If you don't set `effort`, both SDKs leave the parameter unset and defer to the model's default behavior.
+If you don't set `effort`, Claude Code resolves the effort level itself, in the order [Adjust effort level](/docs/en/model-config#adjust-effort-level) describes.
 
 <Note>
   `effort` trades latency and token cost for reasoning depth within each response. [Extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) is a separate feature that produces `thinking` blocks in the output, and the `display` field on `ThinkingConfig` for [Python](/docs/en/agent-sdk/python#thinkingconfig) or [TypeScript](/docs/en/agent-sdk/typescript#thinkingconfig) controls whether you receive their text. They are independent: you can set `effort: "low"` with extended thinking enabled, or `effort: "max"` without it.
@@ -48799,7 +48829,7 @@ When the loop ends, the `ResultMessage` tells you what happened and gives you th
 | `success`                             | Claude finished the task normally                                                                                                                                                       |            Yes            |
 | `error_max_turns`                     | Hit the `maxTurns` limit before finishing                                                                                                                                               |             No            |
 | `error_max_budget_usd`                | Hit the `maxBudgetUsd` limit before finishing                                                                                                                                           |             No            |
-| `error_during_execution`              | An error interrupted the loop (for example, an API failure or cancelled request)                                                                                                        |             No            |
+| `error_during_execution`              | An error interrupted the loop (for example, a cancelled request)                                                                                                                        |             No            |
 | `error_max_structured_output_retries` | No valid structured output was produced within the configured retry limit: every attempt failed validation, or a model fallback retracted the completed output with no successful retry |             No            |
 
 The `result` field holds the final text output and is only present on the `success` variant, so always check the subtype before reading it.
@@ -49139,8 +49169,6 @@ The SDK supports two ways to define hooks, and they run side by side:
 
 * **Filesystem hooks:** shell commands defined in `settings.json`, loaded when `settingSources` includes the relevant source. These are the same hooks you'd configure for [interactive Claude Code sessions](/docs/en/hooks-guide).
 * **Programmatic hooks:** callback functions passed directly to `query()`. These run in your application process and can return structured decisions. See [Control execution with hooks](/docs/en/agent-sdk/hooks).
-
-Both types execute during the same hook lifecycle. If you already have hooks in your project's `.claude/settings.json` and you set `settingSources: ["project"]`, those hooks run automatically in the SDK with no extra configuration.
 
 Hook callbacks receive the tool input and return a decision dict. Returning `{}` means allow the tool to proceed. To block execution, return a `hookSpecificOutput` object with `permissionDecision: "deny"` and a `permissionDecisionReason`. The reason is sent to Claude as the tool result. See the [hooks guide](/docs/en/agent-sdk/hooks) for the full callback signature and return types.
 
@@ -51891,9 +51919,9 @@ Use `SubagentStop` hooks to monitor when subagents finish their work. See the fu
 
 ### Make HTTP requests from hooks
 
-Hooks can perform asynchronous operations like HTTP requests. Catch errors inside your hook instead of letting them propagate, since an unhandled exception can interrupt the agent.
+Hooks can perform asynchronous operations like HTTP requests. Catch errors inside your hook instead of letting them propagate.
 
-This example sends a webhook after each tool completes, logging which tool ran and when. The hook catches errors so a failed webhook doesn't interrupt the agent:
+This example sends a webhook after each tool completes, logging which tool ran and when. The hook catches errors from a failed webhook:
 
 <CodeGroup>
   ```python Python theme={null}
@@ -51929,7 +51957,7 @@ This example sends a webhook after each tool completes, logging which tool ran a
           # Run the blocking HTTP call in a thread to avoid blocking the event loop
           await asyncio.to_thread(_send_webhook, input_data["tool_name"])
       except Exception as e:
-          # Log the error but don't raise. A failed webhook shouldn't stop the agent
+          # Log the error but don't raise
           print(f"Webhook request failed: {e}")
 
       return {}
@@ -51958,7 +51986,7 @@ This example sends a webhook after each tool completes, logging which tool ran a
       if (error instanceof Error && error.name === "AbortError") {
         console.log("Webhook request cancelled");
       }
-      // Don't re-throw. A failed webhook shouldn't stop the agent
+      // Don't re-throw
     }
 
     return {};
@@ -52183,7 +52211,6 @@ When spawning multiple subagents, each one may request permissions separately fo
 
 A `UserPromptSubmit` hook that spawns subagents can create infinite loops if those subagents trigger the same hook. To prevent this:
 
-* Check for a subagent indicator in the hook input before spawning
 * Use a shared variable or session state to track whether you're already inside a subagent
 * Scope hooks to only run for the top-level agent session
 
@@ -52717,7 +52744,7 @@ Claude Code registers the servers you pass in `options.mcpServers` at startup an
 | :------------------------------------------------------------------------------------- | :----------------------------------------------------- | :----------------------------------------------------------------------------------------------- |
 | stdio server, or HTTP/SSE server without a cached tool list                            | Yes, until it connects                                 | [`MCP_TIMEOUT`](/docs/en/env-vars), 30 seconds by default; the connection fails at that deadline |
 | Remote server with a cached tool list, saved by Claude Code from a previous connection | No; the cached tools are available from the first turn | None; connects on its first tool call, and that deferred connect has its own timeout             |
-| In-process [SDK server](#sdk-mcp-servers)                                              | No; never delays the first turn                        | None                                                                                             |
+| In-process [SDK server](#sdk-mcp-servers)                                              | Yes, until it connects and lists its tools             | None; the connect and tool listing requests each have their own timeout                          |
 
 To block startup itself at a separate, earlier phase than the first-turn wait, before the init message is sent:
 
@@ -53789,7 +53816,7 @@ Once created, activate output styles via:
   const options = { settings: { outputStyle: "Explanatory" } };
   ```
 
-The Python SDK does not have an option to select an output style programmatically. For code-only deployments where you can't write to `.claude/settings.local.json`, use `append` or a custom prompt string instead.
+In the Python SDK, set `outputStyle` through the `settings` option, which takes a JSON string such as `'{"outputStyle": "Explanatory"}'` or a path to a settings file that sets it.
 
 **Note for SDK users:** Output styles are loaded when you include `settingSources: ['user']` or `settingSources: ['project']` (TypeScript) / `setting_sources=["user"]` or `setting_sources=["project"]` (Python) in your options.
 
@@ -54375,7 +54402,7 @@ The Agent SDK, the CLI, the Client SDK, and Managed Agents each fit different ne
 
 | If you're...                                                                                            | Use                                                                               | Why                                                                                                  |
 | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Building an agent without implementing the tool loop yourself                                           | **Agent SDK**                                                                     | A library that runs the agent loop in your own process, in Python or TypeScript.                     |
+| Building an agent without implementing the tool loop yourself                                           | **Agent SDK**                                                                     | A Python or TypeScript library that runs the agent loop for you.                                     |
 | Doing interactive development or running one-off tasks from a terminal                                  | [**Claude Code CLI**](/docs/en/overview)                                          | The terminal interface, built for daily interactive use.                                             |
 | Calling the API directly and implementing the tool loop yourself                                        | [**Client SDK**](https://platform.claude.com/docs/en/api/client-sdks)             | Direct access to the Anthropic API rather than to Claude Code. You implement the tool loop yourself. |
 | Running long-running or asynchronous agents without managing your own sandbox or session infrastructure | [**Managed Agents**](https://platform.claude.com/docs/en/managed-agents/overview) | Hosted REST API, a separate product from the Agent SDK. Anthropic runs the agent and the sandbox.    |
@@ -54810,7 +54837,7 @@ To use a plugin distributed through a [marketplace](/docs/en/plugin-marketplaces
 
 Plugin paths can be:
 
-* **Relative paths**: resolved relative to your current working directory (for example, `"./plugins/my-plugin"`)
+* **Relative paths**: resolved relative to the `cwd` option (for example, `"./plugins/my-plugin"`)
 * **Absolute paths**: full file system paths (for example, `"/home/user/plugins/my-plugin"`)
 
 <Note>
@@ -55333,18 +55360,18 @@ def list_sessions(
 
 #### Return type: `SDKSessionInfo`
 
-| Property        | Type          | Description                                                          |
-| :-------------- | :------------ | :------------------------------------------------------------------- |
-| `session_id`    | `str`         | Unique session identifier                                            |
-| `summary`       | `str`         | Display title: custom title, auto-generated summary, or first prompt |
-| `last_modified` | `int`         | Last modified time in milliseconds since epoch                       |
-| `file_size`     | `int \| None` | Session file size in bytes (`None` for remote storage backends)      |
-| `custom_title`  | `str \| None` | User-set session title                                               |
-| `first_prompt`  | `str \| None` | First meaningful user prompt in the session                          |
-| `git_branch`    | `str \| None` | Git branch at the end of the session                                 |
-| `cwd`           | `str \| None` | Working directory for the session                                    |
-| `tag`           | `str \| None` | User-set session tag (see [`tag_session()`](#tag_session))           |
-| `created_at`    | `int \| None` | Session creation time in milliseconds since epoch                    |
+| Property        | Type          | Description                                                                     |
+| :-------------- | :------------ | :------------------------------------------------------------------------------ |
+| `session_id`    | `str`         | Unique session identifier                                                       |
+| `summary`       | `str`         | Display title: custom title, auto-generated summary, or first prompt            |
+| `last_modified` | `int`         | Last modified time in milliseconds since epoch                                  |
+| `file_size`     | `int \| None` | Session file size in bytes (`None` for remote storage backends)                 |
+| `custom_title`  | `str \| None` | Session title: the user-set title, or the auto-generated title when none is set |
+| `first_prompt`  | `str \| None` | First meaningful user prompt in the session                                     |
+| `git_branch`    | `str \| None` | Git branch at the end of the session                                            |
+| `cwd`           | `str \| None` | Working directory for the session                                               |
+| `tag`           | `str \| None` | User-set session tag (see [`tag_session()`](#tag_session))                      |
+| `created_at`    | `int \| None` | Session creation time in milliseconds since epoch                               |
 
 #### Example
 
@@ -55522,7 +55549,7 @@ class ClaudeSDKClient:
     async def receive_messages(self) -> AsyncIterator[Message]
     async def receive_response(self) -> AsyncIterator[Message]
     async def interrupt(self) -> None
-    async def set_permission_mode(self, mode: str) -> None
+    async def set_permission_mode(self, mode: PermissionMode) -> None
     async def set_model(self, model: str | None = None) -> None
     async def rewind_files(self, user_message_id: str) -> None
     async def get_mcp_status(self) -> McpStatusResponse
@@ -55550,7 +55577,7 @@ class ClaudeSDKClient:
 | `reconnect_mcp_server(server_name)`       | Retry connecting to an MCP server that failed or was disconnected                                                                                                      |
 | `toggle_mcp_server(server_name, enabled)` | Enable or disable an MCP server mid-session. Disabling removes its tools                                                                                               |
 | `stop_task(task_id)`                      | Stop a running background task. A [`TaskNotificationMessage`](#tasknotificationmessage) with status `"stopped"` follows in the message stream                          |
-| `get_server_info()`                       | Get server information including session ID and capabilities                                                                                                           |
+| `get_server_info()`                       | Get the server's initialization info, including available commands and output styles                                                                                   |
 | `disconnect()`                            | Disconnect from Claude                                                                                                                                                 |
 
 #### Context Manager Support
@@ -56899,7 +56926,14 @@ The dataclass has no field for `resource_links`. Read it from the `data` dict th
 Union type of all content blocks.
 
 ```python theme={null}
-ContentBlock = TextBlock | ThinkingBlock | ToolUseBlock | ToolResultBlock
+ContentBlock = (
+    TextBlock
+    | ThinkingBlock
+    | ToolUseBlock
+    | ToolResultBlock
+    | ServerToolUseBlock
+    | ServerToolResultBlock
+)
 ```
 
 ### `TextBlock`
@@ -58446,7 +58480,7 @@ class SandboxNetworkConfig(TypedDict, total=False):
 | `allowedDomains`          | `list[str]` | `[]`    | Domain names that sandboxed processes can access                                                                                                                                              |
 | `deniedDomains`           | `list[str]` | `[]`    | Domain names that sandboxed processes cannot access. Takes precedence over `allowedDomains`                                                                                                   |
 | `allowManagedDomainsOnly` | `bool`      | `False` | Managed-settings only: when set in managed settings, ignore `allowedDomains` and `WebFetch(domain:...)` allow rules from non-managed settings sources. Has no effect when set via SDK options |
-| `allowUnixSockets`        | `list[str]` | `[]`    | Unix socket paths that processes can access (e.g., Docker socket)                                                                                                                             |
+| `allowUnixSockets`        | `list[str]` | `[]`    | macOS only: Unix socket paths that processes can access, such as the Docker socket. Ignored on Linux                                                                                          |
 | `allowAllUnixSockets`     | `bool`      | `False` | Allow access to all Unix sockets                                                                                                                                                              |
 | `allowLocalBinding`       | `bool`      | `False` | Allow processes to bind to local ports (e.g., for dev servers)                                                                                                                                |
 | `allowMachLookup`         | `list[str]` | `[]`    | macOS only: XPC/Mach service names to allow. Supports a trailing wildcard                                                                                                                     |
@@ -60127,9 +60161,9 @@ The following example enables every discovered skill in a session and pre-approv
 
 ### Confirm skills loaded
 
-Near the start of the stream, the SDK yields a system message with subtype `init`. Check its `skills` array to confirm your skills loaded before Claude starts working. The array includes the user-invocable skills that you have defined, along with [bundled skills included with Claude Code](/docs/en/skills#bundled-skills).
+Near the start of the stream, the SDK yields a system message with subtype `init`. Check its `skills` array to confirm your skills loaded before Claude starts working. The array includes the user-invocable skills that you have defined with a `description` or `when_to_use` frontmatter field, along with [bundled skills included with Claude Code](/docs/en/skills#bundled-skills).
 
-The array lists user-invocable skills only. A skill with [`user-invocable: false`](/docs/en/skills#control-who-invokes-a-skill) in its frontmatter loads and remains available to Claude, but doesn't appear in the array. The array reflects what the session discovered and lists the same skills whether or not they're in your `skills` list.
+The array lists user-invocable skills only. A skill with [`user-invocable: false`](/docs/en/skills#control-who-invokes-a-skill) in its frontmatter loads and remains available to Claude, but doesn't appear in the array. The array lists the same skills whether or not they're in your `skills` list.
 
 ### Allow only specific skills
 
@@ -60191,7 +60225,7 @@ The printed list mixes built-in commands, bundled skills, your user-invocable sk
 Available commands: ["clear", "compact", "context", "usage", "code-review", "verify", "security-check", ...]
 ```
 
-Your user-invocable skills appear in both this list and the `skills` array from [Confirm skills loaded](#confirm-skills-loaded). The `slash_commands` list adds the rest of the commands available in your session. A skill with [`user-invocable: false`](/docs/en/skills#control-who-invokes-a-skill) in its frontmatter doesn't appear in either. Sessions that configure [MCP servers](/docs/en/agent-sdk/mcp) can also expose [MCP prompts as commands](/docs/en/mcp#use-mcp-prompts-as-commands).
+A skill with [`user-invocable: false`](/docs/en/skills#control-who-invokes-a-skill) in its frontmatter doesn't appear in this list or in the `skills` array from [Confirm skills loaded](#confirm-skills-loaded). Sessions that configure [MCP servers](/docs/en/agent-sdk/mcp) can also expose [MCP prompts as commands](/docs/en/mcp#use-mcp-prompts-as-commands).
 
 ### Dispatch commands by name
 
@@ -60635,33 +60669,10 @@ The example below enables streaming and prints text chunks as they arrive. Notic
 
 When partial messages are enabled, you receive raw Claude API streaming events wrapped in an object. The type has different names in each SDK:
 
-* **Python**: `StreamEvent` (import from `claude_agent_sdk.types`)
-* **TypeScript**: `SDKPartialAssistantMessage` with `type: 'stream_event'`
+* **Python**: [`StreamEvent`](/docs/en/agent-sdk/python#streamevent) (import from `claude_agent_sdk.types`)
+* **TypeScript**: [`SDKPartialAssistantMessage`](/docs/en/agent-sdk/typescript#sdkpartialassistantmessage) with `type: 'stream_event'`
 
-Both contain raw Claude API events, not accumulated text. You need to extract and accumulate text deltas yourself. Here's the structure of each type:
-
-<CodeGroup>
-  ```python Python theme={null}
-  @dataclass
-  class StreamEvent:
-      uuid: str  # Unique identifier for this event
-      session_id: str  # Session identifier
-      event: dict[str, Any]  # The raw Claude API stream event
-      parent_tool_use_id: str | None  # Always None
-  ```
-
-  ```typescript TypeScript theme={null}
-  type SDKPartialAssistantMessage = {
-    type: "stream_event";
-    event: BetaRawMessageStreamEvent; // From Anthropic SDK
-    parent_tool_use_id: string | null;
-    uuid: UUID;
-    session_id: string;
-    ttft_ms?: number; // Time to first token in ms, present only on message_start events
-    user_message_uuid?: string;
-  };
-  ```
-</CodeGroup>
+Both contain raw Claude API events, not accumulated text. You need to extract and accumulate text deltas yourself.
 
 The `parent_tool_use_id` field is always `None` in Python and `null` in TypeScript. Stream events are emitted for the main session only; token-level deltas from subagents aren't forwarded. To attribute output to a subagent, use complete messages, which carry `parent_tool_use_id`. See [Detect subagent invocation](/docs/en/agent-sdk/subagents#detect-subagent-invocation).
 
@@ -63498,7 +63509,7 @@ Configuration object for the `query()` function.
 | `debug`                           | `boolean`                                                                                                                                                                                                      | `false`                                     | Enable debug mode for the Claude Code process                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `debugFile`                       | `string`                                                                                                                                                                                                       | `undefined`                                 | Write debug logs to a specific file path. Implicitly enables debug mode                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `disallowedTools`                 | `string[]`                                                                                                                                                                                                     | `[]`                                        | Tools to deny. A bare name such as `"Bash"` removes the tool from Claude's context. A scoped rule such as `"Bash(rm *)"` leaves the tool available and denies matching calls in every permission mode, including `bypassPermissions`, for the command [as written](/docs/en/permissions#bash-rule-limits). See [Permissions](/docs/en/agent-sdk/permissions#allow-and-deny-rules)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `effort`                          | `'low' \| 'medium' \| 'high' \| 'xhigh' \| 'max'`                                                                                                                                                              | Model default                               | Controls how much effort Claude puts into its response. Works with adaptive thinking to guide thinking depth. See [adjust the effort level](/docs/en/model-config#adjust-effort-level)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `effort`                          | `'low' \| 'medium' \| 'high' \| 'xhigh' \| 'max'`                                                                                                                                                              | `undefined`                                 | Controls how much effort Claude puts into its response. Works with adaptive thinking to guide thinking depth. See [adjust the effort level](/docs/en/model-config#adjust-effort-level)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `enableFileCheckpointing`         | `boolean`                                                                                                                                                                                                      | `false`                                     | Enable file change tracking for rewinding. See [File checkpointing](/docs/en/agent-sdk/file-checkpointing)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `env`                             | `Record<string, string \| undefined>`                                                                                                                                                                          | `process.env`                               | Environment variables. When set, this replaces the subprocess environment instead of merging with `process.env`, so pass `{ ...process.env, YOUR_VAR: 'value' }` to keep inherited variables like `PATH`. See [Handle slow or stalled API responses](#handle-slow-or-stalled-api-responses) for an example of this pattern, and [Environment variables](/docs/en/env-vars) for variables the underlying CLI reads. Set `CLAUDE_AGENT_SDK_CLIENT_APP` to identify your app in the User-Agent header                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `executable`                      | `'bun' \| 'deno' \| 'node'`                                                                                                                                                                                    | Auto-detected                               | JavaScript runtime to use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -68750,7 +68761,7 @@ Claude requests user input in two situations: when it needs **permission to use 
 
 For clarifying questions, Claude generates the questions and options. Your role is to present them to users and return their selections. You can't add your own questions to this flow; if you need to ask users something yourself, do that separately in your application logic.
 
-The callback can stay pending indefinitely. Execution remains paused until your callback returns, and the SDK only cancels the wait when the query itself is cancelled. If a user might take longer to respond than your process can reasonably stay running, register a [`PreToolUse` hook](/docs/en/agent-sdk/hooks) that returns the [`defer` decision](/docs/en/hooks#defer-a-tool-call-for-later) instead of waiting in the callback, so the process can exit and resume later from the persisted session.
+The callback can stay pending indefinitely. Execution remains paused until your callback returns. If a user might take longer to respond than your process can reasonably stay running, register a [`PreToolUse` hook](/docs/en/agent-sdk/hooks) that returns the [`defer` decision](/docs/en/hooks#defer-a-tool-call-for-later) instead of waiting in the callback, so the process can exit and resume later from the persisted session.
 
 This guide shows you how to detect each type of request and respond appropriately.
 
@@ -68937,10 +68948,6 @@ The following example asks Claude to create and delete a test file. When Claude 
   }
   ```
 </CodeGroup>
-
-<Note>
-  In Python, `can_use_tool` requires [streaming mode](/docs/en/agent-sdk/streaming-vs-single-mode). When you pass a finite message stream through `query(prompt=generator)` or `ClaudeSDKClient.connect(prompt=async_iterable)`, the SDK closes the input stream after the last message, before the permission callback can be invoked, unless a registered hook or in-process MCP server is keeping it open. The example above keeps it open with a `PreToolUse` hook that returns `{"continue_": True}`. Connecting with no prompt and sending messages through `ClaudeSDKClient.query()` keeps the stream open on its own and needs no hook.
-</Note>
 
 This example uses a `y/n` flow where any input other than `y` is treated as a denial. In practice, you might build a richer UI that lets users modify the request, provide feedback, or redirect Claude entirely. See [Respond to tool requests](#respond-to-tool-requests) for all the ways you can respond.
 
@@ -86552,7 +86559,7 @@ Choose which models Claude Code uses and how it responds. For how these settings
 
 ### `advisorModel`
 
-Pick which model answers when Claude calls the server-side [advisor tool](/docs/en/advisor). Unset it to turn the advisor off. The advisor must be at least as capable as your main model; when it isn't, Claude Code sends requests without the advisor. See [Choose an advisor model](/docs/en/advisor#choose-an-advisor-model).
+Pick which model answers when Claude calls the server-side [advisor tool](/docs/en/advisor). Unset it to turn the advisor off. The advisor must be at least as capable as your main model. See [Choose an advisor model](/docs/en/advisor#choose-an-advisor-model) for the accepted pairings and what happens when you pick one that isn't accepted.
 
 You don't usually edit this key by hand. Run `/advisor` to open a picker that shows the current choice, the models that can advise, and **No advisor**. Claude Code saves your pick to this key in `~/.claude/settings.json`. If you pick from a [Remote Control](/docs/en/remote-control) client or in a session attached to a remote worker, the pick applies to that session only and doesn't change this key.
 
