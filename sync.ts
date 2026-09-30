@@ -1,6 +1,7 @@
 // Mirrors https://code.claude.com/docs into this repo.
 // llms.txt is the manifest: pages removed from it are removed from docs/ too,
-// so deletions show up as regular git deletions in the sync commit.
+// so deletions show up as regular git deletions in the sync commit. Manifest
+// entries that redirect off the docs site are treated the same way.
 // Any fetch failure throws, failing the job before a partial tree gets committed.
 
 import { rm } from "node:fs/promises";
@@ -42,10 +43,25 @@ function rewriteLinks(content: string, rel: string, knownSlugs: Set<string>): st
 }
 
 async function fetchText(url: string): Promise<string> {
+  const text = await fetchPage(url);
+  if (text === null) throw new Error(`${url} redirected off ${BASE}`);
+  return text;
+}
+
+// Returns null when the URL redirects off the docs site: the page has moved
+// elsewhere (e.g. claude-tag.md -> claude.com/docs) and is no longer part of
+// this mirror. Following it would save another site's HTML as markdown, and
+// that site may block CI runners outright (claude.com answers 403 there).
+async function fetchPage(url: string): Promise<string | null> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= RETRIES; attempt++) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { redirect: "manual" });
+      if (res.status >= 300 && res.status < 400) {
+        const location = new URL(res.headers.get("location") ?? "", url).href;
+        if (!location.startsWith(`${BASE}/`)) return null;
+        return await fetchPage(location);
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status} on ${url}`);
       return await res.text();
     } catch (error) {
@@ -71,19 +87,30 @@ await Bun.write("llms-full.txt", await fetchText(`${BASE}/llms-full.txt`));
 
 await rm("docs", { recursive: true, force: true });
 
-// Slugs of every page we mirror (rel without the `.md`), used to decide which
-// cross-links can be rewritten to a local file vs. left as an absolute URL.
-const knownSlugs = new Set(urls.map((url) => url.slice(`${BASE}/en/`.length, -".md".length)));
-
+// Fetch everything first: which pages we actually mirror is only known once
+// moved pages have been skipped, and link rewriting depends on that set.
+const pages = new Map<string, string>(); // rel path -> raw content
 const queue = [...urls];
 await Promise.all(
   Array.from({ length: CONCURRENCY }, async () => {
     let url: string | undefined;
     while ((url = queue.shift())) {
-      const rel = url.slice(`${BASE}/en/`.length);
-      await Bun.write(`docs/${rel}`, rewriteLinks(await fetchText(url), rel, knownSlugs));
+      const content = await fetchPage(url);
+      if (content === null) {
+        console.log(`skipped ${url}: moved off ${BASE}`);
+        continue;
+      }
+      pages.set(url.slice(`${BASE}/en/`.length), content);
     }
   }),
 );
 
-console.log(`synced ${urls.length} pages`);
+// Slugs of every page we mirror (rel without the `.md`), used to decide which
+// cross-links can be rewritten to a local file vs. left as an absolute URL.
+const knownSlugs = new Set([...pages.keys()].map((rel) => rel.slice(0, -".md".length)));
+
+for (const [rel, content] of pages) {
+  await Bun.write(`docs/${rel}`, rewriteLinks(content, rel, knownSlugs));
+}
+
+console.log(`synced ${pages.size} pages`);
