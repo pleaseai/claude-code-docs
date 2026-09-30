@@ -23,12 +23,12 @@ Start with [Host your marketplace](#host-your-marketplace) to pick a host and th
 
 You can host the marketplace on GitHub, on another git host, as a hosted `marketplace.json` URL, or in a directory on a shared filesystem. Send your users the add command for your host and tell them what they need on their machine:
 
-| Host                                                             | Users run, in a Claude Code session                                    | What users need                                                                                                                                |
-| :--------------------------------------------------------------- | :--------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
-| GitHub                                                           | `/plugin marketplace add your-org/your-marketplace`                    | `git`, and for a private repository the access described under [Grant access to a private marketplace](#grant-access-to-a-private-marketplace) |
-| GitLab, Bitbucket, GitHub Enterprise Server, or another git host | `/plugin marketplace add https://gitlab.example.com/team/plugins.git`  | `git`, and access to the host from their machine. Send the full URL, because `owner/repo` shorthand always means github.com                    |
-| A hosted `marketplace.json` URL                                  | `/plugin marketplace add https://plugins.example.com/marketplace.json` | HTTPS access to the URL. Users don't need `git` for the catalog itself                                                                         |
-| A directory on a shared filesystem                               | `/plugin marketplace add /Volumes/shared/claude-plugins`               | Read access to the path                                                                                                                        |
+| Host | Users run, in a Claude Code session | What users need |
+| :- | :- | :- |
+| GitHub | `/plugin marketplace add your-org/your-marketplace` | `git`, and for a private repository the access described under [Grant access to a private marketplace](#grant-access-to-a-private-marketplace) |
+| GitLab, Bitbucket, GitHub Enterprise Server, or another git host | `/plugin marketplace add https://gitlab.example.com/team/plugins.git` | `git`, and access to the host from their machine. Send the full URL, because `owner/repo` shorthand always means github.com |
+| A hosted `marketplace.json` URL | `/plugin marketplace add https://plugins.example.com/marketplace.json` | HTTPS access to the URL. Users don't need `git` for the catalog itself |
+| A directory on a shared filesystem | `/plugin marketplace add /Volumes/shared/claude-plugins` | Read access to the path |
 
 To pin a branch or tag of a GitHub or git-URL marketplace, tell users to append `#<ref>`, as in `your-org/your-marketplace#stable`. The [plugin commands reference](/docs/en/plugins/cli-reference#plugin-marketplace-add) lists every form the command accepts.
 
@@ -75,10 +75,10 @@ On a Team or Enterprise plan, you can also distribute the marketplace through [*
 Organization sync is stricter about the repository than `/plugin marketplace add` is:
 
 * **Marketplace repository**: on github.com and gitlab.com, it must be private or internal
-* **Plugin sources**: each plugin source must be of type `github`, `url`, or `git-subdir`, or a [relative path](/docs/en/plugins/marketplace-reference#relative-path-plugin-source) that starts with `./`
+* **Plugin sources**: organization sync accepts only some [source types](/docs/en/plugins/marketplace-reference#plugin-sources)
 * **Top-level `bin/` directory**: claude.ai rejects a plugin that has one and syncs the rest of the marketplace. The error message starts with `Plugin contains a top-level bin/ directory`. Keep executables in another directory, such as `scripts/`, and reference them as `${CLAUDE_PLUGIN_ROOT}/scripts/<name>` from your hooks or MCP server configs
 
-See [Manage plugins for your organization](https://support.claude.com/en/articles/13837433) for the admin workflow.
+[Sync your organization's plugins from a repository](https://claude.com/docs/plugins/org-sync) on claude.com lists the accepted sources, the GitLab setup, and the `bin/` error, and [Manage plugins for your organization](https://claude.com/docs/plugins/admin) covers the admin workflow.
 
 ## Grant access to a private marketplace
 
@@ -97,7 +97,7 @@ Tell users what each protocol needs on their machine:
 
 For a GitHub Enterprise Server host, users need git access to that host from their machine. See [Plugin marketplaces on GHES](/docs/en/github-enterprise-server#plugin-marketplaces-on-ghes) for what each Claude Code surface needs to reach a GHES-hosted marketplace.
 
-If you distribute through **Organization settings > Plugins & skills** on claude.ai instead, your users' git credentials aren't involved. See [Distribute through organization settings](#distribute-through-organization-settings) for which plugin sources can be private there.
+If you distribute through **Organization settings > Plugins & skills** on claude.ai instead, your users' git credentials aren't involved. See [Distribute through organization settings](#distribute-through-organization-settings).
 
 ### Serve users who have no git-host account
 
@@ -136,11 +136,11 @@ If a user sets `GITHUB_TOKEN` or another provider token in the environment, that
 
 Rolling a plugin out to a company involves you as the marketplace owner, an administrator who controls managed settings, and each person who uses Claude Code. You can run the rollout without the administrator, in which case each person adds the marketplace and installs the plugin themselves.
 
-| Who                        | What they do                                                                                                                                                          | Where it's covered                                                                                                                                        |
-| :------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| You, the marketplace owner | Keep the catalog in a repository only the company can read, send the add command for your host, and say what each person needs on their machine                       | [Host your marketplace](#host-your-marketplace) and [Grant access to a private marketplace](#grant-access-to-a-private-marketplace)                       |
-| An administrator           | Registers the marketplace and turns its plugins on for everyone with `extraKnownMarketplaces` and `enabledPlugins` in managed settings, and sets `autoUpdate` there   | [Require a marketplace and its plugins](/docs/en/plugins/org#require-a-marketplace-and-its-plugins) and [Set update policy](/docs/en/plugins/org#set-update-policy) |
-| Each person                | Needs read access to a private git repository, with credentials already stored on their machine. Without an administrator, they also run the add and install commands | [Add a private marketplace](/docs/en/plugins/install#add-a-private-marketplace)                                                                                |
+| Who | What they do | Where it's covered |
+| :- | :- | :- |
+| You, the marketplace owner | Keep the catalog in a repository only the company can read, send the add command for your host, and say what each person needs on their machine | [Host your marketplace](#host-your-marketplace) and [Grant access to a private marketplace](#grant-access-to-a-private-marketplace) |
+| An administrator | Registers the marketplace and turns its plugins on for everyone with `extraKnownMarketplaces` and `enabledPlugins` in managed settings, and sets `autoUpdate` there | [Require a marketplace and its plugins](/docs/en/plugins/org#require-a-marketplace-and-its-plugins) and [Set update policy](/docs/en/plugins/org#set-update-policy) |
+| Each person | Needs read access to a private git repository, with credentials already stored on their machine. Without an administrator, they also run the add and install commands | [Add a private marketplace](/docs/en/plugins/install#add-a-private-marketplace) |
 
 For people who have no git-host account, these sections each cover one way to reach them:
 
@@ -288,10 +288,10 @@ The [marketplace reference](/docs/en/plugins/marketplace-reference#plugin-entrie
 
 The place you choose decides which downloads get the headers and when Claude Code runs the command:
 
-| Place                    | Downloads that get the headers                                                             | When Claude Code runs a `headersHelper` set there                                                                                                                   |
-| :----------------------- | :----------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Place | Downloads that get the headers | When Claude Code runs a `headersHelper` set there |
+| :- | :- | :- |
 | Marketplace `url` source | Archive downloads on the marketplace URL's origin, meaning the same scheme, host, and port | Before each fetch of the marketplace's `marketplace.json` and before each archive download on that origin. Claude Code reuses one run's output for up to 60 seconds |
-| Plugin entry             | That entry's download only                                                                 | Only when a user installs or updates that one plugin by itself and [accepts the command](#how-users-accept-a-headershelper-command)                                 |
+| Plugin entry | That entry's download only | Only when a user installs or updates that one plugin by itself and [accepts the command](#how-users-accept-a-headershelper-command) |
 
 Where both places set a header of the same name, Claude Code sends the entry's value. Within one place, a header the command prints overrides a header of the same name listed in `headers`.
 
@@ -364,11 +364,11 @@ On any operation other than a single-plugin install or update, Claude Code neith
 
 You declare a marketplace `url` source's `headersHelper` in a settings file, such as an [`extraKnownMarketplaces`](/docs/en/settings-reference#extraknownmarketplaces) entry, rather than in the catalog the marketplace publishes. Claude Code therefore doesn't ask the user to accept it on each install or update. Instead, the settings file that declares it decides when Claude Code runs it:
 
-| Settings file                                                                 | When Claude Code runs the command                                                                                                                                                                                                            |
-| :---------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| User settings, a `--settings` file, or a managed settings file on the machine | Without asking, including during a background marketplace refresh                                                                                                                                                                            |
-| A project's `.claude/settings.json` or `.claude/settings.local.json`          | Only after the user accepts the [workspace trust dialog](/docs/en/permissions#what-runs-before-you-trust-a-folder) for that folder itself. A `-p` or SDK session doesn't count as accepting it, and neither does trust granted to a parent folder |
-| Server-managed settings                                                       | In an interactive session, only after the user approves the delivered settings in the [security approval dialog](/docs/en/server-managed-settings#security-approval-dialogs)                                                                      |
+| Settings file | When Claude Code runs the command |
+| :- | :- |
+| User settings, a `--settings` file, or a managed settings file on the machine | Without asking, including during a background marketplace refresh |
+| A project's `.claude/settings.json` or `.claude/settings.local.json` | Only after the user accepts the [workspace trust dialog](/docs/en/permissions#what-runs-before-you-trust-a-folder) for that folder itself. A `-p` or SDK session doesn't count as accepting it, and neither does trust granted to a parent folder |
+| Server-managed settings | In an interactive session, only after the user approves the delivered settings in the [security approval dialog](/docs/en/server-managed-settings#security-approval-dialogs) |
 
 For an [inline plugin entry](/docs/en/settings-reference#extraknownmarketplaces) in one of these files, Claude Code requires the same folder trust or settings approval as for a marketplace-level command in that file, and the user also accepts the entry's command on each install or update.
 
