@@ -10,6 +10,10 @@ import { dirname, relative } from "node:path/posix";
 const BASE = "https://code.claude.com/docs";
 const CONCURRENCY = 10;
 const RETRIES = 3;
+const MAX_REDIRECTS = 5;
+// More moved pages than this in one run looks like a site-wide redirect
+// (maintenance, outage) rather than real moves; fail instead of deleting them.
+const MAX_MOVED = 5;
 
 // The source pages link to each other with site-absolute paths like
 // `/en/sub-agents` (no `.md`), which don't resolve when the mirror is browsed
@@ -56,14 +60,21 @@ async function fetchPage(url: string): Promise<string | null> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= RETRIES; attempt++) {
     try {
-      const res = await fetch(url, { redirect: "manual" });
-      if (res.status >= 300 && res.status < 400) {
-        const location = new URL(res.headers.get("location") ?? "", url).href;
-        if (!location.startsWith(`${BASE}/`)) return null;
-        return await fetchPage(location);
+      // Follow on-site redirects by hand, bounded so a loop fails instead of hanging.
+      let current = url;
+      for (let hop = 0; ; hop++) {
+        const res = await fetch(current, { redirect: "manual" });
+        if (res.status >= 300 && res.status < 400) {
+          const location = res.headers.get("location");
+          if (!location) throw new Error(`HTTP ${res.status} without Location on ${current}`);
+          current = new URL(location, current).href;
+          if (!current.startsWith(`${BASE}/`)) return null;
+          if (hop >= MAX_REDIRECTS) throw new Error(`too many redirects from ${url}`);
+          continue;
+        }
+        if (!res.ok) throw new Error(`HTTP ${res.status} on ${current}`);
+        return await res.text();
       }
-      if (!res.ok) throw new Error(`HTTP ${res.status} on ${url}`);
-      return await res.text();
     } catch (error) {
       lastError = error;
       if (attempt < RETRIES) await Bun.sleep(1000 * attempt);
@@ -85,8 +96,6 @@ if (urls.length < 10) throw new Error(`manifest parse failed: only ${urls.length
 await Bun.write("llms.txt", manifest);
 await Bun.write("llms-full.txt", await fetchText(`${BASE}/llms-full.txt`));
 
-await rm("docs", { recursive: true, force: true });
-
 // Fetch everything first: which pages we actually mirror is only known once
 // moved pages have been skipped, and link rewriting depends on that set.
 const pages = new Map<string, string>(); // rel path -> raw content
@@ -104,6 +113,21 @@ await Promise.all(
     }
   }),
 );
+
+// Count only pages this run would newly delete: an entry that moved long ago
+// and is still listed in the manifest has no file left to lose.
+const newlyMoved: string[] = [];
+for (const url of urls) {
+  const rel = url.slice(`${BASE}/en/`.length);
+  if (!pages.has(rel) && (await Bun.file(`docs/${rel}`).exists())) newlyMoved.push(rel);
+}
+if (newlyMoved.length > MAX_MOVED) {
+  throw new Error(
+    `${newlyMoved.length} mirrored pages redirected off ${BASE}; refusing to delete them (limit ${MAX_MOVED})`,
+  );
+}
+
+await rm("docs", { recursive: true, force: true });
 
 // Slugs of every page we mirror (rel without the `.md`), used to decide which
 // cross-links can be rewritten to a local file vs. left as an absolute URL.
