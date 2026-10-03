@@ -38,7 +38,7 @@ The table below summarizes when each event fires. The [Hook events](#hook-events
 | :- | :- |
 | `SessionStart` | When a session begins or resumes |
 | `Setup` | When you start Claude Code with `--init-only`, or with `--init` or `--maintenance` in `-p` mode. For one-time preparation in CI or scripts |
-| `UserPromptSubmit` | When you submit a prompt, before Claude processes it |
+| `UserPromptSubmit` | When a prompt is submitted, before Claude processes it. Also fires on [turns Claude Code starts on its own](/docs/en/hooks#userpromptsubmit) |
 | `UserPromptExpansion` | When a user-typed command expands into a prompt, before it reaches Claude. Can block the expansion |
 | `PreToolUse` | Before a tool call executes. Can block it |
 | `PermissionRequest` | When a tool call needs a permission decision |
@@ -1314,9 +1314,15 @@ InstructionsLoaded hooks have no decision control. They can't block or modify in
 
 ### UserPromptSubmit
 
-Runs when the user submits a prompt, before Claude processes it. This allows you
+Runs when a prompt is submitted, before Claude processes it. This allows you
 to add additional context based on the prompt/conversation, validate prompts, or
 block certain types of prompts.
+
+`UserPromptSubmit` hooks don't fire only on prompts you type. Claude Code also runs them on:
+
+* A [scheduled task](/docs/en/scheduled-tasks) firing, including a `/loop` iteration
+* A [background subagent](/docs/en/sub-agents#run-subagents-in-foreground-or-background) reporting back to the session that started it
+* A [message another session sends](/docs/en/cross-session-messaging) to your main conversation
 
 `UserPromptSubmit` hooks have a default timeout of 30 seconds for `command`, `http`, and `mcp_tool` types, shorter than the 600-second default for those types on most other events. Because this hook runs before every prompt and blocks model processing until it completes, a stuck hook stalls the session. If your hook needs more time, set the `timeout` field in the hook entry.
 
@@ -1326,7 +1332,7 @@ An [Agent SDK callback hook](/docs/en/agent-sdk/hooks) on `UserPromptSubmit` tha
 
 #### UserPromptSubmit input
 
-In addition to the [common input fields](#common-input-fields), UserPromptSubmit hooks receive the `prompt` field containing the text the user submitted. Pasted content that collapsed to a `[Pasted text #N]` placeholder arrives expanded in place. In sessions where Claude Code [marks pasted text for Claude](/docs/en/terminal-config#how-claude-treats-pasted-text), that expanded content sits between a `<pasted_content id="…">` line and a `</pasted_content id="…">` line, so account for those lines if your hook parses the prompt.
+In addition to the [common input fields](#common-input-fields), UserPromptSubmit hooks receive the `prompt` field containing the submitted text. Pasted content that collapsed to a `[Pasted text #N]` placeholder arrives expanded in place. In sessions where Claude Code [marks pasted text for Claude](/docs/en/terminal-config#how-claude-treats-pasted-text), that expanded content sits between a `<pasted_content id="…">` line and a `</pasted_content id="…">` line, so account for those lines if your hook parses the prompt.
 
 UserPromptSubmit hooks also receive `session_title` when the session has a custom title, with the same meaning as the [SessionStart `session_title` field](#sessionstart-input).
 
@@ -1343,7 +1349,7 @@ UserPromptSubmit hooks also receive `session_title` when the session has a custo
 
 #### UserPromptSubmit decision control
 
-`UserPromptSubmit` hooks can control whether a user prompt is processed and add context. All [JSON output fields](#json-output) are available.
+`UserPromptSubmit` hooks can control whether a submitted prompt is processed and add context. All [JSON output fields](#json-output) are available.
 
 There are two ways to add context to the conversation on exit code 0:
 
@@ -1825,7 +1831,7 @@ A hook's `"ask"` also forces a permission prompt in [auto mode](/docs/en/permiss
 
 In [non-interactive mode](/docs/en/headless) with the `-p` flag, Claude Code offers `AskUserQuestion` and `ExitPlanMode` only when the run has a [permission host](/docs/en/headless#turn-off-permission-prompts-in-unattended-runs) to receive the prompt, such as an Agent SDK `canUseTool` callback. These tools require user interaction. Returning `permissionDecision: "allow"` together with `updatedInput` satisfies that requirement: the hook reads the tool's input from stdin, collects the answer through your own UI, and returns it in `updatedInput` so the tool runs without prompting. Returning `"allow"` alone is not sufficient for these tools. For `AskUserQuestion`, echo back the original `questions` array and add an [`answers`](#askuserquestion) object mapping each question's text to the chosen answer.
 
-As of v2.1.199, an MCP tool whose server marks it with [`_meta["anthropic/requiresUserInteraction"]`](/docs/en/mcp#require-approval-for-a-specific-tool) is stricter: a hook can't skip its approval prompt with `"allow"`, with or without `updatedInput`, because Claude Code can't confirm the hook collected the interaction the tool needs.
+An MCP tool whose server marks it with [`_meta["anthropic/requiresUserInteraction"]`](/docs/en/mcp#require-approval-for-a-specific-tool) is stricter: a hook can't skip its approval prompt with `"allow"`, with or without `updatedInput`, because Claude Code can't confirm the hook collected the interaction the tool needs.
 
 <Note>
   PreToolUse previously used top-level `decision` and `reason` fields, but these are deprecated for this event. Use `hookSpecificOutput.permissionDecision` and `hookSpecificOutput.permissionDecisionReason` instead. The deprecated values `"approve"` and `"block"` map to `"allow"` and `"deny"` respectively. Other events like PostToolUse and Stop continue to use top-level `decision` and `reason` as their current format.
