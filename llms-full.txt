@@ -349,7 +349,7 @@ Claude Code checks the model it selects for a teammate against your organization
 * **Family alias such as `opus`**: On the Anthropic API and Claude Platform on AWS, Claude Code runs the teammate on the newest version of that family the allowlist permits. On providers with provider-specific model IDs, where the [substitution doesn't operate](/docs/en/model-config#restrict-model-selection), a blocked alias falls back like any other blocked value per the next bullet
 * **Any other blocked value, including a family alias on providers where the substitution doesn't operate, or one whose family has no permitted version**: Claude Code runs the teammate on the lead's model instead. If you set `CLAUDE_CODE_SUBAGENT_MODEL`, Claude Code tries that model first, under these same rules
 
-Teammates inherit the lead's [effort level](/docs/en/model-config#adjust-effort-level). In split-pane mode this applies from v2.1.186; earlier versions did not pass the lead's session effort to split-pane teammates.
+By default, teammates inherit the lead's [effort level](/docs/en/model-config#adjust-effort-level). In split-pane mode this applies from v2.1.186; earlier versions did not pass the lead's session effort to split-pane teammates.
 
 ### Have teammates plan before implementing
 
@@ -373,7 +373,7 @@ While you're viewing an in-process teammate, plain text and [skills](/docs/en/sk
 * `/compact`, `/clear`, and `/rewind` act on the lead's conversation, so Claude Code asks you to confirm before running one of them from this view.
 * `/model` and `/fast` set the lead's model and fast mode, not the teammate's, so they don't run from this view. A notice tells you why.
 
-A teammate's model and fast mode are fixed when it spawns. `/effort` still applies to the viewed teammate's later turns, because teammates follow the lead's [effort level](/docs/en/model-config#adjust-effort-level).
+A teammate's model and fast mode are fixed when it spawns.
 
 ### Assign and claim tasks
 
@@ -452,7 +452,7 @@ There is no project-level equivalent of the team config. A file like `.claude/te
 
 ### Use subagent definitions for teammates
 
-When spawning a teammate in either display mode, you can reference a [subagent](/docs/en/sub-agents) type from the project, user, or managed [subagent scope](/docs/en/sub-agents#choose-the-subagent-scope). This lets you define a role once, such as a security-reviewer or test-runner, and reuse it both as a delegated subagent and as an agent team teammate.
+When spawning a teammate in either display mode, you can reference a [subagent](/docs/en/sub-agents) type from the project, user, managed, or plugin [subagent scope](/docs/en/sub-agents#choose-the-subagent-scope). This lets you define a role once, such as a security-reviewer or test-runner, and reuse it both as a delegated subagent and as an agent team teammate.
 
 To use a subagent definition, name it when you ask Claude to spawn the teammate:
 
@@ -464,6 +464,8 @@ Claude Code reads the subagent definition you named and applies these parts of i
 
 * **`tools`**: Claude Code limits the teammate to the tools in the definition's `tools` list. For an in-process teammate, Claude Code adds `SendMessage` to that list, and in a [session that has the Task tools](/docs/en/tools-reference#task-tool-availability) it adds `TaskCreate`, `TaskGet`, `TaskList`, and `TaskUpdate` too.
 * **`model`**: Claude Code uses the definition's `model` in either display mode when your spawn prompt doesn't name one. See [how Claude Code picks a teammate's model](#specify-teammates-and-models).
+* **`disallowedTools`**: for an in-process teammate, Claude Code removes the tools in the definition's `disallowedTools` from the teammate's set. `SendMessage` and the Task tools it adds stay available even when the list names them.
+* **`effort`**: for an in-process teammate, Claude Code applies the definition's [`effort`](/docs/en/sub-agents#supported-frontmatter-fields) under the [frontmatter effort rules](/docs/en/model-config#set-the-effort-level).
 * **Body**: for an in-process teammate, Claude Code appends the definition's body to its default system prompt as additional instructions. For a split-pane teammate, Claude Code uses the body in place of its default system prompt.
 * **`skills`**: Claude Code doesn't apply the definition's `skills` to a teammate in either display mode. The teammate loads skills from your project and user settings.
 * **`mcpServers`**: for a split-pane teammate, Claude Code applies the definition's `mcpServers` under the [rules for that field](/docs/en/sub-agents#scope-mcp-servers-to-a-subagent), which cover a session started with `--agent` as well. An in-process teammate ignores the field and loads MCP servers from your project and user settings.
@@ -3479,6 +3481,36 @@ Release notes for Claude Code, including new features, improvements, and bug fix
 This page is generated from the [CHANGELOG.md on GitHub](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md).
 
 Run `claude --version` to check your installed version.
+
+<Update label="2.1.289" description="October 3, 2026">
+  * Fixed a deny or ask rule on a nested part of a compound shell command not holding over a user-installed mod's approval on managed machines
+  * Fixed the terminal freezing on short code blocks with many unclosed `<script>` tags or deeply nested `${` substitutions
+  * Fixed `Read` deny rules not applying to files @-mentioned, changed, or selected in the IDE through a symlink
+  * \[VSCode] Reverted a 2.1.288 change to `claude auth status` that may have made sign-outs more frequent
+  * Improved how quickly large files open in a plugin code pane by laying the highlighted view out once at its final width
+  * Fixed `plugin list`, `plugin eval` and `plugin update` showing a stale copy of a plugin installed from a local folder marketplace, and hot reload for a symlinked `--plugin-dir`
+  * Fixed installed mods not loading in the first session after an upgrade
+  * Fixed a plugin's rows above the prompt showing a stale row while the Background tasks dialog was open in fullscreen
+  * Fixed plugin panes drawing nothing when a link used a localhost address, an `@` in its path, an uppercase host or a `file:` path
+  * Fixed a user-installed plugin being able to rewrite the descriptions of an organization-managed MCP server's sign-in tools
+  * Fixed a freeze or forced quit at launch when a plugin drew a Box with a border style the terminal does not know
+  * Fixed supervised and background sessions ending when a plugin's on-screen handler threw asynchronously
+  * Fixed sessions ending with an interface error when a plugin region with no height kept growing
+  * Fixed Bash deny and ask rules missing a command behind an environment variable prefix with an expanded value (e.g. `TZ="$HOME" rm -rf build`) when the sandbox auto-allows commands
+  * Fixed a Bash deny or ask rule being skipped under sandbox auto-allow when a bare variable assignment came before the command
+  * Fixed `claude plugin validate` skipping the plugin when the folder also holds a marketplace manifest
+  * Added `agent.spawn` for teammates, one agent id across plugin hook events, and idle and waiting states in `$.agent.list()`
+  * Fixed sessions ending with "unrecoverable interface error" when a value a mod's `ui.render` hook wrote made a row throw while drawn; the engine now draws its own row instead
+  * Fixed text with a tab, a stray escape and a C1 control, or a short text with a tab and CRLF line endings, drawing over the rows below it
+  * Fixed right-aligned content in a mod's pane or band drawing under the close mark or `[-]`, which now also keep one column in from the terminal's edge
+  * Fixed a mod's `Client` that fails while drawn taking down everything the mod drew around it; it now fails alone and raises `ui.fault`
+  * Fixed `claude plugin validate` failing an Anthropic marketplace's own plugin and listing a clean `plugin.json` in `--json`
+  * Fixed a mod's band that fails to draw briefly telling the cards under it to step aside
+  * Fixed a failed plugin component showing `Error` or nothing as its reason when the failure carried no message
+  * Improved the line a mod's author sees when its band or pane fails to draw: it names the mod and says nothing was drawn
+  * Fixed published artifact pages freezing or crashing the reader's browser tab on short code blocks with many unclosed `<script>` tags
+  * Fixed a mod's Client region staying failed for the whole session after the terminal threw while drawing it
+</Update>
 
 <Update label="2.1.288" description="October 2, 2026">
   * Added `$.ui.selection()` for mods: returns the text you last selected in fullscreen mode and, when the selection lies within one transcript row, that row
@@ -13977,9 +14009,12 @@ When a review fails or exceeds its time limit, the check run completes with a ti
 
 To run the review again, comment `@claude review` on the PR. This starts a fresh review without subscribing the PR to future pushes. If the PR isn't [from a fork](#review-pull-requests-from-forks), you can instead click **Re-run** on the **Claude Code Review** check in GitHub's Checks tab. A re-run also starts a fresh review without subscribing the PR.
 
-### Review didn't run and the PR shows a spend-cap message
+### Review didn't run and the PR shows a budget message
 
-When your organization's monthly spend cap is reached, Code Review posts a single comment on the PR explaining that the review was skipped. Reviews resume automatically at the start of the next billing period, or immediately when an admin raises the cap at [claude.ai/admin-settings/usage](https://claude.ai/admin-settings/usage).
+When your organization's monthly spend cap for Code Review is reached or its usage-credits balance is used up, Code Review skips the review and posts a single comment on the PR. The comment and the check-run card both name the cause and link the admin page where an admin fixes it:
+
+* **Spend cap reached**: reviews resume at the start of the next billing period, or immediately after an admin raises the cap at [claude.ai/admin-settings/usage](https://claude.ai/admin-settings/usage)
+* **Usage credits used up**: reviews resume once an admin adds more [usage credits](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) at [claude.ai/admin-settings/usage](https://claude.ai/admin-settings/usage)
 
 ### Find issues that aren't showing as inline comments
 
@@ -13991,7 +14026,7 @@ If the check run title says issues were found but you don't see inline review co
 
 ## Review a diff locally
 
-The [`/code-review` command](/docs/en/commands) reviews a diff in your terminal without installing the GitHub App. It reports correctness bugs and reuse, simplification, and efficiency cleanups.
+The [`/code-review` command](/docs/en/commands) reviews a diff in your terminal without installing the GitHub App. It reports correctness bugs. Depending on your model and effort level, the review also covers reuse, simplification, and efficiency cleanups.
 
 `/review` is an alias of `/code-review`; before v2.1.223, it was a separate command that ran a single-pass, read-only review of a GitHub pull request.
 
@@ -14811,7 +14846,7 @@ The CLI and Desktop surfaces share the same computer use engine, with a few diff
 | Feature | Desktop | CLI |
 | :- | :- | :- |
 | Platforms | macOS and Windows | macOS only |
-| Enable | Toggle in **Settings > General** (under **Desktop app**) | Enable `computer-use` in `/mcp` |
+| Enable | Toggle in **Settings > This computer > System** | Enable `computer-use` in `/mcp` |
 | Denied apps list | Configurable in Settings | Not yet available |
 | Auto-unhide toggle | Optional | Always on |
 | Dispatch integration | Dispatch-spawned sessions can use computer use | Not applicable |
@@ -15864,7 +15899,7 @@ Computer use is off by default. If you ask Claude to do something that needs it 
   </Step>
 
   <Step title="Turn on the toggle">
-    In the desktop app, go to **Settings > General** (under **Desktop app**). Find the **Computer use** toggle and turn it on. On Windows, the toggle takes effect immediately and setup is complete. On macOS, continue to the next step.
+    In the desktop app, go to **Settings > This computer > System**. Under **Computer use**, turn on **Enable computer use**. On Windows, the toggle takes effect immediately and setup is complete. On macOS, continue to the next step.
 
     If you don't see the toggle, confirm you're on macOS or Windows with a Pro or Max plan, then update and restart the app.
   </Step>
@@ -15893,7 +15928,7 @@ The prompt also shows what level of control Claude gets for that app. These tier
 
 Apps with broad reach, like terminals, Finder or File Explorer, and System Settings or Settings, show an extra warning in the prompt so you know what approving them grants.
 
-You can configure two settings in **Settings > General** (under **Desktop app**):
+The **Computer use** section in **Settings > This computer > System** includes these options:
 
 * **Denied apps**: add apps here to reject them without prompting. Claude may still affect a denied app indirectly through actions in an allowed app, but it can't interact with the denied app directly.
 * **Unhide apps when Claude finishes**: when computer use isn't running in the background, Claude hides your other windows while it works so it interacts with only the approved app. When Claude finishes, hidden windows are restored unless you turn this setting off.
@@ -17119,7 +17154,7 @@ Scheduled tasks run on your machine. Desktop checks the schedule every minute wh
 
 When a task fires, you get a desktop notification and a new session appears under a **Scheduled** section in the sidebar. Open it to see what Claude did, review changes, or respond to permission prompts. Claude can edit files, run commands, create commits, and open pull requests, the same as in a session you start yourself, but can't send or receive [messages between your desktop sessions](/docs/en/desktop#work-across-sessions) through the desktop app's session surface.
 
-Tasks only run while the desktop app is running and your computer is awake. If your computer sleeps through a scheduled time, the run is skipped. To prevent idle-sleep, enable **Keep computer awake** in Settings under **Desktop app → General**. Closing the laptop lid still puts it to sleep. For tasks that need to run even when your computer is off, or that should trigger on an API call or GitHub event, create a remote [routine](/docs/en/routines) instead.
+Tasks only run while the desktop app is running and your computer is awake. If your computer sleeps through a scheduled time, the run is skipped. To prevent idle-sleep, turn on **Keep computer awake** in **Settings > This computer > System**. Closing the laptop lid still puts it to sleep. For tasks that need to run even when your computer is off, or that should trigger on an API call or GitHub event, create a remote [routine](/docs/en/routines) instead.
 
 ## Missed runs
 
@@ -22718,7 +22753,7 @@ Each feature has a different loading strategy and context cost:
 | **Subagents** | When spawned | Fresh context with specified skills, or the parent conversation for a [fork](/docs/en/sub-agents#fork-the-current-conversation) | Isolated from main session |
 | **Hooks** | On trigger | Nothing (runs externally) | Zero, unless hook returns additional context |
 
-\*By default, skill descriptions load at session start so Claude can decide when to use them. Set `disable-model-invocation: true` in a skill's frontmatter to hide it from Claude entirely until you invoke it manually. For a skill you didn't write, set [`skillOverrides`](/docs/en/skills#override-skill-visibility-from-settings) in settings to do the same without editing its file.
+\*Set [`disable-model-invocation: true`](/docs/en/skills#control-who-invokes-a-skill) in a skill's frontmatter to keep its description out of Claude's context. For a skill you didn't write, set [`skillOverrides`](/docs/en/skills#override-skill-visibility-from-settings) in settings to do the same without editing its file.
 
 ### Understand how features load
 
@@ -22746,13 +22781,13 @@ Each feature loads at different points in your session. The tabs below explain w
 
     **What loads:** For model-invocable skills, Claude sees names and descriptions in every request. When you invoke a skill with `/<name>` or Claude loads it automatically, the full content loads into your conversation.
 
-    **How Claude chooses skills:** Claude matches your task against skill descriptions to decide which are relevant. If descriptions are vague or overlap, Claude may load the wrong skill or miss one that would help. To tell Claude to use a specific skill, invoke it with `/<name>`. Skills with `disable-model-invocation: true` are invisible to Claude until you invoke them.
+    **How Claude chooses skills:** Claude matches your task against skill descriptions to decide which are relevant. If descriptions are vague or overlap, Claude may load the wrong skill or miss one that would help. To tell Claude to use a specific skill, invoke it with `/<name>`.
 
     **Context cost:** Low until used. User-only skills have zero cost until invoked.
 
     **In subagents:** Skills work differently in subagents. Instead of on-demand loading, skills listed in the subagent's `skills` field are fully preloaded into its context at launch. Subagents can still discover and invoke unlisted project, user, and plugin skills through the Skill tool.
 
-    <Tip>Use `disable-model-invocation: true` for skills with side effects. This saves context and ensures only you trigger them.</Tip>
+    <Tip>Use `disable-model-invocation: true` for skills with side effects. This saves context and ensures they run only when you name them.</Tip>
   </Tab>
 
   <Tab title="MCP servers">
@@ -25275,7 +25310,7 @@ Claude Code fires hook events at specific points in its lifecycle. When an event
 | :- | :- |
 | `SessionStart` | When a session begins or resumes |
 | `Setup` | When you start Claude Code with `--init-only`, or with `--init` or `--maintenance` in `-p` mode. For one-time preparation in CI or scripts |
-| `UserPromptSubmit` | When you submit a prompt, before Claude processes it |
+| `UserPromptSubmit` | When a prompt is submitted, before Claude processes it. Also fires on [turns Claude Code starts on its own](/docs/en/hooks#userpromptsubmit) |
 | `UserPromptExpansion` | When a user-typed command expands into a prompt, before it reaches Claude. Can block the expansion |
 | `PreToolUse` | Before a tool call executes. Can block it |
 | `PermissionRequest` | When a tool call needs a permission decision |
@@ -33496,7 +33531,7 @@ Open a terminal in the directory where you want to keep the plugin, such as `~/p
     Greet the user warmly and ask how you can help them today.
     ```
 
-    The `disable-model-invocation: true` line means Claude doesn't run the skill on its own, so only you trigger it. Remove that line from a skill you want Claude to run on its own. The skill's command combines the plugin name and the skill's name, so you run this one as `/my-first-plugin:hello`. For the other frontmatter fields, see the [skill frontmatter reference](/docs/en/skills#frontmatter-reference).
+    The `disable-model-invocation: true` line means Claude doesn't run the skill on its own. Remove that line from a skill you want Claude to run on its own. The skill's command combines the plugin name and the skill's name, so you run this one as `/my-first-plugin:hello`. For the other frontmatter fields, see the [skill frontmatter reference](/docs/en/skills#frontmatter-reference).
   </Step>
 
   <Step title="Validate the plugin">
@@ -42433,7 +42468,7 @@ Your plugin's skill runs when you type its `/<plugin>:<skill>` command, but Clau
 
 Check these causes in order:
 
-* **The skill sets `disable-model-invocation: true`**: with that field set, only you can invoke the skill. The template skill in [Create your first plugin](/docs/en/plugins/create#create-your-first-plugin) sets it. Remove the line from a skill you want Claude to invoke on its own. [Control who invokes a skill](/docs/en/skills#control-who-invokes-a-skill) covers the field
+* **The skill sets `disable-model-invocation: true`**: the template skill in [Create your first plugin](/docs/en/plugins/create#create-your-first-plugin) sets it. Remove the line from a skill you want Claude to invoke on its own. [Control who invokes a skill](/docs/en/skills#control-who-invokes-a-skill) covers the field
 * **The description doesn't match how people ask**: work through the checks in [Skill not triggering](/docs/en/skills#skill-not-triggering)
 * **The description is truncated**: when many skills are installed, Claude Code shortens descriptions to fit the listing's character budget, which can strip the keywords Claude needs to match a request. See [Skill descriptions are cut short](/docs/en/skills#skill-descriptions-are-cut-short)
 
@@ -46639,11 +46674,11 @@ Reference supporting files from `SKILL.md` so Claude knows what each file contai
 
 By default, both you and Claude can invoke any skill. You can type `/skill-name` to invoke it directly, and Claude can load it automatically when relevant to your conversation. Two frontmatter fields let you restrict this:
 
-* **`disable-model-invocation: true`**: Only you can invoke the skill. Use this for workflows with side effects or that you want to control timing, like `/commit`, `/deploy`, or `/send-slack-message`. You don't want Claude deciding to deploy because your code looks ready.
+* **`disable-model-invocation: true`**: Claude can't invoke the skill on its own. Use this for workflows with side effects or that you want to control timing, like `/commit`, `/deploy`, or `/send-slack-message`. You don't want Claude deciding to deploy because your code looks ready.
 
 * **`user-invocable: false`**: Only Claude can invoke the skill. Use this for background knowledge that isn't actionable as a command. A `legacy-system-context` skill explains how an old system works. Claude should know this when relevant, but `/legacy-system-context` isn't a meaningful action for users to take.
 
-This example creates a deploy skill that only you can trigger. If you set `disable-model-invocation: true`, Claude can't run the skill automatically:
+This example creates a deploy skill. If you set `disable-model-invocation: true`, Claude can't run the skill automatically:
 
 ```yaml theme={null}
 ---
@@ -46667,12 +46702,23 @@ Here's how the two fields affect invocation and context loading:
 | Frontmatter | You can invoke | Claude can invoke | When loaded into context |
 | :- | :- | :- | :- |
 | (default) | Yes | Yes | Description always in context, full skill loads when invoked |
-| `disable-model-invocation: true` | Yes | No | Description not in context, full skill loads when you invoke |
+| `disable-model-invocation: true` | Yes | Not on its own | Description not in context, full skill loads when invoked |
 | `user-invocable: false` | No | Yes | Description always in context, full skill loads when invoked |
 
 <Note>
   In a regular session, skill descriptions are loaded into context so Claude knows what's available, but full skill content only loads when invoked. [Subagents with preloaded skills](/docs/en/sub-agents#preload-skills-into-subagents) work differently: the full skill content is injected at startup.
 </Note>
+
+#### Where you write the skill's name
+
+To run a skill directly, put its name at the start of your message. After plain text, the name gives Claude permission to run the skill but doesn't run it:
+
+| Where | Example | What happens |
+| :- | :- | :- |
+| At the start of your message | `/deploy staging` | Claude Code runs the skill directly |
+| After plain text, as a separate word with no punctuation attached | `go ahead and /deploy to staging` | Nothing runs directly. The name counts as your permission for that message: Claude can run the skill while it responds, and judges from your wording whether you asked it to |
+
+To write about the skill without permitting a run, leave off the slash.
 
 ### Skill content lifecycle
 
@@ -48146,7 +48192,7 @@ Implement API endpoints. Follow the conventions and patterns from the preloaded 
 
 The full content of each listed skill is injected into the subagent's context at startup. This field controls which skills are preloaded, not which skills the subagent can access: without it, the subagent can still discover and invoke project, user, and plugin skills through the Skill tool during execution. To prevent a subagent from invoking skills entirely, omit `Skill` from the [`tools`](#available-tools) list or add it to `disallowedTools`.
 
-You can't preload skills that set [`disable-model-invocation: true`](/docs/en/skills#control-who-invokes-a-skill), since preloading draws from the same set of skills Claude can invoke. This includes the bundled `/verify` skill: only you can run it, so it can't be preloaded either.
+You can't preload skills that set [`disable-model-invocation: true`](/docs/en/skills#control-who-invokes-a-skill), since preloading draws from the same set of skills Claude can invoke. This includes the bundled `/verify` skill, which Claude can't run on its own.
 
 If a listed skill is missing or disabled, for example by your organization's policy, Claude Code skips it and logs a warning to the debug log.
 
@@ -50488,6 +50534,8 @@ Click the link for your IDE to install directly:
 
 Or in VS Code, press `Cmd+Shift+X` (Mac) or `Ctrl+Shift+X` (Windows/Linux) to open the Extensions view, search for "Claude Code", and click **Install**.
 
+The extension's version number is the Claude Code version it bundles. For example, a feature that requires Claude Code v2.1.286 or later needs version 2.1.286 or later of the extension, which the Extensions view shows.
+
 The extension also installs in other VS Code forks like Devin Desktop or Kiro. Search for "Claude Code" in the editor's Extensions view, or install from the [Open VSX registry](https://open-vsx.org/extension/Anthropic/claude-code). If your editor can't install the extension, [install the CLI](/docs/en/quickstart) and run `claude` in its integrated terminal instead. The CLI works in any terminal.
 
 <Note>If the extension doesn't appear after installation, restart VS Code or run "Developer: Reload Window" from the Command Palette.</Note>
@@ -50607,6 +50655,9 @@ The prompt box supports several features:
     If your organization's policy turns product feedback off, **Report a problem** doesn't appear in the menu, and `/bug` and `/feedback` show a `Feedback is turned off by your organization's policy or this environment's settings.` notice instead of opening the report. With Claude Code v2.1.284 or later, if you set the `DISABLE_FEEDBACK_COMMAND` or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` environment variable, feedback is also turned off and opening the report shows that notice instead.
 * **Side questions**: type `/btw` followed by a question to ask about your session [without adding to the conversation](/docs/en/interactive-mode#side-questions-with-%2Fbtw). The answer opens in a panel beside the chat, where you can ask follow-up questions. The thread survives window reloads. Claude Code keeps the newest 20 exchanges and expires stored threads on the [`cleanupPeriodDays`](/docs/en/settings-reference#cleanupperioddays) schedule, as long as Claude Code can [safely determine the retention period](/docs/en/claude-directory#cleaned-up-automatically). To clear a thread, click the trash icon in the panel. Requires Claude Code v2.1.227 or later.
 * **Copy a response**: hover over a response and click **Copy response** to copy it to your clipboard, or type `/copy` to copy the latest response. `/copy 2` copies the second-to-last. Requires Claude Code v2.1.277 or later.
+* **Bookmarks**: hover over a response and click **Bookmark response** to save it, or click **Remove bookmark** on a saved response to remove it.
+
+  To review saved responses, open the Bookmarks panel: click the bookmark icon at the top of the Claude Code panel, select **Bookmarks** in the Context section of the command menu, or type `/bookmarks`. Requires Claude Code v2.1.286 or later.
 * **Context indicator**: the prompt box shows how much of Claude's context window you're using. Claude automatically compacts when needed, or you can run `/compact` manually.
 * **Prompt cache clock**: a clock icon next to the context indicator estimates how much time the conversation's [prompt cache](/docs/en/prompt-caching) has left before it expires. It counts down from the cache's five-minute or one-hour [lifetime](/docs/en/prompt-caching#cache-lifetime), and each response that uses the cache restarts the countdown. Apart from compaction, the [actions that invalidate the cache](/docs/en/prompt-caching#actions-that-invalidate-the-cache) don't reset the clock, so it can still show minutes left after you switch models.
   * Until the countdown runs out, the icon shows the minutes left, such as **12m**.
@@ -50619,6 +50670,8 @@ The prompt box supports several features:
   The map also lists the session's other [background tasks](/docs/en/tools-reference#background-commands), such as background shell commands and [monitors](/docs/en/tools-reference#monitor-tool), below the agents. Click a row to open the task's card and stop it there.
 
   To open the map when no agent count is showing, such as when Claude has started a background shell but no subagents, type `/tasks` in the prompt box. Background tasks in the map and the typed `/tasks` require Claude Code v2.1.277 or later.
+
+  With Claude Code v2.1.286 or later, when you click **Stop** or press `Esc`, the current turn ends. Background agents keep running until they finish or you stop them from the map.
 * **Extended thinking**: lets Claude spend more time reasoning through complex problems. Toggle it on via the command menu (`/`). Claude's reasoning appears in the conversation as collapsed blocks: click a block to read it, or press `Ctrl+O` to expand or collapse every thinking block in the session. See [Extended thinking](/docs/en/model-config#extended-thinking) for details.
 * **Multi-line input**: press `Shift+Enter` to add a new line without sending. This also works in the "Other" free-text input of question dialogs.
 
@@ -55949,7 +56002,7 @@ The SDK provides hooks for different stages of agent execution. Some hooks are a
 | `PostToolUse` | Yes | Yes | Tool execution result | Log all file changes to audit trail |
 | `PostToolUseFailure` | Yes | Yes | Tool execution failure | Handle or log tool errors |
 | `PostToolBatch` | No | Yes | A full batch of tool calls resolves, once per batch before the next model call | Inject conventions once for the whole batch |
-| `UserPromptSubmit` | Yes | Yes | User prompt submission | Inject additional context into prompts |
+| [`UserPromptSubmit`](/docs/en/hooks#userpromptsubmit) | Yes | Yes | A prompt is submitted, including a turn Claude Code starts on its own | Inject additional context into prompts |
 | [`UserPromptExpansion`](/docs/en/hooks#userpromptexpansion) | No | Yes | A user-typed command, or an MCP prompt, expands into a prompt before it reaches Claude. Doesn't fire when Claude invokes a skill itself | Block a command from direct invocation or add context when a skill is typed |
 | `MessageDisplay` | No | Yes | An assistant message with text completes, once per message with the full message text | Redact or reformat the displayed text without changing the transcript |
 | `Stop` | Yes | Yes | Agent execution stop | Save session state before exit |
@@ -61730,7 +61783,7 @@ HookEvent = Literal[
     "PreToolUse",  # Called before tool execution
     "PostToolUse",  # Called after tool execution
     "PostToolUseFailure",  # Called when a tool execution fails
-    "UserPromptSubmit",  # Called when user submits a prompt
+    "UserPromptSubmit",  # Called when a prompt is submitted
     "Stop",  # Called when stopping execution
     "SubagentStop",  # Called when a subagent stops
     "PreCompact",  # Called before message compaction
@@ -61914,7 +61967,7 @@ class UserPromptSubmitHookInput(BaseHookInput):
 | Field | Type | Description |
 | :- | :- | :- |
 | `hook_event_name` | `Literal["UserPromptSubmit"]` | Always "UserPromptSubmit" |
-| `prompt` | `str` | The user's submitted prompt |
+| `prompt` | `str` | The submitted prompt |
 
 ### `StopHookInput`
 
@@ -84959,7 +85012,7 @@ The table below summarizes when each event fires. The [Hook events](#hook-events
 | :- | :- |
 | `SessionStart` | When a session begins or resumes |
 | `Setup` | When you start Claude Code with `--init-only`, or with `--init` or `--maintenance` in `-p` mode. For one-time preparation in CI or scripts |
-| `UserPromptSubmit` | When you submit a prompt, before Claude processes it |
+| `UserPromptSubmit` | When a prompt is submitted, before Claude processes it. Also fires on [turns Claude Code starts on its own](/docs/en/hooks#userpromptsubmit) |
 | `UserPromptExpansion` | When a user-typed command expands into a prompt, before it reaches Claude. Can block the expansion |
 | `PreToolUse` | Before a tool call executes. Can block it |
 | `PermissionRequest` | When a tool call needs a permission decision |
@@ -86233,9 +86286,15 @@ InstructionsLoaded hooks have no decision control. They can't block or modify in
 
 ### UserPromptSubmit
 
-Runs when the user submits a prompt, before Claude processes it. This allows you
+Runs when a prompt is submitted, before Claude processes it. This allows you
 to add additional context based on the prompt/conversation, validate prompts, or
 block certain types of prompts.
+
+`UserPromptSubmit` hooks don't fire only on prompts you type. Claude Code also runs them on:
+
+* A [scheduled task](/docs/en/scheduled-tasks) firing, including a `/loop` iteration
+* A [background subagent](/docs/en/sub-agents#run-subagents-in-foreground-or-background) reporting back to the session that started it
+* A [message another session sends](/docs/en/cross-session-messaging) to your main conversation
 
 `UserPromptSubmit` hooks have a default timeout of 30 seconds for `command`, `http`, and `mcp_tool` types, shorter than the 600-second default for those types on most other events. Because this hook runs before every prompt and blocks model processing until it completes, a stuck hook stalls the session. If your hook needs more time, set the `timeout` field in the hook entry.
 
@@ -86245,7 +86304,7 @@ An [Agent SDK callback hook](/docs/en/agent-sdk/hooks) on `UserPromptSubmit` tha
 
 #### UserPromptSubmit input
 
-In addition to the [common input fields](#common-input-fields), UserPromptSubmit hooks receive the `prompt` field containing the text the user submitted. Pasted content that collapsed to a `[Pasted text #N]` placeholder arrives expanded in place. In sessions where Claude Code [marks pasted text for Claude](/docs/en/terminal-config#how-claude-treats-pasted-text), that expanded content sits between a `<pasted_content id="…">` line and a `</pasted_content id="…">` line, so account for those lines if your hook parses the prompt.
+In addition to the [common input fields](#common-input-fields), UserPromptSubmit hooks receive the `prompt` field containing the submitted text. Pasted content that collapsed to a `[Pasted text #N]` placeholder arrives expanded in place. In sessions where Claude Code [marks pasted text for Claude](/docs/en/terminal-config#how-claude-treats-pasted-text), that expanded content sits between a `<pasted_content id="…">` line and a `</pasted_content id="…">` line, so account for those lines if your hook parses the prompt.
 
 UserPromptSubmit hooks also receive `session_title` when the session has a custom title, with the same meaning as the [SessionStart `session_title` field](#sessionstart-input).
 
@@ -86262,7 +86321,7 @@ UserPromptSubmit hooks also receive `session_title` when the session has a custo
 
 #### UserPromptSubmit decision control
 
-`UserPromptSubmit` hooks can control whether a user prompt is processed and add context. All [JSON output fields](#json-output) are available.
+`UserPromptSubmit` hooks can control whether a submitted prompt is processed and add context. All [JSON output fields](#json-output) are available.
 
 There are two ways to add context to the conversation on exit code 0:
 
@@ -93300,7 +93359,7 @@ For message-level reconstruction, each event class carries a key that matches a 
 
 #### User prompt event
 
-Logged when a user submits a prompt.
+Logged when a prompt is submitted, including on turns Claude Code starts on its own.
 
 **Event Name**: `claude_code.user_prompt`
 
@@ -96707,7 +96766,7 @@ When you mask a credential, Claude Code shows sandboxed commands a per-session p
 
 Masking requires the following:
 
-* **TLS termination**: the proxy substitutes the real value inside request contents, so it has to see them. Set [`network.tlsTerminate`](/docs/en/settings-reference#sandbox-network-tlsterminate) so the proxy terminates TLS itself. Without it, masking fails without exposing anything: the command still sees only the sentinel, but the sentinel reaches the server unchanged and authentication fails. Claude Code reports this misconfiguration at startup.
+* **TLS termination**: the proxy substitutes the real value inside request contents, so it has to see them. Set [`network.tlsTerminate`](/docs/en/settings-reference#sandbox-network-tlsterminate) so the proxy terminates TLS itself. Without it, masking fails without exposing anything: the command still sees only the sentinel, but the sentinel reaches the server unchanged and authentication fails. To check for this misconfiguration, run `claude doctor` in your terminal and look for the `TLS termination is unavailable` warning.
 * **An allowed destination**: each `mask` entry can list `injectHosts`, the hosts the real value is allowed to reach. The proxy injects only on connections the [domain allowlist](#network-isolation) admits, so each `injectHosts` host must also be reachable through `network.allowedDomains`. For a `mask` entry with no `injectHosts`, the proxy substitutes the real value on requests to every host in `network.allowedDomains`.
 * **A trusted settings scope**: masking authorizes the proxy to send your real credential somewhere, so Claude Code honors `mask` entries, `network.tlsTerminate`, [`credentials.allowPlaintextInject`](/docs/en/settings-reference#sandbox-credentials-allowplaintextinject), `awsPairs`, and `sigv4` only from user settings, managed settings, and the `--settings` flag. It ignores them in a repository's `.claude/settings.json` or `.claude/settings.local.json`. When your administrator delivers `mask` entries, `network.tlsTerminate`, or `credentials.allowPlaintextInject` through server-managed settings, they count as [settings that need approval](/docs/en/server-managed-settings#security-approval-dialogs).
 
