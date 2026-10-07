@@ -161,7 +161,7 @@ On Team, Enterprise, Claude API, and cloud provider plans, Anthropic doesn't tra
 | HIPAA configuration | For Claude for Enterprise organizations that have HIPAA enabled. Some Claude Code (local mode) features are turned off and others are off by default | [Set up Claude Code (local mode) for a HIPAA-ready organization](/docs/en/hipaa-setup) |
 | Security architecture | Network model, encryption, authentication, audit trail | [Security](/docs/en/security) |
 
-If you need request-level audit logging or to route traffic by data sensitivity, we recommend you place a gateway between developers and your provider: a self-hosted [Claude apps gateway](/docs/en/claude-apps-gateway) records a per-request audit log with IdP identity, or you can use another [LLM gateway](/docs/en/llm-gateway). Sessions that go through a gateway aren't eligible for the HIPAA configuration. [Check how developers sign in and connect](/docs/en/hipaa-setup#check-how-developers-sign-in-and-connect) lists the connections that are. For regulatory requirements and certifications, see [Legal and compliance](/docs/en/legal-and-compliance).
+If you need request-level audit logging or to route traffic by data sensitivity, we recommend you place a gateway between developers and your provider: a self-hosted [Claude apps gateway](/docs/en/claude-apps-gateway) records a per-request audit log with IdP identity, or you can use another [LLM gateway](/docs/en/llm-gateway). Sessions that go through a gateway aren't eligible for the HIPAA configuration. [Check how developers sign in and connect](/docs/en/hipaa-setup#check-how-developers-sign-in-and-connect) lists which sign-in and connection methods are. For regulatory requirements and certifications, see [Legal and compliance](/docs/en/legal-and-compliance).
 
 ## Verify and onboard
 
@@ -3491,6 +3491,106 @@ Release notes for Claude Code, including new features, improvements, and bug fix
 This page is generated from the [CHANGELOG.md on GitHub](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md).
 
 Run `claude --version` to check your installed version.
+
+<Update label="2.1.292" description="October 6, 2026">
+  * Added `--marketplace <source>` to `claude plugin install`: adds the marketplace if needed, under the same policy checks as `claude plugin marketplace add`, then installs the plugin from it
+  * Added an `effort` parameter to the Agent tool, so Claude runs a sub-agent at the effort level you ask for
+  * Added `CLAUDE_CODE_OVERLOADED_RETRY_BASE_DELAY_MS` environment variable to set a longer base delay for the backoff when retrying an overloaded (529) request
+  * Added `prompt.autocomplete`, an event a mod hooks to add its own rows to the prompt box's autocomplete list
+  * Added prompt caching to `$.model.complete` for mods: `prompt` and `system` take blocks of text, and `cache: true` on a block caches the request up to it
+  * Added workflow agents to the `agent.spawn` mod hook, with their run and index, so a mod can refuse them
+  * Fixed subagent definitions with `permissionMode: auto` entering auto mode when auto mode is unavailable (disabled by settings, circuit breaker, or a model that doesn't support it)
+  * Fixed sandboxed commands being able to read the staged file copies of `/ultrareview` uploads under `~/.claude/seed-admin`
+  * Fixed a managed sandbox read-deny path (and user ones beside it) that appears or re-points mid-session not dropping project grants inside it or ending credential injection from files it covers
+  * Fixed a notebook or PDF read on macOS and Windows being able to return a file outside what was approved, through a link swapped in mid-read
+  * Fixed a tampered on-disk cache of server-managed settings being able to switch off or unseat the built-in policy plugin while the settings fetch failed
+  * Fixed `rm -rf` on the 8.3 short name or another alternate Windows spelling of the home folder or a drive not being treated as removing it
+  * Security: Fixed PreToolUse hook approvals and auto mode bypassing the permission prompt for file reads from network (UNC) paths
+  * Fixed a skill's or slash command's `allowed-tools` rule coming back in a later turn when you leave auto mode or plan mode partway through that turn
+  * Fixed `NO_PROXY` being ignored for Claude Code's own API requests (sign-in, policy, feedback, artifacts) when `HTTPS_PROXY` is set
+  * Fixed an MCP tool with a name longer than 128 characters making every request fail; that tool is now left out and an MCP error names it
+  * Fixed `claude plugin` commands such as `marketplace add` and `install` running before an organization's managed settings had loaded on a first run
+  * Fixed one-shot `claude -p` and Agent SDK runs stopping a background command 5 seconds after the final result, and one-shot `claude -p` runs dropping a scheduled wakeup; both are now waited for
+  * Fixed plan mode not being restored when resuming a session from the `claude --resume` session picker or with `/resume`
+  * Fixed saved scheduled tasks created after `/resume`, `/branch` or `/clear` never firing, and saved tasks ignoring later creates and deletes after two writes to the tasks file milliseconds apart
+  * Fixed a background session's `/loop` silently stopping when the session's process restarted (for example after a crash), because its pending wakeup was lost
+  * Fixed Grep and Glob reporting no matches when the file or folder they were given could not be read; Claude now retries once or tells you
+  * Fixed the Read tool returning only the first entry, with no error, when a PDF's `pages` was a list such as "6,9,15"; it now returns an error saying to read each page or range separately
+  * Fixed @-mentioned text files over 256KB being left out silently: Claude is now told the file's size and to read it in portions
+  * Fixed the usage limit alert repeating once per background agent when agents failed on a limit that had already stopped the main conversation
+  * Fixed Remote Control viewers seeing an empty subagent pane for background subagents in sessions hosted by the desktop app or an IDE
+  * Fixed cross-session delivery notices showing two sessions with similar names as one recipient, and the expiry notice blaming the desktop app when a terminal session let the message lapse
+  * Fixed Send now in the desktop app ending the subagent a turn was waiting on when another message was already queued
+  * Fixed `/bug`, `/share` and `/feedback <text>` starting over after Ctrl+O or Ctrl+Z while a report was being sent, and closing as cancelled after it had been sent
+  * Fixed `/remote-env` replacing your saved default environment when you pressed Enter right away: the list now opens on your default, and no row has a check mark when no default is in effect
+  * Fixed some pasted text reaching Claude as typed text when several pastes overlapped in one prompt
+  * Fixed vim mode leaving the cursor past the end of a line, j/k losing their column on shorter lines, and `f`/`t`/`F`/`T`/`;`/`,` jumping to, or deleting up to, a match on another line of the prompt
+  * Fixed `/add-dir` path box letting Shift+Enter or a paste add a line break, and treating fast-typed "tab", "up" or "down" as those keys
+  * Fixed fast typing, input-method text and decomposed accents being dropped while a prompt footer row was selected, and `!` leaving the row selected
+  * Fixed fullscreen mode sending a full-screen clear on every window resize and Ctrl+L when iTerm2 is detected, which may be what filled iTerm2's scrollback with stale pages
+  * Fixed a spurious "could not be examined" note for @-words that name no file when a Read deny rule is set and the working directory is under a symlink
+  * Fixed "instruction file not loaded" lines going stale or missing after `/cd` or a permission change, and added a transcript line when a nested one isn't loaded
+  * Fixed a compaction summary that repeated `/name` letting Claude invoke a skill that is reserved for the user
+  * Fixed Write, Edit, NotebookEdit and LSP rows, and single Read, Grep and Glob rows, hiding why a mod denied the call: the row now shows the reason
+  * Fixed a cloud session showing a turn that never ended when its worker was stopped just as the turn finished
+  * Fixed cloud sessions with a large transcript sometimes asking for a permission again after it was approved
+  * Fixed scheduled tasks and other queued notifications being lost in cloud sessions when a message was retried or edited while Claude was reading them
+  * Fixed cloud sessions forgetting the thinking setting chosen in the client when the session's container restarted
+  * Fixed Cowork cloud sessions saying a proxy blocked artifacts when Anthropic couldn't confirm the organization's settings
+  * Fixed plugins whose hooks module makes many `$.state` calls through one const taking minutes to load or validate
+  * Fixed `claude plugin validate` listing a matcher or state value for a hooks module that the engine reads from elsewhere
+  * Fixed `claude plugin validate` listing a `$.state` value read through a top-level `var` that was declared again or reassigned; such a module is now refused
+  * Fixed a plugin's served `$` method restarting the hook origin, which could run a guard hook with a `.catch` above it again without end
+  * Fixed plugin interface calls made while the plugin hooks worker restarts running without the hooks other plugins put on them
+  * Fixed a mod's `config.set`, `state.set`, `env.set` or `agent.spawn` hook that denies after calling `next(e)` being answered as a refusal: the hook is now reported as failed, by name
+  * Fixed `/theme`, the `/config` Theme menu and the first-run theme step saving a theme before a plugin's `config.set` hook was asked
+  * Fixed a plugin's `tool.check` hook answering allow running a tool that requires your answer (a question, a plan approval) without showing its dialog
+  * Fixed a mod's start-up prompt, command or subagent being queued a second time when the hooks worker was replaced
+  * Fixed a mod's hook that called `next(e)` and then failed while the turn was interrupted letting the call through; the call is now rejected
+  * Fixed a plugin's prompt drop or setting deny being ignored when its reason was longer than 4,096 characters
+  * Fixed an organization's plugin being unloaded on its own reload, or after another plugin crashed, when it returned a `$` name that a user-installed mod had added; the mod is now unloaded instead
+  * Fixed tool calls made while the plugin hooks worker restarts being answered without the plugins' permission hooks
+  * Fixed plugin `tool.call` hooks seeing some tool calls before misnamed parameters were repaired; a hook now sees the arguments the tool will run with
+  * Fixed a mod's guard hook with a `.catch` being skipped silently for calls another mod's hook makes beneath the guard's own `$` call; its `.catch` is now asked
+  * Improved startup of `claude -p` and SDK sessions: the first turn no longer waits for HTTP and SSE MCP servers to answer `resources/list`
+  * Improved rendering speed of long bulleted or numbered replies: they stream, resize and re-open in the transcript (ctrl+o) much faster
+  * Improved Ctrl+C draft recovery: a cleared prompt now stays reachable with Up after a slash command or a sent message
+  * Improved hook output handling: `<system-reminder>` tags written in a hook's output are escaped before they reach Claude
+  * Improved tool input handling: Grep accepts `file_path` for `path`, and Write, WebFetch and Read ignore a few stray parameters instead of failing the call
+  * Improved the steps shown when a marketplace declared in a settings file has a name that looks like an official Anthropic marketplace
+  * Improved sandbox auto-allow: with strict sandbox mode set in user, managed or --settings settings, an interpreter command with an env var prefix like `FOO=bar python3 app.py` runs unprompted
+  * Improved the Artifact tool's listing: Claude now sees how many published artifacts you have and can list up to 200 at once instead of 50
+  * Improved cloud sessions after a restart: Claude is now told which stopped background agents it can resume by id
+  * Improved the Claude in Chrome message in claude.ai cloud sessions when the browser can't be reached: Claude is now told it may continue with alternatives if the user prefers
+  * Improved the /focus tip: it now invites you to try focus view mid-turn and shows how to switch back
+  * Improved startup with local (stdio) MCP servers that ignore the newer protocol check: after one slow connect they are remembered for 7 days and connected the older way without the wait
+  * Changed local (stdio) MCP server connections to negotiate protocol version 2026-07-28 by default on every install, including Bedrock, Vertex and Foundry; `MCP_PROTOCOL_NEGOTIATION=legacy` opts out
+  * Changed `claude plugin test`: a failed `expect` inside a hook the test registered, or a stub answer the engine refuses, now fails the test instead of passing silently
+  * Changed usage limit messages to write claude.ai settings links with https\:// so terminals and apps can make them clickable
+  * Changed scheduled and Run now routine runs to publish a new artifact only you can see without asking for approval; artifacts that request connectors or other access still ask
+  * Changed agent names to allow at most 256 characters: a longer one is rejected, and a skill's or a plugin file's `name` longer than that is ignored
+  * \[Cloud sessions] Fixed routine runs occasionally staying listed as running for hours after they had finished
+  * \[Cloud sessions] Fixed editing or duplicating a routine turning off its push notifications when the routine had no saved notification setting
+  * \[Cloud sessions] Fixed SVG, HEIC, TIFF and other less common image files failing to attach; they now attach as regular files
+  * \[Cloud sessions] Fixed approval prompts offering "Always allow" for connector tools that an organization set to require approval; the choice had no effect
+  * \[Remote Control] Fixed the first message of a new Remote Control session started from claude.ai/code accepting only images; it now accepts PDFs and other files like later messages
+  * \[Claude Tag] Added an Edit button to the Allowed domains card on a channel's Configure page, so Enterprise admins can open the access bundle that sets the channel's domains
+  * \[Claude Tag] Fixed replies sent in a Slack thread while Claude was still on its first request there being held until that request finished, or missed when sent seconds apart
+  * \[Claude Tag] Fixed Slack threads woken only by GitHub pull request activity or a routine staying on their original model after an admin changed the channel or workspace default model
+  * \[Claude Tag] Fixed Claude sometimes posting a spend limit notice in Slack when the real cause was that your organization had run out of usage credits
+  * \[Claude Tag] Fixed a session hanging until interrupted when a permission prompt that can't be answered from Slack was denied automatically
+  * \[Claude Tag] Improved `@Claude !status` in a channel to say when Claude has stopped reading its untagged messages, why, and that an @-mention starts it reading again
+  * \[Claude Tag] Changed the first message of a Slack thread continued with `!fork` to a card showing where it came from, the request, and who asked, with a link to the original thread
+  * \[Claude Tag] Changed the organization-wide and default spend limit boxes on Claude Tag's spend limits page in admin settings to save only when you press Save or Enter, not when you click away
+  * \[Code Review] Added the period's total with its change from the previous period, and a breakdown by repository, to the PRs reviewed chart in Code Review analytics
+  * \[Code Review] Fixed a queued review failing when the pull request moved to a new base branch and the old one was deleted; the commit is now re-queued for review
+  * \[Code Review] Fixed reviews ignoring a CLAUDE.md's rules when the pull request edits that file; reviews now use its version from the base branch
+</Update>
+
+<Update label="2.1.291" description="October 6, 2026">
+  * Fixed a regression in 2.1.290 where cloud sessions could drop answers to permission prompts
+  * Fixed a regression in 2.1.288 where the last messages of a session could be lost when quitting
+</Update>
 
 <Update label="2.1.290" description="October 5, 2026">
   * Added `serverToolUses` to the result of a mod's `turn.step` hook: the tool calls the API ran itself (the advisor), each with its id, name, input, start and end
@@ -13164,6 +13264,8 @@ Claude Code skips the age-based sweep in these cases:
 * **Bare mode**: when you run `claude -p` with [`--bare`](/docs/en/headless#start-faster-with-bare-mode), Claude Code doesn't run the sweep in that session.
 * **Paused sweep**: if Claude Code can't safely determine the retention period, it pauses the retention cleanup sweep; the [`retention_sweep` event](/docs/en/monitoring-usage#retention-sweep-event) lists each configuration that pauses it. When the cause is a settings file that can't be read or parsed, or settings errors with `cleanupPeriodDays` or `desktopSessionCleanupPeriodDays` explicitly set, Claude Code also shows a warning in `/status` until you fix the settings errors. When [managed settings](/docs/en/server-managed-settings) provide `cleanupPeriodDays`, Claude Code runs the sweep at the managed value in either case.
 
+To check that the machines in your organization run the sweep with the retention period you set, see [Check the retention sweep](/docs/en/monitoring-usage#check-the-retention-sweep).
+
 ### Session scratchpad directory
 
 The scratchpad is a per-session directory that Claude Code gives Claude for temporary files: intermediate results, helper scripts, and drafts that don't belong in your project. When Claude says it saved something "to the scratchpad", the file is there. Claude uses it instead of `/tmp`, and can create, edit, and read files in it without a permission prompt.
@@ -13271,7 +13373,9 @@ claude purge ~/work/my-repo --yes
 
 Pass `--all` instead of a path to purge state for every project at once, which deletes `history.jsonl` outright rather than filtering it. Pass `-i` to step through the deletion plan one item at a time.
 
-The command leaves `shell-snapshots/` and `backups/` alone because those are not project-scoped, and warns about them in the plan output.
+In a script, check the output rather than the exit status alone. A run that deletes everything in its plan ends with `Purged N item(s)`. Treat that line as the sign of success.
+
+The command leaves `shell-snapshots/` and `backups/` alone because those are not project-scoped, and warns about them in the plan output. If anyone ran [`/heapdump`](/docs/en/troubleshooting#high-cpu-or-memory-usage) on the machine, delete the `.heapsnapshot` files it wrote too. A heap snapshot contains the full conversation and any credentials the process held, and neither the retention sweep nor the purge touches it.
 
 You can also delete any of the application-data paths above by hand, apart from the [state files to keep](#state-files-to-keep). New sessions are unaffected. The table below shows what you lose for past sessions.
 
@@ -19094,7 +19198,7 @@ Before v2.1.273, a 401 or 403 from Microsoft Foundry showed the generic `Please 
 
 ### Could not load AWS or Google Cloud credentials
 
-Claude Code couldn't obtain usable credentials from the AWS credential provider chain or from your Google application default credentials on the machine it runs on, so no request reached your cloud provider. Claude Code clears its cached credentials and retries twice before showing this message. The detail after the `·` names the specific cause, such as an expired SSO session, missing application default credentials reported as `Could not load the default credentials`, or a revoked sign-in reported as `invalid_grant`:
+Claude Code couldn't obtain usable credentials from the AWS credential provider chain or from your Google application default credentials on the machine it runs on, so no request reached your cloud provider. The detail after the `·` names the specific cause, such as an expired SSO session, missing application default credentials reported as `Could not load the default credentials`, or a revoked sign-in reported as `invalid_grant`:
 
 ```text theme={null}
 API Error: Could not load AWS credentials · Could not load credentials from any providers. Check or refresh your AWS credentials and try again.
@@ -32078,11 +32182,11 @@ The dialog names the first word of the shell command Claude ran, so users can sp
 # Plugin commands reference
 Source: https://code.claude.com/docs/en/plugins/cli-reference
 
-Complete reference for the claude plugin shell commands, /plugin and /reload-plugins in a session, and the flags that load a plugin for one session.
+Reference for the claude plugin shell commands, /plugin and /reload-plugins in a session, and the flags that load a plugin for one session.
 
 You run plugin commands either as `claude plugin` from your shell or a script, or as `/plugin` and `/reload-plugins` inside a Claude Code session. This reference gives each command's flags, defaults, output, and exit codes, along with the two flags that load a plugin for one session.
 
-Run `claude plugin --help` on your build to confirm which subcommands your version has.
+The tables below list each subcommand's commonly used options, not every option. Run `claude plugin --help` in your shell to see which subcommands your version has, and `claude plugin <subcommand> --help` for a subcommand's full option list.
 
 <Note>
   These cases are covered on other pages:
@@ -35195,7 +35299,7 @@ The command prints `Successfully installed plugin: formatter@your-org (scope: pr
 
 Some plugins install by running a command that their marketplace names, called a [`command` source](/docs/en/plugins/marketplace-reference#command-plugin-source). Claude Code shows you that command and asks you to accept it before it runs. A script has no one to answer that prompt, so pass `--yes` there to accept it.
 
-For every `claude plugin install` flag, see [plugin install](/docs/en/plugins/cli-reference#plugin-install).
+For the other `claude plugin install` flags, see [plugin install](/docs/en/plugins/cli-reference#plugin-install).
 
 ## Add a marketplace
 
@@ -39904,7 +40008,7 @@ Source: https://code.claude.com/docs/en/plugins/mods/reference
 
 Complete reference for Claude Code mods: hooks module layout, events, mods API methods, render sites, elements by surface, limits, and settings.
 
-Look up any event a [mod](/docs/en/plugins/mods/overview) can handle, mods API method it can call, or render site it can draw in, for the Claude Code CLI and the Desktop app as of v2.1.289. Each entry gives the name and a one-line description, and links to the guide section that explains it where there is one.
+Look up any event a [mod](/docs/en/plugins/mods/overview) can handle, mods API method it can call, or render site it can draw in, for the Claude Code CLI and the Desktop app as of v2.1.290. Each entry gives the name and a one-line description, and links to the guide section that explains it where there is one.
 
 <Note>
   The complete reference is Claude Code's [TypeScript declarations for mods](https://github.com/anthropics/claude-code/blob/main/mods/types/claude-code.d.ts), which describe every event, method, and element, with examples. The copy on GitHub can be older than the Claude Code version you have installed. When the two disagree, trust [the copy Claude Code writes for your version](/docs/en/plugins/mods/create#get-the-types-for-your-build).
@@ -39968,6 +40072,7 @@ Prompt events cover the text the user types and the text Claude Code sends to Cl
 | [`prompt.section`](/docs/en/plugins/mods/events#rewrite-or-add-to-a-prompt) | Once for each named section of the system prompt. `e.name` is the section's `id` in `prompt.compose`. | `{ text }`, or `{ text: null }` to omit the section |
 | [`prompt.context`](/docs/en/plugins/mods/events#rewrite-or-add-to-a-prompt) | Once for each conversation, for the context sent with the first message | `{ blocks }` |
 | `prompt.attachment` | Claude Code adds a message of its own for Claude, such as a reminder. `e.type` names the kind, and for the kinds the types declare, `e.detail` holds the facts the text was written from. | `{ text }`, or `{ text: null }` to omit it |
+| `prompt.mention` | Claude Code is about to read a file that a prompt @-mentions. Requires Claude Code v2.1.290 or later. | `next({ ...e, path })` to read a different file, or `{ deny: reason }` |
 | [`skill.prompt`](/docs/en/plugins/mods/events#rewrite-or-add-to-a-prompt) | A skill's text is expanded for Claude | `{ text }` |
 | `attribution.text` | Claude Code composes commit or pull request attribution text | `{ text }` |
 
@@ -40036,7 +40141,7 @@ These events let a mod act on other mods as they load, to refuse one or change t
 | Event | Fires when | A hook can return |
 | :- | :- | :- |
 | [`plugin.register`](/docs/en/plugins/mods/admin#enforce-a-policy-with-a-mod-of-your-own) | A hooks module is about to load. `e.uses` lists its events, mods API calls, environment variables, and state, as `claude plugin validate` prints them. Each call is written without the `$.` prefix, such as `fs.read`. | `{ refuse: reason }` |
-| `engine.create` | The mods API is being built for this mod | A changed mods API, to add a namespace or withhold one |
+| `engine.create` | The mods API is being built for this mod | A changed mods API, to add a namespace. A mod outside the `user` [tier](#the-hook-function) can also withhold one. |
 
 ### Telemetry
 
@@ -40108,7 +40213,7 @@ To fit a tree to its site, read these props in the hook:
 
 * **Width of a `Pane` or the band**: draw to `e.props.bodyColumns`
 * **Height of a `Pane` beside the transcript**: where `e.props.placement` is `'dock'`, `e.props.scroll.bodyRows` is the number of rows the pane has
-* **Height of a `Pane` above the prompt**: where `e.props.placement` is `'inline'`, the pane grows with your tree up to a limit, and `bodyRows` counts only the rows showing now. The [`rows` field of `$.ui.open`](/docs/en/plugins/mods/interface#open-a-pane-at-the-right-time) asks for a different limit.
+* **Height of a `Pane` above the prompt**: where `e.props.placement` is `'inline'`, the pane grows with your tree up to a limit, and `bodyRows` is that limit. The [`rows` field of `$.ui.open`](/docs/en/plugins/mods/interface#open-a-pane-at-the-right-time) asks for a different one.
 
 A tree taller than the pane scrolls as a whole.
 
@@ -40122,8 +40227,8 @@ Elements are the building blocks of a tree a `ui.render` hook returns, and you g
 | [`Text`](/docs/en/plugins/mods/interface#build-a-tree-from-elements) | `color`, `backgroundColor`, `bold`, `italic`, `underline`, `dimColor`, `inverse`, `wrap` | ✓ | ✓ |
 | [`Button`](/docs/en/plugins/mods/interface#respond-to-presses-and-typing) | `key`, `label`, `onPress`, `hotkey`, `plain`, `dimColor`, `autoFocus`, `action` | ✓ | ✓ |
 | `Link` | `href`, `label` | ✓ | ✓ |
-| `Code` | The code, up to 10,000 characters | ✓ | ✓ |
-| `Markdown` | `text`, up to 10,000 characters, `key`, `dimColor`, `onLinkPress`, `pressableLinks` | ✓ | ✓ |
+| `Code` | The code | ✓ | ✓ |
+| `Markdown` | `text`, `key`, `dimColor`, `onLinkPress`, `pressableLinks` | ✓ | ✓ |
 | [`Input`](/docs/en/plugins/mods/interface#take-typed-input-and-draw-a-row-for-each-item) | `key`, `label`, `placeholder`, `value`, `submitLabel`, `onSubmit`, `onInput`, `autoFocus` | ✓ | ✓ |
 | `Select` | `key`, `label`, `options`, `value`, `onSelect`, `autoFocus` | ✓ | ✓ |
 | `Svg` | An SVG document, up to 131,072 characters | | ✓ |
@@ -40145,7 +40250,7 @@ Hooks and mods API calls run under time and size limits. Claude Code skips a hoo
 | `$.process.run` timeout | 30 seconds by default, 10 minutes at most |
 | `$.model.complete` `maxTokens` | 1024 by default, up to 64,000 or the model's output limit |
 | `$.fs.read` and `$.fs.write` | 4 MiB for one file |
-| One string child of a `Text` | 10,000 characters |
+| Text in one tree | The first 100,000 characters are drawn |
 | `$.store` | 4 MiB of JSON in total |
 | `$.session.messages()` | The newest 4,096 entries |
 | `$.ui.invalidate('ui.render')` redraws | Throttled to 10 a second, or 30 in the terminal for the visible pane, the expanded band, and the hint line under the prompt. Calls that come sooner are coalesced. |
@@ -42012,7 +42117,7 @@ The cause isn't the plugin command. Follow [Verify your PATH](/docs/en/troublesh
 
 You typed a plugin command you saw somewhere and got `Unknown command: /<name>` in a session, or `error: unknown command '<name>'` or `error: unknown option '<flag>'` from the `claude` binary in your shell.
 
-Several command spellings are in use that Claude Code doesn't have. The table below maps each one to the real command. The [plugin commands reference](/docs/en/plugins/cli-reference) lists every subcommand and flag.
+Several command spellings are in use that Claude Code doesn't have. The table below maps each one to the real command. The [plugin commands reference](/docs/en/plugins/cli-reference) lists the subcommands and their flags.
 
 | You typed | What Claude Code says | Use instead |
 | :- | :- | :- |
@@ -43797,6 +43902,10 @@ When you start a Remote Control session on your machine, Claude keeps running lo
 
 Unlike [cloud sessions](/docs/en/claude-code-on-the-web), which run on cloud infrastructure, Remote Control sessions run directly on your machine and interact with your local filesystem. The web and mobile interfaces are a window into that local session, so your computer has to stay on and the `claude` process has to keep running.
 
+<Note>
+  Remote Control is a Claude Code feature. For conversations in other Claude products, see the [Claude Help Center](https://support.claude.com).
+</Note>
+
 ## Requirements
 
 Before using Remote Control, confirm that your environment meets these conditions:
@@ -45577,15 +45686,15 @@ Which permission mode Claude Code starts a resumed session in depends on how you
 * Terminal: `claude --continue`, `claude --resume <session-id>`, or `claude --resume <name>` when the name matches one session, without `-p`. Claude Code restores the permission mode the session was in, except in the cases in the table. Pass `--permission-mode` or `--dangerously-skip-permissions` to override the restored mode.
 * Non-interactive: `claude -p --resume` or `claude -p --continue`. Claude Code starts the run in the permission mode a new `claude -p` run would start in, except that a session that ended in plan mode resumes in plan mode under the [conditions below](#resume-in-plan-mode-with-p).
 * VS Code: the extension's conversation panel. The table covers only a conversation that ended in plan mode; for the rest, see [resume past conversations](/docs/en/vs-code#resume-past-conversations).
-* Session picker at launch: a session you select from the [session picker](#use-the-session-picker), whether you opened it with `claude --resume` alone, `claude --from-pr`, or a name that matches more than one session. Claude Code doesn't restore the stored permission mode. It starts the session in the permission mode it would start a new session in from the same command line.
-* `/resume` inside a session, with or without an argument: Claude Code doesn't restore the stored permission mode. The conversation you switch to continues in the permission mode your current session is in.
+* Session picker at launch: a session you select from the [session picker](#use-the-session-picker), whether you opened it with `claude --resume` alone, `claude --from-pr`, or a name that matches more than one session. Claude Code starts the session in the permission mode it would start a new session in from the same command line, except that a session that ended in plan mode resumes in plan mode unless you pass `--permission-mode`, `--dangerously-skip-permissions`, or `--fork-session`. No other stored permission mode is restored.
+* `/resume` inside a session, with or without an argument: the conversation you switch to continues in the permission mode your current session is in, except that a conversation that ended in plan mode resumes in plan mode, even if you launched Claude Code with `--permission-mode` or `--dangerously-skip-permissions`. If that conversation was already open earlier in this run of Claude Code, such as the conversation you started in or one you left with `/clear` or `/resume`, it continues in your current permission mode instead.
 
 Restoring plan mode on the non-interactive and VS Code paths requires Claude Code v2.1.246 or later. Each row names the permission mode the session ended in, which of the terminal, non-interactive, and VS Code paths you resume it by, and the permission mode Claude Code starts the resumed session in.
 
 | Session ended in | How you resume | Permission mode after you resume |
 | :- | :- | :- |
 | `bypassPermissions` | Terminal | The permission mode a new session would start in. To [bypass permissions](/docs/en/permission-modes#skip-all-checks-with-bypasspermissions-mode) again, enable it at launch with one of its launch flags or `permissions.defaultMode: "bypassPermissions"` in [user, `--settings`, or managed settings](/docs/en/settings-reference#permissions-defaultmode) |
-| `plan` | Terminal | The permission mode a new session would start in |
+| `plan` | Terminal | Plan mode. With `--fork-session`, the permission mode a new session would start in |
 | `auto` | Terminal | `auto`, only when your account still meets the [auto mode requirements](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) |
 | Manual | Terminal | Manual when a new session would start in auto mode from the [built-in default](/docs/en/permission-modes#which-mode-a-session-starts-in). When a `defaultMode` from a settings file [takes effect](/docs/en/permission-modes#which-mode-a-session-starts-in), Claude Code starts the resumed session in that mode instead |
 | `plan` | Non-interactive, under the [conditions below](#resume-in-plan-mode-with-p) | Plan mode |
@@ -45675,12 +45784,13 @@ Run `/resume` inside a session, or `claude --resume` with no arguments, to open 
 
 | Shortcut | Action |
 | :- | :- |
-| `↑` / `↓` | Navigate between sessions |
+| `↑` / `↓` or `k` / `j` | Navigate between sessions |
 | `→` / `←` | Expand or collapse grouped sessions |
 | `Enter` | Resume the highlighted session |
+| `1` to `9` | Resume the session at that position in the list |
 | `Space` | Preview the session content. `Ctrl+V` also works on terminals that don't capture it as paste |
 | `Ctrl+R` | Rename the highlighted session |
-| `/` or any printable character other than `Space` | Enter search mode and filter sessions. Paste a GitHub, GitHub Enterprise, GitLab, or Bitbucket pull or merge request URL to find the session that created it |
+| `/` or any printable character other than `Space`, `j`, `k`, or a digit | Enter search mode and filter sessions. Paste a GitHub, GitHub Enterprise, GitLab, or Bitbucket pull or merge request URL to find the session that created it |
 | `Ctrl+A` | Show sessions from all projects on this machine. Press again to return to the current repository |
 | `Ctrl+W` | Show sessions from all worktrees of the current repository. Press again to return to the current worktree. Only shown in multi-worktree repositories |
 | `Ctrl+B` | Filter to sessions from the current git branch. Press again to show all branches |
@@ -48259,7 +48369,7 @@ Multi-word field names use camelCase, such as `maxTurns` and `disallowedTools`, 
 | `memory` | No | [Persistent memory scope](#enable-persistent-memory): `user`, `project`, or `local`. Enables cross-session learning |
 | `background` | No | Set to `true` to keep this subagent in the background even when Claude asks to run it in the foreground. Where [fork mode](#turn-fork-mode-on-or-off) is on, Claude Code already runs the subagents Claude spawns [in the background](#run-subagents-in-foreground-or-background) |
 | `omitClaudeMd` | No | Set to `true` to launch this subagent without the user, project, and local CLAUDE.md files; [managed policy files](/docs/en/memory#how-claude-md-files-load) still load, except for [managed subagents](#choose-the-subagent-scope). Use it for subagents that take everything they need from the [delegation prompt](#what-loads-at-startup). Ignored when the agent runs as the main session agent via `--agent` or the `agent` setting. Requires Claude Code v2.1.271 or later |
-| `effort` | No | Effort level when this subagent is active. Overrides the session effort level. Default: inherits from session. Options: `low`, `medium`, `high`, `xhigh`, `max`; available levels depend on the model |
+| `effort` | No | Effort level when this subagent is active. Overrides the session effort level, but not the [`CLAUDE_CODE_EFFORT_LEVEL`](/docs/en/env-vars#variables) environment variable. Options: `low`, `medium`, `high`, `xhigh`, `max`; available levels depend on the model |
 | `isolation` | No | Set to `worktree` to run the subagent in a temporary [git worktree](/docs/en/worktrees), giving it an isolated copy of the repository branched by default from your [default branch](/docs/en/worktrees#choose-the-base-branch) rather than the parent session's `HEAD`. The worktree is automatically cleaned up if the subagent makes no changes |
 | `color` | No | Display color for the subagent in the task list and transcript. Accepts `red`, `blue`, `green`, `yellow`, `purple`, `orange`, `pink`, or `cyan` |
 | `initialPrompt` | No | Auto-submitted as the first user turn when this agent runs as the main session agent (via `--agent` or the `agent` setting). [Commands](/docs/en/commands) and [skills](/docs/en/skills) are processed. Prepended to any user-provided prompt. Ignored for [plugin subagents](#choose-the-subagent-scope) |
@@ -75829,7 +75939,9 @@ These variables are specific to the Mantle endpoint. See [Environment variables]
 
 ### Authentication loop with SSO and corporate proxies
 
-If browser tabs spawn repeatedly when using AWS SSO, remove the `awsAuthRefresh` setting from your [settings file](/docs/en/settings). This can occur when corporate VPNs or TLS inspection proxies interrupt the SSO browser flow. Claude Code treats the interrupted connection as an authentication failure, re-runs `awsAuthRefresh`, and loops indefinitely.
+If browser sign-in tabs keep opening when you use AWS SSO, remove the `awsAuthRefresh` setting from your [settings file](/docs/en/settings).
+
+The loop can occur when corporate VPNs or TLS inspection proxies interrupt the SSO browser flow. Claude Code treats the interrupted connection as an authentication failure. When a later request finds the credentials still expired, Claude Code re-runs `awsAuthRefresh`, which opens another tab.
 
 If your network environment interferes with automatic browser-based SSO flows, use `aws sso login` manually before starting Claude Code instead of relying on `awsAuthRefresh`.
 
@@ -77287,7 +77399,7 @@ Have these in place before you start:
 | - | - |
 | Claude Code v2.1.195 or later | The `claude gateway` subcommand and the gateway sign-in flow ship in v2.1.195. Earlier public builds don't include them. Both the machine running the gateway server and each developer's machine must be on v2.1.195 or later; run `claude update` to get the latest release. The [Claude Platform on AWS upstream](/docs/en/claude-apps-gateway-config#claude-platform-on-aws) requires Claude Code v2.1.198 or later on the gateway server. |
 | OpenID Connect (OIDC) identity provider | Okta, Microsoft Entra ID, Google Workspace, Keycloak, or Dex, or any other OIDC-compliant IdP such as PingFederate. The gateway runs standard OIDC discovery and the authorization-code flow against it. SAML and LDAP aren't supported. |
-| PostgreSQL 14 or later | Backs the device sign-in flow, where the browser callback writes and the polling CLI reads, plus rate-limit counters. Any managed Postgres works, including the smallest tier. Without spend limits configured, the gateway stores a few KB of short-lived auth state; with [spend limits](/docs/en/claude-apps-gateway-spend-limits), it also holds durable spend, audit, and identity tables that should be backed up. TLS via `?sslmode=require` is recommended. |
+| PostgreSQL 11 or later | Backs the device sign-in flow and rate-limit counters. A managed PostgreSQL service works, including the smallest tier; see [which databases are supported](/docs/en/claude-apps-gateway-deploy#postgres). With [spend limits](/docs/en/claude-apps-gateway-spend-limits), it also holds durable spend, audit, and identity tables that should be backed up. TLS via `?sslmode=require` is recommended. PostgreSQL 11, 12, and 13 require Claude Code v2.1.290 or later on the gateway server. The PostgreSQL project no longer maintains those versions, so use a newer one where you can. |
 | Model upstream | Amazon Bedrock credentials, Claude Platform on AWS credentials, Google Cloud credentials, a Microsoft Foundry resource, or an Anthropic API key. Multiple upstreams are supported with failover. |
 | HTTPS | The gateway must be reachable over `https://` from developer laptops and from any browser used for sign-in; the gateway serves the device-verification page on the same listener. Either provide a TLS cert via `listen.tls` or run behind a TLS-terminating ingress, and set `listen.public_url` to the external origin in both cases. At `/login`, Claude Code accepts a plain `http://` origin only when the gateway host is loopback: `localhost`, `127.0.0.1`, or `::1`. |
 | Private-network address | At `/login`, Claude Code requires the gateway's hostname or IP address to resolve only to private addresses: RFC 1918, link-local, CGNAT `100.64.0.0/10`, IPv6 ULA `fc00::/7`, or loopback. For a gateway you host, any public address outside a block you declare is rejected; see the [threat model](/docs/en/claude-apps-gateway-deploy#threat-model-summary) in the deployment guide. If developer machines route HTTPS through a corporate proxy, sign-in also requires the proxy host to resolve to private addresses; if it doesn't, add the gateway host to `NO_PROXY` so the CLI connects directly. If your internal network is numbered from public IPv4 space your organization owns, [declare those blocks](#allow-a-gateway-on-public-address-space-you-own) so `/login` accepts a gateway there. |
@@ -77301,7 +77413,7 @@ Have these in place before you start:
   </Step>
 
   <Step title="Provision a PostgreSQL database">
-    Any Postgres 14 or later works, including the smallest managed tier. The gateway runs its own schema migrations at boot, so the database role needs rights to create and alter tables; see [`store`](/docs/en/claude-apps-gateway-config#store).
+    Use PostgreSQL 11 or later. The smallest managed tier is enough. The gateway runs its own schema migrations at boot, so the database role needs rights to create and alter tables; see [`store`](/docs/en/claude-apps-gateway-config#store).
   </Step>
 
   <Step title="Write gateway.yaml">
@@ -77877,8 +77989,8 @@ With this configuration the gateway sends no secret. It authenticates to the IdP
 The gateway reads the key and certificate once at boot, so a changed file takes effect only after a restart. Rotate in this order so that no token request presents a certificate the IdP doesn't have:
 
 1. Upload the new certificate to the IdP alongside the old one.
-2. Replace the key and certificate files that `gateway.yaml` loads, then restart the gateway.
-3. Remove the old certificate from the IdP.
+2. Replace the key and certificate files that `gateway.yaml` loads, then restart the gateway. If you run several replicas, a [rolling restart](/docs/en/claude-apps-gateway-deploy#upgrades) works, because the IdP has both certificates until you remove the old one.
+3. After every replica has restarted, remove the old certificate from the IdP.
 
 #### IdP requests through a forward proxy
 
@@ -77938,7 +78050,7 @@ The `store` block points the gateway at its PostgreSQL database, which holds dev
 
 | Field | Required | Description |
 | - | - | - |
-| `postgres_url` | Yes | `postgres://` or `postgresql://` URL. Required: the device-grant rendezvous, where the browser callback writes and the polling CLI reads, needs cross-replica state. The gateway runs its own schema migrations at boot and on upgrade, so the role needs rights to create and alter tables on the target schema. See [Upgrades](/docs/en/claude-apps-gateway-deploy#upgrades) and [Postgres](/docs/en/claude-apps-gateway-deploy#postgres). |
+| `postgres_url` | Yes | `postgres://` or `postgresql://` URL with one host, not a comma-separated list. The gateway runs its own schema migrations at boot and on upgrade, so the role needs rights to create and alter tables on the target schema. See [Upgrades](/docs/en/claude-apps-gateway-deploy#upgrades) and [Postgres](/docs/en/claude-apps-gateway-deploy#postgres). |
 | `username` | No | Overrides the user in `postgres_url` |
 | `password` | No | Database credential. Set it here rather than in `postgres_url` so the credential stays out of the URL. Accepts any characters and takes precedence over URL credentials. |
 | `max_connections` | No | Postgres connection-pool size per replica. Default `5`, which is conservative and friendly to shared databases. With [spend limits](#admin) enabled, the hot path does a few operations per inference request, so raise it for a dedicated database under load, and keep replicas × this below the database's `max_connections`. |
@@ -79450,6 +79562,11 @@ Rotation is also the only way to force sessions out before they expire: bearer t
 
 ### Postgres
 
+The gateway stores its state in a PostgreSQL database:
+
+* **Database**: PostgreSQL itself, self-hosted or managed, at the [minimum version](/docs/en/claude-apps-gateway#prerequisites) or later. Databases that only implement the Postgres protocol, such as distributed SQL databases, aren't supported.
+* **Address**: `store.postgres_url` takes one host. If the database has several nodes, use the address in front of them, such as your managed service's endpoint, a load balancer, or a virtual IP. Set a [readiness grace period](#readiness-grace-period) longer than a failover takes.
+
 The gateway holds five data tables plus a `_migrations` table, all created by its boot-time migrations:
 
 | Table | Contents | Retention |
@@ -79581,10 +79698,11 @@ The gateway's stderr includes the audit event stream, the audit log records deve
 | CLI `/login`: `Could not resolve the configured HTTP proxy` | The hostname in `HTTPS_PROXY` or `HTTP_PROXY` doesn't resolve from the developer's machine, typically because it isn't connected to the corporate network | Have the developer connect to your network or VPN and retry, or fix the proxy URL |
 | CLI `/login`: `Could not resolve gateway host <host>` | The machine can't resolve the gateway's internal DNS name, typically because it isn't on the corporate network | Have the developer connect to your network or VPN, then retry `/login` |
 | Boot exits with a config validation error naming `store.postgres_url` | No Postgres configured; the gateway requires Postgres | Set `store.postgres_url`. For local development, use a throwaway container: `docker run --rm -p 5432:5432 -e POSTGRES_HOST_AUTH_METHOD=trust postgres`. |
+| Boot exits: `store.postgres_url in <path> is not a URL the gateway can read`, or before v2.1.290 a bare `Invalid URL` or `URI error` | The URL can't be parsed, for example because it lists more than one host or its password has an unencoded `/`, `?`, `#`, or `%` | Name [one host](#postgres), and move the password into [`store.password`](/docs/en/claude-apps-gateway-config#store) |
 | Boot exits: `requires the native binary` | Running under Node instead of the native binary | Install Claude Code with one of the [standalone install methods](/docs/en/setup) |
 | Boot exits with an OIDC discovery error after `config.load` | `oidc.issuer` unreachable, or TLS chain not trusted | Check the issuer is reachable from the pod and serves `/.well-known/openid-configuration`. Set `ca_cert_pem` for private PKI. If the pod reaches the IdP only through a forward proxy, set [`oidc.use_proxy: true`](/docs/en/claude-apps-gateway-config#idp-requests-through-a-forward-proxy); on versions before v2.1.227, give the pod a direct route to each of the IdP's endpoints instead. If the pod also can't resolve the IdP's hostname, or the proxy refuses `CONNECT` to an IP address, see [Proxy-only egress](/docs/en/claude-apps-gateway-config#proxy-only-egress), which requires v2.1.277 or later. |
 | Boot exits with a Postgres permission error | The database role lacks DDL rights on its schema | Grant the role `CREATE` on the gateway's schema so it can create and alter its tables at boot |
-| Log: `could not connect to Postgres at boot, attempt 1 of 3` | The database wasn't reachable yet when the gateway started, for example on a cold instance whose network is still coming up | If the gateway then finishes booting, no action is needed. When the database isn't reachable, the gateway tries the connection three times, two seconds apart, before it exits. If it exits with `could not connect to Postgres`, check `store.postgres_url` and the network path to the database. If the attempts time out rather than being refused, raise [`store.connect_timeout_seconds`](/docs/en/claude-apps-gateway-config#store) to give each one longer. |
+| Log: `could not connect to Postgres at boot, attempt 1 of 3` | The database wasn't reachable yet when the gateway started, for example on a cold instance whose network is still coming up | If the gateway then finishes booting, no action is needed. When the database isn't reachable, the gateway tries the connection three times, two seconds apart, before it exits. If it exits with `could not connect to Postgres`, check `store.postgres_url`, including that it names one host, and the network path to the database. If the attempts time out rather than being refused, raise [`store.connect_timeout_seconds`](/docs/en/claude-apps-gateway-config#store) to give each one longer. |
 | `/oauth/callback` shows "Sign-in could not be completed" | Email domain rejected, id\_token validation failed, or `email_verified` is explicitly `false`, which the gateway always rejects with no override | Check `allowed_email_domains` and that the IdP returns a verified `email` claim. For `email_verified: false`, fix the IdP-side verification. If your IdP emits email under a different claim name, set `oidc.email_claim`. |
 | Log: `token exchange failed request_id=<id>: id_token missing email claim` | The IdP isn't including `email` in the id\_token by default. This rejection fires only when `allowed_email_domains` is set; without it, a missing email mints a session with no email | Configure the IdP to emit `email` in the id\_token. Okta: add `email` to a custom authorization server's ID-token claims. Entra: add `email` as an optional claim on the app registration. PingFederate: enable an OpenID Connect Policy that emits `email`. If the IdP serves `email` from the userinfo endpoint but won't include it in the id\_token, such as the Okta org authorization server, set `oidc.userinfo_fallback: true`. |
 | Log: `refresh failed request_id=<id>: invalid_token (…) (at userinfo_no_id_token, …)`, and developers see `Cloud gateway session expired` every `session.ttl_hours` | The IdP accepted the refresh token but returned no id\_token with it, so the gateway asked the IdP's userinfo endpoint for the user's claims. The IdP rejected the refreshed access token there. The gateway answers `temporarily_unavailable`, so Claude Code keeps the refresh token but can't renew the session. Gateway versions before v2.1.260 log the same line without the `(at …)` detail. | Set [`oidc.scope_on_refresh: true`](/docs/en/claude-apps-gateway-config#oidc), available in gateway v2.1.260 or later, so the refresh request asks for `openid` again. Some IdPs, such as Okta, return an id\_token on refresh only when asked. On PingFederate, enable **Return ID Token On Refresh Grant** under **Applications > OAuth > OpenID Connect Policy Management** instead. The key doesn't change PingFederate's behavior. For other IdPs that still omit it, check whether the userinfo endpoint accepts access tokens issued by a refresh. As a stopgap, raise [`session.ttl_hours`](/docs/en/claude-apps-gateway-config#session). See [Identity provider setup](#identity-provider-setup) for the deprovisioning tradeoff. |
@@ -79791,7 +79909,7 @@ The steps below provision the full deployment with `aws` commands.
   </Step>
 
   <Step title="Provision Amazon RDS for PostgreSQL">
-    The instance runs in the private subnets with no public address and storage encryption on. The engine version is pinned to Postgres 16, which satisfies the gateway's supported floor of PostgreSQL 14 and guarantees the parameter-group family below matches the instance.
+    The instance runs Postgres 16 in the private subnets, with no public address and storage encryption on.
 
     First, create the subnet group that places the database in the private subnets, and a parameter group with `rds.force_ssl=1` so the server rejects plaintext connections. The engine version is pinned once because the parameter group's family must match the engine major version the instance runs:
 
@@ -82717,7 +82835,7 @@ Claude Code charges by API token consumption. For subscription plan pricing (Pro
 
 Across enterprise deployments, the average cost is around \$13 per developer per active day and \$150-250 per developer per month, with costs remaining below \$30 per active day for 90% of users. To estimate spend for your own team, start with a small pilot group and use the tracking tools below to establish a baseline before wider rollout.
 
-This page covers how to [track your costs](#track-your-costs), [manage costs for your organization](#manage-costs-for-your-organization), and [reduce token usage](#reduce-token-usage).
+This page covers Claude Code usage only: how to [track your costs](#track-your-costs), [manage costs for your organization](#manage-costs-for-your-organization), and [reduce token usage](#reduce-token-usage). For usage limits in other Claude products, see the [Claude Help Center](https://support.claude.com).
 
 ## Track your costs
 
@@ -83946,7 +84064,7 @@ Set `CLAUDE_CODE_ENABLE_TELEMETRY` and the OpenTelemetry variables that turn on 
 
 ## What the subprocess environment scrub removes
 
-When you set [`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB`](#variables) to `1`, Claude Code removes credentials from the environments of the subprocesses it starts, such as Bash commands, hooks, and stdio MCP servers. This reduces what a prompt injection attack can read through shell expansion. The Claude Code process keeps the credentials for its own API calls.
+When you set [`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB`](#variables) to `1`, Claude Code removes credentials from the environments of the subprocesses it starts, such as Bash commands, hooks, and stdio MCP servers. This reduces what a prompt injection attack can read. The Claude Code process keeps the credentials for its own API calls.
 
 The scrub recognizes a credential by its variable name or by the shape of its value, so use it as one layer alongside narrow [permission rules](/docs/en/permissions) rather than as the only control.
 
@@ -83958,7 +84076,7 @@ The table shows what the scrub does to example variables:
 | `NPM_TOKEN`, `DB_PASSWORD` | Removes it, because the name looks like a credential |
 | `DATABASE_URL` that contains a password | Removes it, because the value looks like a credential |
 | `PIP_INDEX_URL` or `NPM_CONFIG_REGISTRY` that contains a password | Keeps the URL and cuts the username and password from it |
-| `CLAUDE_CONFIG_DIR` | Removes it. Requires Claude Code v2.1.251 or later |
+| `CLAUDE_CONFIG_DIR` | Removes it |
 | `GITHUB_TOKEN`, `GH_TOKEN`, `GH_ENTERPRISE_TOKEN`, `GITHUB_ENTERPRISE_TOKEN` | Leaves it in place, so that `gh` and scripts that call the GitHub API keep working |
 | `HTTP_PROXY`, `HTTPS_PROXY` | Leaves it in place, including a [username and password in the URL](/docs/en/network-config#basic-authentication). The [sandbox](/docs/en/sandboxing#network-isolation) can set these variables itself for sandboxed commands |
 | `GIT_CONFIG_COUNT`, `GIT_CONFIG_KEY_<n>`, `GIT_CONFIG_VALUE_<n>` | Leaves it in place, whatever it holds |
@@ -83969,6 +84087,8 @@ Because the scrub leaves `GITHUB_TOKEN` in place, give a GitHub Actions job the 
 Leave the scrub unset if a subprocess needs one of the removed variables.
 
 On Linux, the scrub also runs Bash subprocesses in an isolated PID namespace so they can't read host process environments through `/proc`. As a side effect, `ps`, `pgrep`, and `kill` can't see or signal host processes.
+
+Before v2.1.251, the scrub removed `ANTHROPIC_API_KEY` and `AWS_SECRET_ACCESS_KEY` and left the table's other example variables unchanged.
 
 ## Features that need feature-flag fetching
 
@@ -85819,7 +85939,7 @@ Run this check on one managed computer after the configuration is applied to you
 
 If `HIPAA` is missing from `/status`, check these causes in order:
 
-1. **The wrong account or connection**: confirm that `/status` shows your organization on the `Organization` line, and shows no `API provider` or `Anthropic base URL` line. [Check how developers sign in and connect](#check-how-developers-sign-in-and-connect) lists the connections that aren't eligible for the configuration.
+1. **The wrong account or connection**: confirm that `/status` shows your organization on the `Organization` line, and shows no `API provider` or `Anthropic base URL` line. [Check how developers sign in and connect](#check-how-developers-sign-in-and-connect) lists which sign-in and connection methods aren't eligible for the configuration.
 2. **A blocked policy fetch**: look for an `Organization policy` line in `/status`, which gives the cause. Outside a session, run `claude doctor` and read the same line, which says where Claude Code loaded the policy from or why the policy didn't load. Allow `api.anthropic.com` through your proxy, then restart Claude Code.
 3. **The configuration isn't applied yet**: ask the Primary Owner whether they have applied the configuration.
 
@@ -87287,7 +87407,7 @@ A hook that blocks by exiting 2 routes the same way as `reason`: the block messa
 
 #### What a blocked prompt leaves behind
 
-A blocked prompt never reaches Claude, but its text isn't removed everywhere. By default the block message shown to the user ends with `Original prompt:` followed by the submitted text, and Claude Code writes that message to the session's transcript file on disk. To leave the text out of the message, print JSON with `"suppressOriginalPrompt": true` inside `hookSpecificOutput`. This works whether the hook blocks with `decision: "block"` or by exiting 2. An exit-2 hook that prints no JSON always gets the prompt text in its block message.
+A blocked prompt never reaches Claude, but its text isn't removed everywhere. By default the block message shown to the user ends with `Original prompt:` followed by the submitted text, and Claude Code writes that message to the session's transcript file on disk. To leave the text out of the message, print JSON with `"suppressOriginalPrompt": true` inside `hookSpecificOutput`. This works whether the hook blocks with `decision: "block"` or by exiting 2.
 
 `suppressOriginalPrompt` changes only the block message. The submitted text can still appear in local files such as the session transcript and your prompt history, so a blocking hook isn't a way to keep a secret off disk. To limit or remove those files, see [Plaintext storage](/docs/en/claude-directory#plaintext-storage) and [Clear local data](/docs/en/claude-directory#clear-local-data).
 
@@ -91872,6 +91992,8 @@ Match on the path, not the full URL:
 
 A gateway also sees best-effort startup traffic it can reject without breaking anything. An Anthropic Messages-format gateway receives a `HEAD /api/hello` connection-warming probe, which Claude Code skips when an HTTP proxy or client certificate is configured. An Amazon Bedrock-format gateway receives a `GET /inference-profiles?type=SYSTEM_DEFINED` request and, when the configured model is an inference profile, `GET /inference-profiles/{profile}` lookups.
 
+Sessions that go through a gateway aren't eligible for the HIPAA configuration. [Check how developers sign in and connect](/docs/en/hipaa-setup#check-how-developers-sign-in-and-connect) lists which sign-in and connection methods are. See [The HIPAA configuration behind a gateway](/docs/en/llm-gateway-rollout#the-hipaa-configuration-behind-a-gateway).
+
 The [fast mode](/docs/en/fast-mode) availability check never appears in gateway logs: it calls `api.anthropic.com` directly rather than following `ANTHROPIC_BASE_URL`, so on a network that blocks direct egress to `api.anthropic.com`, fast mode can report a connectivity error while inference through the gateway keeps working. The [WebFetch domain safety check](/docs/en/data-usage#webfetch-domain-safety-check) also calls `api.anthropic.com` directly. [Use fast mode behind proxies and LLM gateways](/docs/en/fast-mode#use-fast-mode-behind-proxies-and-llm-gateways) covers the variables that restore it.
 
 ### Streaming
@@ -92349,6 +92471,17 @@ Some environments need separate delivery:
 * The desktop app reads gateway routing from its third-party inference configuration, not from managed settings; deploy that file through MDM alongside managed settings so desktop sessions route through the gateway too. See the [desktop third-party configuration docs](https://claude.com/docs/third-party/claude-desktop/configuration) and the [desktop gateway docs](https://claude.com/docs/third-party/claude-desktop/gateway)
 * CI runners need `ANTHROPIC_BASE_URL` and the credential set in the [runner's environment](/docs/en/llm-gateway-connect#configure-each-surface)
 * WSL on managed Windows machines reads the Windows managed settings only when [`wslInheritsWindowsSettings`](/docs/en/settings-reference#wslinheritswindowssettings) is `true`
+
+#### The HIPAA configuration behind a gateway
+
+Sessions that go through a gateway aren't eligible for the HIPAA configuration. [Check how developers sign in and connect](/docs/en/hipaa-setup#check-how-developers-sign-in-and-connect) lists which sign-in and connection methods are.
+
+To restrict features for those sessions in the managed settings file, use the keys in [Map egress paths to managed controls and events](/docs/en/monitoring-usage#map-egress-paths-to-managed-controls-and-events). These keys don't make a session eligible for the HIPAA configuration, and they don't cover everything the configuration changes. For example:
+
+* **Cloud sessions**: no managed key turns them off. See [Admin console controls](/docs/en/desktop#admin-console-controls)
+* **Anthropic credentials in child processes**: the configuration [removes them](/docs/en/hipaa-setup#anthropic-credentials-in-commands-hooks-and-mcp-servers) from the processes Claude Code starts, and no settings key does only that
+
+Don't use `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` in place of these keys. It turns off some of these features, but it also turns off the auto-updater, and it leaves WebFetch on.
 
 #### Hand developers the values to set themselves
 
@@ -94905,7 +95038,7 @@ When Claude Code can't safely determine the retention period, it pauses the swee
 * `session_files_deleted`: Number of artifacts the session-files sweep deleted: transcripts plus per-session companion files such as sidecars, recordings, and tool results
 * `artifacts_deleted`: Total items the sweep deleted across the data directories it covers, including the session files. Some sweeps count a whole removed directory tree as one item and a few cleanup passes don't contribute to the counter, so treat the value as a floor rather than an exact file count
 * `files_retained_fresh`: Files inspected and left in place because they're still within the retention period. Only per-file sweeps count these, so the value is a floor; a nonzero value is the normal steady state
-* `files_past_cutoff`: Files older than the retention period that the sweep failed to delete, for example because of a permission error or a file held open. A value above zero means files outlived the configured retention period; zero isn't proof that none did, because a failed removal of a whole directory counts toward `error_count` instead
+* `files_past_cutoff`: Files older than the retention period that the sweep failed to delete, for example because of a permission error or a file held open. The count also includes each stale folder the sweep finds under `skills/synced/` or `plugins/synced/`, whether or not it moves the folder to the trash. Apart from those folders, a value above zero means files outlived the configured retention period; zero isn't proof that none did, because a failed removal of a whole directory counts toward `error_count` instead
 * `error_count`: Number of errors the sweep encountered while listing or deleting files
 
 #### Managed settings resolved event
@@ -95091,6 +95224,49 @@ When building detection rules, look up the signal you want to monitor and query 
 | Which managed settings sources a machine runs on, whether its policy helper is healthy, and why a machine refused to start | `managed_settings_resolved` | `managed_settings.trigger`, `managed_settings.sources`, `managed_settings.source_behavior`, `managed_settings.helper.state`, `error.type`; `managed_settings.settings` and `managed_settings.resolved_sha256` with `OTEL_LOG_MANAGED_SETTINGS=1` |
 
 Claude Code emits the raw event stream only. Anomaly detection, baselining, correlation across sessions, and alerting are the responsibility of your SIEM or observability backend.
+
+### Map egress paths to managed controls and events
+
+The table pairs paths that can carry session content off a machine, plus local retention, with the [managed settings](/docs/en/managed-settings) keys that restrict them and the events that record them. For what Claude Code itself sends to Anthropic, such as `/feedback` reports, see [Data usage](/docs/en/data-usage). The names link to their reference entries, which give the values and defaults.
+
+| Path | Managed controls | Events |
+| - | - | - |
+| Bash and PowerShell commands | [`sandbox.enabled`](/docs/en/settings-reference#sandbox-enabled), [`sandbox.failIfUnavailable`](/docs/en/settings-reference#sandbox-failifunavailable), [`sandbox.allowUnsandboxedCommands`](/docs/en/settings-reference#sandbox-allowunsandboxedcommands), [`sandbox.network.allowManagedDomainsOnly`](/docs/en/settings-reference#sandbox-network-allowmanageddomainsonly), [`sandbox.network.allowedDomains`](/docs/en/settings-reference#sandbox-network-alloweddomains) | [`tool_decision`](#tool-decision-event), [`tool_result`](#tool-result-event) |
+| MCP servers | [`allowedMcpServers`](/docs/en/settings-reference#allowedmcpservers), [`allowManagedMcpServersOnly`](/docs/en/settings-reference#allowmanagedmcpserversonly), [`deniedMcpServers`](/docs/en/settings-reference#deniedmcpservers), [`managed-mcp.json`](/docs/en/managed-mcp) | [`mcp_server_connection`](#mcp-server-connection-event), `tool_decision`, `tool_result` |
+| Hooks | [`allowManagedHooksOnly`](/docs/en/settings-reference#allowmanagedhooksonly), [`allowedHttpHookUrls`](/docs/en/settings-reference#allowedhttphookurls) | [`hook_registered`](#hook-registered-event), [`hook_execution_start`](#hook-execution-start-event), [`hook_execution_complete`](#hook-execution-complete-event) |
+| Plugins | [`strictKnownMarketplaces`](/docs/en/settings-reference#strictknownmarketplaces), [`disableSideloadFlags`](/docs/en/settings-reference#disablesideloadflags), [`syncClaudeAiPlugins`](/docs/en/settings-reference#syncclaudeaiplugins), [`syncClaudeAiSkills`](/docs/en/settings-reference#syncclaudeaiskills) | [`plugin_installed`](#plugin-installed-event), [`plugin_loaded`](#plugin-loaded-event) |
+| [WebFetch](/docs/en/permissions#webfetch) | [`permissions.deny`](/docs/en/settings-reference#permissions-deny), [`allowManagedPermissionRulesOnly`](/docs/en/settings-reference#allowmanagedpermissionrulesonly) | `tool_decision`, `tool_result` |
+| Tools that upload to claude.ai, such as Artifact | `permissions.deny`, [`enableArtifact`](/docs/en/settings-reference#enableartifact) | `tool_decision`, `tool_result` |
+| Remote Control | [`disableRemoteControl`](/docs/en/settings-reference#disableremotecontrol) | No dedicated event |
+| Local transcript retention | [`cleanupPeriodDays`](/docs/en/settings-reference#cleanupperioddays) | [`retention_sweep`](#retention-sweep-event) |
+
+The `allowedHttpHookUrls`, `managed-mcp.json`, and hook event entries need more than the table shows:
+
+* **`allowedHttpHookUrls`**: entries merge across settings files, so a developer can add to an empty managed list. `allowManagedHooksOnly` decides which hooks run
+* **`managed-mcp.json`**: to turn MCP off, see [Disable MCP entirely](/docs/en/managed-mcp#disable-mcp-entirely). To confirm Claude Code reads the file, see [Validate the configuration](/docs/en/managed-mcp#validate-the-configuration)
+* **Hook events**: Claude Code logs `hook_execution_start` and `hook_execution_complete` once per hook event, covering every matching hook. `OTEL_LOG_TOOL_DETAILS=1` on its own doesn't record an HTTP hook's URL. The hook configuration appears only in `hook_definitions`, which also needs detailed beta tracing
+
+`OTEL_LOG_TOOL_DETAILS=1` adds command strings, server and tool names, and tool input to these events. That detail can contain the same sensitive content as the session itself, so enable it only when your collector is approved to hold that content.
+
+### Check the retention sweep
+
+To give every machine the same retention period, set [`cleanupPeriodDays`](/docs/en/settings-reference#cleanupperioddays) in [managed settings](/docs/en/managed-settings). To check that machines run the sweep with that value, collect the [`retention_sweep`](#retention-sweep-event) event. `period_days` and the counters are strings, so cast them to numbers before you compare them.
+
+| What a machine reports | What it means |
+| - | - |
+| `result` is `"skipped"` | Claude Code paused the sweep. `skip_reason` gives the cause |
+| `used_default` is `"true"`, or `period_days` differs from your managed value | The machine isn't applying your managed `cleanupPeriodDays` |
+| `error_count` is above zero | The sweep hit errors while it listed or deleted files, so data past the retention period can remain |
+| `files_past_cutoff` is above zero | The sweep failed to delete files past the retention period, or it found stale synced skills and plugins folders. Read it with `error_count` |
+| No event | Not a failure on its own |
+
+A machine that works as intended can go without an event for reasons such as these:
+
+* **Nobody starts Claude Code**: no sweep runs, and the machine keeps its data until the next launch
+* **A session stays open**: Claude Code runs the sweep at most once per session
+* **A session ends early**: a sweep that hasn't finished when the session exits emits nothing, and neither does one that stops on an unexpected error
+
+The sweep doesn't cover every path. [Kept until you delete them](/docs/en/claude-directory#kept-until-you-delete-them) lists what stays, and [Clear local data](/docs/en/claude-directory#clear-local-data) shows how to remove it.
 
 ### Send events to a SIEM
 
@@ -95752,6 +95928,7 @@ The built-in default depends on how you run Claude Code. The first row that matc
 | :- | :- |
 | Any settings file sets `disableAutoMode` to `"disable"` | `default` |
 | `claude -p` or the [Agent SDK](/docs/en/agent-sdk/permissions#permission-modes) | `default` in sessions that [fetch feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching). In sessions that don't, such as on a third-party provider or with telemetry off, `auto` with Claude Code v2.1.285 or later and `default` on earlier versions. A session in an organization whose policy withholds the `auto` default starts in `default` instead |
+| Your organization has the [HIPAA configuration](#hipaa-configuration) applied and the session is [eligible for it](/docs/en/hipaa-setup#check-how-developers-sign-in-and-connect) | `default` with Claude Code v2.1.285 or later; auto mode stays available to switch to |
 | In a terminal or through the [VS Code extension](/docs/en/vs-code) | `auto` with Claude Code v2.1.283 or later; on earlier versions, `auto` on Pro, Max, or Team plans in sessions that [fetch feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching), and `default` otherwise |
 
 In your [first session after an install or upgrade](/docs/en/env-vars#first-session-after-an-install-or-upgrade), Claude Code can choose the starting permission mode before its feature flags arrive. That session can start in a different permission mode than the table gives.
@@ -95787,6 +95964,19 @@ This example makes every terminal session on your machine start in Manual mode, 
 ```
 
 The next session you start shows `⏸ manual mode on` in the status bar.
+
+### Permission modes with the HIPAA configuration
+
+In an organization with the [HIPAA configuration](/docs/en/hipaa-setup) applied, the built-in `auto` default doesn't apply. A terminal or VS Code session starts in Manual mode when nothing else chooses its starting permission mode. A terminal session also shows `Auto mode isn't the default for your organization · Shift+Tab to switch`, and the VS Code extension shows no notice. [Check how developers sign in and connect](/docs/en/hipaa-setup#check-how-developers-sign-in-and-connect) lists the sessions this applies to.
+
+Auto mode and `bypassPermissions` stay available:
+
+* **Switch to auto mode**: press `Shift+Tab`, or use [your interface's control](#switch-permission-modes)
+* **Start in auto mode**: pass `--permission-mode auto`, or set `permissions.defaultMode` to `auto` in your user settings, or in managed settings for your whole organization. See [Start in a different permission mode](#start-in-a-different-mode)
+* **Remove auto mode**: set [`permissions.disableAutoMode`](/docs/en/settings-reference#disableautomode) to `"disable"` in managed settings
+* **Block `bypassPermissions`**: set [`permissions.disableBypassPermissionsMode`](/docs/en/settings-reference#permissions-disablebypasspermissionsmode) to `"disable"` in managed settings
+
+Requires Claude Code v2.1.285 or later, the [minimum version for the HIPAA configuration](/docs/en/hipaa-setup#update-claude-code-and-claude-desktop).
 
 ## Switch permission modes
 
@@ -98326,6 +98516,8 @@ The sandbox isolates shell commands and their child processes. [What runs outsid
 
 * **Computer use**: when Claude opens apps and controls your screen, it runs on your actual desktop rather than in an isolated environment. Per-app permission prompts gate each application. See [computer use in the CLI](/docs/en/computer-use) or [computer use in Desktop](/docs/en/desktop#let-claude-use-your-computer).
 * **Subagents**: [subagents](/docs/en/sub-agents) run in the same process as the parent session and use the same sandbox configuration. Bash commands inside a subagent are sandboxed when sandboxing is enabled in the parent session.
+* **Background sessions**: a [background session](/docs/en/agent-view) runs in its own process, and its Bash commands are sandboxed when [its settings](/docs/en/agent-view#settings-and-provider) enable sandboxing.
+* **A boundary around the whole process**: to put the processes in [What runs outside the sandbox](#what-runs-outside-the-sandbox) behind a boundary too, run Claude Code (local mode) inside the [sandbox runtime](/docs/en/sandbox-environments#sandbox-runtime) with a network allowlist limited to the hosts you approve, or in the [dev container](/docs/en/devcontainer) with its firewall script. For the background service and the sessions it hosts, see [Run Claude Code behind a corporate launcher](/docs/en/corporate-launcher).
 * **Mods**: a [mod](/docs/en/plugins/mods/overview) is a plugin that runs its own code inside Claude Code, and a process that a mod starts runs outside the sandbox. See [What a mod can reach](/docs/en/plugins/mods/overview#what-a-mod-can-reach).
 
 <Warning>
@@ -98456,7 +98648,7 @@ For more details on cloud execution, see [Use Claude Code in the cloud](/docs/en
 
 * Review all suggested changes before approval
 * Use project-specific permission settings for sensitive repositories
-* Consider using [dev containers](/docs/en/devcontainer) for additional isolation
+* For additional isolation, run the whole Claude Code (local mode) process inside the [sandbox runtime](/docs/en/sandbox-environments#sandbox-runtime) or a [dev container](/docs/en/devcontainer)
 * Regularly audit your permission settings with `/permissions`
 
 ### Team security
@@ -99206,6 +99398,7 @@ A [self-hosted environment](/docs/en/self-hosted-environments) runs Claude Code 
 A self-hosted runner executes arbitrary, model-directed code on your infrastructure on behalf of everyone who can dispatch a session to its environment. That's any member of your Anthropic organization, and anyone who can start a [Claude Tag](https://claude.com/docs/claude-tag/overview) channel session in a scope an Owner routed to the environment. Work through each item before you connect an environment to production systems:
 
 * **Ephemeral, per-session containers**: run each runner process in a fresh container or VM that's destroyed when the process exits, with `--capacity 1` and the default `--drain-grace-sec 0` so each container serves exactly one session. At a higher capacity, or with a positive drain grace, one container serves multiple sessions from the same [locked owner](/docs/en/self-hosted-environments#key-concepts); see [Runner lifecycle](/docs/en/self-hosted-environments#runner-lifecycle). Don't reuse a filesystem between runner restarts, except in the deliberate [pre-warmed checkout](#reuse-a-pre-warmed-checkout) setup, and never across owners.
+  * <span />When the runner stops a session, it sends no signal to a process still running after its shell command exited, such as a service that daemonized. Destroying the container or VM ends that process.
 * **No broad credentials in the image**: don't include long-lived SSH keys, cloud-provider credentials, or personal access tokens that grant more than a session needs. Mint credentials used during a session, such as push or API tokens, per session from your [wrapper script](/docs/en/self-hosted-environments-configuration#wrapper-scripts). For the initial clone, which happens before the wrapper runs, use a [`checkout` lifecycle hook](/docs/en/self-hosted-environments-configuration#checkout) or [`--use-anthropic-git-proxy`](#use-the-anthropic-git-proxy); see [Configure git](#configure-git).
 * **Keep the environment secret off session-running hosts**: the environment secret can register runners and pick up any session queued on the environment. On a fixed fleet it lives on every runner host, where any session's code can read the secret file. Prefer [on-demand runners](/docs/en/self-hosted-environments-configuration#on-demand-runners), where the secret stays on the orchestrator host, which never runs user code, and each runner receives a single-use work order that registers exactly one runner. On a fixed fleet, treat the environment-secret file as readable by every session and rotate the secret after any suspected session compromise.
 * **Default-deny network egress**: restrict runner and session container outbound traffic at your own network boundary on every environment; [Default-deny egress](#default-deny-egress) covers what to allow and why.
@@ -99570,19 +99763,32 @@ secrets:
 
 ## Shutdown timing
 
-On `SIGTERM`, the runner stops taking new work and, unless you set [`--defer-shutdown-max-min`](#defer-the-drain-past-the-first-signal), waits up to `--drain-wait-sec`, zero by default, for in-flight turns to finish, terminates each session's process tree, and runs the [`post-session` lifecycle hook](/docs/en/self-hosted-environments-configuration#post-session). That process tree includes commands Claude was still running in the session.
+After `SIGTERM`, a runner needs time to shut its sessions down cleanly before your orchestrator kills it. It logs how long at startup, in a line that contains `This runner needs up to 80s` at default settings. Set your orchestrator's stop timeout to at least that many seconds: `terminationGracePeriodSeconds` on Kubernetes, `stop_grace_period` on Docker Compose, or your platform's equivalent. Kubernetes defaults to 30 seconds, so without this setting it can stop the pod before the runner finishes.
 
-The full drain path needs up to `--session-stop-grace-sec` + `--drain-wait-sec` + `--post-session-hook-timeout-sec`, plus 15 seconds of fixed overhead for process cleanup, plus 30 more seconds when [`--push-outcome-on-release`](/docs/en/self-hosted-environments-reference#runner-cli-flags) is set. That is 80 seconds at defaults, and the runner logs the total at startup. Sessions drain in parallel under this one budget, so the total doesn't grow with `--capacity`.
+On `SIGTERM`, the runner stops accepting new sessions. It then begins a graceful shutdown, called a drain, unless you set [`--defer-shutdown-max-min`](#defer-the-drain-past-the-first-signal) to delay it. The drain has three steps:
 
-At the default `--drain-wait-sec 0`, a rolling restart interrupts in-flight turns; each session resumes on another runner, losing unpushed work as described under [Known issues](#additional-limitations). Set `--drain-wait-sec`, and raise the grace period to match, to let turns finish first.
+1. The runner waits up to [`--drain-wait-sec`](/docs/en/self-hosted-environments-reference#runner-cli-flags) seconds, `0` by default, for turns still running to finish.
+2. It terminates each session's process tree, including any command Claude was still running, but not [a process still running after its shell command exited](#processes-a-stopped-session-leaves).
+3. It runs the [`post-session` lifecycle hook](/docs/en/self-hosted-environments-configuration#post-session).
 
-Throughout that whole path, the runner keeps heartbeating to the control plane at zero capacity, so the session lease doesn't expire and get requeued to another runner while the `post-session` hook is still writing out uncommitted work. The heartbeat stops just before the runner deregisters.
+The runner keeps polling Anthropic throughout the drain. That keeps its sessions assigned to it, so another runner doesn't pick one up while your `post-session` hook is still saving uncommitted work.
 
-Give the runner at least the total it logs at startup before the host stops it. Where you set that depends on how your hosts stop:
+Because `--drain-wait-sec` defaults to `0`, a rolling restart cuts off any turn that's still running, and the session resumes on another runner without its [unpushed work](#additional-limitations). To let turns finish first, set `--drain-wait-sec` and raise your stop timeout to match.
 
-* **With a `SIGTERM` grace period**: set `terminationGracePeriodSeconds` on Kubernetes, `stop_grace_period` on Docker Compose, or your orchestrator's equivalent to at least that total. The Kubernetes default of 30 seconds is shorter than the runner's drain path, so Kubernetes stops the pod before the runner finishes draining.
-* **With [`--retire-at`](/docs/en/self-hosted-environments-reference#runner-cli-flags)**: size the margin between the retire time and the host's stop time to cover typical turns, plus the background-task hold that [Runner lifecycle](/docs/en/self-hosted-environments#runner-lifecycle) describes, plus that same total. Compute the retire time at each launch, for example `date +%s` plus the runner's intended lifetime.
-* **With [`--defer-shutdown-max-min`](#defer-the-drain-past-the-first-signal)**: add two more parts to the drain-path total. The first is the minutes you configure. The second is the post-release grace that [Defer the drain past the first signal](#defer-the-drain-past-the-first-signal) describes, 75 seconds at defaults. With the flag set, the runner also prints the combined figure at startup, after the drain-path total.
+The logged time is the sum of these values:
+
+* `--drain-wait-sec` for step 1, 0 seconds by default
+* [`--session-stop-grace-sec`](/docs/en/self-hosted-environments-reference#runner-cli-flags) for step 2, 5 seconds by default
+* [`--post-session-hook-timeout-sec`](/docs/en/self-hosted-environments-reference#runner-cli-flags) for step 3, 60 seconds by default
+* A fixed 15 seconds of headroom
+* 30 more seconds when [`--push-outcome-on-release`](/docs/en/self-hosted-environments-reference#runner-cli-flags) is set
+
+At default settings that comes to 0 + 5 + 60 + 15 = 80 seconds. A higher `--capacity` doesn't add to it, because the runner drains all of its sessions at the same time.
+
+Allow more time if you set either of these flags:
+
+* **With [`--retire-at`](/docs/en/self-hosted-environments-reference#runner-cli-flags)**: leave enough time between the retire time and the time the host stops for typical turns to finish, plus the wait for background tasks that [Runner lifecycle](/docs/en/self-hosted-environments#runner-lifecycle) describes, plus the logged time. Compute the retire time at each launch, for example `date +%s` plus the runner's intended lifetime.
+* **With [`--defer-shutdown-max-min`](#defer-the-drain-past-the-first-signal)**: the stop timeout must also cover the minutes you configure and a further wait before the drain starts, 75 seconds at default settings. [Defer the drain past the first signal](#defer-the-drain-past-the-first-signal) explains both. The runner logs this longer time at startup too.
 
 ### Defer the drain past the first signal
 
@@ -99600,7 +99806,7 @@ At any stage, the runner exits 0 as soon as it holds no sessions. A second signa
 
 #### Size the stop timeout
 
-Give your host's stop timeout at least the sum of three parts: the `n` minutes you configure, the post-release grace, and the full drain path that [Shutdown timing](#shutdown-timing) describes. With default settings the post-release grace is 75 seconds and the drain path is 80 seconds, so allow `n` minutes plus 155 seconds. The runner prints this sum at startup whenever `--defer-shutdown-max-min` is set.
+Give your host's stop timeout at least the sum of three parts: the `n` minutes you configure, the post-release grace, and the drain that [Shutdown timing](#shutdown-timing) describes. With default settings the post-release grace is 75 seconds and the drain takes up to 80 seconds, so allow `n` minutes plus 155 seconds. The runner prints this sum at startup whenever `--defer-shutdown-max-min` is set.
 
 If the stop timeout runs out before the runner finishes, the host kills the runner. The sessions it still holds get no `post-session` hook. The runner doesn't deregister, and the control plane requeues the sessions within a few minutes. If you can't give the stop timeout that sum, leave `--defer-shutdown-max-min` unset so the runner drains on the first signal instead.
 
@@ -99608,9 +99814,9 @@ If the stop timeout runs out before the runner finishes, the host kills the runn
 
 The `post-session` hook and the Claude session child each run in their own POSIX process group, separate from the runner's, so stop mechanisms reach them differently:
 
-* **A `SIGTERM` while the runner is already draining**: force-exits the runner immediately, skipping whatever remains of the drain path. Without [`--defer-shutdown-max-min`](#defer-the-drain-past-the-first-signal), that is the second `SIGTERM` the runner receives. Nothing signals a mid-run `post-session` hook, so on a bare host where an init process adopts orphans, it finishes on its own, but unsupervised: its timeout budget no longer applies, and a write to the closed log pipe can kill it with `SIGPIPE`, so a hook that needs to survive a forced exit there should redirect its own output to a file. In the container recipes on this page the runner is the container's PID 1 and its exit ends the container, and under systemd's default `KillMode=control-group` the cgroup-wide kill reaches the hook too, as the **Cgroup-wide kills** entry describes; in both, treat a forced exit as fatal to the hook and rely on the grace period instead.
+* **A `SIGTERM` while the runner is already draining**: force-exits the runner immediately, skipping whatever remains of the drain. Without [`--defer-shutdown-max-min`](#defer-the-drain-past-the-first-signal), that is the second `SIGTERM` the runner receives. Nothing signals a mid-run `post-session` hook, so on a bare host where an init process adopts orphans, it finishes on its own, but unsupervised: its timeout budget no longer applies, and a write to the closed log pipe can kill it with `SIGPIPE`, so a hook that needs to survive a forced exit there should redirect its own output to a file. In the container recipes on this page the runner is the container's PID 1 and its exit ends the container, and under systemd's default `KillMode=control-group` the cgroup-wide kill reaches the hook too, as the **Cgroup-wide kills** entry describes; in both, treat a forced exit as fatal to the hook and rely on the grace period instead.
 * **Process-group-wide signals**, such as `kill -- -<pid>` in a wrapper script, shell job control, or a group-wide watchdog: reach the runner and a mid-`checkout`-hook subprocess, which stays group-attached deliberately, but not a mid-run `post-session` hook or the session child.
-* **Cgroup-wide kills**, such as systemd's default `KillMode=control-group` or the `SIGKILL` Kubernetes delivers to the whole container when `terminationGracePeriodSeconds` expires: reach everything, including the hook. Process-group isolation doesn't protect against these, which is why the grace period must cover the full drain path.
+* **Cgroup-wide kills**, such as systemd's default `KillMode=control-group` or the `SIGKILL` Kubernetes delivers to the whole container when `terminationGracePeriodSeconds` expires: reach everything, including the hook. Process-group isolation doesn't protect against these, which is why the grace period must cover the whole drain.
 * **The hook's own timeout**: when a hook exceeds `--post-session-hook-timeout-sec`, the runner sends `SIGTERM` to the hook's whole process group, then `SIGKILL` two seconds later, so a worker the hook forked, such as tar, rsync, or git, terminates with the wrapper shell instead of surviving as an orphan. The runner's supervision ends once the hook's stdio closes: a worker that redirected its own output to a file and outlives the `SIGTERM` stage is past the runner's reach.
 
 When the drain starts, and again on a forced exit, the runner logs how many `post-session` hooks are still running, so you can tell a quiet drain from one that's mid-snapshot.
@@ -108489,7 +108695,7 @@ The command runs once per refresh tick and receives all visible subagent rows as
 
 The per-task `model` field is the resolved model ID the task runs on. `contextWindowSize` is that model's context window in tokens, computed the same way as the main status line's `context_window.context_window_size`, so you can render a per-row percentage from `tokenCount`. Both fields require Claude Code v2.1.205 or later and are omitted for a task whose model isn't resolved yet.
 
-The per-task `effort` field is the reasoning effort set for that subagent, in its [definition frontmatter](/docs/en/sub-agents#supported-frontmatter-fields) or on the individual invocation. The value is either one of the effort level strings `low`, `medium`, `high`, `xhigh`, or `max`, or a numeric token budget. The field reports the configured value as written: if the model doesn't support that level, the effort Claude Code actually applies may differ. The field requires Claude Code v2.1.214 or later and is absent when the subagent inherits the session's effort level.
+The per-task `effort` field is the reasoning effort set for that subagent, in its [definition frontmatter](/docs/en/sub-agents#supported-frontmatter-fields) or on the individual invocation. The value is either one of the effort level strings `low`, `medium`, `high`, `xhigh`, or `max`, or a numeric token budget. The field reports the configured value as written: if the model doesn't support that level, the effort Claude Code actually applies may differ. The field requires Claude Code v2.1.214 or later and is absent when no level is set for the subagent.
 
 Write one JSON line to stdout per row you want to override, in the form `{"id": "<task id>", "content": "<row body>"}`. The `content` string is rendered as-is, including ANSI colors and OSC 8 hyperlinks. Omit a task's `id` to keep the default rendering for that row; emit an empty `content` string to hide it.
 
