@@ -16932,18 +16932,60 @@ Authentication, model selection, built-in tools, and permissions work normally. 
 
 Safe mode still applies managed hooks and settings policy from your organization. Managed plugins, skills, `CLAUDE.md`, and MCP servers are turned off.
 
-If the problem persists in safe mode, or your settings themselves are suspect, compare against a session that loads nothing from your usual setup. Point [`CLAUDE_CONFIG_DIR`](/docs/en/env-vars) at an empty directory to bypass everything under `~/.claude`, and launch from a directory that has no `.claude` folder, `.mcp.json`, or `CLAUDE.md` so project configuration is also skipped.
+If the problem persists in safe mode, or your settings themselves are suspect, start a session with none of your own configuration and check whether the problem follows.
 
-```bash theme={null}
-cd /tmp && CLAUDE_CONFIG_DIR=/tmp/claude-clean claude
-```
+<Steps>
+  <Step title="Create an empty directory and change into it">
+    In your shell, with no Claude Code session running, create the directory and move into it:
 
-The clean session has no user or project settings, hooks, MCP servers, plugins, or memory. On the first launch, expect the first-run setup screens, starting with theme selection. If you see them, the clean configuration directory is in effect. Later launches with the same directory skip these screens because Claude Code saves onboarding state there.
+    <Tabs>
+      <Tab title="Bash or Zsh">
+        ```bash theme={null}
+        mkdir -p ~/claude-clean/empty && cd ~/claude-clean/empty
+        ```
+      </Tab>
 
-* Managed settings still apply if your organization deploys them. Claude Code reads MDM profiles, registry policy, and `managed-settings.json` from locations outside the configuration directory, and [fetches server-managed settings](/docs/en/server-managed-settings#fetch-and-caching-behavior) again for the clean session once it has credentials
-* You'll be prompted to log in again
+      <Tab title="PowerShell">
+        ```powershell theme={null}
+        New-Item -ItemType Directory -Force "$HOME/claude-clean/empty" | Out-Null
+        Set-Location "$HOME/claude-clean/empty"
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
 
-If the problem disappears here, the cause is somewhere in your real `~/.claude` or project `.claude` files. Reintroduce them one at a time, by copying files into the temporary directory or by launching from your project, to find which one. If it persists in the clean session, the cause is outside your user and project configuration. Run `/status` to check whether managed settings are in effect, look for [environment variables](/docs/en/env-vars) that affect Claude Code, then see [Troubleshooting](/docs/en/troubleshooting).
+  <Step title="Start Claude Code with a clean configuration directory">
+    From the same shell, set [`CLAUDE_CONFIG_DIR`](/docs/en/env-vars) to a fresh directory in place of `~/.claude`, and pass [`--setting-sources user`](/docs/en/cli-reference#cli-flags) to turn off project configuration such as `.claude/settings.json`, `CLAUDE.md`, and `.mcp.json`:
+
+    <Tabs>
+      <Tab title="Bash or Zsh">
+        The variable applies to this one launch.
+
+        ```bash theme={null}
+        CLAUDE_CONFIG_DIR=~/claude-clean/config claude --setting-sources user
+        ```
+      </Tab>
+
+      <Tab title="PowerShell">
+        The variable stays set for the rest of this PowerShell session, so later `claude` launches in the same window keep using the clean directory. To return to your usual directory, run `Remove-Item Env:CLAUDE_CONFIG_DIR` before the next launch.
+
+        ```powershell theme={null}
+        $env:CLAUDE_CONFIG_DIR = "$HOME/claude-clean/config"
+        claude --setting-sources user
+        ```
+      </Tab>
+    </Tabs>
+
+    On the first launch, you go through the first-run setup screens again, a sign that the clean configuration directory is in effect. Managed settings still apply, and [connectors](/docs/en/mcp#use-mcp-servers-from-claude-ai) still load if you log in with a claude.ai account.
+  </Step>
+
+  <Step title="Reproduce the problem">
+    Repeat what triggered the problem in the clean session:
+
+    * **Problem gone**: the cause is in your user or project configuration. Copy `~/.claude.json` and the files in `~/.claude` into `~/claude-clean/config` one at a time. If none brings the problem back, go to your project directory in the same shell and start Claude Code without `--setting-sources user`. In Bash or Zsh, run `CLAUDE_CONFIG_DIR=~/claude-clean/config claude`. In PowerShell, the variable is still set, so run `claude`.
+    * **Problem persists**: the cause is outside your user and project configuration. Run `/status` in the session to check for managed settings, check your shell for [environment variables](/docs/en/env-vars), then see [Troubleshooting](/docs/en/troubleshooting).
+  </Step>
+</Steps>
 
 ## Check common causes
 
@@ -17980,6 +18022,8 @@ The following example pre-configures a single connection:
 
 Each entry requires `id`, `name`, and `sshHost`. The `sshPort` and `sshIdentityFile` fields are optional. Users can also add `sshConfigs` to their own `~/.claude/settings.json`.
 
+If you leave `user@` out of `sshHost`, Desktop connects as the `User` that each developer's `~/.ssh/config` sets for the host, or else as their username on their own computer.
+
 #### Restrict which SSH hosts users can connect to
 
 Administrators can limit Desktop's SSH sessions to an approved set of hosts by setting `sshHostAllowlist` in [managed settings](/docs/en/managed-settings). When set, users can only connect to hosts whose resolved hostname matches one of the patterns. Set it to an empty array to disable SSH sessions. The [`sshHostAllowlist` reference entry](/docs/en/settings-reference#sshhostallowlist) says how an empty array combines with lists in other managed sources.
@@ -18001,6 +18045,55 @@ The following example allows connections to any host under `devboxes.example.com
 Patterns are case-insensitive. `*` matches any host, and `*.example.com` matches `example.com` and any subdomain. Anything else is an exact match. The check runs against the hostname after `~/.ssh/config` resolution via `ssh -G`, so `Host` aliases and `ProxyCommand`/`ProxyJump` entries are permitted as long as the resolved `HostName` matches.
 
 `sshHostAllowlist` is read from managed settings only; values in user or project settings are ignored. Only the Claude Desktop app honors this setting; the Claude Code CLI and IDE extensions do not read it, and it does not restrict `ssh` commands run through the Bash tool. It governs which hosts the Desktop app connects to, not network egress, so pair it with your organization's network or zero-trust controls if you need a hard boundary.
+
+#### Turn off local sessions and distribute SSH connections
+
+To turn off local sessions and limit SSH sessions to hosts that you choose, deploy [`disableDesktopLocalSessions`](/docs/en/settings-reference#disabledesktoplocalsessions), [`sshConfigs`](#pre-configure-ssh-connections-for-your-team), and [`sshHostAllowlist`](#restrict-which-ssh-hosts-users-can-connect-to) together.
+
+<Note>
+  This setup is for users who sign in with a Claude account. With a [third-party provider](/docs/en/third-party-integrations), SSH sessions are off by default, and setting `sshHostAllowlist` can turn them on. Read [SSH remote sessions in Claude Desktop on 3P](https://claude.com/docs/third-party/claude-desktop/ssh-remote-sessions) before you deploy these keys.
+</Note>
+
+The following example turns off local sessions, adds one connection, and limits SSH sessions to that connection's host:
+
+```json managed-settings.json theme={null}
+{
+  "disableDesktopLocalSessions": true,
+  "sshConfigs": [
+    {
+      "id": "shared-dev-vm",
+      "name": "Shared Dev VM",
+      "sshHost": "dev.example.com"
+    }
+  ],
+  "sshHostAllowlist": ["dev.example.com"]
+}
+```
+
+The keys apply to the desktop app. They leave other ways to run Claude Code as they are, such as the CLI, Cowork, and cloud sessions:
+
+* **The CLI**: none of the keys stops a developer from running the Claude Code CLI on their own computer
+* **Cowork**: none of the keys applies to [Cowork](https://claude.com/docs/cowork/overview) sessions or Cowork scheduled tasks
+* **Cloud sessions**: none of the keys changes whether [cloud sessions](#cloud-sessions) are available. To turn them off, use the **Cloud sessions** setting under [Admin console controls](#admin-console-controls).
+
+When you adapt the example, check the hostnames and the Desktop version:
+
+* **Hostnames**: make sure that a pattern in `sshHostAllowlist` matches the hostname of each `sshConfigs` entry, without `user@`, or developers can't connect to it. For how Desktop matches a hostname, see [Restrict which SSH hosts users can connect to](#restrict-which-ssh-hosts-users-can-connect-to).
+* **Version**: `disableDesktopLocalSessions` requires Claude Desktop v1.37937.0 or later
+
+Put the three keys in one [managed source](/docs/en/managed-settings#how-claude-code-combines-managed-sources), the highest-ranked one that you deliver. If you deliver [server-managed settings](/docs/en/server-managed-settings), also keep a copy of the three keys in the highest-ranked MDM policy or managed settings file on each computer. Desktop fetches server-managed settings at launch, and the copy on the computer applies until a fetch succeeds.
+
+To confirm that the settings apply, check a developer's computer:
+
+<Steps>
+  <Step title="Check the environment dropdown">
+    Quit and reopen Desktop, then open the environment dropdown in the prompt box. **Local** is grayed out, and **Shared Dev VM** appears under **SSH**. If **Local** is still available, check the Desktop version, that the file is valid JSON, and which managed source the computer reads.
+  </Step>
+
+  <Step title="Add a host that isn't on the allowlist">
+    [Add an SSH connection](#ssh-sessions) with a hostname that isn't on the allowlist, such as `other.example.com`. Desktop saves the connection but refuses to connect, and says that your organization's settings don't allow the connection.
+  </Step>
+</Steps>
 
 ## Enterprise configuration
 
@@ -19018,6 +19111,7 @@ Match the message you see to a section below.
 | `Your account is on hold and can't use Claude Code. View details or appeal: https://claude.ai/restricted` | [Authentication](#your-account-is-on-hold) |
 | `Your account is on hold and can't sign in to Claude Code. View details or appeal: https://claude.ai/restricted` | [Authentication](#your-account-is-on-hold) |
 | `Anthropic profile login expired · Re-authenticate your Anthropic profile` | [Authentication](#anthropic-profile-login-expired) |
+| `Login expired · Run /login to sign in again, or re-authenticate your Anthropic profile` | [Authentication](#anthropic-profile-login-expired) |
 | `Anthropic profile login expired · Run /login to use your claude.ai account instead, or re-authenticate the profile` | [Authentication](#anthropic-profile-login-expired) |
 | `does not meet scope requirement user:profile` | [Authentication](#oauth-scope-requirement) |
 | `claude.ai rejected the session token` / `session token rejected` | [Authentication](#claude-ai-rejected-the-session-token) |
@@ -20149,6 +20243,8 @@ In [non-interactive mode](/docs/en/headless) (`-p`) and the [Agent SDK](/docs/en
 Failed to authenticate: OAuth session expired and could not be refreshed
 ```
 
+For a `Login expired` message that ends with `or re-authenticate your Anthropic profile`, see [Anthropic profile login expired](#anthropic-profile-login-expired).
+
 This is not the same state as [OAuth token revoked or expired](#oauth-token-revoked-or-expired). Those messages report a rejection the API returned. Claude Code itself produces `Login expired` for a login it already failed to renew, so it sends no request. When the renewal fails because the account itself is suspended rather than the login being stale, Claude Code shows [Your account is on hold](#your-account-is-on-hold) instead.
 
 Sessions authenticated with an API key, [`CLAUDE_CODE_OAUTH_TOKEN`](/docs/en/env-vars), or a third-party provider don't use the saved login and never see this message.
@@ -20298,26 +20394,28 @@ Signing in again with the same account doesn't clear the message, because the ho
 
 ### Anthropic profile login expired
 
-Claude Code is authenticating through an Anthropic credential profile whose saved login credential has expired, and the profile holds no refresh credential Claude Code can use to renew it. Claude Code stops each request locally without retrying, because a retry would read the same expired credential.
+Claude Code is authenticating through an Anthropic credential profile whose saved login credential has expired, and the profile holds no refresh credential Claude Code can use to renew it. Claude Code stops each request locally without retrying.
 
 ```text theme={null}
 Anthropic profile login expired · Re-authenticate your Anthropic profile
-Anthropic profile login expired · Run /login to use your claude.ai account instead, or re-authenticate the profile
+Login expired · Run /login to sign in again, or re-authenticate your Anthropic profile
 ```
-
-This appears only when the active credential comes from an Anthropic credential profile, one you select with the `ANTHROPIC_PROFILE` environment variable, that Claude Code discovers as the active profile in your Anthropic configuration directory, or that Claude Code wrote when you [signed in without an API key](/docs/en/authentication#sign-in-without-an-api-key). Sessions that authenticate with an API key, a bearer token such as `ANTHROPIC_AUTH_TOKEN`, or a third-party provider never see this message.
-
-On a machine that [offers the keyless sign-in](/docs/en/authentication#sign-in-without-an-api-key), run `/login`, choose the Anthropic Console account, and sign in again to renew a profile that the keyless Console sign-in or the Claude Platform CLI's `ant auth login` wrote. Claude Code replaces the expired credential in that profile. For a federation profile or one another tool created, `/login` doesn't renew the credential. Which form you see depends on whether you selected the profile or Claude Code discovered it:
-
-* When you set `ANTHROPIC_PROFILE` explicitly, the message ends with `Re-authenticate your Anthropic profile`.
-* When Claude Code discovered the profile from your configuration directory, the message offers `/login`, because Claude Code gives a working `/login` precedence over the discovered profile and then authenticates with your claude.ai or Console account instead. Before v2.1.234, Claude Code showed the `Re-authenticate your Anthropic profile` form in this case too.
 
 **What to do:**
 
-* Sign in to the profile again, then retry: on a machine that [offers the keyless sign-in](/docs/en/authentication#sign-in-without-an-api-key), run `/login` and choose the Anthropic Console account for a profile the keyless Console sign-in or the Claude Platform CLI's `ant auth login` wrote; for other profiles, use the tool that created them
+* If the message leads with `Login expired`, run `/login` to sign in again
+* To renew a profile that the keyless Console sign-in or the Claude Platform CLI's `ant auth login` wrote, run `/login` on a machine that [offers the keyless sign-in](/docs/en/authentication#sign-in-without-an-api-key). Choose the Anthropic Console account, then **Sign in with your Console account**. Claude Code replaces the expired credential in that profile
+* To renew a profile that another tool created, sign in again with that tool. If you choose **Sign in with your Console account** at `/login` instead, Claude Code leaves the profile as it is and creates an API key
 * If an administrator provisioned the profile's credential, ask them to issue a new one
 * Run `/status` to confirm the active credential source and profile name
 * To stop using the profile, unset `ANTHROPIC_PROFILE` if you set it, then authenticate another way, such as `/login` or `ANTHROPIC_API_KEY`
+
+How the message starts tells you how Claude Code found the profile:
+
+* When Claude Code discovered the profile from your configuration directory and its auth mode is `user_oauth`, the message leads with `Login expired` and offers `/login` first. Claude Code gives a working `/login` precedence over the discovered profile and then authenticates with your claude.ai account instead. From v2.1.234 until v2.1.277, this form read `Anthropic profile login expired · Run /login to use your claude.ai account instead, or re-authenticate the profile`. Before v2.1.234, Claude Code showed the `Re-authenticate your Anthropic profile` form in this case too.
+* When you selected the profile with `ANTHROPIC_PROFILE`, the message leads with `Anthropic profile login expired`.
+
+This appears only when the active credential comes from an Anthropic credential profile, one you select with the `ANTHROPIC_PROFILE` environment variable, that Claude Code discovers as the active profile in your Anthropic configuration directory, or that Claude Code wrote when you [signed in without an API key](/docs/en/authentication#sign-in-without-an-api-key). Sessions that authenticate with an API key, a bearer token such as `ANTHROPIC_AUTH_TOKEN`, or a third-party provider never see this message.
 
 ### OAuth scope requirement
 
@@ -22621,8 +22719,12 @@ Before v2.1.282, `claude plugin list` and `/plugin` reported the plugins of an i
 
 **What to do:**
 
-* Run `claude plugin marketplace remove <name>`. This also uninstalls the plugins installed from the marketplace and deletes their saved data
-* To keep the marketplace instead, wait until its maintainer renames it, then run `claude plugin marketplace update <name>`
+* To keep a marketplace that a settings file declares inline with `"source": "settings"`, rename it before you remove the old name, because removing the marketplace also deletes its entry from your settings files. Claude Code v2.1.292 or later lists these steps in the message:
+  1. In each settings file that lists the marketplace under `extraKnownMarketplaces`, give the entry's key and its `source.name` one new plain-ASCII name that doesn't look like an official one. If an administrator adds the marketplace through your organization's managed settings, the administrator does this step
+  2. Run `claude plugin marketplace remove <old-name>`, or remove the old name in the **Marketplaces** tab in `/plugin`. This also uninstalls its plugins and deletes their data, options, and secrets
+  3. Start Claude Code again, in the project's folder if the file is a project's settings file. Then install the plugins from the renamed marketplace
+* To keep any other marketplace, wait until its maintainer renames it, then run `claude plugin marketplace update <name>`
+* To remove the marketplace, run `claude plugin marketplace remove <name>`. This also uninstalls the plugins installed from the marketplace and deletes their data, options, and secrets
 * If you publish the marketplace, rename it in your `marketplace.json`; users then update the marketplace instead of removing it
 
 ### Marketplace is already added from a different source
@@ -38641,6 +38743,7 @@ Prompt events cover the text the user types and the text Claude Code sends to Cl
 | [`prompt.submit`](/docs/en/plugins/mods/events#rewrite-or-add-to-a-prompt) | A prompt is submitted | `next({ ...e, text })`, `next({ ...e, context })`, or `{ drop: reason }` |
 | `prompt.fill`, `prompt.suggest` | Text is about to go into the prompt box as a draft, or as a dim suggestion | `next(e)` with changed text |
 | `prompt.edit` | The user edits the prompt box | `next(e)` |
+| `prompt.autocomplete` | The user types in the prompt box and a word ends at the cursor. `e.token` is that word. Claude Code doesn't wait for the hook: its own autocomplete rows show first. | `{ suggestions }`, a list of `{ text, label, description }` rows shown below Claude Code's own. Choosing a row writes its `text` over the word. |
 | `prompt.compose` | Claude Code renders a system prompt | `{ sections }`, a list of `{ id, text, scope }` in the order they're sent |
 | [`prompt.section`](/docs/en/plugins/mods/events#rewrite-or-add-to-a-prompt) | Once for each named section of the system prompt. `e.name` is the section's `id` in `prompt.compose`. | `{ text }`, or `{ text: null }` to omit the section |
 | [`prompt.context`](/docs/en/plugins/mods/events#rewrite-or-add-to-a-prompt) | Once for each conversation, for the context sent with the first message | `{ blocks }` |
@@ -42662,7 +42765,7 @@ You can start a Remote Control session from the CLI, the [Claude Desktop app](/d
     | `--remote-control-session-name-prefix <prefix>` | Prefix for auto-generated session names when no explicit name is set. Defaults to your machine's hostname, producing names like `myhost-graceful-unicorn`. Set `CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX` for the same effect. |
     | `-c`, `--continue` | Bring back the session that the last server in this directory started with, instead of creating a new one. See [Resume sessions after stopping the server](#resume-sessions-after-stopping-the-server). Can't be combined with `--session-id`, `--spawn`, `--capacity`, or `--create-session-in-dir`. Requires Claude Code v2.1.200 or later. |
     | `--session-id <id>` | Bring back one session by its ID. See [Resume sessions after stopping the server](#resume-sessions-after-stopping-the-server). Can't be combined with `--continue`, `--spawn`, `--capacity`, or `--create-session-in-dir`. Requires Claude Code v2.1.200 or later. |
-    | `--spawn <mode>` | How the server creates sessions.<br />• `same-dir` (default): all sessions share the current working directory, so they can conflict if editing the same files.<br />• `worktree`: each on-demand session gets its own [git worktree](/docs/en/worktrees). Requires a git repository.<br />• `session`: single-session mode. Serves exactly one session and rejects additional connections. Set at startup only.<br />Press `w` at runtime to toggle between `same-dir` and `worktree`. |
+    | `--spawn <mode>` | How the server creates sessions.<br />• `same-dir` (default): all sessions share the current working directory, so they can conflict if editing the same files.<br />• `worktree`: each on-demand session gets its own [git worktree](/docs/en/worktrees). Requires a git repository or a [`WorktreeCreate` hook](/docs/en/hooks#worktreecreate).<br />• `session`: single-session mode. Serves exactly one session and rejects additional connections. Set at startup only.<br />Press `w` at runtime to toggle between `same-dir` and `worktree`. |
     | `--capacity <N>` | Maximum number of concurrent sessions. Default is 32. Cannot be used with `--spawn=session`. |
     | `--[no-]create-session-in-dir` | Pre-create one session in the current directory when the server starts, so you have somewhere to type immediately. In `worktree` mode this session stays in the current directory while on-demand sessions get isolated worktrees. On by default. If you pass `--no-create-session-in-dir` to start with none, Claude Code archives the server's sessions when you stop it, so there's nothing to [resume](#resume-sessions-after-stopping-the-server). |
     | `--permission-mode <mode>` | Set the starting [permission mode](/docs/en/permission-modes) for the server's sessions, such as `acceptEdits`. Accepts `manual` as an alias for `default`; an unrecognized mode stops the server at startup and lists the valid modes. |
@@ -43709,19 +43812,24 @@ All times are interpreted in your local timezone. A cron expression like `0 9 * 
 
 ### Jitter
 
-A scheduled task can run at a different time than its schedule says. If every session's tasks ran exactly on schedule, many of them would call the API at the same moment, so Claude Code shifts each task's run time. Recurring tasks run late, and one-shot tasks scheduled on the hour or half hour run a little early.
+A scheduled task can run at a different time than its schedule says. If every session's tasks ran exactly on schedule, many of them would call the API at the same moment, so Claude Code shifts each task's run time. Recurring tasks run late, except a task that runs every five minutes, written `*/5 * * * *`. One-shot tasks scheduled on the hour or half hour run a little early.
 
 #### How late a recurring task runs
 
-When you create a recurring task, Claude Code gives it a fixed delay and adds that delay to every run. The delay is worked out from the task's ID, so the same task runs the same number of minutes late each time, including when the session is idle and nothing else is running.
+Unless it runs every five minutes, a recurring task starts each run late by up to half the gap to the next run, and by at most 30 minutes. Your task is one of these three cases:
 
-Tasks that run more often get shorter delays, and 30 minutes is the longest delay a task can get. These are the delay ranges for some common schedules:
+* **Evenly spaced runs**: a task with equal gaps, such as hourly, daily, or every 10 minutes, runs the same number of minutes late every time, including when the session is idle.
+* **Unevenly spaced runs**: a task with uneven gaps, such as one scheduled for `:00` and `:15` each hour, can run a different number of minutes late at each.
+* **Every five minutes**: a task written `*/5 * * * *` isn't delayed. A run exactly five minutes after the last one would start after a five-minute [prompt cache](/docs/en/prompt-caching#which-ttl-each-request-gets) had expired, so each run starts 15 seconds sooner.
 
-| Task runs | Delay is between |
+Find your schedule in the first column of this table to see when each of its runs starts.
+
+| Schedule | When each run starts |
 | :- | :- |
-| Every 10 minutes | 0 and 5 minutes |
-| Every 30 minutes | 0 and 15 minutes |
-| Every hour, or less often such as daily | 0 and 30 minutes |
+| Every 5 minutes, written `*/5 * * * *`, which is what `/loop 5m` creates | 4 minutes 45 seconds after the previous run |
+| Every 10 minutes | 0 to 5 minutes late |
+| Every 30 minutes | 0 to 15 minutes late |
+| Every hour, or less often such as daily | 0 to 30 minutes late |
 
 For example, `7,37 * * * *` schedules a task for `:07` and `:37`, which are 30 minutes apart, so its delay is somewhere between 0 and 15 minutes. If this task's delay is 14 minutes, it runs at `:21` and `:51` every hour. Changing the schedule to a different minute moves the run time, and a delay is still added on top.
 
@@ -50360,6 +50468,8 @@ When you stop a run, it stays in the task panel while any of its agents' process
 
 Resume a paused run from `/workflows` by selecting it and pressing `p`. For a run you stopped, ask Claude to relaunch the workflow with the same script. If agents from the stopped run haven't exited yet, Claude Code refuses the relaunch until they have, so a second copy of those agents can't run alongside them.
 
+#### Which agents run again
+
 Claude Code replays the run in the order agents started, and each agent either returns its saved result or runs again:
 
 * **Completed**: returns its saved result. The first agent whose prompt differs from the previous run, because you edited the script or an earlier agent returned something different, runs again, and so does every agent after it, even ones that completed.
@@ -50367,6 +50477,10 @@ Claude Code replays the run in the order agents started, and each agent either r
 * **Failed**: runs again, and so does every agent that started after it, even ones that completed. Stopping one agent alone, by selecting it in [`/workflows`](#watch-the-run) and pressing `x`, counts as failing.
 
 That last case means a failure in the middle of a fan-out reruns work that already finished. If a script starts A, B, C, and D in that order and B fails, relaunching returns A from cache and runs B, C, and D again.
+
+If you edit a script that started A, B, C, and D so that it starts A, C, B, and D, the second agent to start is now C, where the previous run started B. Relaunching returns A from cache and runs C, B, and D again.
+
+#### Resume after you leave the session
 
 You can resume a run within the same Claude Code session. What happens to a running workflow when you leave the session depends on how you leave:
 
@@ -50597,7 +50711,7 @@ Apply the requested refactor across every affected file, then run the tests
 and report the results.
 ```
 
-Each subagent gets a temporary worktree that Claude Code removes automatically when the subagent finishes without changes; a worktree with changes stays on disk until the [periodic sweep below](#clean-up-subagent-and-background-session-worktrees) can remove it without losing work.
+Each subagent gets a temporary worktree that Claude Code removes automatically when the subagent finishes without changes; a worktree with changes stays on disk until the [periodic sweep below](#clean-up-subagent-and-background-session-worktrees) can remove it without losing work. For a worktree your [WorktreeCreate hook](/docs/en/hooks#worktreecreate) created, see [WorktreeRemove](/docs/en/hooks#worktreeremove) instead.
 
 Subagent worktrees use the same [base branch](#choose-the-base-branch) as `--worktree`, so they branch from your repository's default branch unless `worktree.baseRef` is set to `"head"`.
 
@@ -54700,7 +54814,7 @@ You can sign in to your Console account without creating an API key, even when y
 * **Sign in with your Console account**, labeled `(recommended)`: Claude Code keeps the OAuth token from that sign-in and stores it as an [Anthropic profile](#anthropic-profiles-and-federation-credentials). It creates no API key
 * **Create an API key**, labeled `(legacy)`: Claude Code creates a Console API key for you and stores it with your other credentials
 
-In practice, the profile stores an OAuth login while an API key is a static credential: Claude Code refreshes the profile's login automatically, and when refresh fails, requests fail with [Anthropic profile login expired](/docs/en/errors#anthropic-profile-login-expired) until you sign in again.
+In practice, the profile stores an OAuth login while an API key is a static credential. Claude Code refreshes the profile's login automatically, and when refresh fails, requests fail with an [expired profile login error](/docs/en/errors#anthropic-profile-login-expired) until you sign in again.
 
 You don't get the choice on every machine. Claude Code creates an API key without asking in these cases:
 
@@ -54852,7 +54966,7 @@ For the federation variables, Claude Code also reads the other variables in the 
 
 To confirm which source Claude Code chose, run `/status`. A `Profile` row names the source in place of the `Login method` row. When the profile is the credential in use, `Organization` and `Email` rows show its account.
 
-When a `user_oauth` profile's login has expired and Claude Code can't renew it, requests fail with [Anthropic profile login expired](/docs/en/errors#anthropic-profile-login-expired).
+When a `user_oauth` profile's login has expired and Claude Code can't renew it, requests fail with an [expired profile login error](/docs/en/errors#anthropic-profile-login-expired).
 
 Features that need your claude.ai login, such as [claude.ai connectors](/docs/en/mcp#use-mcp-servers-from-claude-ai) and [`/schedule`](/docs/en/routines), aren't available while one of these sources is selected. To stop Claude Code from selecting a source:
 
@@ -68356,7 +68470,18 @@ Claude Code reads `watchPaths` and `systemMessage` from their JSON output and di
 
 ### WorktreeCreate
 
-Runs when a worktree is being created, whether from `claude --worktree`, from a [subagent using `isolation: "worktree"`](/docs/en/sub-agents#choose-the-subagent-scope), or for a [background session](/docs/en/agent-view#how-file-edits-are-isolated) that Claude Code isolates in its own worktree. By default Claude Code creates the isolated working copy with `git worktree`. Configuring a WorktreeCreate hook replaces that default git behavior, letting you use a different version control system like SVN, Perforce, or Mercurial.
+Runs when Claude Code creates a worktree in cases such as these:
+
+* You start a session with `claude --worktree`
+* Claude creates a worktree during a session and switches into it with the [`EnterWorktree`](/docs/en/tools-reference) tool
+* A [subagent uses `isolation: "worktree"`](/docs/en/sub-agents#choose-the-subagent-scope)
+* A [workflow](/docs/en/workflows#migrate-many-files-in-parallel) runs an agent in its own worktree
+* Claude Code isolates a [background session](/docs/en/agent-view#how-file-edits-are-isolated) in its own worktree
+* [`claude remote-control`](/docs/en/remote-control#start-a-remote-control-session) in `worktree` mode starts a session in its own worktree
+
+When Claude runs `git worktree add` through the Bash tool rather than calling `EnterWorktree`, your WorktreeCreate hook doesn't run. To inspect or block that command, add a [`PreToolUse`](#pretooluse) hook with the `Bash` matcher.
+
+By default Claude Code creates the isolated working copy with `git worktree`. Configuring a WorktreeCreate hook replaces that default git behavior, letting you use a different version control system like SVN, Perforce, or Mercurial.
 
 Because the hook replaces the default behavior entirely, [`.worktreeinclude`](/docs/en/worktrees#copy-gitignored-files-into-worktrees) is not processed. If you need to copy local configuration files like `.env` into the new worktree, do it inside your hook script.
 
@@ -68419,12 +68544,22 @@ Runs when Claude Code cleans up a worktree that your [`WorktreeCreate`](#worktre
 * You exit an interactive [worktree session](/docs/en/worktrees#start-claude-in-a-worktree) and choose to remove the worktree when Claude Code prompts you
 * You exit an interactive worktree session you haven't [named](/docs/en/sessions#name-your-sessions), Claude Code finds no changed or untracked files, and it removes the worktree without prompting you
 * You delete a [background session](/docs/en/agent-view#what-deleting-a-session-removes) that runs in the worktree
+* You ask Claude to exit and remove the worktree during a session, and Claude removes it with the [`ExitWorktree`](/docs/en/tools-reference) tool
+* A session that [`claude remote-control`](/docs/en/remote-control#start-a-remote-control-session) started in `worktree` mode ends without crashing, and Claude Code finds no changed or untracked files and no new commits in its worktree
+* You stop `claude remote-control` while sessions it started in `worktree` mode are still running, and Claude Code finds no changed or untracked files and no new commits in their worktrees
+
+When a subagent or a workflow agent finishes, Claude Code keeps the worktree your WorktreeCreate hook made for it and doesn't run your WorktreeRemove hook. Remove those worktrees yourself when the work is done.
+
+Claude Code doesn't prompt you before your hook runs for an `ExitWorktree` call or a `claude remote-control` cleanup. `ExitWorktree` refuses to remove a hook-created worktree unless the call passes [`discard_changes: true`](/docs/en/agent-sdk/typescript#exitworktree), which makes your hook the last check on that route.
 
 Claude Code uses git to look for changed or untracked files, so it finds none in a worktree that isn't a git checkout or inside one, even when the directory holds uncommitted work. Check for that work in your WorktreeRemove hook before it deletes anything.
 
-For git-based worktrees, Claude Code handles cleanup automatically with `git worktree remove`. If you configured a WorktreeCreate hook, pair it with a WorktreeRemove hook to control cleanup of the worktrees it creates:
+For git-based worktrees, Claude Code handles cleanup automatically with `git worktree remove`. If you configured a WorktreeCreate hook, pair it with a WorktreeRemove hook to control cleanup:
 
-* **No WorktreeRemove hook**: when Claude Code removes the worktree as you exit a worktree session, it falls back to `git worktree remove --force` on the path your WorktreeCreate hook returned, so a worktree git recognizes is removed. A worktree git doesn't recognize, for example one your hook created with a non-git version control system, stays on disk. For what deleting a [background session](/docs/en/agent-view#what-deleting-a-session-removes) does with a hook-created worktree, see agent view's delete rules.
+* **No WorktreeRemove hook**: Claude Code falls back to git for a removal at exit or through `ExitWorktree`, and keeps the worktree when `claude remote-control` cleans up:
+  * **You exit a worktree session, or Claude calls `ExitWorktree`**: Claude Code removes the path your WorktreeCreate hook returned as `git worktree remove --force` would, so a worktree git recognizes is removed. A worktree git doesn't recognize, for example one your hook created with a non-git version control system, stays on disk.
+  * **`claude remote-control` cleans up a session's worktree**: the worktree stays on disk, and the terminal running `claude remote-control` shows `worktree removal failed, kept: <path>`.
+  * **You delete a background session**: see [What deleting a session removes](/docs/en/agent-view#what-deleting-a-session-removes).
 * **Hook exits 0**: the worktree counts as removed. Claude Code reads nothing else from the hook, so make sure your hook deleted the directory.
 * **Hook exits non-zero**: the removal fails if the directory at `worktree_path` still exists afterward, and the worktree stays on disk with no git fallback. A hook that deleted the directory before exiting non-zero counts as removed. For how the failure is reported, see [WorktreeRemove input](#worktreeremove-input).
 
@@ -68432,7 +68567,7 @@ Claude Code never deletes a branch belonging to a hook-created worktree, because
 
 Claude Code discards a WorktreeRemove hook's [JSON output fields](#json-output), such as `systemMessage` and `continue`.
 
-For a background-session delete, Claude Code verifies the stored worktree path before running the hook and refuses a path that is a symlink or passes through one below the repository root. The hook runs for a worktree that still contains files only when you confirm the delete in [agent view](/docs/en/agent-view#what-deleting-a-session-removes); for such a worktree, [`claude rm`](/docs/en/agent-view#manage-sessions-from-the-shell) keeps the session and worktree instead. Before v2.1.216, the hook ran on the stored path without these checks.
+For a background-session delete, Claude Code verifies the stored worktree path before running the hook and refuses a path that is a symlink or passes through one below the repository root. On that route, the hook runs for a worktree that still contains files only when you confirm the delete in [agent view](/docs/en/agent-view#what-deleting-a-session-removes); for such a worktree, [`claude rm`](/docs/en/agent-view#manage-sessions-from-the-shell) keeps the session and worktree instead. Before v2.1.216, the hook ran on the stored path without these checks.
 
 Claude Code passes the path returned by WorktreeCreate as `worktree_path` in the hook input. This example reads that path and removes the directory:
 
@@ -68471,6 +68606,7 @@ A WorktreeRemove hook's exit code decides the outcome. When a hook exits non-zer
 
 * The worktree stays on disk, and the hook's command and stderr go to the [debug log](#debug-hooks).
 * If you were deleting a background session, the session stays too. The refusal message in [agent view](/docs/en/agent-view#what-deleting-a-session-removes) reports how the hook ended, such as `exited 1`, quotes the start of its stderr, and says whether deleting the session again removes the directory anyway.
+* If `claude remote-control` was cleaning up a session's worktree, the terminal running it shows `worktree removal failed, kept: <path>`.
 
 ### PreCompact
 
@@ -76619,7 +76755,7 @@ Permission modes decide whether Claude asks before an action, and the [Bash sand
 | You want to | Start with | Isolation needed | Notes |
 | :- | :- | :- | :- |
 | Review every action yourself | Manual mode: `claude --permission-mode default` | None | Sensitive work, unfamiliar code |
-| Iterate locally with fewer prompts, without a classifier | Manual mode plus the Bash sandbox in [auto-allow mode](/docs/en/sandboxing#sandbox-modes): `claude --permission-mode default`, then run `/sandbox` and select auto-allow | The built-in Bash sandbox, on macOS, Linux, and WSL2 | Deny rules still apply, and ask rules that name a command, such as `Bash(git push *)`, still prompt. To turn the sandbox on from a settings file instead, set [`sandbox.enabled`](/docs/en/settings-reference#sandbox-enabled) to `true` |
+| Iterate locally with fewer prompts, without a classifier | Manual mode plus the Bash sandbox in [auto-allow mode](/docs/en/sandboxing#sandbox-modes): `claude --permission-mode default`, then run `/sandbox` and select auto-allow | The built-in Bash sandbox, on macOS, Linux, and WSL2 | Deny rules still apply, and ask rules that name a command, such as `Bash(git push *)`, still prompt. [Auto-allow mode](/docs/en/sandboxing#auto-allow-mode) covers other commands that can prompt. To turn the sandbox on from a settings file instead, set [`sandbox.enabled`](/docs/en/settings-reference#sandbox-enabled) to `true` |
 | Explore before changing anything | `claude --permission-mode plan` | None | Claude Code blocks edits until you [approve a plan](#review-and-approve-a-plan) |
 | Work hands-off in auto mode | `claude --permission-mode auto`, the [built-in starting permission mode](#which-mode-a-session-starts-in) with v2.1.283 or later | None; a sandbox or container adds defense in depth | Requires a [supported model](#eliminate-prompts-with-auto-mode), and your organization can [turn auto mode off](#eliminate-prompts-with-auto-mode) |
 | Run in CI with an exact allowlist | `claude -p "run the test suite" --permission-mode dontAsk --allowedTools "Bash(npm test)" "Read"` | None beyond what your CI runner provides | [Cloud sessions](/docs/en/claude-code-on-the-web) ignore `dontAsk` from settings files |
@@ -78021,6 +78157,7 @@ These checks still apply:
 * Content-scoped ask rules like `Bash(git push *)` still force a prompt
 * Explicit deny rules still apply
 * `rm` or `rmdir` commands that target a [critical path](/docs/en/permission-modes#critical-paths) still go through the regular permission flow
+* Other sandboxed commands can go through the regular permission flow too, as [Auto-allow mode](/docs/en/sandboxing#auto-allow-mode) describes
 
 Commands that won't run sandboxed, such as excluded commands, respect the bare `Bash` ask rule as usual. See [sandbox modes](/docs/en/sandboxing#sandbox-modes) to change this behavior.
 
@@ -80748,7 +80885,9 @@ You can't give your marketplace any of the following names:
 * **Names starting with `claudeai-`**: reserved for marketplaces hosted on claude.ai. `claude plugin marketplace add` refuses any other marketplace that uses one with `Cannot add marketplace "<name>": names starting with "claudeai-" are reserved for marketplaces hosted on claude.ai`.
 * **The download folder of a registered GitHub marketplace, `<owner>-<repo>`**: Claude Code downloads a marketplace added from a `github` source such as `acme/x-tools` through a folder named `acme-x-tools`, whatever that marketplace's own `name` is. While that marketplace is registered under a name other than `acme-x-tools`, `claude plugin marketplace add` refuses a different marketplace named `acme-x-tools` after downloading it, and reports `Can't use the marketplace name "acme-x-tools"`. This check requires Claude Code v2.1.290 or later.
 
-When a registered marketplace stops loading because its name imitates an official one, `claude plugin list` and `/plugin` report `Claude Code refuses the marketplace name "<name>"`. The message tells you to remove the marketplace. Removing it also uninstalls its plugins and deletes their saved data. This named refusal message requires Claude Code v2.1.282 or later.
+When a registered marketplace stops loading because its name imitates an official one, `claude plugin list` and `/plugin` report `Claude Code refuses the marketplace name "<name>"`. The message tells you to remove the marketplace. Removing it also uninstalls its plugins and deletes their data, options, and secrets. This named refusal message requires Claude Code v2.1.282 or later.
+
+If a settings file declares the marketplace inline, the message tells you to rename its entry before you remove the old name. For the steps, see [Claude Code refuses the marketplace name](/docs/en/errors#claude-code-refuses-the-marketplace-name). The message lists them in Claude Code v2.1.292 or later.
 
 ## Top-level fields
 
@@ -83354,8 +83493,18 @@ Even in auto-allow mode, the following still apply:
 * Explicit [deny rules](/docs/en/permissions) are always respected
 * `rm` or `rmdir` commands that target a [critical path](/docs/en/permission-modes#critical-paths) still go through the regular permission flow
 * Content-scoped [ask rules](/docs/en/permissions) like `Bash(git push *)` still force a prompt even for sandboxed commands
-* A bare `Bash` ask rule, or the equivalent `Bash(*)` form, is skipped for commands that run sandboxed; it still applies to commands that fall back to the regular permission flow. In [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode), the rule isn't skipped: it prompts for sandboxed commands too, including read-only ones
+* A bare `Bash` ask rule, or the equivalent `Bash(*)` form, is skipped for commands that run sandboxed; it still applies to commands that run outside the sandbox. In [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode), the rule isn't skipped: it prompts for sandboxed commands too, including read-only ones
 * [Monitor tool](/docs/en/tools-reference#monitor-tool) commands aren't approved automatically, though they still run in the sandbox. To skip the prompt, add an [allow rule](/docs/en/permissions#bash) that matches the command, such as `Bash(npm run *)`
+
+Some sandboxed commands also go through the regular [permission flow](/docs/en/permissions) instead of being approved automatically. This happens with commands such as `FOO=bar npm test`, where a variable set in front of a command can change which program runs, and with `make CC=clang` or `eval "ls"`. Your allow rules and permission mode then decide whether you see a prompt, and the command still runs inside the sandbox.
+
+For these three commands, an [allow rule](/docs/en/permissions#bash) that matches the command stops a recurring prompt. These rules show the pattern:
+
+* `Bash(make *)` approves `make CC=clang`
+* `Bash(FOO=bar npm *)` approves `FOO=bar npm test`. When the command starts with a variable assignment, include the assignment in the rule
+* `Bash(eval "ls")` approves `eval "ls"`. A wildcard rule such as `Bash(eval *)` doesn't stop this prompt, so write a rule that matches the whole command
+
+An allow rule that matches a command also approves an [unsandboxed retry](#the-unsandboxed-retry-escape-hatch) of it, so the command can run outside the sandbox with no prompt.
 
 <Info>
   Auto-allow mode works independently of your permission mode setting, with three exceptions: [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode), an auto mode command that carries [per-command allowed domains](#per-command-allowed-domains-in-auto-mode), and [server-side classifier review](/docs/en/permission-modes#how-the-classifier-evaluates-actions) of sandboxed commands in auto mode. Even if you're not in "accept edits" mode, sandboxed Bash commands run automatically when auto-allow is enabled. This means Bash commands that modify files within the sandbox boundaries execute without prompting, even in Manual mode, where the file edit tools would prompt.
@@ -89267,7 +89416,7 @@ Let Claude Code run sandboxed Bash commands without a permission prompt. Command
 
 * **Scope**: [`Any file`](#scopes)
 * **Type**: Boolean
-  * `true`: Claude Code runs sandboxed Bash commands without a permission prompt, subject to `deny` rules and content-scoped `ask` rules; `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` turns auto-allow off
+  * `true`: Claude Code runs sandboxed Bash commands without a permission prompt, except in the cases that [Auto-allow mode](/docs/en/sandboxing#auto-allow-mode) describes; `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` turns auto-allow off
   * `false`: sandboxed commands go through the regular permission flow, so your allow rules and permission mode decide. The `/sandbox` **Mode** tab calls this regular permissions mode
 * **Default**: `true`
 
@@ -89282,7 +89431,7 @@ This keeps the sandbox on and sends sandboxed commands through the regular permi
 }
 ```
 
-See [Sandbox modes](/docs/en/sandboxing#sandbox-modes) for what auto-allow mode still prompts on and how it behaves in plan mode.
+See [Auto-allow mode](/docs/en/sandboxing#auto-allow-mode) for what auto-allow mode still prompts on and how it behaves in plan mode.
 
 ### `sandbox.excludedCommands`
 
@@ -113310,6 +113459,7 @@ type SDKMessageOrigin =
       kind: "task-notification";
       subkind?: "scheduled-trigger" | "peer-send-message";
       fireReason?: string;
+      runId?: string;
     }
   | { kind: "coordinator" }
   | { kind: "auto-continuation" }
@@ -113336,6 +113486,8 @@ When Claude Code delivers a task notification into a session, it sets `subkind` 
 Every other task notification has no `subkind`. That includes [PR activity](/docs/en/claude-code-on-the-web#how-claude-responds-to-pr-activity) delivered into a session and background events such as a finished task. Messages from the [cross-session `SendMessage` tool](/docs/en/cross-session-messaging) aren't task notifications at all: whether they come from a session on the same machine or through Anthropic servers from another machine, Claude Code gives them `kind: "peer"` and the [peer origin fields](#peer-origin-fields).
 
 `fireReason` says why a `scheduled-trigger` notification fired, as a short lowercase token such as `scheduled`, `manual`, `retry`, `catch_up`, or `api`. Anthropic servers set it on a [routine](/docs/en/routines)'s deliveries, and your application sets it when it declares a scheduled run. It's absent when neither sent one. Requires TypeScript Agent SDK v0.3.280 or later.
+
+A background task can run more than once under the same `task_id`, such as when Claude [resumes a subagent](/docs/en/agent-sdk/subagents#resume-subagents). Each run has its own [`run_id`](#sdktaskstartedmessage). When a run's notification reaches your session as a user message, `runId` on that message's `task-notification` origin holds the same value. A notification can arrive after the task's next run has started, and it still carries the earlier run's ID. To tell which run a turn belongs to, compare `runId`, not `task_id`. Requires TypeScript Agent SDK v0.3.292 or later.
 
 #### Declare a scheduled run
 
@@ -114095,7 +114247,7 @@ type SyncHookJSONOutput = {
 
 ## Tool Input Types
 
-Documentation of input schemas for all built-in Claude Code tools. These types are exported from `@anthropic-ai/claude-agent-sdk/sdk-tools` and can be used for type-safe tool interactions.
+Documentation of input schemas for built-in Claude Code tools. These types are exported from `@anthropic-ai/claude-agent-sdk/sdk-tools` and can be used for type-safe tool interactions.
 
 ### `ToolInputSchemas`
 
@@ -114827,7 +114979,7 @@ MCP tool arguments are an open object: each server defines its own parameters, s
 
 ## Tool Output Types
 
-Documentation of output schemas for all built-in Claude Code tools. These types are exported from `@anthropic-ai/claude-agent-sdk/sdk-tools` and represent the actual response data returned by each tool.
+Documentation of output schemas for built-in Claude Code tools. These types are exported from `@anthropic-ai/claude-agent-sdk/sdk-tools` and represent the actual response data returned by each tool.
 
 ### `ToolOutputSchemas`
 
@@ -116346,13 +116498,14 @@ type SDKStatusMessage = {
 
 ### `SDKTaskNotificationMessage`
 
-Notification when a background task completes, fails, or is stopped. Background tasks include `run_in_background` Bash commands, [Monitor](#monitor) watches, and background subagents. For the `ambient` field, see [`SDKTaskStartedMessage`](#sdktaskstartedmessage), which defines it and its version requirement.
+Notification when a background task completes, fails, or is stopped. Background tasks include `run_in_background` Bash commands, [Monitor](#monitor) watches, and background subagents. For the `run_id` and `ambient` fields, see [`SDKTaskStartedMessage`](#sdktaskstartedmessage), which defines them and their version requirements.
 
 ```typescript theme={null}
 type SDKTaskNotificationMessage = {
   type: "system";
   subtype: "task_notification";
   task_id: string;
+  run_id?: string;
   tool_use_id?: string;
   status: "completed" | "failed" | "stopped";
   reason?: "worker_restart";
@@ -116511,6 +116664,7 @@ type SDKTaskStartedMessage = {
   type: "system";
   subtype: "task_started";
   task_id: string;
+  run_id?: string;
   tool_use_id?: string;
   description: string;
   task_type?: string;
@@ -116521,6 +116675,20 @@ type SDKTaskStartedMessage = {
   uuid: UUID;
   session_id: string;
 };
+```
+
+`run_id` identifies one run of the task. When a task runs again under the same `task_id`, such as a [subagent that Claude resumes](/docs/en/agent-sdk/subagents#resume-subagents), the new run gets a new `run_id`. The field requires Agent SDK v0.3.292 or later. Use it to keep the runs of one task apart:
+
+* **Match messages to a run**: the `task_started`, [`task_progress`](#sdktaskprogressmessage), [`task_updated`](#sdktaskupdatedmessage), and [`task_notification`](#sdktasknotificationmessage) messages of one run carry the same `run_id`. The run's entry in each [`SDKBackgroundTasksChangedMessage`](#sdkbackgroundtaskschangedmessage) carries it too, and so does the [`runId`](#task-notification-subkinds) on the origin of the user message that delivers the run's notification.
+* **Detect a late message**: compared as plain strings, the run IDs of one task sort in the order the runs started, so a message whose `run_id` sorts before the run you're showing comes from an earlier run. Treat the value as opaque apart from that comparison.
+* **Fall back to `task_id`**: when a message carries no `run_id`, such as the `task_notification` that a resumed session emits to close a task the earlier process started, attribute it by `task_id`.
+
+For example, these three messages, trimmed to their identifying fields, come from a background subagent that Claude resumed once. The two `task_started` messages share a `task_id`, and the notification that ended the first run carries the first run's ID:
+
+```json theme={null}
+{"subtype": "task_started", "task_id": "a5c2e8f41b09d7a36", "run_id": "0mubbs7i8-6f0c2d41"}
+{"subtype": "task_notification", "task_id": "a5c2e8f41b09d7a36", "run_id": "0mubbs7i8-6f0c2d41", "status": "completed"}
+{"subtype": "task_started", "task_id": "a5c2e8f41b09d7a36", "run_id": "0mubc18m1-b7719e05"}
 ```
 
 `ambient` is `true` for tasks that aren't part of the session's work, such as tasks Claude Code runs for its own operation. Live-update watchers are also ambient, including watchers the user asked for. Exclude ambient tasks from activity indicators. The field requires Agent SDK v0.3.247 or later.
@@ -116544,7 +116712,7 @@ The parent can be a foreground task or one that already ended, so treat an ID yo
 
 ### `SDKTaskProgressMessage`
 
-Emitted periodically while a subagent or background task is running.
+Emitted periodically while a subagent or background task is running. For the `run_id` field, see [`SDKTaskStartedMessage`](#sdktaskstartedmessage), which defines it and its version requirement.
 
 For a subagent task, the `summary` field carries a model-generated progress summary and is populated only when [`agentProgressSummaries`](#options) is enabled. For a [backgrounded MCP tool call](/docs/en/mcp#automatic-backgrounding-of-long-tool-calls), `summary` carries the MCP server's latest reported progress and doesn't depend on that option.
 
@@ -116553,6 +116721,7 @@ type SDKTaskProgressMessage = {
   type: "system";
   subtype: "task_progress";
   task_id: string;
+  run_id?: string;
   tool_use_id?: string;
   description: string;
   subagent_type?: string;
@@ -116570,13 +116739,14 @@ type SDKTaskProgressMessage = {
 
 ### `SDKTaskUpdatedMessage`
 
-Emitted when a background task's state changes, such as when it transitions from `running` to `completed`. Merge `patch` into your local task map keyed by `task_id`. The `end_time` field is a Unix epoch timestamp in milliseconds, comparable with `Date.now()`.
+Emitted when a background task's state changes, such as when it transitions from `running` to `completed`. Merge `patch` into your local task map keyed by `task_id`. The `end_time` field is a Unix epoch timestamp in milliseconds, comparable with `Date.now()`. For the `run_id` field, see [`SDKTaskStartedMessage`](#sdktaskstartedmessage), which defines it and its version requirement.
 
 ```typescript theme={null}
 type SDKTaskUpdatedMessage = {
   type: "system";
   subtype: "task_updated";
   task_id: string;
+  run_id?: string;
   patch: {
     status?: "pending" | "running" | "completed" | "failed" | "killed";
     description?: string;
@@ -116592,7 +116762,7 @@ type SDKTaskUpdatedMessage = {
 
 ### `SDKBackgroundTasksChangedMessage`
 
-Emitted whenever the set of live background tasks changes: a task starts, completes, or is killed; a foreground agent is backgrounded; or a task's `description`, `ambient`, or `parent_task_id` field changes. For the `parent_task_id` field on each entry, see [`SDKTaskStartedMessage`](#sdktaskstartedmessage), which defines it and its version requirement.
+Emitted whenever the set of live background tasks changes: a task starts, completes, or is killed; a foreground agent is backgrounded; or a task's `description`, `ambient`, or `parent_task_id` field changes. For the `run_id` and `parent_task_id` fields on each entry, see [`SDKTaskStartedMessage`](#sdktaskstartedmessage), which defines them and their version requirements.
 
 The `tasks` array is the full live set. Replace any cached set with each payload instead of pairing `task_started` and `task_notification` events, so the next membership change corrects any event you missed.
 
@@ -116610,6 +116780,7 @@ type SDKBackgroundTasksChangedMessage = {
   subtype: "background_tasks_changed";
   tasks: {
     task_id: string;
+    run_id?: string;
     task_type: string;
     subagent_type?: string;
     description: string;
