@@ -274,6 +274,7 @@ Claude Code reads the subagent definition you named and applies these parts of i
 * **`model`**: Claude Code uses the definition's `model` in either display mode when your spawn prompt doesn't name one. See [how Claude Code picks a teammate's model](#specify-teammates-and-models).
 * **`disallowedTools`**: for an in-process teammate, Claude Code removes the tools in the definition's `disallowedTools` from the teammate's set. `SendMessage` and the Task tools it adds stay available even when the list names them.
 * **`effort`**: for an in-process teammate, Claude Code applies the definition's [`effort`](/docs/en/sub-agents#supported-frontmatter-fields) under the [frontmatter effort rules](/docs/en/model-config#set-the-effort-level).
+* **`autoCompactWindow`**: for an in-process teammate, Claude Code applies the definition's [`autoCompactWindow`](/docs/en/sub-agents#supported-frontmatter-fields) under [that field's rules](/docs/en/sub-agents#subagent-auto-compact-window). A split-pane teammate ignores the field. Requires Claude Code v2.1.296 or later.
 * **Body**: for an in-process teammate, Claude Code appends the definition's body to its default system prompt as additional instructions. For a split-pane teammate, Claude Code uses the body in place of its default system prompt.
 * **`skills`**: Claude Code doesn't apply the definition's `skills` to a teammate in either display mode. The teammate loads skills from your project and user settings.
 * **`mcpServers`**: for a split-pane teammate, Claude Code applies the definition's `mcpServers` under the [rules for that field](/docs/en/sub-agents#scope-mcp-servers-to-a-subagent), which cover a session started with `--agent` as well. An in-process teammate ignores the field and loads MCP servers from your project and user settings.
@@ -2660,6 +2661,108 @@ Release notes for Claude Code, including new features, improvements, and bug fix
 This page is generated from the [CHANGELOG.md on GitHub](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md). Longer releases are grouped by type of change, with long lists of improvements and bug fixes collapsed.
 
 Run `claude --version` to check your installed version.
+
+<Update label="2.1.300" description="October 14, 2026">
+  **Added**
+
+  * Added `virtualText` to a mod's prompt decorations: text drawn in the prompt box that never enters the draft or the submitted prompt
+  * Added `cache_creation_5m_tokens` and `cache_creation_1h_tokens` to the OpenTelemetry `api_request` event, splitting cache writes by lifetime
+  * Added `$.ui.view({ agentId })` for mods: shows an agent's transcript in the main view when you ask, and `$.ui.view({})` goes back
+  * Added a `dir` prop on a mod's `Text` for right-to-left text: on Windows and in VS Code's terminal its rows read in that direction and sit flush right
+  * Added `/advisor` on Claude Platform on AWS; no advisor runs until you pick one with `/advisor`, `advisorModel` or `--advisor`, and `CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1` turns it off
+  * Added OpenTelemetry GenAI semantic-convention attributes to trace spans, such as `gen_ai.provider.name`, `gen_ai.conversation.id`, `gen_ai.tool.name` and `error.type`
+  * Added support for rewriting a workflow agent's `prompt` and `model` in the `agent.spawn` mod hook, which could only refuse workflow agents before
+  * Added the `prompt.change` mod hook, raised when the prompt box's text changes without a typed edit: a recalled history entry, a clear, an undo, or a plugin's fill
+  * \[VSCode] Added the `claudeCode.attachSelection` setting to stop text selected in the editor from being added to your messages
+  * \[Claude Tag] Added support for Slack Connect channels: an Owner or Claude Tag admin can let Claude in Slack answer in channels shared with another organization; it's off by default
+  * \[Claude Tag] Added a private Allow once / Deny card in Slack threads for connector actions that need your approval, so Claude asks instead of refusing; others only see that it's waiting on you
+  * \[Claude Tag] Added support for Slack voice clips in Claude in Slack: Claude reads Slack's transcript of a clip when Slack has one
+
+  **Changed**
+
+  * Changed `CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST` sessions to ignore CA-bundle, tool-proxy, git TLS and git config variables like `SSL_CERT_FILE` in settings; under Claude Desktop, only in project settings
+  * Changed exit to force-kill background commands still running 1.5 seconds after being asked to stop; in fullscreen mode they could previously be left running
+  * Changed Claude Desktop's Code tab to apply managed settings when `forceLoginGatewayUrl` names an Anthropic-operated gateway that serves the session's hostname; that gateway must be reachable at start
+  * Changed `claude gateway` to stop at start, naming the key, on a `desktop:` policy key that Claude Desktop cannot use from a gateway, where it earlier started with a warning
+  * Changed large requests to api.anthropic.com to use gzip compression even when telemetry is disabled; set `CLAUDE_CODE_GZIP_REQUEST_BODIES=0` to turn it off
+  * Changed the `claude-api` skill to leave Managed Agents sessions in place unless you ask to archive or delete them
+  * Changed background sessions to resume a carried workflow through the Workflow tool's approval instead of running it from the handoff file
+  * Changed local session transcripts to also record each API request's system prompt, tools and parameters, so a transcript you choose to share can reproduce a request exactly
+  * Changed the `/sandbox` mode options to read "Sandbox commands" instead of "Sandbox BashTool"
+  * Changed `PermissionRequest` hooks in Cowork cloud sessions: a `setMode` update in a hook's allow is now ignored; the rest of the approval still applies
+  * Changed hooks: `updatedInput` from PreToolUse and PermissionRequest hooks is now validated like Claude's own input: unknown keys are dropped, and input the tool rejects denies the call
+  * Removed the `--sandbox` and `--no-sandbox` flags from `claude remote-control`, which had no effect; passing either now exits with an error. Set `sandbox.enabled` in settings to sandbox sessions
+  * \[Claude Tag] Changed access bundles an admin attached to a Slack channel to keep applying once the channel becomes a Slack Connect channel, with no need to remove and re-attach them
+
+  **Improved**
+
+  * Improved WebFetch in Cowork cloud sessions to tell Claude that a page failed moments ago instead of fetching it again
+  * Improved mod sharing in the built-in `plugin-authoring` skill: Claude scans a mod's files for keys before opening them, and asks before scanning a folder outside the project
+  * Improved the note Claude 3 models get about an @-mentioned PDF, so they less often answer without reading it
+  * Improved artifact updates: Claude now applies a small change and republishes the artifact in one call, and makes larger edits and republishes within a single response
+
+  <Expandable title="59 bug fixes">
+    - Fixed cloud sessions telling Claude that an organization policy blocked a host when the session's own network settings did
+    - Fixed `/autocompact` warning about high token usage when you choose a smaller auto-compact window
+    - Fixed SessionEnd hooks sometimes not running when you exit while a background command is still running
+    - Fixed `claude --help` naming a removed tool in its description of `--restricted`
+    - Fixed `claude agents` not refreshing any pull request's status when the data for one of them came back incomplete
+    - Fixed Claude being told a background agent was lost, not resumable, after a cloud session's container was replaced, when the agent had already been resumed once
+    - Fixed subagents you had typed messages to disappearing from `/tasks` shortly after finishing, leaving no way back to the conversation
+    - Fixed a completed parent agent dropping off the breadcrumb (its child shown re-rooted at top level) while you were viewing the child
+    - Fixed the agents view taking a typed word such as "up", "down" or "escape" for that key when input arrived in a burst, which could move the peek mid-reply or clear a draft
+    - Fixed automatic tool search (`ENABLE_TOOL_SEARCH=auto`) turning off part-way through a conversation, for example while MCP servers reconnect after a resume
+    - Fixed a login refused by `forceLoginOrgUUID` leaving the refused organization's token stored, or live after `/login`
+    - Fixed the diff view in Claude Desktop and Remote Control sessions not noticing a conflicted cherry-pick or revert in reftable repositories
+    - Fixed the Artifact tool's verbose and ctrl+o line reading `Artifact("(unprintable path)")` while a call's input arrives; its row now shows "Waiting…" and "Running…" as Bash's does
+    - Fixed the first transcript entry written after resuming a session being lost when a crash had cut the transcript's last line short
+    - Fixed `/branch` dropping messages, and `claude purge` skipping subfolder projects, when they contain a Unicode line or paragraph separator (U+2028, U+2029)
+    - Fixed plugin `WorktreeCreate` and `WorktreeRemove` hooks not running when Claude Code starts with `--worktree` (not yet with `--tmux`)
+    - Fixed OpenTelemetry `tool_result` events missing `git_commit_id` after `git commit -q` in repositories using reftable ref storage
+    - Fixed a prompt that a mod's `prompt.submit` hook rewrote or dropped still being recorded as typed in the OpenTelemetry `user_prompt` event and interaction span, and in session title requests
+    - Fixed a note meant for Claude about mod hot-reloading appearing in the transcript as if you had typed it
+    - Fixed agent hooks ignoring their `model`: aliases like `haiku` now resolve, a subagent's model no longer overrides it, and an unavailable model falls back to the caller's instead of allowing the action
+    - Fixed `--worktree` sessions sometimes starting from the wrong commit when a tag or branch was named like a commit ID, and their starting git status naming a branch other than the new worktree's
+    - Fixed the branch showing as ".invalid" and `--worktree` failing to reopen a worktree in repositories using git's reftable ref storage
+    - Fixed Claude naming files in the session scratchpad by a bare filename or relative path instead of their full path
+    - Fixed `claude remote-control` servers giving up on renewing their connection after a brief sign-in error, such as a locked keychain; they now retry, and warn when you need to run `claude /login`
+    - Fixed `--worktree` failing in a worktree of a bare repository when origin's default branch can't be fetched; the fallback base is now the current checkout's HEAD, not the main repository's
+    - Fixed starting Claude Code in a VS Code, Cursor or Devin Desktop integrated terminal launching the editor's command-line tool twice to check for the extension; it now launches it once
+    - Fixed a mod's `prompt.edit` hook not being raised for a newline entered with the `chat:newline` keybinding (Ctrl+J, or a rebound Enter)
+    - Fixed a conversation failing on every turn with a 400 error when the API rejected an MCP tool's input schema; Claude Code now sends that tool without parameters for the rest of the conversation
+    - Fixed resuming a headless or Agent SDK session losing the recent messages a compaction had kept, when the compaction followed a reply cut at the output token limit (compactions from this version on)
+    - Fixed Claude not being told about an MCP server's tools and instructions until its next tool call, when the server finished connecting after a compaction
+    - Fixed Remote Control sessions being marked stopped while still running, on a computer serving several sessions at once
+    - Fixed resuming a headless or Agent SDK session losing its compaction summary or bringing back pre-compaction history, when the compaction followed a retried or unfinished reply in the same turn
+    - Fixed Claude polling a background command's output file or sleeping while it runs
+    - Fixed feature flags and staged rollouts staying stale behind a TLS-inspecting proxy whose certificate is trusted only through the OS certificate store
+    - Fixed `claude daemon stop --any` printing "stopped" while a stuck background service kept running: it now waits, force-kills the service, and says so with exit 1 if it is still there
+    - Fixed `claude daemon stop` exiting with no output, and leaving sessions listed as running, when telemetry is turned off
+    - Fixed Write, Edit and NotebookEdit in Cowork cloud sessions reporting success for a path on your own computer, where the file never arrived
+    - Fixed Claude searching for deferred tools already loaded earlier in the conversation when a session resumes a history that never listed them
+    - Fixed secondary (dim) text looking the same as normal text under the dark ANSI theme and on 16-color terminals
+    - Fixed cloud sessions hanging 5 minutes per turn when the organization's policy can't be read; the turn now ends promptly and says why
+    - Fixed a cloud session sometimes running an already answered message a second time after the session restarted during a long reply
+    - Self-hosted runner: Fixed the runner and orchestrator freezing (no polls, `/healthz` or `SIGTERM` shutdown) while nobody reads their output; logs keep the latest 256 KiB and count drops (not on Windows)
+    - \[VSCode] Fixed fast mode staying on after usage credits ran out, which made each request be refused and re-sent; it now turns off until you turn it back on, with an error notice
+    - \[VSCode] Fixed the Thinking toggle switching to Off on models that always think; the toggle is no longer shown for those models
+    - \[VSCode] Fixed "Edit prompt" on a flagged message opening the file or command menu over the restored prompt; Enter now sends it as written
+    - \[VSCode] Fixed Shift+dragging a file onto the prompt on Windows inserting an unreadable `/c:/…` path instead of a mention relative to the working directory
+    - \[VSCode] Fixed changes to VS Code's chat font size settings needing a window reload or being undone by a theme change; diffs and the plan preview now follow them too
+    - \[VSCode] Fixed "Resume session" and tabs restored after a reload opening an empty new conversation instead of one that had moved into a git worktree
+    - \[VSCode] Fixed ↑ then Enter on a recalled slash command running it without its arguments; the command and file menus no longer open over a recalled prompt until you edit it
+    - \[VSCode] Fixed Shift+dragging a file from the Explorer or an editor tab onto the prompt inserting nothing in WSL, SSH and Dev Container windows
+    - \[VSCode] Fixed Ctrl+Alt+F toggling Focus view instead of opening Find in the Explorer, other tree views, or the Debug Console on Windows and Linux
+    - \[VSCode] Fixed the check for sessions open in other windows or terminals creating extra processes on macOS: it now starts `/bin/ps` directly instead of searching PATH for `ps` on every check
+    - \[VSCode] Windows: Fixed a conversation showing "still open somewhere else" after a crash or power loss, when Windows had since restarted and given the old process ID to another program
+    - \[Cloud sessions] Fixed "Allow for this task" missing from Cowork's approval prompts for connector tools where an organization turns off "Always allow" (regression in 2.1.292)
+    - \[Cloud sessions] Fixed most commands in the / menu losing their descriptions in cloud sessions once you sent a second message
+    - \[Remote Control] Fixed the diff view in Remote Control sessions on claude.ai and the desktop app showing deleted and renamed files as modified; requires Claude Code v2.1.296 or later on your machine
+    - \[Claude Tag] Fixed Claude in Slack not answering another app that tags it in a thread under a message Claude itself posted to the channel
+    - \[Code Review] Fixed Code Review ignoring `@claude review` comments from people with write access whose GitHub organization membership is private; their comments now start a review
+    - \[Code Review] Fixed Code Review's "paused for this repository" comment sending admins to Code Review settings; it now says who can fix it and links the Git providers page
+  </Expandable>
+</Update>
 
 <Update label="2.1.299" description="October 14, 2026">
   **Added**
@@ -14437,7 +14540,7 @@ Each cloud session is separated from your machine and from other sessions throug
 * **Isolated virtual machines**: each session runs in an isolated, Anthropic-managed VM. Sessions your organization routes to a [self-hosted environment](/docs/en/self-hosted-environments) run on your own infrastructure instead, where isolation is your deployment's responsibility
 * <span />**Network access controls**: in Anthropic-hosted environments, network access is limited by default and can be disabled. See [Network access](/docs/en/cloud-environments#network-access) for the access levels, the [default allowed domains](/docs/en/cloud-environments#default-allowed-domains), and the traffic that doesn't go through the allowlist. In a self-hosted environment, you restrict session egress at your own network boundary. When running with network access disabled, Claude Code can still communicate with the Anthropic API, which may allow data to exit the VM.
 * **Credential protection**: in Anthropic-hosted environments, git credentials and signing keys stay outside the sandbox, and a proxy authenticates on the session's behalf with scoped credentials. In a self-hosted environment, your deployment supplies git credentials; see [Configure git](/docs/en/self-hosted-environments-deploy#configure-git)
-* **Network secrets**: in Anthropic-hosted environments on Pro and Max plans, keys you [add to a cloud environment](/docs/en/cloud-environments#add-network-secrets) stay outside the sandbox the same way, attached to matching requests after they leave the session. A self-hosted environment doesn't have network secrets, and Team and Enterprise plans don't have them yet
+* **Network secrets**: in Anthropic-hosted environments, keys you [add to a cloud environment](/docs/en/cloud-environments#add-network-secrets) stay outside the sandbox the same way, attached to matching requests after they leave the session. A self-hosted environment doesn't have network secrets
 * **Secure analysis**: code is analyzed and modified within the session's isolated environment before creating PRs
 
 ## Troubleshooting
@@ -14608,7 +14711,7 @@ Skills, command files, subagents, output styles, and rules read their configurat
 | - | - | - |
 | `skills/<name>/SKILL.md` | `name`, `description`, `when_to_use`, `argument-hint`, `arguments`, `disable-model-invocation`, `user-invocable`, `allowed-tools`, `disallowed-tools`, `model`, `effort`, `context`, `agent`, `background`, `hooks`, `paths`, `shell`, `metadata`, `license`, `compatibility` | [Skill frontmatter](/docs/en/skills#frontmatter-reference) |
 | `commands/*.md` | The skill fields except `name` and `paths` | [Skill frontmatter](/docs/en/skills#frontmatter-reference) |
-| `agents/*.md` | `name`, `description`, `tools`, `disallowedTools`, `model`, `permissionMode`, `maxTurns`, `skills`, `mcpServers`, `hooks`, `memory`, `background`, `effort`, `isolation`, `color`, `initialPrompt`, `omitClaudeMd`, `experimental` | [Subagent frontmatter](/docs/en/sub-agents#supported-frontmatter-fields) |
+| `agents/*.md` | `name`, `description`, `tools`, `disallowedTools`, `model`, `permissionMode`, `maxTurns`, `autoCompactWindow`, `skills`, `mcpServers`, `hooks`, `memory`, `background`, `effort`, `isolation`, `color`, `initialPrompt`, `omitClaudeMd`, `experimental` | [Subagent frontmatter](/docs/en/sub-agents#supported-frontmatter-fields) |
 | `output-styles/*.md` | `name`, `description`, `keep-coding-instructions`, `force-for-plugin` | [Output style frontmatter](/docs/en/output-styles#frontmatter) |
 | `rules/*.md` | `paths` | [Rule frontmatter](/docs/en/memory#rules-frontmatter-reference) |
 
@@ -15172,7 +15275,7 @@ Cloud threads don't have the skills, MCP servers, plugins, and tools installed o
 
 * Skills, subagents, and commands: commit them to a repository you added to the project, for example a skill at `.claude/skills/<skill-name>/SKILL.md`. Each cloud thread clones every repository in the project and loads `.claude/skills/`, `.claude/agents/`, and `.claude/commands/` from each of them, so a skill committed to one repository is available in every cloud thread. Cloud threads also load the [skills you enable for your claude.ai account](/docs/en/skills#skills-in-cowork-and-cloud-sessions).
 * Plugins: add them in **Project settings > Plugins**; they load into each new cloud thread. Plugins that a repository declares in its `.claude/settings.json` [don't load in cloud threads](/docs/en/cloud-environments#what-carries-over-from-your-setup).
-* MCP servers: cloud threads get their MCP tools from the connectors on your claude.ai account, which are MCP servers you connect once at [claude.ai/customize/connectors](https://claude.ai/customize/connectors) or through the **Manage connectors** link in **Project settings > Environment**. Every cloud thread can use all of them with no per-project setup. The project conversation itself has no connectors, so send work that needs one as a task for a cloud thread. In a project with one repository, cloud threads also load MCP servers from that repository's [`.mcp.json`](/docs/en/cloud-environments#what-carries-over-from-your-setup). [How connectors reach Claude Code](/docs/en/mcp#how-connectors-reach-claude-code) lists the rules for cloud sessions and the settings that turn connectors off.
+* MCP servers: cloud threads get their MCP tools from the connectors on your claude.ai account, which are MCP servers you connect once at [claude.ai/customize/connectors](https://claude.ai/customize/connectors). Every cloud thread can use all of them with no per-project setup. The project conversation itself has no connectors, so send work that needs one as a task for a cloud thread. In a project with one repository, cloud threads also load MCP servers from that repository's [`.mcp.json`](/docs/en/cloud-environments#what-carries-over-from-your-setup). [How connectors reach Claude Code](/docs/en/mcp#how-connectors-reach-claude-code) lists the rules for cloud sessions and the settings that turn connectors off.
 * Command-line tools and packages: install them in the environment's [setup script](/docs/en/cloud-environments#setup-scripts).
 
 To see which connectors a running cloud thread has at claude.ai/code, open the thread and select **Connectors** from the **+** menu beside its message box. Turning a connector off there removes it from that thread and saves that as your account default, so new threads and claude.ai chats start without it until you turn it back on. A cloud thread picks up a connector you add or reconnect after the next message you send it.
@@ -15191,7 +15294,6 @@ Settings save as you change them; a text field you're editing, such as the goal 
 | Project instructions | Memory | [Standing rules](#give-a-project-standing-context) every new thread receives |
 | Project repositories | Environment | The repositories new cloud threads clone |
 | Cloud environment | Environment | The [cloud environment](#choose-an-environment-for-threads) new cloud threads run in |
-| Connectors | Environment | A link to manage the claude.ai connectors cloud threads get |
 | Plugins | Plugins | The plugins that load into each new cloud thread |
 | Usage | Usage | [Token use](#usage-and-cost) by thread and by model |
 | Memory | Memory | The project's [memory files](#give-a-project-standing-context) |
@@ -16285,6 +16387,8 @@ Use @ to quickly include files or directories without waiting for Claude to read
   * You can reference multiple files in a single message (for example, "@file1.js and @file2.js")
 </Tip>
 
+To stop `@` references from including file contents and directory listings in your message, set [`CLAUDE_CODE_DISABLE_FILE_MENTIONS=1`](/docs/en/env-vars#variables) in your shell or user settings. Claude then receives the paths you referenced with a note to read them using its file tools. The variable requires Claude Code v2.1.299 or later, and Claude Code ignores it in project and local settings.
+
 ***
 
 ### Run Claude on a schedule
@@ -16659,7 +16763,7 @@ When a long session compacts, Claude Code summarizes the conversation history to
 | System prompt and output style | Both still apply |
 | Project-root CLAUDE.md and unscoped rules | Re-injected from disk |
 | Auto memory | Re-injected from disk |
-| [Git status snapshot](/docs/en/settings-reference#includegitinstructions) | Claude Code reads a fresh one from your repository |
+| [Git status snapshot](/docs/en/settings-reference#includegitinstructions) | If the session started with one, Claude Code reads a fresh one from your repository |
 | The plan Claude wrote in [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode) | Re-injected from disk |
 | Rules with `paths:` frontmatter | Claude Code reloads them [on demand](/docs/en/memory#path-specific-rules) |
 | Nested CLAUDE.md in subdirectories | Claude Code reloads them [on demand](/docs/en/memory#how-claude-md-files-load) |
@@ -17513,7 +17617,7 @@ To set a default mode for new local sessions, add `permissions.defaultMode` to y
 | **Accept edits** | `acceptEdits` | Claude auto-accepts file edits and common filesystem commands like `mkdir`, `touch`, and `mv`, but still asks before running other terminal commands. Use this when you trust file changes and want faster iteration. |
 | **Plan** | `plan` | Claude reads files and runs commands to explore, then proposes a plan without editing your source code. Good for complex tasks where you want to review the approach first. |
 | **Auto** | `auto` | Claude runs without routine prompts; before actions such as shell commands and network requests run, a background classifier checks that they align with your request. Appears when [auto mode is available](#auto-mode-availability); there is no separate Settings toggle for it. |
-| **Bypass permissions** | `bypassPermissions` | Claude runs without permission prompts, except for the [actions no mode auto-approves](/docs/en/permission-modes#actions-no-mode-auto-approves), safety classifiers when Claude [acts on external sites](#browse-external-sites), or desktop actions where Claude always asks first, such as [archiving a session](#work-across-sessions). Equivalent to `--dangerously-skip-permissions` in the CLI. On Pro and Max plans, enable it in your Settings → Claude Code under "Allow bypass permissions mode"; on Team and Enterprise plans there is no Settings toggle, and organization policy controls it instead. Only use this in sandboxed containers or VMs. |
+| **Bypass permissions** | `bypassPermissions` | Claude runs without permission prompts, except for the [actions no mode auto-approves](/docs/en/permission-modes#actions-no-mode-auto-approves), safety classifiers when Claude [acts on external sites](#browse-external-sites), or desktop actions such as deleting a session, though not [archiving one](#work-across-sessions). Equivalent to `--dangerously-skip-permissions` in the CLI. On Pro and Max plans, enable it in your Settings → Claude Code under "Allow bypass permissions mode"; on Team and Enterprise plans there is no Settings toggle, and organization policy controls it instead. Only use this in sandboxed containers or VMs. |
 
 Earlier versions of the Code tab labeled these modes Ask permissions, Auto accept edits, and Plan mode.
 
@@ -17538,6 +17642,10 @@ In Enterprise deployments that route Desktop to Google Cloud's Agent Platform, a
 Claude can start a dev server and open it in the Browser pane to verify its changes. This works for frontend web apps as well as backend servers: Claude can test API endpoints, view server logs, and iterate on issues it finds. In most cases, Claude starts the server automatically after editing project files. You can also ask Claude to preview at any time. By default, Claude [auto-verifies](#auto-verify-changes) changes after every edit.
 
 The Browser pane can also open static HTML files, PDFs, images, and videos from your project. Click an HTML, PDF, image, or video path in the chat to open it there.
+
+<Note>
+  In an [SSH session](#ssh-sessions), Claude can't open your app in the Browser pane, because it doesn't have the pane's tools there. To look at the app yourself, [forward its port to your computer](#reach-a-port-on-the-remote-machine).
+</Note>
 
 From the Browser pane, you can:
 
@@ -17612,6 +17720,8 @@ To turn these on, click **CI** in the status bar. To archive the session automat
 
 <Note>
   PR monitoring requires the [GitHub CLI (`gh`)](https://cli.github.com/) to be installed and authenticated on your machine. If `gh` is not installed, Desktop prompts you to install it the first time you try to create a PR.
+
+  In an [SSH session](#ssh-sessions), set up `git` and `gh` on the remote machine before you click **Create PR**, because Claude pushes the branch and runs `gh pr create` there. Install `gh` there yourself, because Desktop doesn't prompt you to in an SSH session. Then check there that `git push` works and that `gh auth status` reports that you are logged in.
 </Note>
 
 ## Arrange your workspace
@@ -17815,7 +17925,7 @@ When Claude messages another session through this surface, Claude Code shows it 
 
 Claude Code applies four safety behaviors across sessions:
 
-* Before archiving any session, Claude asks you first. You see the approval card in every permission mode, including Auto and Bypass permissions.
+* You get an approval card before Claude archives a session, except in Auto mode and Bypass permissions mode, where Claude can archive a session without one. To be asked, switch to Manual.
 * Through this surface, Claude can't send cross-session messages from a session nobody is watching, such as a scheduled-task run, and can't deliver messages into one.
 * Claude Code checks each message from this surface against the receiving session's [inbound controls](/docs/en/cross-session-messaging#control-inbound-messages), even when the receiving session doesn't have [cross-session messaging](/docs/en/cross-session-messaging#availability) itself. If you set [`crossSessionInbound`](/docs/en/settings-reference#crosssessioninbound) to `refuse` in the receiving session, Claude Code drops messages from this surface. Claude Code reports the refusal to the Claude desktop app. Before v2.1.234, Claude Code dropped every message from this surface to a receiving session without cross-session messaging.
 * Claude Code quotes each incoming message and attributes it to the session that sent it, and Claude still follows the receiving session's own permission settings when acting on one.
@@ -18023,9 +18133,17 @@ The `autoPort` field controls what happens when your preferred port is already i
 
 * **`true`**: Claude finds and uses a free port automatically. Suitable for most dev servers.
 * **`false`**: Claude fails with an error. Use this when your server must use a specific port, such as for OAuth callbacks or CORS allowlists.
-* **Not set (default)**: Claude asks whether the server needs that exact port, then saves your answer.
+* **Not set (default)**: your server gets the next free port, as with `true`, except in the one case below. Before Claude Desktop v2.37337.0, Claude asks whether the server needs that exact port instead, then saves your answer in `launch.json`.
 
-When Claude picks a different port, it passes the assigned port to your server via the `PORT` environment variable.
+If your preferred port is in use and `autoPort` is unset, your server stays stopped when all of these hold:
+
+* You start the server through an `npm`, `yarn`, `pnpm`, or `bun` script.
+* Your preferred port is hardcoded in that script, or Claude can't inspect the script.
+* You don't pass the port in `runtimeArgs`.
+
+In that case, free the port, remove the hardcoded value, or change `port` to match the script. Setting `"autoPort": true` instead works only for a script that reads `PORT`.
+
+Have your server read its port from the `PORT` environment variable, which carries the assigned port. When Claude moves your server to a different port, it also rewrites a `--port` or `-p` value in `runtimeArgs` to match.
 
 #### Examples
 
@@ -18109,7 +18227,7 @@ The environment you pick when [starting a session](#start-a-session) determines 
 
 ### Local sessions
 
-The desktop app does not always inherit your full shell environment. On macOS, when you launch the app from the Dock or Finder, it reads your shell profile, such as `~/.zshrc` or `~/.bashrc`, to extract `PATH` and a fixed set of Claude Code variables, but other variables you export there are not picked up. On Windows, the app inherits user and system environment variables but does not read PowerShell profiles.
+The desktop app does not always inherit your full shell environment. On macOS, when you launch the app from the Dock or Finder, it reads your shell profile, such as `~/.zshrc` or `~/.bashrc`, to give Claude Code `PATH` and a fixed set of Claude Code variables, but not other variables you export there. On Windows, the app inherits user and system environment variables but does not read PowerShell profiles.
 
 To set environment variables for local sessions and dev servers on any platform, open the environment dropdown in the prompt box, hover over **Local**, and click the gear icon to open the local environment editor. Variables you save here are stored encrypted on your machine and apply to every local session and preview server you start. You can also add variables to the `env` key in your `~/.claude/settings.json` file, though these reach Claude sessions only and not dev servers. See [environment variables](/docs/en/env-vars) for the full list of supported variables.
 
@@ -18156,10 +18274,10 @@ The remote machine can run Linux, macOS, or [Windows](#windows-remote-machines).
 
 A Linux or macOS remote machine needs a supported processor, an SSH server with SFTP, an install folder that isn't mounted `noexec`, a working shell, and network access. Check each requirement before you connect, or when a connection fails after you log in:
 
-* **System**: an x86\_64 or arm64 processor. The machine also has to meet Claude Code's [system requirements](/docs/en/setup#system-requirements).
+* **System**: an x86\_64 or arm64 processor. The machine also has to meet Claude Code's [system requirements](/docs/en/setup#system-requirements). On Linux, Claude Code needs glibc 2.17 or later, or musl. To see which one the machine has, run `ldd --version` there. On a musl-based distribution such as Alpine Linux, also install the [packages that Claude Code needs](/docs/en/setup#alpine-linux-and-musl-based-distributions).
 * **SFTP**: the SSH server has to offer the SFTP subsystem, which a `Subsystem sftp` line in its `sshd_config` turns on. To check, connect to the same host and port with `sftp` in a terminal on your computer. A working server shows the `sftp>` prompt.
 * **Sessions per connection**: Desktop on macOS and Linux opens several sessions on one SSH connection. If the server's `sshd_config` sets `MaxSessions 1`, raise it, for example to OpenSSH's default of 10.
-* **Install folder**: Desktop installs a helper program and Claude Code under `~/.claude/remote/` in your home directory. It runs them from there, so that folder can't be on a file system mounted `noexec`. Allow about 1 GB of disk space in the home directory of each user who connects.
+* **Install folder**: Desktop installs a helper program and Claude Code under `~/.claude/remote/` in your home directory. It runs them from there, so that folder can't be on a file system mounted `noexec`. Allow about 1 GB of disk space in the home directory of each user who connects. For what that folder holds, see [Files and processes on the remote machine](#files-and-processes-on-the-remote-machine).
 * **Shell**: the shell set for your account on the remote machine has to run commands sent over SSH, as Bash, Zsh, and `sh` do
 * **Network**: Claude Code runs on the remote machine and makes its network requests from there, so the machine needs the [network access that Claude Code requires](/docs/en/network-config#network-access-requirements). If the machine can't download Claude Code, Desktop downloads it on your computer and uploads it. Claude Code's other requests still go out from the remote machine.
 
@@ -18190,6 +18308,12 @@ Host devbox
 
 Enter `devbox` in the **SSH host** field.
 
+##### Use variables from your shell in a `ProxyCommand`
+
+To use an environment variable of your own in a `ProxyCommand` or `Match exec` command, export it in a shell startup file, such as `~/.zshrc`, then quit and reopen Desktop. When Desktop starts, it reads what your login shell exports, and it keeps those values until you quit.
+
+This requires Claude Desktop v2.37337.0 or later and an `env` command that accepts `-0`, which you can check by running `env -0` in a terminal on your computer.
+
 ##### Raise the SSH connection timeout
 
 If your SSH configuration sets no `ConnectTimeout` for the host, Desktop gives `ssh` 30 seconds to connect. Through a jump host or a `ProxyCommand`, that time includes the time the route takes to connect. If your route needs longer, add a higher value to the entry:
@@ -18203,6 +18327,27 @@ Host devbox
 ```
 
 `ssh` uses the first value it finds for a host, so keep the entry above any `Host *` entry that sets `ConnectTimeout`. To confirm, run `ssh -G devbox` in a terminal on your computer. Its output includes `connecttimeout 120`. After you change the value, quit and reopen Desktop.
+
+##### Forwarding settings that Desktop leaves off
+
+On its connection to the remote machine, Desktop leaves `ForwardAgent`, `ForwardX11`, `LocalForward`, `RemoteForward`, `DynamicForward`, and `Tunnel` off, even where your SSH configuration turns them on. In the [terminal](#run-commands-in-the-terminal) or a `!` command, expect your forwarding settings to apply [only sometimes](#limits-while-desktop-is-disconnected), because Desktop can start a separate `ssh` there that follows them.
+
+* **To reach a port on the remote machine**: [forward it yourself](#reach-a-port-on-the-remote-machine)
+* **To use your own keys from the remote machine**: set up a credential on the remote machine itself, for example for `git push`
+
+To keep Desktop from forwarding your SSH agent or a port, run `ssh -G devbox` in a terminal on your computer. Then run it again as Desktop can run it, with the `hostname` and `user` values that it prints, as in `ssh -G -o HostName=devbox.internal.example.com -l alice devbox`. The second output can show settings from a `Match` block that the first skips.
+
+Look in both outputs for a `forwardagent` line that says anything but `no`, and for lines that begin with `localforward`, `remoteforward`, or `dynamicforward`. If you find one, remove that setting from your SSH configuration. Do the same for a host that your `ProxyCommand` reaches with `ssh`.
+
+#### Reach a port on the remote machine
+
+To open a server that runs on the remote machine, such as a dev server on port 3000, forward the port yourself. In a terminal on your computer, run `ssh` with `-L` and the host you connect to, such as `devbox`:
+
+```bash theme={null}
+ssh -N -L 3000:localhost:3000 devbox
+```
+
+If you filled in **SSH port** or **SSH key (optional)** on the connection, add `-p` or `-i` with the same value. Leave that command running, and open `http://localhost:3000` in a browser on your computer to reach port 3000 of the remote machine. If `ssh` prints `open failed: administratively prohibited`, ask the machine's administrator to allow TCP forwarding, which `AllowTcpForwarding` in the SSH server's `sshd_config` controls.
 
 #### Windows remote machines
 
@@ -18231,7 +18376,7 @@ If your computer sleeps, you lose your network, or you quit Desktop, the task go
 Claude Code runs as a process on the remote machine, under a background helper that Desktop installs there, so it doesn't need your SSH connection to keep running. The behavior in this section requires Claude Desktop v2.31226.0 or later.
 
 <Warning>
-  If you sign in to Desktop with a Claude account, don't count on a task to run overnight. Desktop renews that sign-in for the task only while Desktop is running and connected, so the task's sign-in can expire after you disconnect, and the task then stops. How much time is left when you disconnect varies.
+  If you sign in to Desktop with a Claude account, don't count on a task to run overnight. Desktop renews that sign-in for the task only while Desktop is running and connected, so the task's sign-in can expire after you disconnect, and the task then stops. How much time is left when you disconnect varies, and it can be only a few minutes.
 
   The work done so far stays on the remote machine, and you can continue with a message when you return.
 
@@ -18360,6 +18505,57 @@ To set **Worktree folder** on a connection you added earlier or one your organiz
 
 The field requires Claude Desktop v1.44121.0 or later. If your organization restricts which folders sessions may use, Desktop hides the field and keeps worktrees inside the project.
 
+#### Files and processes on the remote machine
+
+Desktop installs a helper program and Claude Code under `~/.claude/remote/` in the home directory of each user who connects to a Linux or macOS remote machine. The helper listens on no network port, but Claude Code and the programs it starts, such as MCP servers and development servers, can.
+
+| Folder | Contents |
+| - | - |
+| `~/.claude/remote/srv/` | The helper, in one folder per version |
+| `~/.claude/remote/ccd-cli/` | Claude Code, in one file per version |
+| `~/.claude/remote/run/` | The helper's runtime files, such as its socket and log, in one folder per computer that connects |
+| `~/.claude/remote/plugins/` | Plugins that Desktop copies from the user's computer |
+| [`~/.claude/uploads/`](/docs/en/claude-directory#clear-local-data) | Files that the user attaches to messages, in one folder per session |
+
+To list one user's processes, run `pgrep -fl "$HOME/.claude/remote/"` on the remote machine as that user, or with the user's home directory in place of `$HOME`:
+
+* **Helper**: one or more `server` processes for each computer that connects
+* **Claude Code**: the processes that the helper starts for the user's sessions, each from a file named after its version, such as `2.1.295-…`
+
+Desktop reaches the helper through the user's SSH connection, over the Unix socket `rpc.sock` in the helper's folder under `~/.claude/remote/run/`. Apart from root, other users on the machine can't connect to that socket, because it has mode 600 and its folder has mode 700.
+
+For when the helper stops on its own, see [Limits while Desktop is disconnected](#limits-while-desktop-is-disconnected).
+
+To remove the helper and Claude Code for one user:
+
+<Steps>
+  <Step title="Quit Desktop">
+    Quit Desktop on each computer that the user connects from. It installs both programs again the next time it connects, and it can reconnect on its own.
+  </Step>
+
+  <Step title="End the processes">
+    Logged in as that user on the remote machine, run `kill` with each process ID that [`pgrep`](#files-and-processes-on-the-remote-machine) lists.
+  </Step>
+
+  <Step title="Delete the folder">
+    Delete `~/.claude/remote/`. To remove Claude Code's own files in `~/.claude/` and `~/.claude.json`, see [Remove configuration files](/docs/en/setup#remove-configuration-files).
+  </Step>
+</Steps>
+
+##### End one session's process
+
+To end one session's Claude Code process, [archive the session](#work-in-parallel-with-sessions) in Desktop while Desktop is connected to the remote machine. The process keeps running after its task is done and after you quit Desktop.
+
+Before you archive a session that has a worktree, see [Work in parallel with sessions](#work-in-parallel-with-sessions).
+
+##### See who connected to the remote machine
+
+To find out who connected to a remote machine, read the SSH server's log on that machine, where a login from Desktop looks like one from a terminal. With Desktop on macOS or Linux, expect an entry each time Desktop connects, not one for each session.
+
+#### Use MCP servers set up on the remote machine
+
+To use an [MCP server](/docs/en/mcp) from `~/.claude.json` or a project's `.mcp.json` in an SSH session, set it up in those files on the remote machine. Claude Code starts their stdio servers there, so install the commands those servers run on the remote machine. For servers from `claude_desktop_config.json`, see [Limits while Desktop is disconnected](#limits-while-desktop-is-disconnected).
+
 #### Open an SSH session from a link
 
 A `claude://code/new` link opens Desktop's new-session page, and it can name an SSH connection. Put such a link in a runbook, dashboard, or wiki page to open Desktop set up for the right machine and folder. For platforms that strip such links, see [The link renders as plain text instead of being clickable](/docs/en/deep-links#the-link-renders-as-plain-text-instead-of-being-clickable).
@@ -18483,10 +18679,11 @@ The keys apply to the desktop app. They leave other ways to run Claude Code as t
 * **Cowork**: none of the keys applies to [Cowork](https://claude.com/docs/cowork/overview) sessions or Cowork scheduled tasks
 * **Cloud sessions**: none of the keys changes whether [cloud sessions](#cloud-sessions) are available. To turn them off, use the **Cloud sessions** setting under [Admin console controls](#admin-console-controls).
 
-When you adapt the example, check the hostnames and the Desktop version:
+When you adapt the example, check the hostnames, the Desktop version, and the file's permissions:
 
 * **Hostnames**: make sure that a pattern in `sshHostAllowlist` matches the hostname of each `sshConfigs` entry, without `user@`, or developers can't connect to it. For how Desktop matches a hostname, see [Restrict which SSH hosts users can connect to](#restrict-which-ssh-hosts-users-can-connect-to).
 * **Version**: `disableDesktopLocalSessions` requires Claude Desktop v1.37937.0 or later
+* **File permissions**: make sure that each developer's account on the computer can read the managed settings file. Desktop doesn't apply the keys in a file that the account can't read, and Claude Code [starts without them](/docs/en/managed-settings#find-entries-claude-code-dropped) too.
 
 Put the three keys in one [managed source](/docs/en/managed-settings#how-claude-code-combines-managed-sources), the highest-ranked one that you deliver. If you deliver [server-managed settings](/docs/en/server-managed-settings), also keep a copy of the three keys in the highest-ranked MDM policy or managed settings file on each computer. Desktop fetches server-managed settings at launch, and the copy on the computer applies until a fetch succeeds.
 
@@ -18787,6 +18984,21 @@ If you see "Git LFS is required by this repository but is not installed," instal
 ### MCP servers not working on Windows
 
 If MCP server toggles don't respond or servers fail to connect on Windows, check that the server is properly configured in your settings, restart the app, verify the server process is running in Task Manager, and review server logs for connection errors.
+
+### SSH connection fails after you log in
+
+Find the card's title, or the code that ends the error message, in this table, then do what the last column says. To see the message, select **View details** on the failure card.
+
+| Title on the card | Code | What to do |
+| - | - | - |
+| `<host>'s SSH server has SFTP turned off` | `[SFTP_UNAVAILABLE]` | Turn on SFTP in the server's `sshd_config`, as described under [remote machine requirements](#remote-machine-requirements-for-ssh-sessions) |
+| `SFTP doesn't start on <host>` | `[SFTP_NOT_STARTED]` | Connect to the same host with `sftp` in a terminal on your computer to see what stops it, then check the settings and files that Desktop's message names |
+| `<host> allows too few SSH sessions per connection` | `[SESSION_LIMIT]` | Raise `MaxSessions` in the server's `sshd_config`, for example to OpenSSH's default of 10 |
+| `<host> is out of disk space` | `[ENOSPC]` or `[EDQUOT]` | Free space or quota on the remote machine, in your home directory or `/tmp` |
+| `This computer is out of disk space` | `[ENOSPC]` or `[EDQUOT]`, in a message that starts with `Couldn't prepare the deploy locally` | Free space on your computer |
+| `Claude Code won't start on <host>` | `[CLI_UNRESPONSIVE]` | Wait a minute, then try again. If it keeps failing, run the command that the message names on the remote machine to see whether Claude Code answers there. |
+
+For any other message, check the [remote machine requirements](#remote-machine-requirements-for-ssh-sessions).
 
 ### App won't quit
 
@@ -19790,7 +20002,9 @@ Match the message you see to a section below.
 | `Claude Code's fullscreen renderer didn't finish starting last time on this machine` / `Claude Code's fullscreen renderer has repeatedly failed to start on this machine` | [Fullscreen rendering](/docs/en/fullscreen#fullscreen-renderer-didnt-finish-starting) |
 | `Claude Code exited after an unrecoverable interface error (...)` | [Configuration warnings](#exited-after-an-unrecoverable-interface-error) |
 | `Agent descriptions are over the 15.0k-token limit` | [Configuration warnings](#agent-descriptions-are-over-the-15000-token-limit) |
+| `hook needs quotes around a path with a space` | [Configuration warnings](#hook-needs-quotes-around-a-path-with-a-space) |
 | `Not loaded: rename <path>, then restart — its name uses "<name>", a name reserved for the skills synced from your claude.ai account` | [Configuration warnings](#a-skill-command-or-workflow-wasnt-loaded-because-its-name-is-reserved) |
+| `N skill or command names refused: run with --debug to see which ([names]), rename, then restart` | [Configuration warnings](#skill-or-command-name-refused) |
 | `Ignoring N permissions.allow entries from ... this workspace has not been trusted` | [Configuration warnings](#workspace-has-not-been-trusted) |
 | `is a network path, which cannot be added as a working directory` | [Configuration warnings](#working-directory-is-a-network-path) |
 | `Remote managed settings failed to load (<cause>)` | [Configuration warnings](#remote-managed-settings-failed-to-load) |
@@ -21332,7 +21546,7 @@ This is not a client-side network problem. Cloud sessions and [routines](/docs/e
 These steps change one of your own environments. An [organization-shared environment](/docs/en/cloud-environments#organization-shared-environments) opens read-only in the selector, so ask an Owner to change its network access from the **Cloud environments** page in [admin settings](https://claude.ai/admin-settings).
 
 * Open your environment for editing, either from the [routine's form](/docs/en/routines#environments-and-network-access) or from the [environment selector](/docs/en/cloud-environments#configure-your-environment) where you start cloud sessions.
-* In the **Edit environment** dialog, change **Network access** from **Trusted** to **Custom**, then add the blocked domain to **Allowed domains**. Enter one domain per line. Check **Also include default list of common package managers** to keep the [default allowlist](/docs/en/cloud-environments#default-allowed-domains) alongside your custom domains. Select **Full** instead if you want unrestricted access.
+* In the **Edit cloud environment** dialog, change **Network access** from **Trusted** to **Custom**, then add the blocked domain to **Allowed domains**. Enter one domain per line. Check **Also include default list of common package managers** to keep the [default allowlist](/docs/en/cloud-environments#default-allowed-domains) alongside your custom domains. Select **Full** instead if you want unrestricted access.
 * Click **Save changes**. The next run uses the updated allowlist. For a cloud session that's already open, see [when a network access change reaches existing sessions](/docs/en/cloud-environments#network-access).
 
 See [Network access](/docs/en/cloud-environments#network-access) for access levels and the default allowlist. Local CLI sessions are not affected by this policy.
@@ -24419,6 +24633,20 @@ Agent descriptions are over the 15.0k-token limit (~16.2k tokens) · ask Claude 
 * Shorten the `description` frontmatter of your agent files, or ask Claude to trim them for you.
 * Remove agent files you no longer use.
 
+### Hook needs quotes around a path with a space
+
+This notification in the conversation view means a hook's script didn't run because its path has a space and isn't quoted. That hook is an [`asyncRewake`](/docs/en/hooks#run-hooks-in-the-background) hook in shell form. In its `command`, an interpreter such as `python3` is followed by an unquoted path placeholder, and the resolved path contains a space.
+
+The notification starts with the hook's event name and names the script:
+
+```text theme={null}
+Stop hook needs quotes around a path with a space (check.py)
+```
+
+**What to do:**
+
+* In the `command` of the hook that runs the script the notification names, wrap the path in double quotes. In a JSON file, write it as `"command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/check.py\""`.
+
 ### A skill, command, or workflow wasn't loaded because its name is reserved
 
 A skill folder, a frontmatter `name`, a file or subfolder in `.claude/commands/`, or a [saved workflow](/docs/en/workflows#save-the-workflow-for-reuse) uses the name `anthropic-skills` or a name that starts with `anthropic-skills:`. Claude Code [reserves that name for skills synced from claude.ai](/docs/en/skills#names-reserved-for-synced-skills) and doesn't load that item.
@@ -24436,6 +24664,22 @@ The notice names what to change for the first item it refused: a folder or file 
 * Rename the item the notice names, or edit the `name:` line it points to, then restart the session.
 
 Before v2.1.282, Claude Code loaded skills and commands with these names.
+
+### Skill or command name refused
+
+This startup notice means Claude Code refused the name of at least one [skill or custom command](/docs/en/skills), so it didn't load or loaded without its `name` field:
+
+```text theme={null}
+1 skill or command name refused: run with --debug to see which ([names]), rename, then restart — a name may not hold hidden, direction-changing or blank-like characters, < or >, or be over 256 characters
+```
+
+* **Not loaded**: Claude Code refused the name a skill or command goes by, such as its directory name or a command file's name or subfolder. It's missing from the `/` menu and Claude can't invoke it. Its line in the debug log reads `<name> is not offered`.
+* **`name` field ignored**: Claude Code refused a skill's frontmatter `name`. The skill still loads, but the `/` menu doesn't show the `name` value and typing it doesn't invoke the skill. Its line in the debug log reads `<name value> is not shown for <skill>`.
+
+**What to do:**
+
+* Start Claude Code with `claude --debug` from your shell and search the [debug log](/docs/en/debug-your-config) for `[names]`. Each name the notice counts has one line there. The line spells out some hidden characters as codes, such as `\u{200B}` for a zero-width space, so you can see where they are.
+* Remove the [characters a skill name can't hold](/docs/en/skills#characters-a-skill-name-cant-hold) by renaming the folder or file or editing the `name:` line, or shorten a name that is over 256 characters. Then restart the session, unless the file is in a directory Claude Code [watches for changes](/docs/en/skills#live-change-detection). For a skill from a plugin you didn't write, ask the plugin's author to rename it.
 
 ### Workspace has not been trusted
 
@@ -25972,7 +26216,7 @@ The table below shows which Claude Code features support GHES and any difference
 
 | Feature | GHES support | Notes |
 | :- | :- | :- |
-| Cloud sessions | ✅ Supported | An Owner connects the GHES instance once; developers use `claude --cloud` or [claude.ai/code](https://claude.ai/code) as usual |
+| Cloud sessions | ✅ Supported | An Owner connects the GHES instance once; developers use `claude --cloud` or [claude.ai/code](https://claude.ai/code) |
 | Code Review | ✅ Supported | Same automated PR reviews as github.com |
 | Claude Security | ✅ Supported | Available in public beta for Enterprise plans at [claude.ai/security](https://claude.ai/security) |
 | Teleport sessions | ✅ Supported | Move sessions between cloud and terminal with `--teleport` |
@@ -25983,7 +26227,7 @@ The table below shows which Claude Code features support GHES and any difference
 
 ## Admin setup
 
-An Owner connects your GHES instance to Claude Code once. After that, developers in your organization can use GHES repositories without any additional configuration. You need the Owner or Primary Owner role in your Claude organization and permission to create GitHub Apps on your GHES instance.
+An Owner connects your GHES instance to Claude Code once. You need the Owner or Primary Owner role in your Claude organization and permission to create GitHub Apps on your GHES instance.
 
 The guided setup generates a GitHub App manifest and redirects you to your GHES instance to create the app in one click. If your environment blocks the redirect flow, an [alternative manual setup](#manual-setup) is available.
 
@@ -26043,7 +26287,7 @@ Hosted pre-session flows, such as the repository picker, run on Anthropic's side
 
 ## Developer workflow
 
-Once an Owner has connected the GHES instance, no developer-side configuration is needed. Claude Code detects your GHES hostname automatically from the git remote in your working directory.
+Claude Code detects your GHES hostname automatically from the git remote in your working directory.
 
 Clone a repository from your GHES instance as you normally would, replacing `github.example.com` and the repository path with your GHES hostname and repository:
 
@@ -26151,6 +26395,8 @@ A few features behave differently on GHES than on github.com. The [feature table
 ### Cloud session fails to clone repository
 
 If `claude --cloud` fails with a clone error, verify that an Owner has completed setup for your GHES instance and that the GitHub App is installed on the repository you're working in. Ask the Owner who connected the instance to confirm that the hostname registered in Claude settings matches the hostname in your git remote.
+
+If the session stops with "Authentication failed while accessing the repository", you may not have connected your own GitHub Enterprise account. Connect it from the repository picker on [claude.ai/code](https://claude.ai/code), then start a new session.
 
 ### Marketplace add fails with a policy error
 
@@ -26843,7 +27089,7 @@ Claude Code exits with code 0 on success and a non-zero code when the run fails,
 
 ### Start faster with bare mode
 
-Add `--bare` to reduce startup time by skipping auto-discovery of hooks, skills, custom commands, [subagents](/docs/en/sub-agents), installed plugins, MCP servers, auto memory, and CLAUDE.md. Without it, `claude -p` loads the same [context](/docs/en/how-claude-code-works#the-context-window) an interactive session would, including anything configured in the working directory or `~/.claude`.
+Add `--bare` to reduce startup time by skipping auto-discovery of hooks, skills, custom commands, [subagents](/docs/en/sub-agents), installed plugins, MCP servers, auto memory, and CLAUDE.md. Without it, `claude -p` discovers and loads them as an interactive session would, including anything configured in the working directory or `~/.claude`.
 
 Bare mode is useful for CI and scripts where you need the same result on every machine. A hook in a teammate's `~/.claude` or an MCP server in the project's `.mcp.json` won't run, because bare mode never reads them. A directory you name with `--add-dir` is a partial exception: bare mode loads skills from its `.claude/skills/` folder, but still skips its `.claude/commands/` and `.claude/agents/` folders. [Skills from additional directories](/docs/en/skills#skills-from-additional-directories) covers what does and doesn't load.
 
@@ -27178,7 +27424,7 @@ gh pr diff "$1" | claude -p \
 
 In the script, `"$1"` stands for the first argument you pass on the command line. Run `bash review.sh 123` and the shell replaces `"$1"` with `123`, so the script fetches the diff for PR 123. Claude Code prints the review as JSON, with the text in the `result` field.
 
-See [system prompt flags](/docs/en/cli-reference#system-prompt-flags) for more options including `--system-prompt` to fully replace the default prompt.
+See [system prompt flags](/docs/en/cli-reference#system-prompt-flags) for more options including `--system-prompt` to fully replace the default prompt. If you replace it, the run also starts without the [git status snapshot](/docs/en/settings-reference#includegitinstructions).
 
 ### Continue conversations
 
@@ -29939,7 +30185,7 @@ claude mcp add --transport http github https://api.githubcopilot.com/mcp/ \
   --header "Authorization: Bearer YOUR_GITHUB_PAT"
 ```
 
-Replace `YOUR_GITHUB_PAT` with your personal access token. The `claude mcp add` command saves the configuration without validating credentials, so a placeholder value is accepted here but the server fails to connect later. To verify the connection, run `/mcp` and check that the server shows `connected`. A server with bad credentials shows `failed`, and the failure detail includes the HTTP status the server returned, such as a 401.
+Replace `YOUR_GITHUB_PAT` with your personal access token. The `claude mcp add` command saves the configuration without validating credentials, so a placeholder value is accepted here but the server fails to connect later. To verify the connection, run `/mcp` and check that the server's row shows a checkmark. A server with bad credentials shows an ✘ instead, and its [failure detail](#server-status-detail) includes the HTTP status the server returned, such as a 401.
 
 Then work with GitHub:
 
@@ -29964,7 +30210,7 @@ claude mcp add --transport stdio db -- npx -y @bytebase/dbhub \
   --dsn "postgresql://readonly:pass@prod.db.com:5432/analytics"
 ```
 
-To confirm the server starts, run `/mcp` and check that `db` shows `connected`.
+To confirm the server starts, run `/mcp` and check that the `db` row shows a checkmark.
 
 Then query your database naturally:
 
@@ -32699,8 +32945,8 @@ The job's exit code tells you what happened:
 
 | Exit code | Meaning |
 | :- | :- |
-| 0 | Every case scored at or above `--threshold` and every case file loaded |
-| 1 | A case scored below the threshold, a case file failed to load, no cases were found, a run couldn't be started, the plugin directory isn't trusted and `--trust-plugin` wasn't passed, or an option was invalid |
+| 0 | The suite passed: every case scored at or above `--threshold` and nothing else failed the run |
+| 1 | A case scored below the threshold, a case file failed to load, no cases were found, a run couldn't be started, or a run [ended on an API error](#runs-ended-on-an-api-error). Also returned when the plugin directory isn't trusted and `--trust-plugin` wasn't passed, an option was invalid, or the `--json` result couldn't be written |
 | 2 | Partial run: the `--max-cost-usd` ceiling was hit, or your credential was rejected before or at the first run. `results.json` is still written with `partial: true` and the reason |
 | 130 | Interrupted. Partial results are written |
 | 143 | Terminated, such as by a CI timeout |
@@ -32753,7 +32999,7 @@ These are the fields a gating script usually reads. The document also carries th
 | `cases[].name` | Case name |
 | `cases[].aggregates.score` | Mean with-arm run score for the case |
 | `cases[].aggregates.delta` | With-arm score minus without-arm score. Omitted when the case ran one arm or the arms aren't comparable |
-| `cases[].arms.with[].error` | `null`, or why a run ended abnormally, such as `timed out after 300s`. A run that started but ended badly is still graded on what it produced, so a non-null error doesn't imply score 0 |
+| `cases[].arms.with[].error` | `null`, or why a run ended abnormally, such as `timed out after 300s`. Some of these runs are still graded on what they produced, so a non-null error doesn't imply score 0. A run that [ended on an API error](#runs-ended-on-an-api-error) scores 0 without grading |
 | `cases[].arms.with[].aborted` | Present when a [mock](#mock-mcp-servers) stopped the run through `expect:`, `abort_when`, or the [agent-mock call budget](#mock-call-budget-exceeded), with `server`, `tool`, and `reason`. The run scores 0 and `error` stays `null` |
 | `cases[].arms.with[].skippedPaidGraders` | `true` when the cost ceiling skipped this run's judge graders, so its score isn't comparable |
 | `costUsd`, `durationSeconds`, `claudeVersion` | Estimated cost at list price including judge calls, wall-clock seconds, and the Claude Code version that ran the suite |
@@ -32990,7 +33236,9 @@ Anything beyond the read-only set needs your grant, such as `--allow-tools Bash 
 
 ### The run exits 1 but the results look fine
 
-The default `--threshold` is 1.0, so the command exits 1 when any case scores below perfect. Set a threshold that matches the score you require. Exit 1 also covers a case file that failed to load, which is reported on stderr above the table.
+When every case scored at or above `--threshold` and the command still exits 1, a line on stderr names the cause, even under `--json`. For example, a case file failed to load, or runs [ended on an API error](#runs-ended-on-an-api-error). For the other causes, see the [exit codes](#run-evals-in-ci).
+
+The default `--threshold` is 1.0, so the command exits 1 when any case scores below perfect. Set a threshold that matches the score you require.
 
 ### `--json output path must end in .json`
 
@@ -33000,9 +33248,22 @@ You put the target after `--json`, so it was read as the output path. Put the ta
 
 That grader is excluded from the score by design in a two-arm run, and its `scored` field is `false`. See [Score against the no-plugin baseline](#compare-against-a-no-plugin-baseline).
 
+### "ended on an API error and scored 0 without grading"
+
+This stderr warning means the API answered at least one run's last request with an HTTP error, such as a rate limit or a plan usage limit. Such a run scores 0 with no grader results, and the command exits non-zero whatever the scores and `--threshold` are.
+
+To fix it, find each affected run's error and resolve the cause it reports, then run the suite again:
+
+* **Without `--json`**: the error is at the end of the run's progress line, after `error:`
+* **Under `--json`**: the error is in the [JSON result](#json-result), at `cases[].arms.with[].error` or `cases[].arms.without[].error`
+
+The count includes [baseline](#the-no-plugin-baseline) runs too. Their scores never decide whether a case passes, so every case can pass while the command still fails. In a two-arm run, the affected case's `W/OUT` and `Δ` print as `—`. For a usage or rate limit, see [Runs fail with a usage-limit or rate-limit error](#runs-fail-with-a-usage-limit-or-rate-limit-error-partway-through).
+
+Before v2.1.299, such a run was graded on what it had produced.
+
 ### Runs fail with a usage-limit or rate-limit error partway through
 
-If your account reaches its plan's usage limit or an API rate limit while a suite is running, each later run ends with that error, is graded on what it produced, and usually scores 0. The suite still finishes and isn't marked `partial`, so the result can look like a regression. Check the `NOTES` column or `cases[].arms.with[].error` in the JSON for the limit message before trusting the scores, then re-run after the limit resets, with `--runs 1` or a `--case` filter if you need to stay under it.
+Runs that end with a usage-limit or rate-limit error [score 0 without grading](#runs-ended-on-an-api-error), and the command exits non-zero. The suite still finishes and isn't marked `partial`. Re-run after the limit resets, with `--runs 1` or a `--case` filter if you need to stay under it.
 
 ### "mock call budget exceeded"
 
@@ -33712,7 +33973,7 @@ You can put plugin agent files in subfolders of `agents/`. Claude Code [loads th
 
 A plugin agent's frontmatter follows these rules:
 
-* **Supported fields**: `name`, `description`, `model`, `effort`, `maxTurns`, `tools`, `disallowedTools`, `skills`, `memory`, `background`, `omitClaudeMd`, `isolation`, `color`, and the `cacheTtl` key of `experimental`. The only valid `isolation` value is `"worktree"`. See [supported frontmatter fields](/docs/en/sub-agents#supported-frontmatter-fields) for what each one does
+* **Supported fields**: `name`, `description`, `model`, `effort`, `maxTurns`, `autoCompactWindow`, `tools`, `disallowedTools`, `skills`, `memory`, `background`, `omitClaudeMd`, `isolation`, `color`, and the `cacheTtl` key of `experimental`. The only valid `isolation` value is `"worktree"`. See [supported frontmatter fields](/docs/en/sub-agents#supported-frontmatter-fields) for what each one does
 * **Ignored fields**: `permissionMode`, `hooks`, `mcpServers`, and `initialPrompt`. An agent file can't add hooks or MCP servers on its own, so add those as plugin [hooks](#hooks) and [MCP servers](#mcp-servers) instead
 * **Frontmatter that doesn't parse**: the agent still loads with every field ignored. It's named after the file, and its description reads `Agent from my-plugin plugin`. Run [`claude plugin validate`](/docs/en/plugins/cli-reference#plugin-validate) in your shell to find these files
 
@@ -37588,7 +37849,7 @@ When you send a prompt such as `open a PR for this change`, your message looks t
 
 To stop a prompt, return `{ drop: 'the reason' }` without calling `next`. The text goes back into the user's prompt input, and they see `Prompt dropped by a hook:` followed by your reason, so address the reason to them. If your hook returns a `drop` after its `next(e)` call let the prompt through, the turn still runs, and the hook [fails](#handle-a-hook-that-fails) with a message that includes `a drop after its next() was answered`.
 
-[Other events](/docs/en/plugins/mods/reference#prompts-and-what-claude-reads) cover the rest of what Claude reads: `prompt.section` for each section of the system prompt, `prompt.context` for the context sent with the first message, and `skill.prompt` for a skill's text. Text from these hooks that changes between requests [invalidates the prompt cache](/docs/en/prompt-caching).
+[Other events](/docs/en/plugins/mods/reference#prompts-and-what-claude-reads) cover the rest of what Claude reads: `prompt.section` for each section of the system prompt, `prompt.context` for the context sent with the first message, and `skill.prompt` for a skill's text. Text from these hooks that changes between requests [invalidates the prompt cache](/docs/en/prompt-caching). In a `skill.prompt` hook, you can also read [which plugin or file the skill came from](/docs/en/plugins/mods/reference#skill-prompt-fields).
 
 ### Follow a turn
 
@@ -39264,7 +39525,8 @@ A mod registers each of its hooks, which are event handlers, by calling `on` ins
 | `next.origin` | `{ plugin, tier }` of whoever fired the event. Claude Code itself is `{ plugin: 'engine', tier: 'core' }`. A mod's `tier` is its priority group in the [order mods run in](/docs/en/plugins/mods/events#the-order-mods-run-in): `prepend`, `user`, `append`, or `builtin`. |
 | `next.budget` | The hook's time limit in milliseconds: `next.budget.ms` is the whole limit, and `next.budget.remainingMs` is what's left now |
 | `next.to(e, tier)` | Skips to a later tier, which is `append`, `builtin`, or `core`. `next.to(e, 'append')` skips the mods a user installed. Only a mod in `prependPlugins` or `appendPlugins` can call it. |
-| `next.error` | In a `.catch` handler only. `kind` is `throw` or `timeout` when the hook failed, and `message` is the error's text. `kind` is `re-entry` when the hook was skipped because the event came from inside one of its own mods API calls, and `cause` is `lent` if a method another mod adds to the mods API fired that event. `re-entry` and `cause` require Claude Code v2.1.292 or later. |
+| `next.error` | In a `.catch` handler only. `kind` is `throw` or `timeout` when the hook failed, and `message` is the error's text. `kind` is `re-entry` when the hook was skipped because the event came from inside a mods API call by that hook or by your mod's code outside its hooks. `re-entry` requires Claude Code v2.1.292 or later. |
+| `next.error.cause` | Set only when `kind` is `re-entry`. `rewritten` if a `tool.call` or [`PreToolUse`](/docs/en/hooks#pretooluse) hook changed the mods API call the event came from, or an `agent.spawn` hook changed an agent started by that call. `lent` when a method another mod adds to the mods API fired that event, unless `rewritten` also applies. `lent` requires Claude Code v2.1.292 or later and `rewritten` v2.1.300 or later. |
 | `next.called` | In a `.catch` handler only. `true` when the hook had called `next`. |
 
 ## Events
@@ -39309,6 +39571,22 @@ Prompt events cover the text the user types and the text Claude Code sends to Cl
 | `prompt.mention` | Claude Code is about to read a file that a prompt @-mentions. Requires Claude Code v2.1.290 or later. | `next({ ...e, path })` to read a different file, or `{ deny: reason }` |
 | [`skill.prompt`](/docs/en/plugins/mods/events#rewrite-or-add-to-a-prompt) | A skill's text is expanded for Claude | `{ text }` |
 | `attribution.text` | Claude Code composes commit or pull request attribution text | `{ text }` |
+
+#### Source and frontmatter fields on `skill.prompt`
+
+In a `skill.prompt` hook, you can read these fields along with the skill's name in `e.skill` and the text Claude reads in `e.text`:
+
+| Field | Type | What it holds |
+| :- | :- | :- |
+| `e.source` | string | Who provides the skill: `policySettings`, `userSettings`, or `projectSettings` for a skill in the enterprise, personal, or project [location](/docs/en/skills#where-skills-live), respectively. Other sources give a word such as `plugin`, `mcp`, `syncedSkills`, or `built-in`. |
+| `e.pluginName` | string | The plugin's name, for a skill whose `e.source` is `plugin` |
+| `e.path` | string | The absolute path of the skill's `SKILL.md` file, or of its `.md` file for a skill written as a [command file](/docs/en/skills#where-skills-live). Absent when the skill has no file on this machine, as with a built-in skill. |
+| `e.frontmatter` | object | The frontmatter of the skill's file, as plain data |
+| `e.frontmatterProblem` | string | The reason `e.frontmatter` is missing the file's frontmatter or one of its keys, as in `is a list or a single value, not a table`. Absent when `e.frontmatter` holds the whole frontmatter or the skill has none. |
+
+A hook can pass a changed `text` or `frontmatter` to `next`: the hooks after it read both, and Claude reads the final `text`. A hook that changes any other field [fails](/docs/en/plugins/mods/events#handle-a-hook-that-fails).
+
+On `skill.prompt`, `e.source`, `e.pluginName`, `e.path`, `e.frontmatter`, and `e.frontmatterProblem` require Claude Code v2.1.299 or later.
 
 ### Commands and configuration
 
@@ -43509,7 +43787,7 @@ When the setting is on, interacting with a Remote Control session requires both 
 
 Biometric checks run on the device through the operating system or browser, the same mechanism as passkey sign-in. Anthropic never receives or stores fingerprints, face data, or any other biometric information. Only the device's public key and basic metadata such as display name, platform, and enrollment time are stored.
 
-The setting applies to Remote Control in both Claude Code and [Cowork](https://claude.com/docs/cowork/overview). This page covers the Claude Code side. Regular Claude chat, Claude Code in the terminal, and API usage are unaffected.
+The setting applies to Remote Control in Claude Code and to Computer access in [Cowork](https://claude.com/docs/cowork/overview). This page covers the Claude Code side. Regular Claude chat, Claude Code in the terminal, and API usage are unaffected.
 
 ### Enable Trusted Devices for a Team or Enterprise organization
 
@@ -43859,7 +44137,7 @@ Routines belong to your individual claude.ai account. They are not shared with t
     Pick a [cloud environment](/docs/en/cloud-environments) for the routine. Environments control what the cloud session has access to:
 
     * **Network access**: set the level of internet access available during each run
-    * **Environment variables**: provide values Claude can use during each run. They're [visible to anyone who uses the environment](/docs/en/cloud-environments#what-carries-over-from-your-setup), so on Pro and Max plans, store keys for the APIs Claude calls during a run as [network secrets](/docs/en/cloud-environments#add-network-secrets) instead. That section also lists the requests that never get a secret
+    * **Environment variables**: provide values Claude can use during each run. They're [visible to anyone who uses the environment](/docs/en/cloud-environments#what-carries-over-from-your-setup), so in an Anthropic-hosted environment, store keys for the APIs Claude calls during a run as [network secrets](/docs/en/cloud-environments#add-network-secrets) instead. That section also lists the requests that never get a secret
     * **Setup script**: install dependencies and tools the routine needs. The result is [cached](/docs/en/cloud-environments#environment-caching), so the script doesn't re-run on every session
 
     A **Default** environment is provided with **Trusted** network access, which allows only the [default allowlist](/docs/en/cloud-environments#default-allowed-domains) of package registries, cloud provider APIs, container registries, and common development domains through the session's network. Connectors you add to the routine reach their services through Anthropic's servers, so they don't need allowlist changes. If your routine needs to reach your own services directly, or a domain outside that list, edit the environment's [network access](/docs/en/cloud-environments#network-access) before running. To use a separate environment, [create one](/docs/en/cloud-environments#configure-your-environment) first.
@@ -44156,7 +44434,7 @@ To allow additional domains on one of your own environments, follow these steps.
   </Step>
 
   <Step title="Change the network access level">
-    In the **Edit environment** dialog, change **Network access** to **Custom** and enter your domains in **Allowed domains**. Check **Also include default list of common package managers** to keep the [default allowlist](/docs/en/cloud-environments#default-allowed-domains) alongside your custom domains. Select **Full** instead for unrestricted access.
+    In the **Edit cloud environment** dialog, change **Network access** to **Custom** and enter your domains in **Allowed domains**. Check **Also include default list of common package managers** to keep the [default allowlist](/docs/en/cloud-environments#default-allowed-domains) alongside your custom domains. Select **Full** instead for unrestricted access.
   </Step>
 
   <Step title="Save">
@@ -44286,7 +44564,7 @@ The example below checks CI and review comments, with Claude waiting longer betw
 
 In a session where the [Monitor tool is available](/docs/en/tools-reference#monitor-tool), Claude may use it directly when you ask for a dynamic `/loop` schedule. Monitor runs a background script and streams each output line back, which avoids polling altogether and is often more token-efficient and responsive than re-running a prompt on an interval.
 
-A dynamically scheduled loop appears in your [scheduled task list](#manage-scheduled-tasks) like any other task, so you can list or cancel it the same way. The [jitter rules](#jitter) don't apply to it, but the [seven-day expiry](#seven-day-expiry) does.
+A dynamically scheduled loop appears in your [scheduled task list](#manage-scheduled-tasks) like any other task, so you can list or cancel it the same way. The list shows its pending wakeup as a one-shot task, so a wakeup scheduled for `:00` or `:30` can [run a little early](#when-a-one-shot-task-runs-early). The [seven-day expiry](#seven-day-expiry) applies to the loop too.
 
 <span />
 
@@ -44371,7 +44649,7 @@ These are the underlying tools Claude uses:
 | Tool | Purpose |
 | :- | :- |
 | `CronCreate` | Schedule a new task. Accepts a 5-field cron expression, the prompt to run, and whether it recurs or fires once. |
-| `CronList` | List all scheduled tasks with their IDs, schedules, and prompts. |
+| `CronList` | List scheduled tasks with their IDs, schedules, [next run times](#jitter), and prompts. |
 | `CronDelete` | Cancel a task by ID. |
 
 Each scheduled task has an 8-character ID you can pass to `CronDelete`. A session can hold up to 50 scheduled tasks at once.
@@ -44385,6 +44663,8 @@ All times are interpreted in your local timezone. A cron expression like `0 9 * 
 ### Jitter
 
 A scheduled task can run at a different time than its schedule says. If every session's tasks ran exactly on schedule, many of them would call the API at the same moment, so Claude Code shifts each task's run time. Recurring tasks run late, except a task that runs every five minutes, written `*/5 * * * *`. One-shot tasks scheduled on the hour or half hour run a little early.
+
+To see when a task is next due, read the row under Claude's `CronCreate` call in your terminal. The row shows that time after the schedule, for example `next run 10:21 AM`. To check again later, [ask Claude to list your tasks](#manage-scheduled-tasks) and look for `next run` in the rows under the `CronList` call. Next run times in these rows require Claude Code v2.1.299 or later.
 
 #### How late a recurring task runs
 
@@ -45165,6 +45445,7 @@ Skill folders also follow these rules:
 * **Symlinked folders**: a `<skill-name>` entry in the enterprise, personal, or project location can be a symlink to a directory elsewhere on disk. Claude Code reads `SKILL.md` from the target and loads the skill once even if several locations point at the same target. Plugin skills [handle symlinks differently](/docs/en/plugins/host-marketplace#share-files-within-a-marketplace-with-symlinks).
 * **Reserved name `synced`**: don't name a skill folder `synced`, in any capitalization. Claude Code uses `~/.claude/skills/synced/` for [skills downloaded from claude.ai](#where-synced-skills-load) and skips a skill you author at that name in the enterprise, personal, and project locations.
 * **Reserved name `anthropic-skills`**: outside a plugin, a skill folder or command file whose name is `anthropic-skills` or starts with `anthropic-skills:` doesn't load. See [Names reserved for synced skills](#names-reserved-for-synced-skills).
+* **Characters in the name**: outside a plugin, a skill folder doesn't load when its name has a character such as a zero-width space or `<`. See [Characters a skill name can't hold](#characters-a-skill-name-cant-hold).
 * **Command files**: a Markdown file in `.claude/commands/` is the older format and still works. It supports the same [frontmatter](#frontmatter-reference) except `name` and `paths`. To find the name you type to invoke it, see [How a skill gets its command name](#how-a-skill-gets-its-command-name). Prefer a skill for new work, since skills also support [supporting files](#add-supporting-files).
 * **Skill folder as a plugin**: add a `.claude-plugin/plugin.json` to a skill folder and it loads as a [plugin](/docs/en/plugins/loading#plugins-shared-through-a-repository) named `<name>@skills-dir`, so it can bundle agents, hooks, and MCP servers. In a project's `.claude/skills/`, this requires accepting the workspace trust dialog first.
 
@@ -45442,6 +45723,23 @@ In a plugin skill, the frontmatter `name` replaces the directory name in the las
 In [non-interactive sessions](/docs/en/headless), the names `help` and `feedback` aren't reserved for their terminal-only built-in commands, so a plugin skill with one of those names keeps its bare command there. Every other terminal-only built-in's name, such as `/login`, stays reserved even though the command can't run in those sessions.
 
 For a plugin-root `SKILL.md`, there is no skill directory to take the name from, so `name` supplies the whole final segment. Without a `name` field, Claude Code falls back to the plugin's directory name.
+
+#### Characters a skill name can't hold
+
+If a skill or custom command is missing from the `/` menu, or the menu doesn't show a skill's frontmatter `name`, check the name. Claude Code refuses a command name or a frontmatter `name` that contains characters such as these:
+
+* A zero-width space or a control character
+* A private-use or unassigned character, such as a glyph from an icon font
+* A character that changes the direction of the text around it
+* A blank other than one plain space between words, such as a no-break space, two spaces in a row, or a space at the start or end
+* `<` or `>`
+
+A custom command or skill doesn't load when Claude Code refuses its directory or file name. Rename that folder or file to remove the characters. A skill still loads when these characters are only in a plugin skill folder's name or in its frontmatter `name`:
+
+* **Folder in a plugin's `skills/` directory or its manifest's [`skills` paths](/docs/en/plugins/components#skills)**: you don't need to rename the folder. These characters become hyphens in the skill's command name, so type the command with the hyphens.
+* **Frontmatter `name`**: the `/` menu doesn't show the `name` value and typing it doesn't invoke the skill. Edit the `name:` line to remove the characters.
+
+To find out which name Claude Code refused, start it with [`claude --debug`](/docs/en/cli-reference#cli-flags) from your shell and search the [debug log](/docs/en/debug-your-config) for `[names]`. In an interactive session, a [startup notice](/docs/en/errors#skill-or-command-name-refused) also tells you that names were refused. After a rename or a `name:` edit, restart the session, unless the file is in a directory Claude Code [watches for changes](#live-change-detection).
 
 #### Available string substitutions
 
@@ -46149,6 +46447,7 @@ If Claude doesn't use your skill when expected:
 2. Verify the skill appears in `What skills are available?`
 3. Try rephrasing your request to match the description more closely
 4. Invoke it directly with `/skill-name` if the skill is user-invocable
+5. If `/skill-name` isn't recognized either, check whether Claude Code [refused the skill's name](#characters-a-skill-name-cant-hold)
 
 If the frontmatter YAML is malformed, Claude Code loads the skill body with empty metadata, so `/skill-name` still works but Claude can't match against your `description`. Run with `--debug` to see the parse error.
 
@@ -46689,7 +46988,7 @@ In [non-interactive mode](/docs/en/headless), `--agents` also accepts the path t
 Each top-level key in the JSON is an agent's name, and its value is that agent's definition. Don't start a name with `-`. A definition takes these fields:
 
 * **`prompt`**: the agent's system prompt, equivalent to the markdown body in file-based subagents. `prompt` may be empty. If you select an agent with an empty `prompt` and no `memory` field as the session's agent with `--agent`, the session's system prompt is left unchanged. An empty `prompt` requires Claude Code v2.1.281 or later.
-* **[Frontmatter fields](#supported-frontmatter-fields)**: `description`, `tools`, `disallowedTools`, `model`, `permissionMode`, `mcpServers`, `hooks`, `maxTurns`, `skills`, `initialPrompt`, `memory`, `effort`, `background`, `omitClaudeMd`, and `isolation`.
+* **[Frontmatter fields](#supported-frontmatter-fields)**: `description`, `tools`, `disallowedTools`, `model`, `permissionMode`, `mcpServers`, `hooks`, `maxTurns`, `autoCompactWindow`, `skills`, `initialPrompt`, `memory`, `effort`, `background`, `omitClaudeMd`, and `isolation`.
 * **Ignored fields**: `color` and `experimental` aren't accepted here and are ignored rather than rejected.
 
 For what Claude Code does with a value it can't load, and the flags and environment variable that skip that check, see [`Invalid --agents configuration`](/docs/en/errors#invalid-agents-configuration).
@@ -46757,7 +47056,10 @@ When the main conversation itself runs isolated in a worktree, Claude Code appli
 
 Configure a subagent with YAML [frontmatter](/docs/en/glossary#frontmatter) between `---` markers at the top of its file, and write its system prompt as Markdown after the closing `---`. Only `name` and `description` are required.
 
-Multi-word field names use camelCase, such as `maxTurns` and `disallowedTools`, and must match the table exactly: Claude Code ignores a field it doesn't recognize without reporting an error. To find out why a subagent file didn't load, see [Subagent files Claude Code skips](#subagent-files-claude-code-skips).
+Multi-word field names use camelCase, such as `maxTurns` and `disallowedTools`, and must match the table exactly: Claude Code ignores a field it doesn't recognize without reporting an error.
+
+* To find a misspelled field in a subagent that loaded, run [`claude --debug`](/docs/en/cli-reference#cli-flags) in your shell and search the debug log at `~/.claude/debug/<session-id>.txt` for `does not recognize or apply`. The debug log names up to five top-level fields in the subagent's file that Claude Code doesn't recognize, with the likely intended name when a supported field is close. Requires Claude Code v2.1.296 or later.
+* To find out why a subagent file didn't load, see [Subagent files Claude Code skips](#subagent-files-claude-code-skips).
 
 | Field | Required | Description |
 | :- | :- | :- |
@@ -46768,6 +47070,7 @@ Multi-word field names use camelCase, such as `maxTurns` and `disallowedTools`, 
 | `model` | No | [Model](#choose-a-model) to use: `sonnet`, `opus`, `haiku`, `fable`, a full model ID such as `claude-opus-5-5`, or `inherit`. When you omit it, Claude Code picks the model in the [subagent model order](#choose-a-model) |
 | `permissionMode` | No | [Permission mode](#permission-modes): `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, `plan`, or `manual` as an alias for `default`. Ignored for [plugin subagents](#choose-the-subagent-scope) |
 | `maxTurns` | No | Maximum number of agentic turns before the subagent stops. When the subagent reaches the limit, Claude Code returns its output marked as partial, and Claude can [resume it](#resume-subagents) to continue. The partial marking requires Claude Code v2.1.246 or later |
+| `autoCompactWindow` | No | Lower the [auto-compact window](#subagent-auto-compact-window) for this subagent to a token count from `100000` to `1000000`. Requires Claude Code v2.1.296 or later |
 | `skills` | No | [Skills](/docs/en/skills) to preload into the subagent's context at startup. The full skill content is injected, not only the description. Subagents can still invoke unlisted project, user, and plugin skills through the Skill tool |
 | `mcpServers` | No | [MCP servers](/docs/en/mcp) available to this subagent. Each entry is either a server name referencing an already-configured server (e.g., `"slack"`) or an inline definition with the server name as key and a full [MCP server config](/docs/en/mcp#installing-mcp-servers) as value. Ignored for [plugin subagents](#choose-the-subagent-scope) |
 | `hooks` | No | [Lifecycle hooks](#define-hooks-for-subagents) scoped to this subagent. Ignored for [plugin subagents](#choose-the-subagent-scope) |
@@ -47321,7 +47624,7 @@ You can also type the mention manually without using the picker: `@agent-<name>`
 claude --agent code-reviewer
 ```
 
-Unless the agent's [prompt is empty](#choose-the-subagent-scope), a custom subagent's system prompt replaces the default Claude Code system prompt entirely, the same way [`--system-prompt`](/docs/en/cli-reference) does. `CLAUDE.md` files and project memory still load through the normal message flow, even when the agent's definition sets [`omitClaudeMd`](#supported-frontmatter-fields).
+Unless the agent's [prompt is empty](#choose-the-subagent-scope), a custom subagent's system prompt replaces the default Claude Code system prompt entirely, the same way [`--system-prompt`](/docs/en/cli-reference) does. `CLAUDE.md` files and project memory still load through the normal message flow, even when the agent's definition sets [`omitClaudeMd`](#supported-frontmatter-fields). If you run the session with `-p` as a custom agent that has its own prompt, it also starts without the [git status snapshot](/docs/en/settings-reference#includegitinstructions).
 
 The agent name appears as `@<name>` in the startup header so you can confirm it's active.
 
@@ -47607,6 +47910,27 @@ Compaction events are logged in subagent transcript files:
 ```
 
 The `preTokens` value shows how many tokens were used before compaction occurred.
+
+##### Set the auto-compact window for one subagent
+
+To make one subagent compact earlier than it otherwise would, set `autoCompactWindow` in its [frontmatter](#supported-frontmatter-fields) to a token count from `100000` to `1000000`. If you set [`CLAUDE_CODE_AUTO_COMPACT_WINDOW`](/docs/en/env-vars#variables) to a positive integer, the subagent uses that variable's window instead and the field has no effect. Requires Claude Code v2.1.296 or later.
+
+This frontmatter sets `autoCompactWindow` to 200,000 tokens for a subagent that reads long log files:
+
+```yaml theme={null}
+---
+name: log-reader
+description: Reads long log files and reports the errors it finds
+autoCompactWindow: 200000
+---
+```
+
+Write the value as a plain integer such as `200000`, because in frontmatter Claude Code reads `200k` as 200, which is outside the allowed range. The subagent still loads and compacts as if the field were absent. To check whether Claude Code ignored your value, run `claude --debug` in your shell and search the [debug log](#supported-frontmatter-fields) for `invalid autoCompactWindow`.
+
+If the value is in range and you still see no change, check for these causes:
+
+* **The value isn't below the [auto-compact window](/docs/en/model-config#context-window-and-auto-compaction) the subagent would otherwise inherit**: to compact earlier, set a value below that window.
+* **You run the whole session as this subagent with `--agent` or the `agent` setting**: the field has no effect there. To set the session's window, see [Set the auto-compact window](/docs/en/model-config#set-the-auto-compact-window).
 
 ## Fork the current conversation
 
@@ -50525,7 +50849,9 @@ With GitHub connected and an environment created, you're ready to submit tasks.
 
 <Steps>
   <Step title="Select a repository and branch">
-    From [claude.ai/code](https://claude.ai/code) or the Code tab in the Claude mobile app, click the repository selector below the input box and choose a repository for Claude to work in. Each repository shows a branch selector. Change it to start Claude from a feature branch instead of the default. You can add multiple repositories to work across them in one session.
+    From [claude.ai/code](https://claude.ai/code) or the Code tab in the Claude mobile app, click the repository selector below the input box and choose a repository for Claude to work in. You can add multiple repositories to work across them in one session.
+
+    At claude.ai/code, to start Claude from a feature branch instead of the default, change the branch in the control after the repository selector.
   </Step>
 
   <Step title="Choose a permission mode">
@@ -61124,7 +61450,7 @@ Configure cloud environments for Claude Code cloud sessions: network access leve
   Cloud environments apply to [cloud sessions](/docs/en/claude-code-on-the-web), which are available on Pro, Max, and Team plans, and for Enterprise users with [premium seats or Chat + Claude Code seats](https://support.claude.com/en/articles/11845131-use-claude-code-with-your-team-or-enterprise-plan).
 </Note>
 
-Each [cloud session](/docs/en/claude-code-on-the-web) runs in a cloud environment. You can configure an environment to allow or deny [network access](#access-levels), [set environment variables](#set-environment-variables) for the session, on Pro and Max plans store [network secrets](#add-network-secrets) that sessions use without seeing them, and run a [setup script](#setup-scripts) before Claude starts working.
+Each [cloud session](/docs/en/claude-code-on-the-web) runs in a cloud environment. You can configure an environment to allow or deny [network access](#access-levels), [set environment variables](#set-environment-variables) for the session, store [network secrets](#add-network-secrets) that sessions use without seeing them, and run a [setup script](#setup-scripts) before Claude starts working.
 
 The same environments apply wherever you start a cloud session: the [Desktop app](/docs/en/desktop), the [Claude mobile app](/docs/en/mobile), your browser at [claude.ai/code](https://claude.ai/code), the terminal with [`claude --cloud`](/docs/en/claude-code-on-the-web#from-terminal-to-cloud), [routines](/docs/en/routines), and [Claude Tag](https://claude.com/docs/claude-tag/overview). Each of these surfaces can also route to a [self-hosted environment](/docs/en/self-hosted-environments). [Availability and limitations](/docs/en/self-hosted-environments#availability-and-limitations) covers what Claude can't use yet when a Claude Tag session runs in one.
 
@@ -61154,25 +61480,20 @@ Configure an environment when the default isn't enough: when Claude needs to rea
 
 ## Configure your environment
 
-Create, edit, and archive environments from the environment selector, which you reach at [claude.ai/code](https://claude.ai/code) after [web onboarding](/docs/en/web-quickstart), or from the prompt box in the [Desktop app](/docs/en/desktop#cloud-sessions). Environments you create are personal to your account; [shared environments](#organization-shared-environments) created by an Owner appear in the same selector. See [Installed tools](#installed-tools) for what's available without any configuration.
+Add, edit, and archive environments from the environment selector under the message box on the screen where you start a new session at [claude.ai/code](https://claude.ai/code). To reach that screen, complete [web onboarding](/docs/en/web-quickstart). For the Desktop app, see [Cloud sessions](/docs/en/desktop#cloud-sessions). Environments you create are personal to your account; [shared environments](#organization-shared-environments) created by an Owner appear in the selector alongside them. See [Installed tools](#installed-tools) for what's available without any configuration.
+
+The selector appears only until you send a new session's first message. To edit the environment of a running cloud session of your own, select the caret after the session title at the top, then select **Edit cloud environment**.
 
 <Steps>
   <Step title="Open the environment selector">
-    On [claude.ai/code](https://claude.ai/code), select the cloud icon showing the current environment's name, in the row above the message box. There's no settings page or direct URL for the selector.
-
-    <Frame>
-      <img alt="The environment selector open above the message box at claude.ai/code. The cloud button showing the environment name Default sits in the row above the message box. The open menu lists a Local row with Download and Desktop only labels, a Cloud section where the Default environment is selected with a checkmark and shows a settings gear icon on hover, an Add cloud environment option, and a Remote Control section with setup instructions." />
-    </Frame>
+    On the new-session screen, select the first control in the row under the message box.
   </Step>
 
   <Step title="Add or edit an environment">
-    Select **Cloud** to list your environments. Then select **Add cloud environment**, or hover over an existing environment and select the settings icon that appears on the right.
+    * **Add an environment**: select **New environment** at the bottom of the menu to open the **New environment** dialog. Fill in the form and select **Add environment**. Your new session then uses the environment you added.
+    * **Edit an environment**: find its row under **Cloud**. If **Cloud** is a single row, select it to open the list. If your environment isn't listed under **Cloud**, select the **More** row under that heading. Hover over the environment's row and select the settings icon that appears on its right to open its dialog.
 
-    The dialog includes the name, network access level, environment variables, and setup script. When you edit an existing cloud environment on a Pro or Max plan, the dialog also includes [network secrets](#add-network-secrets).
-
-    <Frame>
-      <img alt="The New cloud environment dialog. A Name field with the placeholder Default, a Network access selector set to Trusted with links to the network policy and access levels, an Environment variables box showing .env-format placeholder text with a note that values are visible to anyone using the environment, a Setup script box described as a Bash script that runs when a new session starts before Claude Code launches, and Cancel and Create environment buttons." />
-    </Frame>
+    The dialog includes the name, network access level, environment variables, and setup script. To store a key that sessions use without seeing it, see [Add network secrets](#add-network-secrets).
   </Step>
 </Steps>
 
@@ -61199,7 +61520,7 @@ After you edit, add, or remove a variable, an existing session in an Anthropic-h
 
 A cloud session also sets some variables itself when it starts. For [`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE`](/docs/en/claude-code-on-the-web#manage-context), the value the session sets overrides one you add here, so adding that key here has no effect.
 
-Anyone who uses the environment can read the values. On Pro and Max plans, use a [network secret](#add-network-secrets) instead for a key the agent proxy can attach to a request. The [requests that never get a secret](#requests-that-never-get-the-credential) are listed there.
+Anyone who uses the environment can read the values. In an Anthropic-hosted environment, use a [network secret](#add-network-secrets) instead for a key the agent proxy can attach to a request. The [requests that never get a secret](#requests-that-never-get-the-credential) are listed there.
 
 <span />
 
@@ -61207,15 +61528,16 @@ Anyone who uses the environment can read the values. On Pro and Max plans, use a
 
 A network secret is an API key or token you store on a cloud environment so Claude can call that API from any session in the environment without seeing the key. Anthropic's agent proxy adds the key to requests for the hosts you list, after each request leaves the session's VM, so the key itself stays outside the VM.
 
-Network secrets are available on Pro and Max plans. They aren't available on Team or Enterprise plans yet, so the **Network secrets** section doesn't appear in the environment dialog on those plans.
+Network secrets are available on Pro, Max, Team, and Enterprise plans. To check whether you can add one yourself, see [Requirements](#requirements).
 
 #### Requirements
 
 These requirements decide whether you can add a secret and whether the agent proxy can use it once added:
 
-* **Role**: an organization admin role in your claude.ai organization
-  * On Team and Enterprise, Owners hold it and Admins don't
-  * On Pro and Max, you hold it in your own organization
+* **Role**: on Pro, Max, and Team plans, you can add and delete secrets on your own environments whatever your role. On Team and Enterprise, Owners hold an organization admin role in your claude.ai organization and Admins don't, which changes what you see in these cases:
+  * **Your own environment on Enterprise**: with an organization admin role, you add and delete secrets. Without it, the **Network secrets** section lists the secrets under the note "Only an organization admin can add or delete network secrets", with no **Add secret** or delete button. Ask an Owner to add the secret to a [shared environment](#organization-shared-environments), then run your sessions there
+  * **A shared environment**: Owners [add and delete its secrets](#add-a-credential) from admin settings. Without an organization admin role, ask an Owner to add the secret, because the environment's dialog has no **Network secrets** section
+  * **Your own environment on Team**: without an organization admin role, **Add secret** opens a [shorter form](#add-a-secret-without-the-role) that takes one host
 * **Environment type**: an Anthropic-hosted cloud environment that already exists. A [self-hosted environment](/docs/en/self-hosted-environments) doesn't have network secrets
 * **API reachability**: the API accepts connections from the internet, because requests leave from Anthropic's network
 * **Encryption keys**: if your organization uses customer-managed encryption keys, you can't save network secrets
@@ -61224,27 +61546,37 @@ These requirements decide whether you can add a secret and whether the agent pro
 
 You add secrets one at a time, and you can't edit a secret after you add it. To change a secret's hosts or value, delete it and add it again.
 
+To add a secret to a [shared environment](#organization-shared-environments), open it for editing from the **Cloud environments** page in [admin settings](https://claude.ai/admin-settings), then continue step 1 from the **Network secrets** section. If you're on a Team plan and don't hold an [organization admin role](#requirements), follow step 1 on your own environment, then [fill in the shorter form](#add-a-secret-without-the-role).
+
 <Steps>
   <Step title="Open the environment's network secrets">
-    [Open the environment for editing](#configure-your-environment) at [claude.ai/code](https://claude.ai/code). In the **Edit environment** dialog, find the **Network secrets** section. You see the secrets already on the environment, each with the hosts it applies to.
+    [Open the environment for editing](#configure-your-environment) at [claude.ai/code](https://claude.ai/code). In the **Edit cloud environment** dialog, find the **Network secrets** section. You see the secrets already on the environment, each with the hosts it applies to.
   </Step>
 
   <Step title="Add the secret">
-    Select **Add secret** and fill in the form. Keep the default **Credential type**, **Bearer**, for an API key that travels in a request header, and fill in these fields:
+    Select **Add secret** and fill in the form. Keep the default **Secret type**, **Bearer**, for an API key that travels in a request header, and fill in these fields:
 
     * **Name**: a label for the secret, such as `Internal billing API`
     * **Allowed websites**: the API's hosts, such as `api.example.com`. A leading `*.` matches every subdomain
     * **Custom headers**: one row for the header that carries the key. The row starts with `Authorization` as the header's **Name** and `Bearer` as its **Prefix**; paste the key itself as the **Value**. For a header like `X-Api-Key` that takes the bare value, change the name and clear the prefix
 
-    For an API that authenticates another way, pick a different **Credential type**. The list is the same one [Claude Tag](https://claude.com/docs/claude-tag/overview), the Slack integration for Team and Enterprise plans, offers for [connections](https://claude.com/docs/claude-tag/admins/add-connections).
+    For an API that authenticates another way, pick a different **Secret type**. The list is the same one [Claude Tag](https://claude.com/docs/claude-tag/overview), the Slack integration for Team and Enterprise plans, offers for [connections](https://claude.com/docs/claude-tag/admins/add-connections).
   </Step>
 
   <Step title="Save the secret">
-    Select **Connect**. The secret appears in the list with its hosts, saved without the dialog's **Save changes** button. You can't view the value again after saving.
+    Select **Add**. The secret appears in the list with its hosts, saved without the dialog's **Save changes** button. You can't view the value again after saving.
   </Step>
 </Steps>
 
 To confirm the secret works, start a session in the environment and ask Claude to call the API, for example with `curl`. The API answers as if the key were in the request, and the key doesn't appear in the session's environment variables or in any file. If the list marks a secret **Not sent** instead, the note under it says why and what to do. Two secrets whose hosts overlap without matching exactly get no marker, and the agent proxy sends only one of them.
+
+#### Add a secret on a Team plan without an organization admin role
+
+If you're on a Team plan and don't hold an [organization admin role](#requirements), the **Add secret** form takes one secret for one host. Select **Add secret** in your environment's [**Network secrets** section](#add-a-credential), fill in these fields, then select the form's **Add secret** button:
+
+* **Host**: the one host that gets the secret, such as `api.example.com`. The form doesn't accept a `*.` wildcard
+* **Name**: an optional label for the secret
+* **Secret type**: **Token** for a key that travels in a request header, or **Username and password**. For a token, paste the key as the **Value**
 
 #### Which requests get the secret
 
@@ -61269,7 +61601,7 @@ A [self-hosted environment](/docs/en/self-hosted-environments) ID, which has the
 
 ### Archive an environment
 
-To archive one of your own environments, open it for editing and select **Archive**. An Owner archives a [shared environment](#organization-shared-environments) from the **Cloud environments** page in admin settings. You can't delete an environment, only archive it.
+To archive one of your own environments, open it for editing, select **Archive environment**, and confirm. If the environment is [shared with your organization](#organization-shared-environments), an Owner archives it from the **Cloud environments** page in [admin settings](https://claude.ai/admin-settings) instead, so ask an Owner unless you are one. You can't delete an environment, only archive it.
 
 Archiving affects new sessions, not running ones:
 
@@ -61291,7 +61623,7 @@ An Owner makes an environment available to the organization in one of two ways:
 
 Owners choose the organization's [default environment](#the-default-environment) separately, at [claude.ai/admin-settings/claude-code](https://claude.ai/admin-settings/claude-code).
 
-Every member's sessions in a shared environment read its variables, so don't include secrets in them. [Network secrets](#add-network-secrets), which give sessions a key they can't read, aren't available on Team or Enterprise plans yet.
+To give a shared environment's sessions a key they can't read, add a [network secret](#add-network-secrets) when you edit the environment on the **Cloud environments** page. Don't include secrets in its variables, because every member's sessions read them.
 
 ### Set the environment a Claude Tag channel uses
 
@@ -61304,7 +61636,7 @@ In [Claude Tag](https://claude.com/docs/claude-tag/overview) channels, Claude wo
 
 Each environment sets one network access level, which controls the outbound connections its sessions can make. The default level, **Trusted**, allows package registries and other [allowlisted domains](#default-allowed-domains); **Custom** takes your own domain list.
 
-To change an environment's network access, [open it for editing](#configure-your-environment) and use the **Network access** selector in the dialog. A [shared environment](#organization-shared-environments) opens read-only there, so an Owner changes its network access from the **Cloud environments** page in [admin settings](https://claude.ai/admin-settings) instead. The cloud icon that opens the selector appears on the app surfaces listed under [The Default environment](#the-default-environment) and in the [routine editor](/docs/en/routines#environments-and-network-access); personal environments don't have a separate page in your claude.ai account settings.
+To change an environment's network access, [open it for editing](#configure-your-environment) and use the **Network access** selector in the dialog. A [shared environment](#organization-shared-environments) opens read-only there, so an Owner changes its network access from the **Cloud environments** page in [admin settings](https://claude.ai/admin-settings) instead. The control that opens the selector appears on the app surfaces listed under [The Default environment](#the-default-environment) and in the [routine editor](/docs/en/routines#environments-and-network-access); personal environments don't have a separate page in your claude.ai account settings.
 
 When you change an Anthropic-hosted environment's network access, its existing sessions follow the new setting within about a minute, for requests that go through the session's [network allowlist](#access-levels). You don't need to start a new session.
 
@@ -61394,12 +61726,12 @@ Cloud sessions start from a fresh clone of your repository. Anything you commit 
 | Plugins enabled only in your user settings | No | User-scoped `enabledPlugins` lives in `~/.claude/settings.json` on your machine |
 | MCP servers you added with `claude mcp add` at the default local scope or the user scope | No | Those write to `~/.claude.json` on your machine, not the repo. Add the server with `claude mcp add --scope project`, which writes the repo's [`.mcp.json`](/docs/en/mcp#project-scope), and commit that file. A session with one repository loads it |
 | Transport variables in your repo's `.claude/settings.json` `env` block, such as `NODE_EXTRA_CA_CERTS` and the [mTLS client certificate variables](/docs/en/network-config#mtls-authentication) | No | The hosting environment manages the session's API connection, so Claude Code ignores these keys and notes each ignored key in the session's debug log |
-| API keys and tokens for services Claude calls | On Pro and Max plans, as [network secrets](#add-network-secrets) | You add the key once on the environment and the agent proxy attaches it to requests for the hosts you list. A key the agent proxy [can't attach](#requests-that-never-get-the-credential), or any key on a Team or Enterprise plan, stays in an environment variable |
+| API keys and tokens for services Claude calls | In an Anthropic-hosted environment, as [network secrets](#add-network-secrets) | You add the key once on the environment and the agent proxy attaches it to requests for the hosts you list. A key the agent proxy [can't attach](#requests-that-never-get-the-credential) stays in an environment variable |
 | Interactive auth like AWS SSO | No | Not supported. SSO requires browser-based login that can't run in a cloud session |
 
 To make your own configuration available in cloud sessions, commit it to the repo.
 
-Anyone who uses the environment can read its environment variables and setup script. The dialog's note under **Environment variables** says so and warns against putting secrets there. On Pro and Max plans, store a key the agent proxy can attach as a [network secret](#add-network-secrets) instead.
+Anyone who uses the environment can read its environment variables and setup script. The dialog's note under **Environment variables** says so and warns against putting secrets there. In an Anthropic-hosted environment, store a key the agent proxy can attach as a [network secret](#add-network-secrets) instead.
 
 #### Add personal preferences without committing to the repo
 
@@ -63857,7 +64189,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_REMOTE_SESSION_ID` | Set automatically in [cloud sessions](/docs/en/claude-code-on-the-web) to the current session's ID. Read this to construct a link back to the session transcript. See [Link output back to the session](/docs/en/cloud-environments#link-output-back-to-the-session) |
 | `CLAUDE_CODE_RESTRICTED` | Set to `1` to start the session in restricted mode, the same as passing [`--restricted`](/docs/en/cli-reference#cli-flags). Claude Code ignores this variable in a settings file's `env` block. Requires Claude Code v2.1.248 or later |
 | `CLAUDE_CODE_RESUME_INTERRUPTED_TURN` | Set to `1` to automatically resume if the previous session ended mid-turn. Used in SDK mode so the model continues without requiring the SDK to re-send the prompt. To turn this off, unset the variable or set it to `0`. For the VS Code chat panel, see [Continue conversations after a reload](/docs/en/vs-code#continue-conversations-after-a-reload) |
-| `CLAUDE_CODE_RESUME_INTERRUPTED_TURN_MAX_AGE_MS` | Maximum age in milliseconds of the last transcript message for a session that ended mid-turn to continue automatically on resume. When the last message is older than this bound, Claude Code skips the `CLAUDE_CODE_RESUME_INTERRUPTED_TURN` automatic resume and its `CLAUDE_CODE_RESUME_PROMPT` continuation message, and the session starts idle so you continue explicitly. Unset or `0` means no bound, except that a turn whose last request failed with an API error resumes only while that error is less than six hours old. A positive value bounds every turn, including those; a negative or non-numeric value applies a one-hour bound. Spawn scripts for long-running agents can set this so a restart against an old transcript doesn't re-run a stale prompt. Claude Code sets a one-hour bound itself when it restarts a crashed [agent view](/docs/en/agent-view) session that inherited its conversation from an interactive session. Requires Claude Code v2.1.211 or later |
+| `CLAUDE_CODE_RESUME_INTERRUPTED_TURN_MAX_AGE_MS` | Maximum age in milliseconds of the last transcript message for a session that ended mid-turn to continue automatically on resume. When the last message is older than this bound, Claude Code skips the `CLAUDE_CODE_RESUME_INTERRUPTED_TURN` automatic resume and its `CLAUDE_CODE_RESUME_PROMPT` continuation message, and the session starts idle so you continue explicitly. Unset or `0` sets no bound, except that some turns resume only within six hours of their last message, such as one that ended with an API error. A positive value bounds every turn, including those; a negative or non-numeric value applies a one-hour bound. Spawn scripts for long-running agents can set this so a restart against an old transcript doesn't re-run a stale prompt. Claude Code sets a one-hour bound itself when it restarts a crashed [agent view](/docs/en/agent-view) session that inherited its conversation from an interactive session. Requires Claude Code v2.1.211 or later |
 | `CLAUDE_CODE_RESUME_PROMPT` | Override the continuation message Claude Code sends to Claude when `CLAUDE_CODE_RESUME_INTERRUPTED_TURN` continues an interrupted turn instead of resending its prompt, or when you resume a [deferred tool call](/docs/en/hooks#defer-a-tool-call-for-later) with `-p`. Defaults to `Continue from where you left off.`. An empty string uses the default |
 | `CLAUDE_CODE_RETRY_WATCHDOG` | Set to `1` for unattended sessions such as eval harnesses, CI jobs, or remote workers. Retries `429` and `529` capacity errors indefinitely instead of failing after `CLAUDE_CODE_MAX_RETRIES` attempts. Claude Code fails at once when a standard-speed request gets a `429` that reports a spend limit or exhausted usage credits, even one from a [gateway spend cap](/docs/en/errors#spend-limit-reached) that resets on a schedule. Before v2.1.239, the watchdog retried these indefinitely. For fast mode requests, see [Handle rate limits](/docs/en/fast-mode#handle-rate-limits). The watchdog backs off up to 5 minutes between attempts, or until the limit resets when the response carries a rate-limit reset time, so a session that hits a usage limit waits out the remaining window. On v2.1.199 or later it also raises the default retry count for other transient errors, such as server errors, timeouts, and dropped connections, to 300, roughly three hours of backoff, and removes the cap of 15 on `CLAUDE_CODE_MAX_RETRIES` if you set that variable explicitly. Requires Claude Code v2.1.186 or later |
 | `CLAUDE_CODE_RETRY_WATCHDOG_MAX_WAIT_MS` | Maximum time in milliseconds that each API request spends waiting out `429` and `529` errors when `CLAUDE_CODE_RETRY_WATCHDOG` is set. Once that time is spent, the next such error ends the request. Give a positive whole number in plain digits, such as `1800000` for 30 minutes. When unset, the wait has no limit. Requires Claude Code v2.1.295 or later |
@@ -67687,9 +68019,12 @@ Runs after Claude creates tool parameters and before processing the tool call. M
 To run a hook when a specific file changes on disk, whatever wrote it, use [FileChanged](#filechanged) instead of matching file-editing tools by name. Unlike PreToolUse, Claude Code runs FileChanged hooks after the change, and they have no decision control, so they can't block the write.
 
 <Warning>
-  PreToolUse runs only when Claude calls a tool. Files you [reference with `@` in your prompt](/docs/en/common-workflows#reference-files-and-directories) are added without any tool call: Claude Code inserts their contents while building the prompt, so no PreToolUse hook fires for them, including hooks matching `Read`. To block specific paths from `@` references, use a [`Read` deny rule](/docs/en/permissions#read-and-edit) instead.
+  PreToolUse runs only when Claude calls a tool. By default, files you [reference with `@` in your prompt](/docs/en/common-workflows#reference-files-and-directories) are added without any tool call. Claude Code inserts their contents while building the prompt, so no PreToolUse hook fires for them, including hooks matching `Read`. PreToolUse also doesn't fire for [`EndConversation`](/docs/en/tools-reference#endconversation-tool-behavior).
 
-  PreToolUse also doesn't fire for [`EndConversation`](/docs/en/tools-reference#endconversation-tool-behavior).
+  You can block specific paths from `@` references, or turn the insertion off:
+
+  * **Block specific paths**: add a [`Read` deny rule](/docs/en/permissions#read-and-edit) for them
+  * **Turn the insertion off**: set [`CLAUDE_CODE_DISABLE_FILE_MENTIONS=1`](/docs/en/env-vars#variables) in your shell, user settings, or managed settings. Claude then gets the mentioned paths with a note to read them using its file tools. If it does, your matching PreToolUse hooks run. The variable requires Claude Code v2.1.299 or later, and Claude Code ignores it in project and local settings.
 </Warning>
 
 Use [PreToolUse decision control](#pretooluse-decision-control) to allow, deny, ask, or defer the tool call.
@@ -74974,6 +75309,7 @@ You can set the auto-compact window in these places:
 * **For every model**: set [`autoCompactWindow`](/docs/en/settings-reference#autocompactwindow) in a settings file, such as `"autoCompactWindow": 200000` in `~/.claude/settings.json`. A window you saved for a model with `/autocompact` takes precedence over this key in the same file for that model.
 * **For one launch**: pass [`--autocompact`](/docs/en/cli-reference#cli-flags) when starting Claude Code. The flag overrides your saved setting for that launch without changing it, and `claude --autocompact auto` runs the session at the tuned window even if your saved setting has a value. Unlike `/autocompact`, the flag isn't preempted by a higher-priority settings scope such as managed settings.
 * **In scripts and cloud environments**: set [`CLAUDE_CODE_AUTO_COMPACT_WINDOW`](/docs/en/env-vars). While it's set, it takes precedence over the command, the flag, and the setting, and `/autocompact` reports the override instead of changing the window.
+* **For one subagent**: see [Set the auto-compact window for one subagent](/docs/en/sub-agents#subagent-auto-compact-window).
 
 The command and the flag accept a window size from 100K to 1M tokens, in any of these forms:
 
@@ -77075,7 +77411,7 @@ Claude Code runs four independent timers that abort a streaming model response w
 | :- | :- | :- | :- |
 | First-byte deadline | No response headers arrive after Claude Code sends the request | Direct Anthropic API and [Claude Platform on AWS](/docs/en/claude-platform-on-aws), including through an HTTPS proxy, but not when `ANTHROPIC_BASE_URL` or `ANTHROPIC_AWS_BASE_URL` routes them through a [gateway](/docs/en/gateways). Opt-in on Amazon Bedrock with `CLAUDE_ENABLE_BYTE_WATCHDOG_BEDROCK=1`; doesn't run on Google Cloud's Agent Platform or Microsoft Foundry | 180 seconds on the direct Anthropic API, 300 seconds elsewhere, plus one second per 32KB of request body |
 | Event-level watchdog | No response events parse. Where the byte-level watchdog runs on a connection other than Amazon Bedrock, arriving bytes, including keep-alive pings, also reset this watchdog, for up to about five minutes without a parsed event | Every provider | 300 seconds |
-| Byte-level watchdog | No bytes arrive on the wire, including SSE keep-alive pings | Direct Anthropic API, [Claude Platform on AWS](/docs/en/claude-platform-on-aws), and [gateway](/docs/en/gateways) connections, including a custom `ANTHROPIC_BASE_URL`. Opt-in on Amazon Bedrock `vnd.amazon.eventstream` responses with `CLAUDE_ENABLE_BYTE_WATCHDOG_BEDROCK=1`; doesn't run on Google Cloud's Agent Platform or Microsoft Foundry | 180 seconds on the direct Anthropic API. Through a custom `ANTHROPIC_BASE_URL`, 180 seconds when Claude Code has [fetched feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching) and 300 seconds when it hasn't. 300 seconds elsewhere |
+| Byte-level watchdog | No bytes arrive on the wire, including SSE keep-alive pings | Direct Anthropic API, [Claude Platform on AWS](/docs/en/claude-platform-on-aws), and [gateway](/docs/en/gateways) connections, including a custom `ANTHROPIC_BASE_URL`. Opt-in on Amazon Bedrock `vnd.amazon.eventstream` responses with `CLAUDE_ENABLE_BYTE_WATCHDOG_BEDROCK=1`; doesn't run on Google Cloud's Agent Platform or Microsoft Foundry | 180 seconds on the direct Anthropic API. 300 seconds on Claude Platform on AWS, on Amazon Bedrock, in a [Claude apps gateway](/docs/en/claude-apps-gateway) session, and through a custom `ANTHROPIC_BASE_URL` |
 | Body idle timeout | No bytes arrive for 5 minutes | Providers other than the direct Anthropic API, Claude Platform on AWS, and Amazon Bedrock with `CLAUDE_ENABLE_BYTE_WATCHDOG_BEDROCK=1` set, unless [`API_FORCE_IDLE_TIMEOUT`](/docs/en/env-vars) changes that | 5 minutes |
 
 If you set `CLAUDE_ENABLE_BYTE_WATCHDOG_BEDROCK=1`, the byte-level watchdog replaces the body idle timeout on Bedrock rather than running alongside it. `CLAUDE_STREAM_IDLE_TIMEOUT_MS` then also governs how long a Bedrock stream may stay silent before Claude Code treats the connection as dead, within the limits listed below. Arriving bytes still don't reset the event-level watchdog on Bedrock. With debug logging on, each Bedrock stream then logs a debug message that starts with `wire-heartbeat: _chunkTimes absent`.
@@ -79386,8 +79722,8 @@ The exit code reports how the run ended. To act on it in a pipeline, see [Run ev
 
 | Exit code | Meaning |
 | :- | :- |
-| `0` | Every case meets the threshold |
-| `1` | A failing case, a load error, or an untrusted plugin directory |
+| `0` | The suite passed: every case meets the threshold and nothing else failed the run |
+| `1` | A failing case, a load error, an untrusted plugin directory, a run that [ended on an API error](/docs/en/plugin-evals#runs-ended-on-an-api-error), or another cause listed under [Run evals in CI](/docs/en/plugin-evals#run-evals-in-ci) |
 | `2` | A partial run |
 | `130` | Interrupted |
 | `143` | Terminated |
@@ -85209,7 +85545,7 @@ When a developer starts a session and selects your environment, Anthropic's cont
 1. A runner with free capacity claims the session and holds a lease on it.
 2. The runner clones the repository into its working directory and spawns a child Claude Code process.
 3. The child streams events back over HTTPS while the runner keeps polling; each poll refreshes the lease and doubles as the heartbeat.
-4. If the runner stops polling, its lease lapses after about 60 seconds, and the server requeues the session for another runner within a few minutes.
+4. If the runner stops polling, its lease lapses after about 60 seconds. The server can then take a few minutes and sometimes longer to requeue the session for another runner.
 
 The runner gives each poll request 10 seconds. When a request times out, is lost, or gets a response the runner can't parse, the runner keeps serving its live sessions and retries after a second or two instead of waiting for the next scheduled poll. For example, an intercepting proxy that answers the poll with its own page produces a response the runner can't parse. Each time another request fails in one of those ways, the runner doubles the gap before the next retry, up to 20 seconds, and shortens the gap whenever the lease is close to expiring.
 
@@ -85304,6 +85640,7 @@ The runner sets the following in the wrapper's environment:
 | `CLAUDE_CODE_REMOTE_SLACK_THREAD_TS` | For a Claude Tag session that belongs to one Slack thread, that thread's Slack timestamp, such as `1700000000.000100`. Can be unset, and can be set when `CLAUDE_CODE_REMOTE_SLACK_THREAD_URL` isn't, so check each variable on its own. |
 | `CLAUDE_SESSION_INGRESS_TOKEN_FILE` | Absolute path to a per-session file holding the current session JWT, kept fresh across token refreshes. Shell subprocesses read it for their `Authorization` header when downloading attachments the user added to the session. `exec` preserves the variable automatically; a wrapper that rebuilds the child's environment must carry the variable over, or attachment downloads silently stop working. |
 | `CLAUDE_CONFIG_DIR` | Per-session Claude config directory, written at session start from the snapshot of the runner host's config that the runner captures at startup; see [Permissions and tool approval](#permissions-and-tool-approval). Writes here are isolated to this session. The directory stays under `<base-dir>/_sessions/` after the session ends unless you start the runner with [`--remove-session-state`](/docs/en/self-hosted-environments-reference#runner-cli-flags); see [Reuse a pre-warmed checkout](/docs/en/self-hosted-environments-deploy#reuse-a-pre-warmed-checkout). |
+| `CLAUDE_CODE_REMOTE_MCP_CONFIG` | Path to a file in `CLAUDE_CONFIG_DIR` holding the MCP server definitions that Anthropic's control plane delivered for this session. If your wrapper rebuilds the child's environment, carry this variable over. Without it, when the control plane updates the delivered servers, the child shuts down any stdio, HTTP, or SSE server your wrapper adds with [`--mcp-config`](/docs/en/cli-reference#cli-flags) that isn't in the update. Requires Claude Code v2.1.299 or later. |
 | `ANTHROPIC_BASE_URL` | The API base URL the child will use, delivered by the control plane per session and normally `https://api.anthropic.com`. Don't override it: the session's inference credential is an Anthropic-issued OAuth token that other providers don't accept. |
 | `CLAUDE_CODE_OAUTH_TOKEN` | The short-lived OAuth access token the child uses for model inference, scoped to model inference and file upload only, with a lifetime of about 30 minutes. The runner re-mints it before expiry and delivers the rotation over the child's stdin, so a wrapper that doesn't [keep stdin attached](#keep-stdin-and-file-descriptor-3-attached) sees only the initial value. Don't rely on your organization's IP allowlist to bound this token's use: treat it as a bearer credential that stays usable for roughly 30 minutes if it leaks, and don't log it, write it to disk, or forward it outside the session container. |
 
@@ -85313,12 +85650,15 @@ The wrapper also inherits the rest of the child's managed environment, including
 
 ### Give a default to variables that can be unset
 
-`CCR_SESSION_ACCOUNT_EMAIL`, `CLAUDE_RUNNER_CLIENT_PLATFORM`, `CLAUDE_CODE_REMOTE_SLACK_THREAD_URL`, and `CLAUDE_CODE_REMOTE_SLACK_THREAD_TS` can each be unset. If your script uses `set -u`, Bash stops with `unbound variable` when it expands one that's unset, so expand them with a default, such as `${CCR_SESSION_ACCOUNT_EMAIL:-}`.
+`CCR_SESSION_ACCOUNT_EMAIL`, `CLAUDE_RUNNER_CLIENT_PLATFORM`, `CLAUDE_CODE_REMOTE_SLACK_THREAD_URL`, and `CLAUDE_CODE_REMOTE_SLACK_THREAD_TS` can each be unset. If your script uses `set -u`, Bash stops with `unbound variable` when it expands one that's unset, so expand them with a default, such as `"${CCR_SESSION_ACCOUNT_EMAIL:-}"`.
 
-Wherever a shell expands the Slack thread link, take these precautions:
+### Quote the arguments and variables your script expands
 
-* **Quote it**: the link can contain characters a shell acts on, such as `?` and `&`, so quote the variable, as in `"${CLAUDE_CODE_REMOTE_SLACK_THREAD_URL:-}"`.
-* **Keep its value out of `eval` and `sh -c` strings**: don't substitute its value into a string that `eval` or `sh -c` runs, even inside quotes. Have that string reference the variable instead.
+Quote every argument and variable that the runner passes to your wrapper or [`command` hook](#command). Some values contain characters a shell acts on, because they hold JSON, whole sentences, or a [permission rule](/docs/en/permissions#permission-rule-syntax) such as `Bash(npm run test *)`.
+
+* **Arguments**: pass them on as `"$@"`
+* **Variables**: quote each one, as in `"${CLAUDE_CODE_REMOTE_SLACK_THREAD_URL:-}"`. The Slack thread link, for example, can contain `?` and `&`.
+* **`eval` and `sh -c` strings**: don't substitute a value into a string that `eval` or `sh -c` runs, even inside quotes. Have that string reference the variable instead.
 
 ### Keep stdin and file descriptor 3 attached
 
@@ -85388,7 +85728,7 @@ Runs once per repository, in place of the runner's built-in clone and fetch. Use
 | `CLAUDE_RUNNER_SESSION_ID` | Session ID in the tagged `session_...` form, for logging and correlation |
 | `CLAUDE_RUNNER_SESSION_UUID` | The same session ID in canonical UUID form |
 | `CLAUDE_RUNNER_API_BASE_URL` | Anthropic API base URL for session-scoped calls |
-| `CLAUDE_RUNNER_CLIENT_PLATFORM` | The client surface that created the session, such as `web_claude_ai`, `desktop_app`, or `ios`. Unset when the session has no recorded or recognized surface, so reference it as `${CLAUDE_RUNNER_CLIENT_PLATFORM:-}` under `set -u`. Requires Claude Code v2.1.229 or later. |
+| `CLAUDE_RUNNER_CLIENT_PLATFORM` | The client surface that created the session, such as `web_claude_ai`, `desktop_app`, or `ios`. Unset when the session has no recorded or recognized surface, so reference it as `"${CLAUDE_RUNNER_CLIENT_PLATFORM:-}"` under `set -u`. Requires Claude Code v2.1.229 or later. |
 | `CLAUDE_CODE_SESSION_ACCESS_TOKEN` | The session access token, for session-scoped API calls |
 | `GIT_CONFIG_COUNT`, `GIT_CONFIG_KEY_n`, `GIT_CONFIG_VALUE_n` | Git settings the runner fixes for the git your hook runs. [Git configuration inside lifecycle hooks](#git-configuration-inside-lifecycle-hooks) describes them. Requires Claude Code v2.1.280 or later. |
 
@@ -85407,7 +85747,7 @@ The runner doesn't pass a git credential to the hook. The `decode-token` subcomm
 
 The hook fails when it exits non-zero, or exits 0 without leaving a usable checkout behind:
 
-* **A repository the session pushes results to**: the runner fails the session, and on a non-zero exit surfaces the tail of the script's stderr to the user.
+* **A repository the session pushes results to**: the runner fails the session, and on a non-zero exit surfaces the tail of the script's stderr to the user. Write the reason to stderr as one short line, write it last, and then exit non-zero. Don't print secrets to stderr, and remove `set -x` before you deploy the hook.
 * **A repository the session only reads from**, such as a repository added to a running session: the runner logs a `[runner:warn]` line with the failure detail, posts a `Skipped` step to the session, removes whatever the hook left at the checkout path, and continues with the remaining repositories. If skipping leaves the session with no repository at all, the runner fails the session anyway.
 
 When the hook succeeds, the runner removes the checkout path after the session ends.
@@ -85426,7 +85766,7 @@ The hook fires on every session end where a child process was spawned, whatever 
 | `CLAUDE_RUNNER_WORKSPACE_PATHS` | Colon-separated absolute paths of the session's working trees. Empty for zero-repo sessions. |
 | `CLAUDE_RUNNER_DEBUG_LOG_PATH` | Path to the session's debug log, still on disk while the hook runs |
 | `CLAUDE_RUNNER_API_BASE_URL` | Anthropic API base URL for session-scoped calls |
-| `CLAUDE_RUNNER_CLIENT_PLATFORM` | The client surface that created the session, such as `web_claude_ai`, `desktop_app`, or `ios`. Unset when the session has no recorded or recognized surface, so reference it as `${CLAUDE_RUNNER_CLIENT_PLATFORM:-}` under `set -u`. Requires Claude Code v2.1.229 or later. |
+| `CLAUDE_RUNNER_CLIENT_PLATFORM` | The client surface that created the session, such as `web_claude_ai`, `desktop_app`, or `ios`. Unset when the session has no recorded or recognized surface, so reference it as `"${CLAUDE_RUNNER_CLIENT_PLATFORM:-}"` under `set -u`. Requires Claude Code v2.1.229 or later. |
 | `CLAUDE_CODE_SESSION_ACCESS_TOKEN` | The session access token, for session-scoped API calls |
 | `GIT_CONFIG_COUNT`, `GIT_CONFIG_KEY_n`, `GIT_CONFIG_VALUE_n` | Git settings the runner fixes for the git your hook runs. [Git configuration inside lifecycle hooks](#git-configuration-inside-lifecycle-hooks) describes them. Requires Claude Code v2.1.280 or later. |
 
@@ -85565,7 +85905,7 @@ The contract has four rules, whichever platform your hook provisions on:
 3. **Use the exit-code contract.** Exit with the status that matches the outcome:
 
    * **Exit 0**: submitted.
-   * **Exit 1**: retryable failure. The session backs off and is re-offered.
+   * **Exit 1, or still running when `--hook-timeout` ends**: retryable failure. The session backs off and is re-offered.
    * **Exit 2 or higher**: non-retryable failure. The session is blocked from spawning again until a user sends it a new message or an [Owner](/docs/en/cloud-environments#organization-shared-environments) selects **Retry** on it in the environment's **Activity** tab.
 
    On non-zero exit, the tail of the hook's stderr appears in the **Activity** tab as the failure reason, so write the actionable error to stderr and never write secrets there. In a shell hook, [keep transient failures retryable](#keep-transient-failures-retryable-in-a-shell-hook).
@@ -85576,6 +85916,18 @@ The contract has four rules, whichever platform your hook provisions on:
 Everything the hook writes to stdout or stderr appears in the orchestrator's log with credentials automatically redacted. If sessions stay queued, check the orchestrator's `/healthz` body for queue counts, then open your environment's **Activity** tab on the [**Cloud environments** admin page](https://claude.ai/admin-settings/cloud-environments): expand a failed session there for its spawn error, and select **Retry** to re-request it.
 
 A session that stays queued with no spawn error in the **Activity** tab can mean the hook is keyed on the session ID. To confirm, check whether your platform has a workload for that session's first spawn request and none for the re-requests. If so, key the workload on `CLAUDE_RUNNER_ORDER_ID` instead.
+
+#### Make on-demand runners exit when idle
+
+By default, a runner your hook starts doesn't exit when its session's turn finishes, so the workload you submitted keeps running. To make runners exit, have your hook pass these [runner flags](/docs/en/self-hosted-environments-reference#runner-cli-flags):
+
+| Flag, with an example value | Pass it to | What it does |
+| :- | :- | :- |
+| `--release-idle-session-min 30` | Every runner your hook starts | The runner releases its session after that many idle minutes and then exits 0. The session resumes when its user sends their next message, but [work it hadn't pushed is gone](/docs/en/self-hosted-environments-deploy#additional-limitations). |
+| `--kill-session-after-min 480` | Every runner your hook starts | Limits each session to that many minutes, as a backstop for [sessions that don't count as idle](/docs/en/self-hosted-environments-deploy#some-sessions-don’t-count-as-idle), so set it above your longest expected session |
+| `--exit-if-unused-min 60` | Standby runners, which your hook starts for pre-warming requests | A standby that never takes a session exits after that many minutes. If you set [`--min-idle`](/docs/en/self-hosted-environments-reference#orchestrator-cli-flags), you get a replacement unless the standby was surplus, so use a value well above your boot time. |
+
+Remove the workload when the runner exits, for example by setting `ttlSecondsAfterFinished` on a Kubernetes Job or by having the VM's start script delete the VM afterwards.
 
 #### Keep transient failures retryable in a shell hook
 
@@ -85712,6 +86064,7 @@ Claude Code also loads MCP servers from other sources:
 * The enterprise-scope [managed MCP file](/docs/en/managed-mcp) at its standard system path: `/etc/claude-code/managed-mcp.json` on Linux runner hosts, `/Library/Application Support/ClaudeCode/managed-mcp.json` on macOS hosts. Use it for locked-down fleets where only administrator-listed servers may load. See [exclusive control with managed-mcp.json](/docs/en/managed-mcp#exclusive-control-with-managed-mcp-json) for the precedence rules. When this file is on the runner host, Claude Code skips the MCP servers Anthropic's control plane delivers to a session, including claude.ai connectors, and names them in a warning on the session child's stderr, which the runner records at the `debug` log level. Before v2.1.229, those sessions exited at startup with `You cannot dynamically configure MCP servers when an enterprise MCP config is present`.
 * The [`managedMcpServers`](/docs/en/settings-reference#managedmcpservers) key in [managed settings](/docs/en/managed-settings) on the runner host: provides HTTP and SSE servers without taking exclusive control, so servers from the other sources still load. Requires Claude Code v2.1.259 or later.
 * `<repo>/.mcp.json`: project scope. Commit the file to the repository; its servers are auto-approved in cloud sessions. In a session with several repositories, [at most one repository's file loads](#repository-settings-in-sessions-with-several-repositories).
+* A [`--mcp-config`](/docs/en/cli-reference#cli-flags) file from your wrapper script: append the flag after `"$@"`, as in `exec "$CLAUDE_RUNNER_CLAUDE_BIN" "$@" --mcp-config /etc/claude/mcp.json`. To keep that file's servers running when the session's delivered servers are updated mid-session, have your wrapper pass the [full environment](#wrapper-scripts) to the child, as `exec` does. Before v2.1.299, the stdio, HTTP, and SSE servers in that file shut down at the first such update that didn't name them.
 
 When connector delivery is enabled for your organization, Anthropic's control plane delivers the connectors you've configured on claude.ai to interactively-created sessions through server-provided MCP configuration, routed through `api.anthropic.com`. Sessions created programmatically, such as [CLI dispatches](/docs/en/self-hosted-environments-testing#run-the-test-loop), don't receive connector delivery; give them MCP servers through any of the other sources this section lists instead. The child's OAuth token doesn't carry a scope for fetching connectors directly, so the child doesn't attempt that fetch itself; delivery is server-driven.
 
@@ -86091,7 +86444,7 @@ If you must configure push credentials at the image level, for example for a rea
 * A `credential.helper` that returns a minimally scoped token
 * `GIT_SSH_COMMAND` pointing at a narrowly scoped key
 
-Whichever mechanism you configure must work without a prompt, because the runner's built-in clone and fetch disable the prompts that git, SSH, and Git Credential Manager would otherwise show:
+<span />Whichever mechanism you configure must work without a prompt, because the runner's built-in clone and fetch disable the prompts that git, SSH, and Git Credential Manager would otherwise show:
 
 * The runner sets `GIT_TERMINAL_PROMPT=0`, so git doesn't ask for a username or password.
 * The runner runs SSH with `BatchMode=yes`, appended to your `GIT_SSH_COMMAND` if you set one, so SSH doesn't ask for a passphrase or host confirmation.
@@ -86119,10 +86472,10 @@ In exchange, the git proxy limits what the runner supports and changes what it n
 * **github.com only**: Anthropic serves a session only when all of its repositories are on github.com, and the git proxy doesn't support GitHub Enterprise Server yet. On a runner with the git proxy, a session with a repository on another git host [fails to start](#when-anthropic-doesnt-serve-a-session).
 * **Credentials for the session's repositories only**: Anthropic supplies git credentials for the repositories that are part of the session, not for other repositories on the same git host. A private submodule, a dependency that your package manager fetches with git, or a plugin marketplace in another repository gets no credential from Anthropic. Ask the people who create sessions to [add every repository](/docs/en/web-quickstart#start-a-task) a session needs when they create it.
 * **Branch pushes only**: a push that deletes a branch fails, and so does a push to any other kind of ref, such as a tag. For which branches a push can update, see [GitHub proxy](/docs/en/cloud-environments#github-proxy).
-* **Connected GitHub accounts**: the person who created a user session must have connected GitHub on claude.ai, or the session [doesn't start](#creator-has-no-github-connection).
+* **Connected GitHub accounts**: ask each person who creates user sessions with a repository to [connect GitHub](/docs/en/web-quickstart#connect-github). Without their own connection, those sessions [don't start](#creator-has-no-github-connection).
 * **`--capacity 1`**: the git proxy requires one session per runner process, so run more replicas for parallelism. [Turn the Anthropic git proxy on](#turn-the-anthropic-git-proxy-on) lists the requirements.
 * **Replaced global git config**: the runner [deletes and replaces the global git config](#git-proxy-replaces-global-git-config) of the user it runs as. Run it as a dedicated user or in a container.
-* **Host credentials for host pushes**: the runner's [`--push-outcome-on-release`](/docs/en/self-hosted-environments-reference#runner-cli-flags) push and any push your [`post-session` hook](/docs/en/self-hosted-environments-configuration#post-session) makes still use the runner host's own git credentials and its [network path to `github.com`](#github-com-egress-with-the-anthropic-git-proxy). For those credentials, see [Ship git config in your image](#ship-git-config-in-your-image).
+* **Host credentials for host pushes**: the runner's [`--push-outcome-on-release`](/docs/en/self-hosted-environments-reference#runner-cli-flags) push and any push your [`post-session` hook](/docs/en/self-hosted-environments-configuration#post-session) makes still use the runner host's own git credentials and its [network path to `github.com`](#github-com-egress-with-the-anthropic-git-proxy). Keep those credentials out of the [global git config](#git-proxy-replaces-global-git-config), and see [Ship git config in your image](#ship-git-config-in-your-image) for ways to supply them.
 * **Per-session decision**: Anthropic decides for each session on the runner whether to serve its git, and a session it doesn't serve fails to start. [When sessions fail to start on a runner with the git proxy](#when-anthropic-doesnt-serve-a-session) covers the causes.
 
 <span />
@@ -86172,7 +86525,7 @@ For each session, a runner on Claude Code v2.1.267 or later also logs either a `
   * **A repository isn't on github.com**: a session with even one repository on another git host, such as GitHub Enterprise Server, isn't served, including its github.com repositories. [Turn the Anthropic git proxy off](#turn-the-anthropic-git-proxy-off) for that environment's runners.
   * **Every repository is on github.com**: report the failure to [your Anthropic account team](#report-an-issue) with the session ID from the `withheld` line. Anthropic records the reason on its side.
 * **A line containing `remote: access denied by the git proxy`**: a session that Anthropic serves can still be refused, for example when organization policy denies git access for the session, or the session isn't authorized for the repository. The runner's log then shows a line containing `remote: access denied by the git proxy`, and the rest of that line says why.
-* <span />**`GitHub authentication required`**: this appears when the session's creator has no working GitHub connection on claude.ai. The session's clone fails, and the git error reads `GitHub authentication required. Please reconnect your GitHub account.` Ask that person to connect or reconnect GitHub in their claude.ai settings.
+* <span />**`GitHub authentication required`**: this appears when the session's creator has no working GitHub connection on claude.ai. The session's clone fails, and the git error contains `GitHub authentication required. Please reconnect your GitHub account.` Ask that person to connect or reconnect GitHub in their claude.ai settings.
 
 After you fix the cause, start the failed sessions again.
 
@@ -86249,7 +86602,7 @@ For each session that uses Anthropic-managed git, the runner also logs a `[runne
 Repository URLs arrive from the control plane as HTTPS, with the hostname of your git host; for GitHub Enterprise, that's the hostname you configured for the [GitHub Enterprise integration](/docs/en/github-enterprise-server) on claude.ai. Two repeatable flags rewrite those URLs before clone:
 
 * `--git-host-rewrite <from>=<to>`: for split-horizon DNS, where Anthropic reaches your git host via an external hostname but runners must use an internal one
-* `--git-ssh-rewrite <host>`: for git hosts that only accept SSH, rewriting `https://<host>/owner/repo` to `git@<host>:owner/repo`
+* `--git-ssh-rewrite <host>`: for git hosts that only accept SSH, or a runner host that has only an SSH key. For example, to clone github.com repositories over SSH, add `--git-ssh-rewrite github.com` to the runner command. The runner then rewrites `https://github.com/owner/repo` to `git@github.com:owner/repo`. SSH must [connect without a prompt](#git-must-work-without-a-prompt).
 
 Host rewriting runs first, so list the internal hostname in `--git-ssh-rewrite` if you need both. For full control over checkout, use a [`checkout` lifecycle hook](/docs/en/self-hosted-environments-configuration#checkout).
 
@@ -86455,7 +86808,7 @@ At any stage, the runner exits 0 as soon as it holds no sessions. A second signa
 
 Give your host's stop timeout at least the sum of three parts: the `n` minutes you configure, the post-release grace, and the drain that [Shutdown timing](#shutdown-timing) describes. With default settings the post-release grace is 75 seconds and the drain takes up to 80 seconds, so allow `n` minutes plus 155 seconds. The runner prints this sum at startup whenever `--defer-shutdown-max-min` is set.
 
-If the stop timeout runs out before the runner finishes, the host kills the runner. The sessions it still holds get no `post-session` hook. The runner doesn't deregister, and the control plane requeues the sessions within a few minutes. If you can't give the stop timeout that sum, leave `--defer-shutdown-max-min` unset so the runner drains on the first signal instead.
+If the stop timeout runs out before the runner finishes, the sessions it still holds get no `post-session` hook. The runner doesn't deregister, so the control plane can take a few minutes and sometimes longer to requeue those sessions. If you can't give the stop timeout that sum, leave `--defer-shutdown-max-min` unset so the runner drains on the first signal instead.
 
 ### What reaches a running post-session hook
 
@@ -86575,6 +86928,12 @@ Common issues:
 
 * **Runner doesn't appear in the environment**: confirm the host can reach `api.anthropic.com` over HTTPS, the environment secret is current, and the host clock is within five minutes of real time; larger skew causes authentication to fail. The runner logs `[runner:fatal]` with the rejection reason on auth failure.
 * **Runner exits at startup with `cannot create or write to base directory`**: the runner can't create or write to `--base-dir`, which defaults to `/workspace`. Fix the directory's ownership or point `--base-dir` at a writable path, as described in [Keep the base directory and capacity identical across runners](#keep-the-base-directory-and-capacity-identical-across-runners). If the runner instead logs `[runner:fatal]` saying the base directory check timed out, the directory is on a hung NFS or CSI mount. Check mount health rather than permissions. The runner prints both of these startup failures to stderr before it opens `--log-file`, so look for them in the terminal or your platform's container logs rather than the log file. Before v2.1.225, the runner didn't check the base directory at startup, and this misconfiguration failed sessions after pickup instead.
+* **Runner exits at startup with `RegisterRunner failed:` and a TLS certificate error**: the error can be `self signed certificate in certificate chain`, for example. The runner doesn't trust the certificate authority (CA) behind the certificate it received, as happens behind a TLS-inspecting proxy. Set [`NODE_EXTRA_CA_CERTS`](/docs/en/network-config#custom-ca-certificates) in the runner's environment to a PEM file with the proxy's root CA.
+
+  You don't set it again for sessions, which inherit it. Git doesn't read it: for clones through that proxy, set [`GIT_SSL_CAINFO`](#trust-a-private-certificate-authority-with-anthropic-managed-git) too.
+* **Orchestrator logs `poll failed:` with a TLS certificate error and keeps retrying**: the orchestrator doesn't trust the CA behind the certificate it received, as happens behind a TLS-inspecting proxy. Set [`NODE_EXTRA_CA_CERTS`](/docs/en/network-config#custom-ca-certificates) in the orchestrator's environment to a PEM file with the proxy's root CA. Set it for the runners your `spawn-runner` hook starts too.
+
+  For example, a line can end `poll failed: self signed certificate in certificate chain — retrying in 1s`, with the TLS library's words between the colon and the dash. To confirm the fix, check that `connected` is `true` in the orchestrator's [`/healthz`](/docs/en/self-hosted-environments-reference#health-endpoint) body.
 * **Sessions stay queued**: every online runner may be locked to a different owner. Check each runner's `claude_code_self_hosted_runner_locked_account` [metric](/docs/en/self-hosted-environments-reference#prometheus-metrics) or the `locked_account` field of its `[runner:health]` log line to see who holds it. Both show the owner's email only after the runner has been issued a session token carrying an `act.email` claim, which a Claude Tag agent's sessions never do. Without the claim, the runner emits no `locked_account` series and logs `locked_account=yes`, which tells you the runner is locked but not to which owner. Add replicas, or wait for an existing runner to drain and restart. If the environment uses on-demand runners, check the orchestrator instead; see [On-demand runners](/docs/en/self-hosted-environments-configuration#on-demand-runners).
 * **Sessions fail immediately after pickup**: open the session in claude.ai/code to see the error. The most common causes are missing [git credentials](#configure-git) in the runner image and build tools that aren't installed. On a runner started with `--use-anthropic-git-proxy`, see [When sessions fail to start on a runner with the git proxy](#when-anthropic-doesnt-serve-a-session). An unwritable base directory stops the runner at startup instead of failing sessions. See the **Runner exits at startup with `cannot create or write to base directory`** entry in this list.
 * **Sessions fail to start on a runner that set `--use-anthropic-git-proxy`**: look in the runner's log for `access denied by the git proxy`, or for a git error that names an `api.anthropic.com` address containing `/git_proxy/`. To tell whether Anthropic served the session and fix the cause, see [When sessions fail to start on a runner with the git proxy](#when-anthropic-doesnt-serve-a-session).
@@ -86596,7 +86955,7 @@ Common issues:
   Before v2.1.274, the runner stopped retrying a failed fetch after a few attempts and waited for the next scheduled one. A failed turn didn't trigger a fetch, so every turn failed with a 401 until the next scheduled fetch.
 * **Pod is killed mid-drain**: raise `terminationGracePeriodSeconds` to at least the value the runner logs at startup. See [Shutdown timing](#shutdown-timing).
 
-Once logging is initialized, the runner writes its lifecycle log, including `[runner:fatal]` lines, to stdout, and debug output to stderr, all as plain-text lines rather than JSON. The startup failures described in the troubleshooting entries above print to stderr before that point. Capture both streams with `--log-file`, which also lets `self-hosted-runner doctor` tail them, or with your platform's log collection.
+Once logging is initialized, the runner writes its lifecycle log, including `[runner:fatal]` lines, to stdout, and debug output to stderr, all as plain-text lines rather than JSON. The base directory failures described in the troubleshooting entries above print to stderr before that point. Capture both streams with `--log-file`, which also lets `self-hosted-runner doctor` tail them, or with your platform's log collection.
 
 Each session's child process writes a separate debug log. On failure the runner surfaces the log's tail alongside the session in claude.ai/code. Unless you started the runner with [`--remove-session-state`](/docs/en/self-hosted-environments-reference#runner-cli-flags), it also keeps a failed session's log on disk and prints its path in the runner log.
 
@@ -86939,14 +87298,14 @@ By the end you'll have an environment on the [**Cloud environments** admin page]
 The claude.ai side needs:
 
 * **Allow self-hosted environments** turned on by an [Owner](/docs/en/cloud-environments#organization-shared-environments) on the [**Cloud environments** admin page](https://claude.ai/admin-settings/cloud-environments); the **New** button doesn't appear until it is. If you don't hold the role, someone who does can create the environment and hand you its secret; the runner and terminal steps on this page need no claude.ai role, and where a step checks status in the admin UI, the runner's own log lines give you the same signal.
-* A [GitHub connection](/docs/en/claude-code-on-the-web#github-authentication-options) for your organization, so developers can pick repositories when they start sessions.
+* The [GitHub connector](https://claude.ai/admin-settings/connectors) turned on by an Owner, and each developer's own [GitHub connection](/docs/en/web-quickstart#connect-github), so they can pick github.com repositories when they start sessions.
 
 ### Host and network
 
 The runner host needs:
 
 * A Linux or macOS host or container with outbound HTTPS to `api.anthropic.com`, to `claude.ai` and the download hosts it redirects to for the install step below, and to your git host for the clone; the [network requirements table](/docs/en/self-hosted-environments-deploy#network-requirements) has the full list. Windows isn't supported as a runner host; run the runner in a Linux container instead. Developer workstations aren't affected, since sessions start from claude.ai in a browser.
-* A repository for the test session: a public one, or one this host can already clone by its HTTPS URL without being asked for credentials.
+* A repository for the test session: a public one, or one this host can already clone by its HTTPS URL without being asked for credentials. An SSH key alone isn't enough, because the runner clones the repository's `https://` URL. To clone over SSH instead, see [Rewrite git URLs for private networks](/docs/en/self-hosted-environments-deploy#rewrite-git-urls-for-private-networks).
 * A clock synchronized to real time, for example with NTP. Authentication fails when the clock is more than five minutes off; see [Troubleshooting](/docs/en/self-hosted-environments-deploy#troubleshooting).
 
 ### Software on the runner host
@@ -87009,7 +87368,11 @@ Create the environment on claude.ai, start the runner from a terminal on the hos
 
     Choose a base directory, replacing `<writable-dir>` in the runner command below with an absolute path that the runner can write to or create. The runner creates the directory at startup, then checks repositories out and creates per-session directories under it. Without `--base-dir` it uses `/workspace`, which only works if that directory already exists and is writable or you start the runner as root.
 
-    If the runner can't create or write to the path, it exits at startup with an error naming the directory instead of registering. See [Troubleshooting](/docs/en/self-hosted-environments-deploy#troubleshooting).
+    <Warning>
+      Use a directory dedicated to the runner, not your home directory or a directory of your own clones. The runner treats whatever it finds at `<writable-dir>/<repo-owner>/<repo>` as its own clone, and can reset it and overwrite or delete files in it.
+    </Warning>
+
+    If the runner can't create or write to the base directory, it exits at startup with an error naming the directory instead of registering. See [Troubleshooting](/docs/en/self-hosted-environments-deploy#troubleshooting).
 
     Then start the runner with `--environment-secret-file` and `--base-dir`:
 
@@ -87017,7 +87380,7 @@ Create the environment on claude.ai, start the runner from a terminal on the hos
     claude self-hosted-runner --environment-secret-file '/etc/claude/environment-secret' --base-dir '<writable-dir>'
     ```
 
-    The runner logs `Registered: runner_id=<runner-id>` once it has registered with your environment, then begins polling for work. If the runner exits later, restart it yourself. See [If the runner exits](#if-the-runner-exits) for when that happens.
+    The runner logs `Registered: runner_id=<runner-id>` once it has registered with your environment, then begins polling for work. Started with this command, it exits by design after serving one session, not after each turn. To serve more sessions, start the runner again each time it exits. See [If the runner exits](#if-the-runner-exits) for when that happens and what the runner logs.
   </Step>
 
   <Step title="Verify the runner appears">
@@ -87025,22 +87388,26 @@ Create the environment on claude.ai, start the runner from a terminal on the hos
   </Step>
 
   <Step title="Route a session to the environment">
-    <span />Start a session at claude.ai/code and select your environment from the environment picker, where self-hosted environments appear alongside Anthropic-hosted ones. For the repository, pick the one from the [prerequisites](#host-and-network): a public repository, or one this host can already clone. The runner clones with whatever git credentials the host already has.
+    <span />Start a session at claude.ai/code and select your environment from the environment picker, where self-hosted environments appear alongside Anthropic-hosted ones. For the repository, pick the one from the [prerequisites](#host-and-network): a public repository, or one this host can already clone by its HTTPS URL without being asked for credentials.
 
     The next available runner picks up the queued session and logs `Picked up session <session-id>` along with its active count and capacity, so you can confirm from the runner's own output which host took the session. Watch the session work and read Claude's replies at [claude.ai/code](https://claude.ai/code).
 
-    If the session doesn't start working, match what you see:
+    <span />If the session doesn't start working, match what you see:
 
     * **The session sits queued**: see [Troubleshooting](/docs/en/self-hosted-environments-deploy#troubleshooting).
-    * **The session fails to start with a git error**: the error appears in the session and in the runner's log. If it includes git's `could not read Username for` followed by your git host's URL, the runner had no HTTPS credentials for that host. See [Configure git](/docs/en/self-hosted-environments-deploy#configure-git), which also covers credential options for private repositories in production.
+    * **The session fails to start with a git error**: if the error includes git's `could not read Username for` followed by your git host's URL, the runner had no HTTPS credentials for that host.
+      * **Supply HTTPS credentials**: see [Configure git](/docs/en/self-hosted-environments-deploy#configure-git)
+      * **Clone over SSH instead**: if the runner host already has an SSH key, see [Rewrite git URLs for private networks](/docs/en/self-hosted-environments-deploy#rewrite-git-urls-for-private-networks)
   </Step>
 </Steps>
 
 ### If the runner exits
 
-If the runner exits during this quickstart, start it again with the same command. The runner can exit on its own:
+If the runner exits during this quickstart, start it again. The runner can exit on its own:
 
-* **Sessions finished**: the log shows `[runner:exit] account workload drained — exiting`. The runner exits by design once its active sessions finish. See [Runner lifecycle](/docs/en/self-hosted-environments#runner-lifecycle).
+* **Nothing left running**: the log shows `[runner:exit] account workload drained — exiting`. The runner [exits by design](/docs/en/self-hosted-environments#runner-lifecycle) once it's no longer running any session, for example:
+  * **You archived or deleted the session**: start the runner again
+  * **The session failed to start**: [fix the cause](#session-doesnt-start), then start the runner again
 * **Lost contact**: the log shows a `[runner:fatal]` line with `runner record gone server-side` or with `poll auth failed`. If the runner loses contact with Anthropic for a while, for example because the host sleeps, it can exit when it next reaches Anthropic.
 
 A finished turn doesn't end your test session. After the first turn the session is still attached and the runner is still up, so you can [send the session a follow-up message](#send-a-follow-up-message-to-a-running-session) without restarting the runner first.
@@ -87115,7 +87482,7 @@ Most flags have a corresponding environment variable. When both are set, the fla
 | `--retire-at <epoch-seconds>` | `SELF_HOSTED_RUNNER_RETIRE_AT` | unset | Retire the runner at an absolute Unix timestamp in seconds, for infrastructure that kills the runner at a known time; [Runner lifecycle](/docs/en/self-hosted-environments#runner-lifecycle) describes the release sequence and how to size the margin. Values before 2001 or after the year 5138 are rejected by the flag and ignored by the environment variable. |
 | `--server-auto-mode-lists <mode>` | `SELF_HOSTED_RUNNER_SERVER_AUTO_MODE_LISTS` | `no-allow` | Which of the [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) classifier rule lists that the control plane sends with a session may reach that session: `all`, `no-allow`, or `none`. See [Auto mode rule lists](#auto-mode-rule-lists) for what each value applies. An invalid value stops the runner at startup. Requires Claude Code v2.1.295 or later. |
 | `--session-stop-grace-sec <n>` | `SELF_HOSTED_RUNNER_SESSION_STOP_GRACE_MS` | `5` | How long to wait for the Claude process to exit cleanly after a session ends, before force-killing it. Raise the value if the child's own `SessionEnd` hooks need more time. |
-| `--startup-timeout-min <n>` | `SELF_HOSTED_RUNNER_STARTUP_TIMEOUT_MS` | `15` | Release a session slot if the child hasn't signaled that it initialized within N minutes of spawn. Cloning happens before spawn, so clone time doesn't count. Cleared by the child's init signal on the [activity channel](/docs/en/self-hosted-environments-configuration#keep-stdin-and-file-descriptor-3-attached), not by ordinary output, after which `--release-idle-session-min` takes over. `0` disables. |
+| `--startup-timeout-min <n>` | `SELF_HOSTED_RUNNER_STARTUP_TIMEOUT_MS` | `15` | Release a session slot if the child hasn't signaled on the [activity channel](/docs/en/self-hosted-environments-configuration#keep-stdin-and-file-descriptor-3-attached) that it initialized within N minutes. The N minutes start at spawn, after cloning, and start over at each `user` or `assistant` message the child emits before it has initialized or reported its state. Before v2.1.299, this timeout stopped applying at the session's first such message. For release after the init signal, see `--release-idle-session-min`. `0` disables. |
 | `--trust-workspace [bool]` | `SELF_HOSTED_RUNNER_TRUST_WORKSPACE` | on | Seed persisted trust for each session's repository paths so repo-committed `permissions.allow` and `additionalDirectories` are honored. Set `false` to drop repo-committed permission grants and configure allow rules in the host config's `settings.json` instead; repository-committed `sandbox.*` settings still apply either way, which is why the [repo-settings guard](/docs/en/self-hosted-environments-deploy#harden-your-deployment) scans them regardless of this flag. |
 | `--use-anthropic-git-proxy` | `CLAUDE_RUNNER_USE_GIT_PROXY=1` | off | Clone repositories on github.com via the [Anthropic git proxy](/docs/en/self-hosted-environments-deploy#use-the-anthropic-git-proxy) instead of customer-managed git auth. Requires `--capacity 1` and git 2.32 or later; the runner refuses to start otherwise. Supersedes the rewrite flags. |
 
@@ -87209,7 +87576,7 @@ The runner serves `GET /healthz` on the configured health port. The response is 
 
 Use `last_poll_age_ms` as a liveness signal in custom probes; a value that grows unbounded indicates the poll loop is stuck. Both `last_poll_at` and `last_poll_age_ms` are `null` until the first poll completes.
 
-The orchestrator serves its own `/healthz` on its health port. Its endpoint always returns `200`, and the body carries a `connected` field reporting whether the most recent poll succeeded, plus per-state spawn-queue counts in `queue_counts`. Gate readiness and alerting on `connected` rather than the status code.
+The orchestrator's own `/healthz`, on its health port, always returns `200`. The body carries a `connected` field reporting whether the most recent poll succeeded, plus per-state spawn-queue counts in `queue_counts`. To see why `connected` is `false`, read the top-level `last_error` field, which each successful poll resets to `null`. Gate readiness and alerting on `connected` rather than the status code.
 
 When the [SCM connector](#scm-connector-flags) is configured, the orchestrator's `/healthz` body also carries `scm_connector_connected` and a `scm_connector` object with `connected`, `last_connected_at`, `last_error`, `reconnects`, and `requests_forwarded`. Both fields are `null` when `--scm-connector-host` isn't set.
 
@@ -92194,6 +92561,11 @@ Set this key to `false` to leave both out, for example when you use your own git
 }
 ```
 
+If you replace the system prompt in [non-interactive mode](/docs/en/headless) or the Agent SDK, the session starts without the snapshot even when this key is `true`:
+
+* **`-p` runs**: you replace the prompt when you pass [`--system-prompt`](/docs/en/cli-reference#system-prompt-flags) or `--system-prompt-file`. You also replace it when you run a custom agent with its own prompt, selected with [`--agent`](/docs/en/sub-agents#invoke-subagents-explicitly) or the [`agent`](#agent) setting. Outside [bare mode](/docs/en/headless#start-faster-with-bare-mode), to keep the snapshot, run without a custom agent and add your instructions with [`--append-system-prompt`](/docs/en/cli-reference#system-prompt-flags) instead of replacing the prompt.
+* **[Agent SDK](/docs/en/agent-sdk/modifying-system-prompts)**: you replace the prompt with a custom system prompt or a custom main-thread agent. If you set no system prompt, the SDK uses its minimal default and the session starts without the snapshot too. Outside [bare mode](/docs/en/headless#start-faster-with-bare-mode), to keep the snapshot, use the `claude_code` preset without a custom `agent`.
+
 ### `prUrlTemplate`
 
 Point the PR links Claude Code renders, in the footer badge and in tool-result summaries, at an internal code-review tool instead of `github.com`. Claude Code substitutes `{host}`, `{owner}`, `{repo}`, `{number}`, and `{url}` from the PR URL. [GitLab merge request](/docs/en/interactive-mode#gitlab-merge-requests) links on both surfaces keep their GitLab URL.
@@ -94769,7 +95141,7 @@ To install Claude Code, open a terminal and run the command for your system. If 
   <Tab title="Native Install (Recommended)">
     **macOS, Linux, WSL:**
 
-    ```bash theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+    ```bash theme={null}
     curl -fsSL https://claude.ai/install.sh | bash
     ```
 
@@ -94777,13 +95149,13 @@ To install Claude Code, open a terminal and run the command for your system. If 
 
     **Windows PowerShell:**
 
-    ```powershell theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+    ```powershell theme={null}
     irm https://claude.ai/install.ps1 | iex
     ```
 
     **Windows CMD:**
 
-    ```batch theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+    ```batch theme={null}
     curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd
     ```
 
@@ -94801,7 +95173,7 @@ To install Claude Code, open a terminal and run the command for your system. If 
   </Tab>
 
   <Tab title="Homebrew">
-    ```bash theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+    ```bash theme={null}
     brew install --cask claude-code
     ```
 
@@ -94813,7 +95185,7 @@ To install Claude Code, open a terminal and run the command for your system. If 
   </Tab>
 
   <Tab title="WinGet">
-    ```powershell theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+    ```powershell theme={null}
     winget install Anthropic.ClaudeCode
     ```
 
@@ -103551,7 +103923,7 @@ Recording an `append` or custom prompt by default requires Claude Code v2.1.265 
 
 ## Context Claude Code adds outside the system prompt
 
-System reminders are messages Claude Code adds to the conversation during a session to give Claude context, such as the contents of your CLAUDE.md files or a note that a file changed on disk. Claude Code sends them in the conversation, not in the system prompt, so they reach Claude whether you use the `claude_code` preset or pass your own string as `systemPrompt`.
+System reminders are messages Claude Code adds to the conversation during a session to give Claude context, such as the contents of your CLAUDE.md files or a note that a file changed on disk. Claude Code sends them in the conversation, not in the system prompt, so most reach Claude whether you use the `claude_code` preset or pass your own string as `systemPrompt`.
 
 This section covers the [reminders most likely to change how your agent behaves](#reminders-claude-code-adds-to-the-conversation), how to [turn off the ones your agent replaces](#turn-off-the-context-your-agent-replaces), and how to [see what Claude received](#see-what-claude-received) in a specific request.
 
@@ -103590,9 +103962,9 @@ Pass settings keys through the [`settings`](/docs/en/agent-sdk/typescript#option
 | Every CLAUDE.md file | Set `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` |
 | Task list nudges, file-changed notes, and the skill list | Set `CLAUDE_CODE_DISABLE_ATTACHMENTS=1` |
 
-Claude Code's built-in commit and pull request instructions aren't a reminder. They are part of the Bash tool's description, so they also reach Claude when you pass a custom `systemPrompt`.
+Set `includeGitInstructions` to `false` to keep out the built-in commit and pull request instructions, which are part of the Bash tool's description and reach Claude even with a custom `systemPrompt`. With the minimal default, a custom `systemPrompt`, or a custom main-thread agent that has its own prompt, though, the session starts without the git status snapshot.
 
-If you set `CLAUDE_CODE_DISABLE_ATTACHMENTS`, Claude Code also sends `@` file mentions as plain text instead of expanding them into file content. The list of available subagents and background task notifications still arrive.
+If you set `CLAUDE_CODE_DISABLE_ATTACHMENTS`, Claude Code also sends `@` file mentions as plain text instead of expanding them into file content. The list of available subagents and background task notifications still arrive. To stop only `@` file mentions from expanding, set [`CLAUDE_CODE_DISABLE_FILE_MENTIONS=1`](/docs/en/env-vars#variables) instead, on Claude Code v2.1.299 or later. Claude then gets the mentioned paths plus a note to read them with its file tools.
 
 The following example is for an agent that carries its own commit rules in `append`. It sets both `attribution` keys to empty strings to remove the trailer and footer, and turns off `includeGitInstructions` so Claude Code's own commit workflow instructions don't compete with yours:
 
@@ -110845,6 +111217,7 @@ This example creates two subagents: a code reviewer with read-only access and a 
 | `mcpServers` | `(string \| object)[]` | No | MCP servers available to this agent, by name or inline config |
 | `initialPrompt` | `string` | No | Auto-submitted as the first user turn when this agent runs as the main thread agent. Ignored when the agent is invoked as a subagent |
 | `maxTurns` | `number` | No | Maximum number of agentic turns before the agent stops. When the agent reaches the limit, Claude Code returns its output marked as partial, and you can [resume the agent](#resume-subagents) to continue. The partial marking requires Claude Code v2.1.246 or later |
+| `autoCompactWindow` | `number` | No | Lower the [auto-compact window](/docs/en/sub-agents#subagent-auto-compact-window) for this agent when it runs as a subagent, to a token count from `100000` to `1000000`. Requires TypeScript Agent SDK v0.3.296 or later. The Python SDK's [`AgentDefinition`](/docs/en/agent-sdk/python#agentdefinition) doesn't have this field |
 | `background` | `boolean` | No | Run this agent as a non-blocking background task when invoked |
 | `omitClaudeMd` | `boolean` | No | Leave the user, project, and local CLAUDE.md files out of this agent's initial context; managed policy files still load. Ignored when the agent runs as the main thread agent. Requires TypeScript Agent SDK v0.3.271 or later. The Python SDK's [`AgentDefinition`](/docs/en/agent-sdk/python#agentdefinition) doesn't have this field |
 | `effort` | `'low' \| 'medium' \| 'high' \| 'xhigh' \| 'max' \| number` | No | Reasoning effort level for this agent |
@@ -113077,6 +113450,7 @@ type AgentDefinition = {
   skills?: string[];
   initialPrompt?: string;
   maxTurns?: number;
+  autoCompactWindow?: number;
   background?: boolean;
   omitClaudeMd?: boolean;
   memory?: "user" | "project" | "local";
@@ -113097,6 +113471,7 @@ type AgentDefinition = {
 | `skills` | No | Array of skill names to preload into the agent context |
 | `initialPrompt` | No | Auto-submitted as the first user turn when this agent runs as the main thread agent |
 | `maxTurns` | No | Maximum number of agentic turns (API round-trips) before stopping |
+| `autoCompactWindow` | No | Lower the [auto-compact window](/docs/en/sub-agents#subagent-auto-compact-window) for this agent when it runs as a subagent, to a token count from `100000` to `1000000`. Requires TypeScript Agent SDK v0.3.296 or later |
 | `background` | No | Run this agent as a non-blocking background task when invoked |
 | `omitClaudeMd` | No | Leave the user, project, and local CLAUDE.md files out of this agent's initial context; managed policy files still load. Use it for agents that take everything they need from the Agent tool prompt. Ignored when this agent runs as the main thread agent. Requires TypeScript Agent SDK v0.3.271 or later |
 | `memory` | No | Memory source for this agent: `'user'`, `'project'`, or `'local'` |
@@ -114209,7 +114584,7 @@ A `peer` origin identifies which agent sent the message: an in-process [teammate
 * `fromMode`: the sending session's permission class, `bypass` or `prompting`, declared by a host that relays a peer message between your sessions, such as the [desktop app](/docs/en/desktop#work-across-sessions). Claude Code reads it in the receiving session when it applies the [inbound controls](/docs/en/cross-session-messaging#control-inbound-messages). Requires Agent SDK v0.3.234 or later.
 * `senderTaskId`: the teammate's task ID. Absent for a cross-session peer.
 * `name`: the sender's display name, normalized by Claude Code: it strips Unicode control, format, surrogate, and line or paragraph separator code points, then trims the result and caps it at 64 code points with an ellipsis. Requires Claude Code v2.1.205 or later.
-* `body`: the decoded message body with the peer envelope stripped, byte-exact with what the model sees. Always present for a teammate message; for a cross-session peer, present only when the turn is exactly one peer envelope formed by Claude Code. Render `name` and `body` instead of re-parsing the message text. Requires Claude Code v2.1.205 or later.
+* `body`: the decoded message body with the peer envelope stripped, byte-exact with what the model sees. Present for a single teammate message, absent when several are merged; for a cross-session peer, present only when the turn is exactly one peer envelope formed by Claude Code. Render `name` and `body` instead of re-parsing the message text. Before v2.1.299, merged messages kept the first message's `body`. Requires Claude Code v2.1.205 or later.
 * `fromSession`: the sender's host-openable session ID, set by the sender's host so your UI can link back to the sending session. Like `from`, it is sender-asserted: use it as a navigation target only, and don't treat it as proof of the sender's identity. Requires Claude Code v2.1.216 or later.
 * `verifiedPeerPid`: the process ID of the process that connected to this session's cross-session messaging socket, verified by the kernel and read from the connection itself, never from the payload. Use it, not `from`, to identify the sender: `from` is forgeable by any same-user process. The field is absent when Claude Code can't verify it, such as on Windows or non-socket ingress, so an absent value means the sender is unverified. For relayed traffic it identifies the relay rather than the message's author, and process IDs are recyclable, so treat it as provenance rather than an authentication token. Requires Claude Code v2.1.216 or later.
 
