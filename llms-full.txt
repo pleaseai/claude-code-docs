@@ -1698,7 +1698,6 @@ A new artifact that Claude publishes in response to a prompt you type goes throu
 | The session is in [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode) | Asks before the first publish of each artifact |
 | The publish declares runtime capabilities for the page, such as [connector calls](#pull-live-data-with-mcp-connectors) or [file downloads](#offer-a-file-download) | Asks before that publish |
 | You shared the artifact publicly | Asks once per conversation before changing it |
-| You turned [feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) off | Asks before the first publish of each artifact |
 | Claude publishes in a turn that a [scheduled task](/docs/en/scheduled-tasks) firing in your session started, rather than a prompt you typed | Asks before the first publish of each artifact |
 | Claude can't read the file without your approval | Asks before publishing it. An allow rule for the `Artifact` tool doesn't skip this prompt |
 | In [Manual](/docs/en/permission-modes) or `acceptEdits` mode, Claude makes a small change to an artifact's file it can't edit without your approval, such as a project file in Manual mode | Asks before publishing the change. You're asked even if an allow rule covers the `Artifact` tool, because the edit to the file needs your approval |
@@ -1765,7 +1764,7 @@ Claude Code asks for your approval before Claude reads the artifact in these cas
 * **Cloud session without network access**: for a [cloud environment](/docs/en/cloud-environments#access-levels), that's the **None** level. In [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), the classifier can approve instead; in a [Cowork](https://claude.com/product/cowork) session, the approval is yours alone.
 * **Another organization's public artifact**: Claude Code asks you first, even in auto mode. Where Claude Code can't ask you, such as in `bypassPermissions` mode, Claude can't read the artifact. Claude can read these artifacts only while [feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) is on.
 * **Unconfirmed owner or network setting**: when Claude Code can't confirm who made the artifact, or can't confirm a cloud session's network setting, it asks, and your approval covers that one request.
-* **Plan mode, or feature-flag fetching turned off**: in [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode), or if you turned [feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) off, Claude Code asks before the Artifact tool reads an artifact someone else in your organization made.
+* **Plan mode**: in [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode), Claude Code asks before the Artifact tool reads an artifact someone else in your organization made.
 
 When Claude reads the artifact with WebFetch, WebFetch's own [prompting rules](/docs/en/tools-reference#webfetch-tool-behavior) still apply.
 
@@ -19931,6 +19930,7 @@ Match the message you see to a section below.
 | `Claude.ai login was rejected — run /login, then /remote-control` | [Authentication](#remote-control-couldnt-refresh-your-login) |
 | `OAuth token unavailable — run /login to restore Remote Control` | [Authentication](#remote-control-couldnt-refresh-your-login) |
 | `Signed out of Claude — run /login, then /remote-control` | [Authentication](#remote-control-couldnt-refresh-your-login) |
+| `Remote Control could not renew this computer's connection` | [Authentication](#remote-control-could-not-renew-this-computers-connection) |
 | `signed-in claude.ai account or organization changed on this machine` | [Authentication](#remote-control-stopped-because-the-signed-in-account-changed) |
 | `Remote Control stopped — the app running this session is now signed in to a different Claude account` | [Authentication](#remote-control-stopped-because-the-app-running-the-session-signed-out-or-switched-accounts) |
 | `Remote Control stopped — the app running this session is signed out of Claude` | [Authentication](#remote-control-stopped-because-the-app-running-the-session-signed-out-or-switched-accounts) |
@@ -20076,6 +20076,7 @@ Match the message you see to a section below.
 | `couldn't be resolved to a real location, so its skills, commands, and agents weren't loaded` | [Command-line errors](#directory-couldnt-be-resolved-to-a-real-location) |
 | `Error: Workspace not trusted` when starting Remote Control | [Command-line errors](#workspace-not-trusted-when-starting-remote-control) |
 | `` `<flag>` before `remote-control` is not carried over to the sessions Remote Control starts `` | [Command-line errors](#not-carried-over-to-the-sessions-remote-control-starts) |
+| `--sandbox is not supported by claude remote-control` / `--no-sandbox is not supported by claude remote-control` | [Command-line errors](#sandbox-is-not-supported-by-claude-remote-control) |
 | `` `claude import` is not yet available in this build `` | [Command-line errors](#claude-import-is-not-yet-available-in-this-build) |
 | `Could not read Claude Code config` | [Command-line errors](#could-not-read-claude-code-config) |
 | `Could not import <server>: <reason>` | [Command-line errors](#could-not-import-a-server-from-claude-desktop) |
@@ -20092,6 +20093,7 @@ Match the message you see to a section below.
 | `Shell command failed for pattern "..."`, from `/security-review` or any skill that injects dynamic context | [Command-line errors](#security-review-fails-without-origin-head) |
 | `Shell command permission check failed for pattern "..."`, from a skill that injects dynamic context | [Command-line errors](#security-review-fails-without-origin-head) |
 | ``Skill <name> requires bash (`shell: bash` in frontmatter) but Git Bash was not found`` | [Command-line errors](#security-review-fails-without-origin-head) |
+| `No shell command in <name> was run, because the <tool> tool does not accept one of them` | [Command-line errors](#no-shell-command-was-run) |
 | `Input must be provided either through stdin or as a prompt argument when using --print` | [Command-line errors](#input-must-be-provided-when-using-print) |
 | `Claude Code can't read the keyboard here: stdin is not a terminal` | [Command-line errors](#claude-code-cant-read-the-keyboard-here) |
 | `Error: Input contained only whitespace` | [Command-line errors](#input-contained-only-whitespace) |
@@ -20226,6 +20228,7 @@ Match the message you see to a section below.
 | `Claude Code exited after an unrecoverable interface error (...)` | [Configuration warnings](#exited-after-an-unrecoverable-interface-error) |
 | `Agent descriptions are over the 15.0k-token limit` | [Configuration warnings](#agent-descriptions-are-over-the-15000-token-limit) |
 | `hook needs quotes around a path with a space` | [Configuration warnings](#hook-needs-quotes-around-a-path-with-a-space) |
+| `Instruction file not loaded` | [Configuration warnings](#instruction-file-not-loaded) |
 | `Not loaded: rename <path>, then restart — its name uses "<name>", a name reserved for the skills synced from your claude.ai account` | [Configuration warnings](#a-skill-command-or-workflow-wasnt-loaded-because-its-name-is-reserved) |
 | `N skill or command names refused: run with --debug to see which ([names]), rename, then restart` | [Configuration warnings](#skill-or-command-name-refused) |
 | `Ignoring N permissions.allow entries from ... this workspace has not been trusted` | [Configuration warnings](#workspace-has-not-been-trusted) |
@@ -20236,6 +20239,7 @@ Match the message you see to a section below.
 | `Your organization's managed settings allow Claude Code to use: <providers>` | [Configuration warnings](#managed-settings-dont-allow-this-api-provider) |
 | `Your organization's managed settings allow Claude Code to use no API provider at all` | [Configuration warnings](#managed-settings-dont-allow-this-api-provider) |
 | `MCP server <name> is blocked by enterprise managed policy` | [Configuration warnings](#mcp-server-is-blocked-by-enterprise-managed-policy) |
+| `"<name>" is a reserved MCP server name and was not loaded` | [Configuration warnings](#mcp-server-name-is-reserved) |
 | `Managed settings document could not be parsed as a JSON object; none of its settings are in effect. Fix or remove it.` | [Configuration warnings](#managed-settings-document-could-not-be-parsed) |
 | `Managed settings drop-in directory could not be read` | [Configuration warnings](#managed-settings-document-could-not-be-parsed) |
 | `Unable to read managed policy settings` | [Configuration warnings](#unable-to-read-managed-policy-settings) |
@@ -20249,6 +20253,7 @@ Match the message you see to a section below.
 | `Denying Bash also turns off the PowerShell tool, so Claude has neither` | [Configuration warnings](#denying-bash-also-turns-off-the-powershell-tool) |
 | `CLAUDE_CODE_DISABLE_1M_CONTEXT is set, but the 200K limit isn't enforced` | [Configuration warnings](#the-200k-limit-isnt-enforced) |
 | `[claude-code:unrecognized_model]` | [Configuration warnings](#unrecognized-model-id-on-a-request) |
+| `is ignored — managed settings set allowManagedReadPathsOnly` / `is ignored — managed settings set allowManagedDomainsOnly` | [Configuration warnings](#sandbox-allow-entries-are-ignored-under-a-managed-lock) |
 | `Stale sandbox mask files left by a killed session` | [Configuration warnings](#stale-sandbox-mask-files-left-by-a-killed-session) |
 | Responses seem lower quality than usual | [Response quality](#responses-seem-lower-quality-than-usual) |
 
@@ -20999,6 +21004,19 @@ Claude Code names the cause in the middle of the message:
 Before v2.1.224, `OAuth token refresh failed — run /login to re-authenticate` read `OAuth token refresh failed — re-authenticate, then re-enable Remote Control`, and `JWT refresh failed: no OAuth token — run /login` read `no OAuth token available for recovery (code <N>)`. The `Claude.ai login expired`, `Claude.ai login was rejected`, and `OAuth token unavailable` messages were added in v2.1.225.
 
 Before v2.1.238, Claude Code reported the cases that now say `Signed out of Claude` as `JWT refresh failed: no OAuth token — run /login`, and stopped Remote Control with `Claude.ai login expired — run /login to restore Remote Control` as soon as one login refresh got no answer.
+
+### Remote Control could not renew this computer's connection
+
+This warning appears in the terminal running [`claude remote-control`](/docs/en/remote-control#start-a-remote-control-session) when the server can't use your claude.ai login to renew its connection's credential before it expires. The warning's last sentence says how long the current credential still works, or that it has already expired:
+
+```text theme={null}
+Remote Control could not renew this computer's connection: claude.ai did not accept the sign-in it uses. Run `claude /login` to sign in again. The connection keeps working for about 26 hours; if it still cannot sign in then, it stops.
+```
+
+**What to do:**
+
+* If the warning tells you to run `claude /login`, open another terminal on the machine running the server, run `claude /login` there, and sign in with your claude.ai account
+* If the server still can't sign in once the connection's credential has expired, it prints an error containing `Poll: Authentication failed (401)` and stops. Sign in again as the warning's second sentence says, then run `claude remote-control` again in the terminal where the server stopped.
 
 ### Remote Control stopped because the signed-in account changed
 
@@ -22891,6 +22909,22 @@ Claude Code also refuses to start for a global flag it doesn't yet recognize as 
 
 Before v2.1.248, `claude remote-control` didn't accept its own flags when a global flag came first, and the command failed with an `unknown option` error.
 
+### `--sandbox` or `--no-sandbox` is not supported by claude remote-control
+
+This error means the command that starts your [Remote Control](/docs/en/remote-control) server passes `--sandbox` or `--no-sandbox` after `remote-control`, and `claude remote-control` accepts neither flag. The server exits with code 1 instead of starting:
+
+```text theme={null}
+Error: --sandbox is not supported by claude remote-control. The flag had no effect and was removed. To sandbox sessions, set sandbox.enabled to true in settings.
+Error: --no-sandbox is not supported by claude remote-control. The flag had no effect and was removed. Remove it from the command.
+```
+
+**What to do:**
+
+* Remove the flag from the command, including in a script or service definition that starts the server for you, then run it again
+* To sandbox the sessions the server starts, turn on [sandboxing](/docs/en/sandboxing) by setting [`sandbox.enabled`](/docs/en/settings-reference#sandbox-enabled) to `true` in a [settings file](/docs/en/settings#where-settings-live)
+
+Both flags were removed from `claude remote-control` in v2.1.300, so a command written for an earlier version can still carry one.
+
 ### claude import is not yet available in this build
 
 You ran [`claude import`](/docs/en/cli-reference#cli-commands), and Claude Code found the import flow turned off, so the command exits with code 1 instead of starting the import. Before v2.1.222, a build with the import flow off treated `import` as a prompt and started an interactive session instead of printing this message.
@@ -23109,16 +23143,34 @@ The message may quote `git log` or a different `git diff` instead. Git creates `
 * A remote whose server-side HEAD points at a branch nobody pushed
 * A repository with no `origin` remote, or one you never fetched
 
-Claude Code shows the same error for any skill that [injects dynamic context](/docs/en/skills#when-an-injected-command-fails), and a failed injected command aborts that skill's invocation. Two sibling strings fire before the command runs at all:
+Claude Code shows the same error for any skill that [injects dynamic context](/docs/en/skills#when-an-injected-command-fails), and a failed injected command aborts that skill's invocation.
+
+Sibling strings fire before the command runs at all:
 
 * `Shell command permission check failed for pattern "..."`: the command's permission check didn't allow it. [Permission checks on injected commands](/docs/en/skills#permission-checks-on-injected-commands) covers which results abort in each permission mode and how to pre-approve a command with `allowed-tools`
 * ``Skill <name> requires bash (`shell: bash` in frontmatter) but Git Bash was not found``: the skill's frontmatter demands bash on a machine without it. Install Git for Windows or change the frontmatter to `shell: powershell`. See [How injected commands run](/docs/en/skills#how-injected-commands-run)
+* `No shell command in <name> was run`: one of the file's `!` commands contains a raw control character other than tab or newline, so none of them runs. See [how to find and remove the character](#no-shell-command-was-run)
 
 **What to do:**
 
 * Create the ref by naming your remote's default branch: `git remote set-head origin <default-branch>`. This works whenever the local tracking ref `origin/<default-branch>` exists. If it doesn't, as in single-branch clones, fetch the branch first: run `git remote set-branches --add origin <branch>`, then `git fetch origin`, then rerun the set-head command. Rerun `/security-review`.
 * If you'd rather not name the branch, run `git fetch origin` and then `git remote set-head origin --auto`, which asks the remote which branch is its default. It fails with `error: Cannot determine remote HEAD` when the remote advertises no default branch, because it is empty or its HEAD points at a branch nobody pushed; name the branch explicitly instead. It fails with `error: Not a valid ref` when your clone doesn't fetch that branch; widen the refspec as above first.
 * If the repository has no remote, add one with `git remote add origin <url>` and fetch before creating the ref. If the remote is empty, push your branch first with `git push -u origin HEAD` and name that branch in the set-head command; `origin/HEAD` then points at the branch you just pushed, so `/security-review` sees an empty diff until the branch diverges from it.
+
+### No shell command in a skill or command was run
+
+One of the `` !`<command>` `` [dynamic context commands](/docs/en/skills#inject-dynamic-context) in a skill or custom command file contains a raw control character other than tab or newline. Claude Code refuses the whole invocation before any of the file's commands runs.
+
+The message names the shell tool that would have run the commands, Bash or PowerShell, and ends with the refused command. Each such character is replaced by `�` so you can see where it is:
+
+```text theme={null}
+No shell command in /my-skill was run, because the Bash tool does not accept one of them: command contains control characters that would be hidden in the approval dialog. Unprintable characters are shown as � below: remove them from the skill or command file, or from the arguments or options substituted into it.
+build.sh --target�dist
+```
+
+**What to do:**
+
+* Find each `�` in the command quoted at the end of the message. Remove the character it stands for from the skill or command file, or from the arguments or options substituted into the file.
 
 ### Input must be provided when using `--print`
 
@@ -24870,6 +24922,32 @@ Stop hook needs quotes around a path with a space (check.py)
 
 * In the `command` of the hook that runs the script the notification names, wrap the path in double quotes. In a JSON file, write it as `"command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/check.py\""`.
 
+### Instruction file not loaded
+
+This notice in the conversation view of an interactive session means a [memory file](/docs/en/memory#how-claude-md-files-load) that exists wasn't loaded. A read restriction is in force.
+
+```text theme={null}
+Instruction file not loaded (a Read deny rule covers it):
+path: .claude/rules/shared.md
+```
+
+The parenthetical names the reason, for example:
+
+* **`a Read deny rule covers it`**: a `Read` [deny rule](/docs/en/permissions#read-and-edit) matches the file's path as written or where a link on it leads
+* **`it's read from outside your working directories, where reads are blocked`**: the file resolves outside the [working directories](/docs/en/settings-reference#permissions-blockreadsoutsideworkingdirectories) while [`permissions.blockReadsOutsideWorkingDirectories`](/docs/en/settings-reference#permissions-blockreadsoutsideworkingdirectories) is on
+* **`where it leads couldn't be worked out`**: for example, the file is a link that leads back to itself, directly or through other links
+
+When a subdirectory's own memory file can't be loaded as Claude works with files there, the same lines appear in the conversation during the turn. When more files are withheld than the lines name, a final line counts the rest, such as `and 3 more instruction files not loaded`.
+
+**What to do:**
+
+* Nothing, if the restriction is intended: the session runs without that file's instructions.
+* To load a file withheld because `a Read deny rule covers it`, [remove or narrow that rule](/docs/en/permissions#manage-permissions). Then start a new session.
+* To load a file withheld because `it's read from outside your working directories, where reads are blocked`, move it or its link target inside the working directories. Then start a new session.
+* To load a file withheld because `where it leads couldn't be worked out`, check whether the file is a link that leads back to itself. If it is, point the link at a file that exists or put a regular file in its place. Then start a new session.
+
+Before v2.1.292, the notice named the file at the end of the same line after the reason.
+
 ### A skill, command, or workflow wasn't loaded because its name is reserved
 
 A skill folder, a frontmatter `name`, a file or subfolder in `.claude/commands/`, or a [saved workflow](/docs/en/workflows#save-the-workflow-for-reuse) uses the name `anthropic-skills` or a name that starts with `anthropic-skills:`. Claude Code [reserves that name for skills synced from claude.ai](/docs/en/skills#names-reserved-for-synced-skills) and doesn't load that item.
@@ -25035,6 +25113,19 @@ Any of these settings can produce the message:
 * If none of your own settings explains the block, ask your administrator which managed setting blocks the server
 
 Before v2.1.257, **Reconnect** and re-enable in `/mcp` could connect a server that a mid-session policy update blocked.
+
+### MCP server name is reserved
+
+This message names one of your MCP servers, whose name is among those Claude Code reserves, such as the names of its built-in servers:
+
+```text theme={null}
+"workspace" is a reserved MCP server name and was not loaded
+```
+
+**What to do:**
+
+* Rename the server where you define it, for example from `workspace` to `my-workspace`
+* For other reserved names to avoid, see [MCP configuration warnings](/docs/en/mcp#configuration-warnings)
 
 ### Managed settings document could not be parsed
 
@@ -25283,6 +25374,22 @@ Claude Code doesn't write the line for provider IDs it resolves to a model it re
 * If the ID is a typo, fix it in whichever of the [places you can set a model](/docs/en/model-config#setting-your-model) or [alias variables](/docs/en/model-config#environment-variables) holds it. If `query_source` starts with `agent:`, fix it where you set the [subagent's model](/docs/en/sub-agents#choose-a-model) instead.
 
 Before v2.1.233, Claude Code wrote no line when it sent a request for a model ID it didn't recognize.
+
+### Sandbox allow entries are ignored under a managed lock
+
+This warning in `/status` and `claude doctor` means managed settings set [`allowManagedReadPathsOnly`](/docs/en/settings-reference#sandbox-filesystem-allowmanagedreadpathsonly) or [`allowManagedDomainsOnly`](/docs/en/settings-reference#sandbox-network-allowmanageddomainsonly), so the [`allowRead`](/docs/en/settings-reference#sandbox-filesystem-allowread) or [`allowedDomains`](/docs/en/settings-reference#sandbox-network-alloweddomains) entries in the file it names don't apply:
+
+```text wrap theme={null}
+sandbox.filesystem.allowRead is ignored — managed settings set allowManagedReadPathsOnly, so only allowRead paths from managed settings are honored. The 3 entries in /home/you/.claude/settings.json will NOT apply (see https://code.claude.com/docs/en/settings#sandbox-settings).
+```
+
+For the network lock, the warning names `sandbox.network.allowedDomains` and `allowManagedDomainsOnly`, and says `only allowed domains (and WebFetch domain rules) from managed settings are honored`.
+
+**What to do:**
+
+* You don't have to act on the warning
+* If you need those paths or domains and your organization's managed settings set the lock, ask your administrator to add them to those settings. The warning stays until you also remove the entries from the named file.
+* To clear the warning, remove the entries from the named file. For a file you share, such as a project's `.claude/settings.json`, you can leave the entries in for teammates without the lock and leave the warning showing.
 
 ### Stale sandbox mask files left by a killed session
 
@@ -31176,7 +31283,7 @@ Keep descriptions and instructions concise, and put critical details near the st
 
 Before v2.1.296, the shorter limit was 2,048 characters, and before v2.1.295 it applied to every tool description, including one loaded through tool search.
 
-To change the limits for every MCP server in your session, set [`CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH`](/docs/en/env-vars#variables) to a number of characters. The number you set replaces both limits: `8192`, for example, raises the shorter limit and lowers the longer one. This variable requires Claude Code v2.1.280 or later.
+Descriptions and instructions from some of the MCP servers that Anthropic hosts at `api.anthropic.com` reach Claude in full. To change the limits for the other MCP servers in your session, set [`CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH`](/docs/en/env-vars#variables) to a number of characters. The number you set replaces both limits: `8192`, for example, raises the shorter limit and lowers the longer one. This variable requires Claude Code v2.1.280 or later.
 
 #### Mark a tool to load upfront or stay deferred
 
@@ -31667,6 +31774,8 @@ If a server doesn't connect, check its status with `/mcp` inside a session or `c
     ```powershell theme={null}
     $env:MCP_TIMEOUT = "60000"; claude
     ```
+
+    Before v2.1.299, some connections to HTTP servers that were up timed out at startup regardless of `MCP_TIMEOUT`. If you use one of those versions and an HTTP server that is up still times out after you raise the limit, [update Claude Code](/docs/en/setup#update-claude-code).
   </Accordion>
 
   <Accordion title="Server already exists">
@@ -32291,6 +32400,7 @@ CLAUDE.md content is delivered as a user message after the system prompt, not as
 To debug:
 
 * Run `/context` and check the list under **Memory files** to verify the CLAUDE.md and CLAUDE.local.md files that should load at launch. If one is missing there, Claude can't see it. Use `/memory` to open and edit the files.
+* If an `Instruction file not loaded` notice appears, see [what it means and what to do about it](/docs/en/errors#instruction-file-not-loaded).
 * A `CLAUDE.md` in a subdirectory of your working directory doesn't appear under **Memory files**, because it loads on demand rather than at launch. When it loads, a `Loaded` line with its path appears in the terminal. To test a new one, create it from your shell rather than asking Claude to write it, then ask Claude to read a file in that subdirectory.
 * Check that the relevant CLAUDE.md is in a location that gets loaded for your session (see [Choose where to put CLAUDE.md files](#choose-where-to-put-claude-md-files)).
 * Make instructions more specific. "Use 2-space indentation" works better than "format code nicely."
@@ -36847,9 +36957,12 @@ Mods don't replace the controls you already have:
 * **Network policy covers `$.http.fetch`.**
 
   * **Your organization's policy doesn't allow WebFetch**: Claude Code also refuses every mod's `$.http.fetch` request. See [WebFetch availability](/docs/en/tools-reference#webfetch-availability).
+  * **You turn off the WebFetch tool with [`CLAUDE_CODE_DISABLE_WEB_FETCH`](/docs/en/env-vars#variables) or a `WebFetch` [deny rule](/docs/en/permissions#tool-specific-permission-rules), in managed settings or any other settings file**: mods can still make `$.http.fetch` requests.
+
+    To stop them for every mod your users install, [keep user-installed mods from loading](#stop-user-installed-mods-from-loading), or hook `http.fetch` in a [policy mod](#enforce-a-policy-with-a-mod-of-your-own) and refuse requests from users' mods. Give that hook a [`.catch` handler](/docs/en/plugins/mods/events#handle-a-hook-that-fails) that refuses too, because Claude Code skips a hook that fails and the request then goes ahead. If you only [restrict which plugins users can install](/docs/en/plugins/org#restrict-what-users-can-install), fewer mods load, but those you allow still make these requests.
   * **You set [`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`](/docs/en/env-vars)**: a mod that you or your users install can still make these requests. The variable stops only the [mods built into Claude Code](/docs/en/plugins/mods/overview#mods-built-into-claude-code), plus any `$.http.fetch` request that carries the session's Anthropic credentials. Before v2.1.288, the variable stopped every mod's `$.http.fetch` request.
 
-  Neither covers a program the mod starts with `$.process.run`, which reaches the network with the user's own access.
+  None of these covers a program the mod starts with `$.process.run`, which reaches the network with the user's own access.
 * **Plugin controls cover mods.** A mod is a plugin, so the [settings that restrict what users can install](/docs/en/plugins/org#restrict-what-users-can-install), such as `strictKnownMarketplaces`, decide whether it can be installed at all.
 * **Mods can't change the permission prompt.** A mod can restyle much of Claude Code's interface, but not the permission prompt, so it can't change what a prompt shows. A mod can still approve or deny a tool call before the prompt appears, as [Know what happens by default](#know-what-happens-by-default) describes.
 * **Trust prompts come first.** In an interactive session in a directory the user hasn't trusted yet, no mod loads until they answer the trust prompt.
@@ -37382,6 +37495,8 @@ A background job can show the user something without starting a turn. Each of th
 | `$.ui.status(text)` | One line under the prompt that stays until you change it. It starts with `⚠` and the mod's name, as in `⚠ my-mod: checks: 3 passing`. |
 | `$.ui.toast(text)` | A toast notification with the mod's name that disappears after a few seconds. It's a box at the top right in [fullscreen rendering](/docs/en/fullscreen), and one line at the right under the prompt in the classic renderer. |
 | `$.ui.log(text)` | A dim line in the transcript that Claude doesn't read. It starts with `●` and the mod's name, as in `● my-mod: build finished`. |
+
+In the [VS Code extension](/docs/en/plugins/mods/interface#draw-in-the-vs-code-extension), status lines and toasts show above the prompt box instead, and log lines in the conversation.
 
 ### Start a turn from a background job
 
@@ -38356,7 +38471,7 @@ The terminal draws the URL as text after the label. Whether a click opens it dep
 
 ## Show code and changes
 
-`Code` draws source text with Claude Code's own syntax colors, or a diff.
+`Code` draws source text with Claude Code's own syntax colors, or a diff. In the VS Code extension, `Code` shows its `source` as plain text, with none of the colors, line numbers, or diff shading in these screenshots.
 
 ### `Code`
 
@@ -38428,7 +38543,7 @@ The border stretches to the width of the pane.
 
 `Button`, `Input`, and `Select` are controls: the user moves between them with Tab and uses the one that has the focus. [Keyboard focus and hotkeys](/docs/en/plugins/mods/interface#know-which-keys-your-mod-can-receive) covers which keys reach them.
 
-Opening a pane with `focus: true` gives the pane keyboard focus. Typed letters reach an `Input` once it has the focus, so add `autoFocus: true` to a field that should take typing as soon as the pane opens.
+Open a pane with `focus: true` to request keyboard focus for it. Typed letters reach an `Input` once it has the focus. To choose which field has the focus when the pane opens, see [Set a hotkey and the first focus](/docs/en/plugins/mods/interface#set-a-hotkey-and-the-first-focus).
 
 ### `Button`
 
@@ -38552,7 +38667,7 @@ A `Raster` rounds each color to a smaller palette, so `0x2e7d32` draws as `#3377
 
 ### `Svg`
 
-An `Svg` draws an SVG document in the Desktop app:
+An `Svg` draws an SVG document in the Desktop app and the VS Code extension:
 
 ```javascript theme={null}
 Svg({
@@ -38813,6 +38928,8 @@ Claude Code draws most of its interface itself: messages, tool call rows, the sp
 | `Spinner`, `ToolProgress`, `TurnDuration` | Status lines for a turn: the line that animates while Claude works, a running tool's live progress line, and the line that closes a turn |
 | `InfoNotice`, `SessionMode`, `PromptHint` | Status lines under the logo, the mode labels in the footer, and the hint line under the prompt |
 
+`Pane`, `AskUserQuestion`, `Spinner`, `UserMessage`, `AssistantMessage`, and the tool call sites work in the terminal, the Desktop app, and the VS Code extension. The [render sites table](/docs/en/plugins/mods/reference#render-sites) lists where each of the others is raised.
+
 At a site Claude Code already draws, your hook can change a detail, replace the drawing, or leave it alone. Select a tab to see each one applied to the spinner. The examples read a `calls` variable that another hook counts, as in the [tutorial mod](/docs/en/plugins/mods/create#write-a-mod-yourself).
 
 <Tabs>
@@ -38884,8 +39001,6 @@ While Claude works, the spinner animates as before, and `under the spinner` appe
 
 The permission prompt isn't a render site, so a mod can't change what it shows. The question dialog, `AskUserQuestion`, is one, so a mod can change that. A tree for the dialog has to hold the reference exactly once, with your elements above it. Otherwise, Claude Code draws its own dialog.
 
-The terminal and the Desktop app don't raise all the same sites. `Pane`, `AbovePrompt`, `Spinner`, and the transcript sites work in both. A few other status lines are raised in the terminal only. The [render sites table](/docs/en/plugins/mods/reference#render-sites) lists where each one is raised.
-
 ### Open a pane at the right time
 
 A pane appears only when your mod opens it. How and when you open it decides whether it takes keyboard focus, how much room it asks for, and whether it shows at all in a narrow terminal.
@@ -38913,6 +39028,8 @@ Besides `id`, `$.ui.open` takes these optional fields:
 | `rows` | The height to ask for when the pane sits above the prompt. The default is a third of the space. |
 | `columns` | The width to ask for when the pane sits beside the transcript |
 
+The [VS Code extension](#draw-in-the-vs-code-extension) ignores `rows` and `columns` and sizes the pane itself.
+
 `focus`, `closeOnEscape`, and `holdToasts` are optional and accept only `true`. To leave one off, omit it. Passing `false` throws an error such as `ui.open: focus is true or left out`. To set one of them conditionally, add the field only when the condition holds. This call asks for keyboard focus only when `items` isn't empty:
 
 ```javascript theme={null}
@@ -38937,9 +39054,24 @@ A pane your mod opens without being asked doesn't appear in a narrow terminal, s
 
 When the pane appears, `$.ui.open` resolves to `{ isPlaced: true }`. When the pane is waiting, `isPlaced` is `false` and `reason` is a string that says why. A waiting pane appears when the user opens it or widens the terminal. To say something is available without opening a pane, call `$.ui.toast('Your message')`, which shows a toast notification.
 
+### Draw in the VS Code extension
+
+In the VS Code extension, what a mod draws appears in the chat panel with extension version 2.1.299 or later, in a session that [fetches feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching). In a `ui.render` hook for the panel, `e.surface` is `vscode`. To check which sites and elements the panel draws, and which props it ignores, see the [render sites](/docs/en/plugins/mods/reference#render-sites) and [elements](/docs/en/plugins/mods/reference#elements) tables.
+
+To make a mod work in the panel as well as the terminal, account for these differences:
+
+* **Panes**: in a panel 800 pixels or wider, panes dock beside the conversation, `e.props.placement` is `'dock'`, and `e.viewport.isFullscreen` is `true`. In a narrower panel, panes draw above the prompt box, `placement` is `'inline'`, and a pane shows 12 rows before it scrolls.
+* **Toasts and status lines**: these sit in one stack directly above the prompt box, together with the panes when the panel is narrow, with one status line per mod. The stack is hidden while a permission request or a dialog shows.
+* **Labels**: the panel frames what a mod draws or rewrites and labels it with the plugin's name, as in **From the token-chart plugin** or **Edited by the token-chart plugin**.
+* **Keyboard**: buttons have no hotkeys, so the user clicks a button or presses Enter on it once it has focus.
+* **Keyboard focus**: the panel grants a pane's `focus: true` request only when the panel has focus, Claude is idle with no question waiting, and the prompt box is empty.
+* **The question dialog**: at `AskUserQuestion`, the panel keeps its own question card and draws your elements above it. Props you pass to `next` don't change the card.
+* **Prompt suggestions**: `$.prompt.suggest` resolves with `isShown: false` and shows nothing, because the panel keeps the prompt box's dim suggestion text for Claude's own suggestions.
+* **Text limits**: the panel cuts a status line at 200 characters or two rows, and a toast at 500 characters.
+
 ## Build a tree from elements
 
-What a `ui.render` hook returns is an element tree: a description of what to draw, made of boxes, text, and controls nested inside each other. You describe the drawing, and Claude Code renders it in the terminal or the Desktop app.
+What a `ui.render` hook returns is an element tree: a description of what to draw, made of boxes, text, and controls nested inside each other. You describe the drawing, and Claude Code renders it in whichever app the user has open: the terminal, the Desktop app, or the VS Code extension.
 
 To get the elements, call `$.ui.resolve(e)` in your hook, as in `const { Box, Text, Button } = $.ui.resolve(e)`. Each element is a function. You pass it props, and you put the elements and strings that go inside it in `children`.
 
@@ -39019,8 +39151,8 @@ The [interface gallery](/docs/en/plugins/mods/gallery) has samples and screensho
 | `Text` | Styled text. Takes `color`, `bold`, `dimColor`, `italic`, and `wrap`. A `color` is a theme key or a color such as `'red'`. A `wrap` is `'wrap'`, `'truncate'`, `'truncate-start'`, `'truncate-middle'`, or `'truncate-end'`. | Everywhere |
 | `Button` | A control that calls `onPress` | Everywhere |
 | `Link`, `Code`, `Markdown` | A link with `href` and an optional `label`, a code block, and text formatted the way Claude's replies are. `Markdown` takes its content in a `text` prop, not in `children`, and needs a `key` when you pass `onLinkPress`. | Everywhere |
-| `Input`, `Select` | A text field and a dropdown | Terminal, Desktop |
-| `Svg` | An SVG document | Desktop |
+| `Input`, `Select` | A text field and a dropdown | Terminal, Desktop, VS Code |
+| `Svg` | An SVG document | Desktop, VS Code |
 | `Client` | A region drawn by a second file of yours, for animation and pointer input. That file gets no mods API. It reaches your hooks by posting data, which arrives as a `ui.message` event. If it fails to load, draw, or run, your hooks receive a [`ui.fault`](/docs/en/plugins/mods/reference#interface) event. | Terminal, Desktop |
 | `Raster`, `Image` | A [grid of colored cells](#draw-a-grid-of-colored-cells), and a picture | Terminal |
 
@@ -39030,9 +39162,9 @@ If a tree uses an element the app doesn't have, a prop an element doesn't take, 
 
 In a session started with `--plugin-dir`, a transcript line says so, such as `ui.render (Pane) refused: Text prop "bogusProp" is not allowed; the engine drew its own`. The [debug log](/docs/en/plugins/mods/troubleshoot#read-the-debug-log) records it as `ui.render (Pane): a hook returned a tree that does not validate` with the same reason. Nothing else appears in the session, so when a drawing doesn't show up, check that line or the log.
 
-### `Link` in the Desktop app
+### `Link` in the Desktop app and VS Code
 
-In the Desktop app, a `Link` draws as plain text unless its `href` meets these requirements:
+In the Desktop app and the VS Code extension, a `Link` draws as plain text unless its `href` meets these requirements:
 
 * **Scheme and host**: an `https:` URL, or an `http://localhost` URL such as `http://localhost:3000`
 * **No `@`**: write an `@` in the path or query as `%40`
@@ -39050,7 +39182,7 @@ If your mod handles [`ui.fault`](/docs/en/plugins/mods/reference#interface), Cla
 
 For a heat map, a sparkline, or a game board in the terminal, draw one `Raster` and not a `Box` for each cell. A `Raster` takes a `key`, its size in `columns` and `rows`, and `cells`, a base64 string that packs every cell. Each cell is three numbers: the character's code point, its color, and its background color. A color is a 24-bit RGB value in hexadecimal, such as `0xc62828` for a red. The value `0x01000000`, one above that range, means the terminal's default.
 
-The Desktop app has no `Raster`, so check `e.surface` and draw text there. This pane body draws a three by two heat map:
+Apps other than the terminal have no `Raster`, so check `e.surface` and draw text there. This pane body draws a three by two heat map:
 
 ```javascript theme={null}
 // The value that means "use the terminal's default color"
@@ -39104,6 +39236,8 @@ A test presses or types into a control by its `key`, so give each control one. E
 
 Your mod never reads the keyboard itself. The user presses a key, Claude Code decides which of your controls it's for, and that control's callback runs. Apart from a [digit hotkey on the band](/docs/en/plugins/mods/reference#elements), that happens only while your pane or band has keyboard focus. The rest of the time, keys go to the prompt.
 
+In the [VS Code extension](#draw-in-the-vs-code-extension), buttons have no hotkeys: the user clicks a button or presses Enter on it, and types into fields.
+
 #### How a pane gets keyboard focus
 
 A pane gets keyboard focus when:
@@ -39133,17 +39267,15 @@ A mod can't bind Tab or the arrow keys to anything else, so a game steers with `
 
 #### Set a hotkey and the first focus
 
-These props on a control decide how the keyboard reaches it:
-
 * **`hotkey`**: to let the user press a `Button` with one key, give it a `hotkey` of one digit or one lowercase letter, as in `hotkey: 'a'`
-* **`autoFocus`**: to choose which control has the focus when the pane opens, add `autoFocus: true` to it. The prop accepts only `true`, so omit it on the other controls.
+* **`autoFocus`**: to choose which control has the focus when the pane opens, add `autoFocus: true` to it. In the [VS Code extension](#draw-in-the-vs-code-extension), `autoFocus` does nothing: the control draws as if you had left it out, and you don't need to change anything. The prop accepts only `true`, so omit it on the other controls.
 
 How a hotkey shows depends on the button and the app:
 
-| Button | In the terminal | In the Desktop app |
-| :- | :- | :- |
-| With brackets, the default | `[ Add one ]`, with no hotkey shown | The label with a small key beside it |
-| With `plain: true` | `1: One` | The label with a small key beside it |
+| Button | In the terminal | In the Desktop app | In the VS Code extension |
+| :- | :- | :- | :- |
+| With brackets, the default | `[ Add one ]`, with no hotkey shown | The label with a small key beside it | The label, and the hotkey does nothing |
+| With `plain: true` | `1: One` | The label with a small key beside it | The label, and the hotkey does nothing |
 
 In the terminal, name the key in a bracketed button's label, or use `plain: true`, so the user can see what to press. The [elements reference](/docs/en/plugins/mods/reference#elements) has the other `Button` rules: `action`, digit hotkeys on the band, and two buttons on one hotkey.
 
@@ -39474,7 +39606,7 @@ Settings hooks, skills, status lines, and MCP servers work from outside Claude C
 * **Run your own code on a command**: a `/command` that runs your function at once, with no Claude turn, even while Claude is working. See [Add a command or a tool](/docs/en/plugins/mods/api#add-a-command-or-a-tool).
 * **Share data between hooks**: a mod's hooks share the variables in its file, so what one hook records, another can show. For example, one hook can count tool calls while another shows the count beside the spinner, or one can read each request's token usage while another charts it in a pane. See [React to events](/docs/en/plugins/mods/events).
 
-Mods work in the Claude Code CLI and in the Code tab of the Claude Desktop app. See [Where mods run](#where-mods-run) to understand how they behave elsewhere, such as in the VS Code extension, `claude -p`, and cloud sessions. If a settings hook, a skill, or an MCP server already does what you need, [compare them](#compare-mods-settings-hooks-skills-and-mcp-servers) before you write a mod. To manage mods for an organization, see [Manage mods for your organization](/docs/en/plugins/mods/admin).
+Mods work in the Claude Code CLI, the Code tab of the Claude Desktop app, and the VS Code extension. See [Where mods run](#where-mods-run) for how they behave elsewhere, such as in `claude -p` and cloud sessions. If a settings hook, a skill, or an MCP server already does what you need, [compare them](#compare-mods-settings-hooks-skills-and-mcp-servers) before you write a mod. To manage mods for an organization, see [Manage mods for your organization](/docs/en/plugins/mods/admin).
 
 ## Get a mod
 
@@ -39640,14 +39772,14 @@ For the code behind each choice, see [React to events](/docs/en/plugins/mods/eve
 
 ### Where mods run
 
-A mod's hooks run in every kind of session that loads the plugin, whichever provider serves the model, including Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry. Drawing is narrower: only the terminal and the Desktop app show a mod's panes, bands, and replaced rows. This table lists each place you might run Claude Code:
+A mod's hooks run in every kind of session that loads the plugin, whichever provider serves the model, including Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry. Drawing is narrower: what a mod draws appears in the terminal, the Desktop app, and the VS Code extension. This table lists each place you might run Claude Code:
 
 | Where you run Claude Code | Hooks run | What the mod draws appears |
 | :- | :- | :- |
 | `claude` in a terminal, including an editor's integrated terminal and the JetBrains plugin | Yes | Yes |
 | The Code tab of the Desktop app, except in a WSL session | Yes | Yes, except elements the [elements table](/docs/en/plugins/mods/reference#elements) marks terminal-only |
 | A [WSL session](/docs/en/desktop-wsl) in the Desktop app | No, because plugins aren't available in WSL sessions | No |
-| The VS Code extension's chat panel | Yes | No |
+| The VS Code extension's chat panel | Yes | Yes, with extension version 2.1.299 or later, in a session that [fetches feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching). The [render sites](/docs/en/plugins/mods/reference#render-sites) and [elements](/docs/en/plugins/mods/reference#elements) tables mark what the panel draws. |
 | `claude -p` and the [Agent SDK](/docs/en/agent-sdk/overview) | Yes | No |
 | [Remote Control](/docs/en/remote-control) from claude.ai or the mobile app | Yes, in the session on your machine | In the terminal on your machine |
 | A [cloud session](/docs/en/claude-code-on-the-web) | Yes, for a plugin that [reaches the cloud session](/docs/en/cloud-environments#what-carries-over-from-your-setup) | No |
@@ -39715,7 +39847,7 @@ Source: https://code.claude.com/docs/en/plugins/mods/reference
 
 Complete reference for Claude Code mods: hooks module layout, events, mods API methods, render sites, elements by surface, limits, and settings.
 
-Look up any event a [mod](/docs/en/plugins/mods/overview) can handle, mods API method it can call, or render site it can draw in, for the Claude Code CLI and the Desktop app as of v2.1.290. Each entry gives the name and a one-line description, and links to the guide section that explains it where there is one.
+Look up any event a [mod](/docs/en/plugins/mods/overview) can handle, mods API method it can call, or render site it can draw in. Entries cover the Claude Code CLI and the Desktop app as of v2.1.290, and the VS Code extension as of v2.1.299. Each entry gives the name and a one-line description, and links to the guide section that explains it where there is one.
 
 <Note>
   The complete reference is Claude Code's [TypeScript declarations for mods](https://github.com/anthropics/claude-code/blob/main/mods/types/claude-code.d.ts), which describe every event, method, and element, with examples. The copy on GitHub can be older than the Claude Code version you have installed. When the two disagree, trust [the copy Claude Code writes for your version](/docs/en/plugins/mods/create#get-the-types-for-your-build).
@@ -39928,31 +40060,33 @@ The mods API is the `$` argument every hook receives. Its methods are grouped in
 
 ## Render sites
 
-A render site is an extension point in Claude Code's interface. Each row is a value of `e.component` in a `ui.render` hook, with the fields of `e.props` and the apps that render it. `e.surface` is `terminal` or `desktop`. [Change what Claude Code already draws](/docs/en/plugins/mods/interface#change-what-claude-code-already-draws) shows what a hook can do at a site, with an example of each choice.
+A render site is an extension point in Claude Code's interface. Each row is a value of `e.component` in a `ui.render` hook, with the fields of `e.props` and the apps that render it. `e.surface` names the app that's drawing, such as `terminal`, `desktop`, or `vscode`. [Change what Claude Code already draws](/docs/en/plugins/mods/interface#change-what-claude-code-already-draws) shows what a hook can do at a site, with an example of each choice.
+
+Rendering in the VS Code extension requires extension version 2.1.299 or later and a session that [fetches feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching). [Draw in the VS Code extension](/docs/en/plugins/mods/interface#draw-in-the-vs-code-extension) lists what the extension draws differently.
 
 | Site | `e.props` | `e.requestId` | Rendered on |
 | :- | :- | :- | :- |
-| [`Pane`](/docs/en/plugins/mods/interface#pick-where-to-draw) | `title`, `isFocused`, `bodyColumns`, `placement`, `scroll`, `view` | The pane's `id` | Terminal, Desktop |
+| [`Pane`](/docs/en/plugins/mods/interface#pick-where-to-draw) | `title`, `isFocused`, `bodyColumns`, `placement`, `scroll`, `view` | The pane's `id` | Terminal, Desktop, VS Code |
 | [`AbovePrompt`](/docs/en/plugins/mods/interface#pick-where-to-draw) | `hasSurvey`, `isWorking`, `maxRows`, `bodyColumns`, `scroll`, `view` | One instance | Terminal, Desktop |
-| `UserMessage` | `text`, `origin`, `isExpanded`, and `task` or `from` by origin | The message id | Terminal, Desktop |
-| `AssistantMessage` | The reply's text | The message id | Terminal, Desktop |
-| `ToolUse`, `ToolResult`, `ToolGroup` | The tool's name, input, and result | The tool call id | Terminal, Desktop |
+| `UserMessage` | `text`, `origin`, `isExpanded`, and `task` or `from` by origin | The message id | Terminal, Desktop, VS Code |
+| `AssistantMessage` | The reply's text | The message id | Terminal, Desktop, VS Code |
+| `ToolUse`, `ToolResult`, `ToolGroup` | The tool's name, input, and result | The tool call id | Terminal, Desktop, VS Code |
 | `CommandOutput` | `command`, `text` | The message id | Terminal, Desktop |
-| [`AskUserQuestion`](/docs/en/plugins/mods/interface#change-what-claude-code-already-draws) | The question and options | The tool call id | Terminal, Desktop |
+| [`AskUserQuestion`](/docs/en/plugins/mods/interface#change-what-claude-code-already-draws) | The question and options | The tool call id | Terminal, Desktop, VS Code |
 | `ToolProgress` | `kind` | The tool call id | Terminal |
-| [`Spinner`](/docs/en/plugins/mods/interface#change-what-claude-code-already-draws) | `word`, `message`, `suffix`, `mode` | The agent id | Terminal, Desktop |
+| [`Spinner`](/docs/en/plugins/mods/interface#change-what-claude-code-already-draws) | `word`, `message`, `suffix`, `mode` | The agent id | Terminal, Desktop, VS Code |
 | `TurnDuration` | `word`, `durationMs` | The message id | Terminal |
 | `InfoNotice` | `text`, `command` | The message id | Terminal |
 | `SessionMode` | `modes` | One instance | Terminal, Desktop |
 | `PromptHint` | `isDraft`, `isWorking`, `hint` | One instance | Terminal, Desktop |
 
-`e.viewport` holds `columns`, `rows`, and `isFullscreen`. It's absent until the app has measured its window. Its `rows` is the height of the whole window, not of your pane.
+`e.viewport` holds `columns`, `rows`, and `isFullscreen`. In the terminal and the Desktop app, it's absent until the app has measured its window. There, its `rows` is the height of the whole window, not of your pane. In the VS Code extension, it's always present.
 
 To fit a tree to its site, read these props in the hook:
 
 * **Width of a `Pane` or the band**: draw to `e.props.bodyColumns`
 * **Height of a `Pane` beside the transcript**: where `e.props.placement` is `'dock'`, `e.props.scroll.bodyRows` is the number of rows the pane has for your tree
-* **Height of a `Pane` above the prompt**: where `e.props.placement` is `'inline'`, the pane grows with your tree up to a limit, and `bodyRows` is that limit. The [`rows` field of `$.ui.open`](/docs/en/plugins/mods/interface#open-a-pane-at-the-right-time) asks for a different one.
+* **Height of a `Pane` above the prompt**: where `e.props.placement` is `'inline'`, the pane grows with your tree up to a limit, and `bodyRows` is that limit. To ask for a different limit, see the [`rows` field of `$.ui.open`](/docs/en/plugins/mods/interface#open-a-pane-at-the-right-time).
 
 A tree taller than the pane scrolls as a whole.
 
@@ -39960,22 +40094,29 @@ A tree taller than the pane scrolls as a whole.
 
 Elements are the building blocks of a tree a `ui.render` hook returns, and you get them from `$.ui.resolve(e)`. [Build a tree from elements](/docs/en/plugins/mods/interface#build-a-tree-from-elements) shows the common ones with how the terminal draws them, and the [interface gallery](/docs/en/plugins/mods/gallery) has screenshots of most. A check mark means the app can draw the element.
 
-| Element | Main props | Terminal | Desktop |
-| :- | :- | :-: | :-: |
-| [`Box`](/docs/en/plugins/mods/interface#build-a-tree-from-elements) | `key`, flex layout, `gap`, `padding`, `margin`, `width`, `height`, [`borderStyle`](#box-border-styles), `backgroundColor`, `position`, `hover` | ✓ | ✓ |
-| [`Text`](/docs/en/plugins/mods/interface#build-a-tree-from-elements) | `color`, `backgroundColor`, `bold`, `italic`, `underline`, `dimColor`, `inverse`, `wrap` | ✓ | ✓ |
-| [`Button`](/docs/en/plugins/mods/interface#respond-to-presses-and-typing) | `key`, `label`, `onPress`, `hotkey`, `plain`, `dimColor`, `autoFocus`, `action` | ✓ | ✓ |
-| [`Link`](/docs/en/plugins/mods/interface#link-in-the-desktop-app) | `href`, `label`. See [Limits](#limits). | ✓ | ✓ |
-| [`Code`](/docs/en/plugins/mods/gallery#show-code-and-changes) | `source`, `language`, `path`, `startLine`, `format`, `wrap` | ✓ | ✓ |
-| `Markdown` | `text`, `key`, `dimColor`, `onLinkPress`, `pressableLinks` | ✓ | ✓ |
-| [`Input`](/docs/en/plugins/mods/interface#take-typed-input-and-draw-a-row-for-each-item) | `key`, `label`, `placeholder`, `value`, `submitLabel`, `onSubmit`, `onInput`, `autoFocus` | ✓ | ✓ |
-| `Select` | `key`, `label`, `options`, `value`, `onSelect`, `autoFocus` | ✓ | ✓ |
-| `Svg` | An SVG document, up to 131,072 characters | | ✓ |
-| [`Client`](/docs/en/plugins/mods/interface#build-a-tree-from-elements) | `module`, `key` | ✓ | ✓ |
-| [`Raster`](/docs/en/plugins/mods/interface#draw-a-grid-of-colored-cells) | `key`, `columns` up to 512, `rows` up to 256, `cells`. See [Draw a grid of colored cells](/docs/en/plugins/mods/interface#draw-a-grid-of-colored-cells). | ✓ | |
-| `Image` | PNG or RGBA bytes up to 2 MiB, or a file path, `columns` and `rows` up to 255, and `alt` text. | ✓ | |
+| Element | Main props | Terminal | Desktop | VS Code |
+| :- | :- | :-: | :-: | :-: |
+| [`Box`](/docs/en/plugins/mods/interface#build-a-tree-from-elements) | `key`, flex layout, `gap`, `padding`, `margin`, `width`, `height`, [`borderStyle`](#box-border-styles), `backgroundColor`, `position`, `hover` | ✓ | ✓ | ✓ |
+| [`Text`](/docs/en/plugins/mods/interface#build-a-tree-from-elements) | `color`, `backgroundColor`, `bold`, `italic`, `underline`, `dimColor`, `inverse`, `wrap` | ✓ | ✓ | ✓ |
+| [`Button`](/docs/en/plugins/mods/interface#respond-to-presses-and-typing) | `key`, `label`, `onPress`, `hotkey`, `plain`, `dimColor`, `autoFocus`, `action` | ✓ | ✓ | ✓ |
+| [`Link`](/docs/en/plugins/mods/interface#link-in-the-desktop-app) | `href`, `label`. See [Limits](#limits). | ✓ | ✓ | ✓ |
+| [`Code`](/docs/en/plugins/mods/gallery#show-code-and-changes) | `source`, `language`, `path`, `startLine`, `format`, `wrap` | ✓ | ✓ | ✓ |
+| `Markdown` | `text`, `key`, `dimColor`, `onLinkPress`, `pressableLinks` | ✓ | ✓ | ✓ |
+| [`Input`](/docs/en/plugins/mods/interface#take-typed-input-and-draw-a-row-for-each-item) | `key`, `label`, `placeholder`, `value`, `submitLabel`, `onSubmit`, `onInput`, `autoFocus` | ✓ | ✓ | ✓ |
+| `Select` | `key`, `label`, `options`, `value`, `onSelect`, `autoFocus` | ✓ | ✓ | ✓ |
+| `Svg` | An SVG document, up to 131,072 characters | | ✓ | ✓ |
+| [`Client`](/docs/en/plugins/mods/interface#build-a-tree-from-elements) | `module`, `key` | ✓ | ✓ | |
+| [`Raster`](/docs/en/plugins/mods/interface#draw-a-grid-of-colored-cells) | `key`, `columns` up to 512, `rows` up to 256, `cells`. See [Draw a grid of colored cells](/docs/en/plugins/mods/interface#draw-a-grid-of-colored-cells). | ✓ | | |
+| `Image` | PNG or RGBA bytes up to 2 MiB, or a file path, `columns` and `rows` up to 255, and `alt` text. | ✓ | | |
 
 More `Button` rules: `action` names one of Claude Code's own [keybinding actions](/docs/en/keybindings), and the user's binding for it presses the button when that binding is a chord or a modified key. A digit `hotkey` on a button in the band also fires when the user types that digit alone into an empty prompt and pauses. When two buttons in one drawing name the same `hotkey`, the later one gets it. `autoFocus` accepts only `true` on any control, so omit the prop to leave it off.
+
+The VS Code extension ignores some element props and draws the element as if you had left them out:
+
+* **`Box`**: `position` and `hover`
+* **`Button`**: `hotkey`, `plain`, `autoFocus`, and `action`, so the user presses a button there with a click, or with Enter once it has focus
+* **`Code`**: `language`, `path`, `startLine`, `format`, and `wrap`, so code draws without colors or line numbers, and a `format: 'diff'` block shows the diff's raw text
+* **`Input` and `Select`**: `autoFocus`
 
 ### `Box` border styles
 
@@ -40690,15 +40831,18 @@ Before v2.1.290, Claude Code dropped a toast raised within two seconds of the la
 
 ### Hotkeys do nothing
 
-Your pane doesn't have keyboard focus.
+Your pane doesn't have keyboard focus, or the drawing is in the VS Code extension, where buttons have no hotkeys. Do the one that matches:
 
-Press Ctrl+X then Tab, or click the pane. Open it with `focus: true` from a command.
+* **No keyboard focus**: press Ctrl+X then Tab, or click the pane. To have the pane take focus when it opens, open it with `focus: true` from a command.
+* **In the VS Code extension**: click the button, or press Enter on it once it has focus
 
-### A drawing works in the terminal and not in the Desktop app
+### A drawing works in the terminal and not in the Desktop app or VS Code
 
-The site or element isn't available there.
+Either that app doesn't draw the site or element, or the session is one where the VS Code extension draws nothing for mods. The mod's other hooks still run. Check for these causes:
 
-Check the [render sites](/docs/en/plugins/mods/reference#render-sites) and [elements](/docs/en/plugins/mods/reference#elements) tables.
+* **The site or element isn't drawn in that app**: look up your site in the [render sites](/docs/en/plugins/mods/reference#render-sites) table and your elements in the [elements](/docs/en/plugins/mods/reference#elements) table. For an element the app lacks, check `e.surface` in the hook and return a tree the app can draw.
+* **The VS Code extension is older than 2.1.299**: the chat panel draws for mods from [extension version](/docs/en/vs-code#install-the-extension) 2.1.299. Check the version in VS Code's Extensions view and update the extension there.
+* **The VS Code session doesn't fetch feature flags**: drawing in the chat panel requires it. Sessions on Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry, or through a [Claude apps gateway](/docs/en/claude-apps-gateway), skip it, among others that [Features that need feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) lists. To see the drawing in such a session, run `claude` in a terminal instead, such as VS Code's integrated terminal.
 
 ## An edit or a value is lost
 
@@ -43835,6 +43979,7 @@ You can start a Remote Control session from the CLI, the [Claude Desktop app](/d
     | `-d`, `--debug[=<filter>]` | Turn on debug logging for the server, optionally filtered by category. Pass a filter only in the `=` form, such as `--debug=api,hooks`. Requires Claude Code v2.1.282 or later. |
     | `--debug-file <path>` | Write debug logs to the given file. |
     | `--verbose` | Show detailed connection and session logs. |
+    | `--sandbox`, `--no-sandbox` | Removed in v2.1.300. If you pass either flag, the server [exits with an error](/docs/en/errors#sandbox-is-not-supported-by-claude-remote-control) instead of starting. |
 
     If you pass a global `claude` flag before `remote-control`, or a wrapper script adds one, Claude Code doesn't carry the flag over to the sessions the server creates. Claude Code lets the flag through only when dropping it is known not to change what those sessions can do, such as `--verbose` or `--model`. For any other flag, such as `--settings`, Claude Code [refuses to start](/docs/en/errors#not-carried-over-to-the-sessions-remote-control-starts) and names the flag to remove.
 
@@ -46256,6 +46401,10 @@ Which commands get the carveout depends on the shell:
 * `shell: powershell`, when the PowerShell tool is enabled: a [different set](/docs/en/tools-reference#shell-selection-in-settings-hooks-and-skills) that includes `grep` and `git diff` but not `find` or `diff`
 
 With the default `bash` shell, append `|| true` to any other command you expect to exit non-zero. A check script that exits 1 when it finds problems is one example.
+
+#### Control characters in injected commands
+
+`No shell command in <name> was run` means one of the file's `!` commands contains a raw control character other than tab or newline, so none of them runs. See [how to find and remove the character](/docs/en/errors#no-shell-command-was-run).
 
 #### Permission checks on injected commands
 
@@ -50503,6 +50652,22 @@ If the session you opened the dialog from can't reload its plugins, the dialog o
 </Note>
 
 For more about the plugin system, see [Plugins](/docs/en/plugins/overview) and [Plugin marketplaces](/docs/en/plugins/overview).
+
+### Plugins that draw in the panel
+
+A plugin that contains a [mod](/docs/en/plugins/mods/overview) can draw in the chat panel. Drawing requires extension version 2.1.299 or later and a session that [fetches feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching). From such a plugin you can see:
+
+* A pane beside the conversation or above the prompt box
+* A toast or a status line above the prompt box
+* A message or a tool call drawn the plugin's own way
+
+When a plugin you installed adds or changes something in the panel, a label names it, in phrases such as these:
+
+* **From the token-chart plugin**: the plugin drew or printed this, or this card is the plugin asking you something
+* **Edited by the token-chart plugin**: the plugin changed something Claude Code draws, such as a tool call
+* **Prompt from the token-chart plugin**: the plugin sent this message on your behalf
+
+To stop a plugin from drawing, turn the plugin off in the [plugin dialog](#install-plugins).
 
 ## Automate browser tasks with Chrome
 
@@ -64368,7 +64533,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS` | Context size, in tokens, at which [idle compaction](/docs/en/settings-reference#idlecompaction) applies to a conversation (default: `200000`). Accepts a positive whole number, and anything else is ignored. Values below `100000` are raised to `100000`, the lowest threshold. Idle compaction is on by default for conversations that meet its conditions. To turn it off, set `idleCompaction` to `false`. Requires Claude Code v2.1.290 or later |
 | `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` | How many [subagents](/docs/en/sub-agents#concurrent-subagent-limit) can be running in one session before the Agent tool refuses to spawn another (default: 20). Accepts a positive whole number in plain digits; anything else is ignored, so the variable can adjust the cap but can't disable it. Requires Claude Code v2.1.217 or later |
 | `CLAUDE_CODE_MAX_CONTEXT_TOKENS` | Override the context window size Claude Code assumes for the active model. As of v2.1.193, how it applies depends on how Claude Code resolves the model ID; see [Correct the window for a gateway or custom model ID](/docs/en/model-config#correct-the-window-for-a-gateway-or-custom-model-id). Use this when routing to a model through `ANTHROPIC_BASE_URL` whose context window does not match the built-in size for its name |
-| `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` | Maximum length in characters of each MCP tool description and each MCP server's instructions that Claude Code sends to the model. The value you set replaces both [default limits](/docs/en/mcp#for-mcp-server-authors): 4096, and 16384 for the description of a tool that Claude loads through tool search. Claude Code truncates longer text. Accepts a positive whole number in plain digits. Anything else is ignored and the defaults apply. Requires Claude Code v2.1.280 or later |
+| `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` | Maximum length in characters of MCP tool descriptions and MCP server instructions that Claude Code sends to the model. The value you set replaces both [default limits](/docs/en/mcp#for-mcp-server-authors): 4096, and 16384 for the description of a tool that Claude loads through tool search. Accepts a positive whole number in plain digits. Anything else is ignored and the defaults apply. Requires Claude Code v2.1.280 or later |
 | `CLAUDE_CODE_MAX_OUTPUT_TOKENS` | Set the maximum number of output tokens for most requests. Defaults and caps vary by model; see [max output tokens](https://platform.claude.com/docs/en/about-claude/models/overview#latest-models-comparison). Claude Code lowers a value above a model's cap to the cap. For a model ID Claude Code can't resolve to a model it knows, the default is 32000 and the cap is 128000. Increasing this value reduces the effective context window available before [auto-compaction](/docs/en/costs#reduce-token-usage) triggers |
 | `CLAUDE_CODE_MAX_RETRIES` | Override the number of times to retry failed API requests (default: 10). Capped at 15 as of v2.1.186; as of v2.1.199, `CLAUDE_CODE_RETRY_WATCHDOG` raises the default and removes the cap. For unattended sessions that need to wait through longer outages, set `CLAUDE_CODE_RETRY_WATCHDOG` instead |
 | `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION` | Removed in v2.1.224 and now a no-op. Previously capped the total number of [subagents](/docs/en/sub-agents) Claude could spawn with the Agent tool in one session (default: 200); spawning past the cap failed with `Subagent spawn limit reached`. The [concurrent subagent limit](/docs/en/sub-agents#concurrent-subagent-limit) and the [depth limit](/docs/en/sub-agents#let-subagents-spawn-their-own-subagents) still apply |
@@ -64630,6 +64795,7 @@ With fetching off, you can't:
 * Run [`/skill-doctor`](/docs/en/skills#find-unused-skills) or open its report in the `/plugin` **Stats** tab
 * Sync the [skills](/docs/en/skills#where-synced-skills-load) and [plugins](/docs/en/plugins/loading#synced-plugins) enabled for your claude.ai account into your terminal sessions
 * Turn on the [You should know mod](/docs/en/interactive-mode#you-should-know-suggestions)
+* See what a [mod](/docs/en/plugins/mods/overview#where-mods-run) draws in the VS Code extension's chat panel; the mod's hooks still run
 * Use [the advisor tool](/docs/en/advisor#requirements)
 * Read or reply to [comments on an artifact](/docs/en/artifacts#collect-comments-on-an-artifact)
 * Have Claude read [another organization's public artifact](/docs/en/artifacts#read-an-artifact-shared-with-you)
@@ -82578,7 +82744,7 @@ Settings hooks, skills, status lines, and MCP servers work from outside Claude C
 * **Run your own code on a command**: a `/command` that runs your function at once, with no Claude turn, even while Claude is working. See [Add a command or a tool](/docs/en/plugins/mods/api#add-a-command-or-a-tool).
 * **Share data between hooks**: a mod's hooks share the variables in its file, so what one hook records, another can show. For example, one hook can count tool calls while another shows the count beside the spinner, or one can read each request's token usage while another charts it in a pane. See [React to events](/docs/en/plugins/mods/events).
 
-Mods work in the Claude Code CLI and in the Code tab of the Claude Desktop app. See [Where mods run](#where-mods-run) to understand how they behave elsewhere, such as in the VS Code extension, `claude -p`, and cloud sessions. If a settings hook, a skill, or an MCP server already does what you need, [compare them](#compare-mods-settings-hooks-skills-and-mcp-servers) before you write a mod. To manage mods for an organization, see [Manage mods for your organization](/docs/en/plugins/mods/admin).
+Mods work in the Claude Code CLI, the Code tab of the Claude Desktop app, and the VS Code extension. See [Where mods run](#where-mods-run) for how they behave elsewhere, such as in `claude -p` and cloud sessions. If a settings hook, a skill, or an MCP server already does what you need, [compare them](#compare-mods-settings-hooks-skills-and-mcp-servers) before you write a mod. To manage mods for an organization, see [Manage mods for your organization](/docs/en/plugins/mods/admin).
 
 ## Get a mod
 
@@ -82744,14 +82910,14 @@ For the code behind each choice, see [React to events](/docs/en/plugins/mods/eve
 
 ### Where mods run
 
-A mod's hooks run in every kind of session that loads the plugin, whichever provider serves the model, including Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry. Drawing is narrower: only the terminal and the Desktop app show a mod's panes, bands, and replaced rows. This table lists each place you might run Claude Code:
+A mod's hooks run in every kind of session that loads the plugin, whichever provider serves the model, including Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry. Drawing is narrower: what a mod draws appears in the terminal, the Desktop app, and the VS Code extension. This table lists each place you might run Claude Code:
 
 | Where you run Claude Code | Hooks run | What the mod draws appears |
 | :- | :- | :- |
 | `claude` in a terminal, including an editor's integrated terminal and the JetBrains plugin | Yes | Yes |
 | The Code tab of the Desktop app, except in a WSL session | Yes | Yes, except elements the [elements table](/docs/en/plugins/mods/reference#elements) marks terminal-only |
 | A [WSL session](/docs/en/desktop-wsl) in the Desktop app | No, because plugins aren't available in WSL sessions | No |
-| The VS Code extension's chat panel | Yes | No |
+| The VS Code extension's chat panel | Yes | Yes, with extension version 2.1.299 or later, in a session that [fetches feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching). The [render sites](/docs/en/plugins/mods/reference#render-sites) and [elements](/docs/en/plugins/mods/reference#elements) tables mark what the panel draws. |
 | `claude -p` and the [Agent SDK](/docs/en/agent-sdk/overview) | Yes | No |
 | [Remote Control](/docs/en/remote-control) from claude.ai or the mobile app | Yes, in the session on your machine | In the terminal on your machine |
 | A [cloud session](/docs/en/claude-code-on-the-web) | Yes, for a plugin that [reaches the cloud session](/docs/en/cloud-environments#what-carries-over-from-your-setup) | No |
