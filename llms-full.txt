@@ -2721,6 +2721,10 @@ This page is generated from the [CHANGELOG.md on GitHub](https://github.com/anth
 
 Run `claude --version` to check your installed version.
 
+**2.1.308**
+
+* Bug fixes and reliability improvements
+
 **2.1.307**
 
 **Added**
@@ -21179,6 +21183,8 @@ Match the message you see to a section below.
 | `(check the helper, then start a new task or chat)` / `(update it, then start a new task or chat)` | [Authentication](#mcp-credential-rejected-in-cowork) |
 | `MCP server "<name>" needs additional permissions (scope: "<scope>") — run /mcp to re-authenticate` | [Authentication](#mcp-server-needs-you-to-sign-in-again) |
 | `MCP server "<name>" requires re-authorization (token expired)` | [Authentication](#mcp-server-needs-you-to-sign-in-again) |
+| `Couldn't read the stored credentials for MCP server "<name>", so the request didn't run` | [Authentication](#couldnt-read-the-stored-credentials-for-mcp-server) |
+| `A request to MCP server "<name>" was sent without your stored credentials` | [Authentication](#couldnt-read-the-stored-credentials-for-mcp-server) |
 | `This server's URL is missing or not a valid URL, so sign-in can't start` | [Authentication](#mcp-server-url-is-missing-or-not-a-valid-url) |
 | `Issuer mismatch in authorization response (RFC 9207)` | [Authentication](#issuer-mismatch-in-authorization-response) |
 | `Refusing to send credentials to non-https token endpoint` / `<short-name> from the MCP SDK for <server-url>` | [Authentication](#refusing-to-send-credentials-to-non-https-token-endpoint) |
@@ -21216,6 +21222,7 @@ Match the message you see to a section below.
 | `N sessions ended while this machine was offline — the environment was cleaned up on the server and can't be resumed.` | [Network](#sessions-ended-while-this-machine-was-offline) |
 | `Couldn't share the transcript.` | [Network](#couldnt-share-the-transcript) |
 | `Couldn't send feedback` | [Network](#couldnt-send-feedback) |
+| `MCP server "<name>" connection timed out. Your computer went to sleep or its clock changed while connecting.` | [Network](#mcp-server-connection-timed-out-during-a-sleep-or-clock-change) |
 | `Prompt is too long` / `Input is too long for requested model` | [Request errors](#prompt-is-too-long) |
 | `Prompt is too long · automatic compaction failed:` | [Request errors](#prompt-is-too-long) |
 | `Prompt is too long · this conversation is a single exchange` / `A single-exchange conversation cannot be compacted` | [Request errors](#prompt-is-too-long) |
@@ -21381,6 +21388,7 @@ Match the message you see to a section below.
 | `Plugin "<plugin>" was not uninstalled: installed_plugins.json` | [Plugin troubleshooting](/docs/en/plugins/troubleshooting#installed-plugins-json-holds-a-record-this-version-cannot-read) |
 | `Plugin directory does not exist: <path>` | [Plugin troubleshooting](/docs/en/plugins/troubleshooting#plugin-directory-does-not-exist) |
 | `Error: No such tool available: <tool name>` | [Tool errors](#no-such-tool-available) |
+| `MCP server "<name>" connection closed before the tool call was answered` | [Tool errors](#connection-closed-before-the-tool-call-was-answered) |
 | `would be spawned with zero tools — refusing` | [Tool errors](#agent-would-be-spawned-with-zero-tools) |
 | `File is covered by a Read deny rule in your permission settings` | [Tool errors](#file-is-covered-by-a-read-deny-rule) |
 | `cannot contain null bytes (\0)` | [Tool errors](#path-cannot-contain-null-bytes) |
@@ -22649,6 +22657,43 @@ When the server's configuration sets neither [`oauth.scopes`](/docs/en/mcp#restr
 
 Before v2.1.274, this case showed the `needs you to sign in again` message, and before v2.1.273 it showed `requires re-authorization (token expired)` like the other cases.
 
+### Couldn't read the stored credentials for MCP server
+
+Claude Code keeps your sign-ins for OAuth [MCP servers](/docs/en/mcp) in a credential store. This message means Claude Code couldn't read that store, so a request to the server didn't run:
+
+```text theme={null}
+Couldn't read the stored credentials for MCP server "<name>", so the request didn't run. If your Mac's keychain is locked, unlock it, then try again.
+Couldn't read the stored credentials for MCP server "<name>", so the request didn't run. Try again.
+```
+
+Your stored sign-ins are unchanged: try again once the store can be read, and sign in again only if the server then asks you to.
+
+In a [`claude -p`](/docs/en/headless) or [Agent SDK](/docs/en/agent-sdk/overview) run on macOS, the keychain can become readable after a request has already gone out without the stored sign-in. That request fails with:
+
+```text theme={null}
+A request to MCP server "<name>" was sent without your stored credentials, so the server rejected it. The credentials are available now. Try again.
+```
+
+**What to do:**
+
+* If the message asks you to unlock your Mac's keychain, run [`claude doctor`](/docs/en/cli-reference#cli-commands) in the shell session you run Claude Code from, and check its report for a keychain warning:
+  * If the report lists a warning that starts with `macOS Keychain is not writable`, or your shell has no `claude` command, run this unlock command in that shell session:
+
+    ```bash theme={null}
+    security unlock-keychain ~/Library/Keychains/login.keychain-db
+    ```
+
+  * If the report lists no keychain warning, skip the unlock command
+
+* Try again where you saw the message:
+  * For `claude -p`, run the command again
+  * In an interactive session, reconnect the server from `/mcp` if it shows as failed there, then ask Claude to try again
+  * In an Agent SDK application that keeps running, call [`reconnectMcpServer()`](/docs/en/agent-sdk/typescript#methods) in TypeScript or [`ClaudeSDKClient.reconnect_mcp_server()`](/docs/en/agent-sdk/python#methods) in Python, or start a new session
+
+* If the server then reports that it needs authentication, Claude Code found no sign-in it can use for that server. Sign in interactively: run `/mcp` in a Claude Code session, or [`claude mcp login <name>`](/docs/en/mcp#authenticate-from-the-command-line) in your shell. In an Agent SDK application, see [OAuth2 authentication in the Agent SDK](/docs/en/agent-sdk/mcp#oauth2-authentication).
+
+Before v2.1.307, a `claude -p` or Agent SDK run on a Mac with a locked login keychain reported the server as needing authentication instead of showing either message.
+
 ### MCP server URL is missing or not a valid URL
 
 Claude Code refused to start an OAuth sign-in for a remote MCP server because the server's configured `url` doesn't parse as a URL. Unless Claude Code has a more specific configuration problem to report for the server, running [`claude mcp login <name>`](/docs/en/mcp#authenticate-from-the-command-line) in your shell prints the refusal as:
@@ -23213,6 +23258,27 @@ In the [feedback drafts queue](/docs/en/tools-reference#sendfeedback-tool-behavi
 * If it keeps failing, file the report at [github.com/anthropics/claude-code/issues](https://github.com/anthropics/claude-code/issues), as the message says
 
 Before v2.1.281, every send failed with this message once a Remote Control **Stop** or an urgent cross-session message had arrived while the dialog was open. On those versions, close the dialog, reopen it, and send again.
+
+### MCP server connection timed out during a sleep or clock change
+
+This message means a connection to an [MCP server](/docs/en/mcp) timed out, and Claude Code found that your system clock jumped forward during the attempt:
+
+```text theme={null}
+MCP server "<name>" connection timed out. Your computer went to sleep or its clock changed while connecting.
+```
+
+Claude Code can't tell whether your computer slept or its clock was set forward, so the message names both.
+
+**What to do:**
+
+Connect to the server again, and keep your computer awake until the attempt finishes. If the server connects, you have nothing to fix.
+
+* **In an interactive session**: run `/mcp`, select the server, and select **Reconnect**
+* **In your shell**: run the [`claude -p`](/docs/en/headless), [`claude mcp list`](/docs/en/mcp#managing-your-servers), or `claude mcp get` command again. If the server then fails with a message that starts `Skipping connection (recent failure cached`, wait 15 minutes and run the command again.
+* **In an [Agent SDK](/docs/en/agent-sdk/overview) application**: call [`reconnectMcpServer()`](/docs/en/agent-sdk/typescript#methods) in TypeScript or [`ClaudeSDKClient.reconnect_mcp_server()`](/docs/en/agent-sdk/python#methods) in Python
+* **If the server fails again**: if the message differs from this one, see [what to check when an MCP server doesn't connect](/docs/en/mcp-quickstart#troubleshooting). If this message comes back although your computer stayed awake and nothing changed its clock, see [Report an error](#report-an-error).
+
+Before v2.1.307, Claude Code showed a timeout message such as `MCP server "<name>" connection timed out after <N>ms` instead of this one.
 
 ## Request errors
 
@@ -25348,6 +25414,23 @@ A call whose tool name Claude Code [cut to 200 characters](#tool-use-name-over-2
 
 * If it happens once, you don't need to do anything. Claude reads the error and the turn continues.
 * If calls to an MCP server's tools keep failing with this error, run `/mcp` in the session or `claude mcp list` in your shell to check the server's [status](/docs/en/mcp#server-status), and reconnect a failed server from `/mcp`. In the Agent SDK, see [Error handling](/docs/en/agent-sdk/mcp#error-handling).
+
+### MCP server connection closed before the tool call was answered
+
+A tool call to an HTTP [MCP server](/docs/en/mcp) or a [claude.ai connector](/docs/en/mcp#use-mcp-servers-from-claude-ai) lost its connection before the server answered, so Claude Code can't tell whether the tool ran:
+
+```text theme={null}
+MCP server "<name>" connection closed before the tool call was answered. The tool may have run: check whether it did before running it again.
+```
+
+Repeating the call could repeat the tool's action, such as creating a second issue. Claude Code therefore repeats the call on its own, once, when the server marks the tool as safe to repeat.
+
+**What to do:**
+
+* Check in the service the tool acts on whether the action happened, for example whether the issue or record it was meant to create is there
+* If the action happened, don't run the tool again. Claude received this message in place of the tool's result, so tell Claude the outcome.
+* If the action didn't happen, ask Claude to run the tool again. You don't need to reconnect the server first, because Claude Code connects to it again for the next call to one of its tools. If that connection fails too, see [Mid-session drops of a remote server](/docs/en/mcp#mid-session-drops-of-a-remote-server).
+* If you build the server and the tool is safe to call twice, [mark it as safe to repeat](/docs/en/mcp#tool-calls-pending-when-a-connection-closes) so that Claude Code can repeat a lost call
 
 ### Agent would be spawned with zero tools
 
@@ -32127,7 +32210,7 @@ Claude Code marks a remote server as needing authentication when the server resp
 * For a server whose `Authorization` header you configured, in `headers` or through a [`headersHelper`](#use-dynamic-headers-for-custom-authentication), a `401` or `403` while connecting doesn't flag the server, because the credential to fix is the one you configured. Claude Code reports the connection as failed instead. If you set that header from a `${VAR}` reference, check whether that variable is one Claude Code [reads as empty](#credential-variables-that-read-as-empty).
 * For a connector [delivered to a cloud session](#how-connectors-reach-claude-code), Claude Code doesn't run a sign-in flow, because the session's proxy authenticates to the connector with the authorization you granted in claude.ai. When a connector there needs authorizing again, reconnect it at [claude.ai/customize/connectors](https://claude.ai/customize/connectors) rather than from the session.
 
-When a request to an OAuth server you already signed in to returns `401 Unauthorized`, Claude Code refreshes the stored token, reconnects, and retries the request once. It flags the server in `/mcp` only if that retry also fails.
+When an OAuth server you already signed in to rejects your stored token with `401 Unauthorized`, Claude Code refreshes the token, reconnects, and retries the request once. It flags the server in `/mcp` only if that retry also fails. In a `claude -p` or Agent SDK run on macOS, a request that Claude Code sent while it couldn't read your stored token fails with a [stored-credentials error](/docs/en/errors#couldnt-read-the-stored-credentials-for-mcp-server) instead.
 
 When the server rejects the stored refresh token, Claude Code immediately shows a notice pointing at `/mcp`. Open `/mcp` and select **Re-authenticate** on the server to sign in again before the next tool call fails.
 
@@ -32766,6 +32849,26 @@ The following `tools/list` entry marks one tool as always requiring approval.
 Some surfaces, such as [Remote Control](/docs/en/remote-control) and applications built on the [Agent SDK](/docs/en/agent-sdk/overview), normally let you approve tool calls with one tap. For a tool marked with this annotation, Claude Code withholds the one-tap action and shows the tool's full permission prompt instead, so approval still comes from a person answering the prompt rather than a tap.
 
 Claude Code withholds one-tap approval the same way for any permission request that only the terminal dialog can render in full, such as one that carries a safety warning or an always-allow option the remote surface can't show. You answer that request in the terminal dialog rather than from Remote Control.
+
+## Mark tools that are safe to call twice
+
+If you build an MCP server, mark the tools that are safe to call twice so Claude Code can repeat a call that was pending when a connection closed. Claude Code can repeat such a call to an HTTP server or a [claude.ai connector](#use-mcp-servers-from-claude-ai) once, on a new connection. A call Claude Code doesn't repeat can fail with [`connection closed before the tool call was answered`](/docs/en/errors#connection-closed-before-the-tool-call-was-answered).
+
+To mark a tool, set one of these `annotations` to `true` in its `tools/list` entry:
+
+* **`idempotentHint`**: the tool can change something, and calling it again with the same arguments is safe
+* **`readOnlyHint`**: the tool changes nothing. Claude Code also runs the tool's calls in parallel with other read-only calls.
+
+For example, these fields in a `tools/list` entry mark the `set_issue_status` tool as safe to repeat:
+
+```json theme={null}
+{
+  "name": "set_issue_status",
+  "annotations": {
+    "idempotentHint": true
+  }
+}
+```
 
 ## Respond to MCP elicitation requests
 
@@ -49075,19 +49178,11 @@ When you select and copy text that includes a typeset formula, you get the formu
 
 Click the **Session history** button at the top of the Claude Code panel to access your conversation history. You can search by keyword or browse by time.
 
-Click any conversation to resume it. If the conversation is already open in another tab of the current window, clicking it switches to that tab. If the conversation opens with no messages showing, see [why a resumed conversation is blank at first](#a-resumed-conversation-is-blank-at-first). For more on resuming sessions, see [Manage sessions](/docs/en/sessions).
+Click any conversation to resume it. If the conversation is already open in another tab of the current window, clicking it switches to that tab. When a notice says the conversation is still open somewhere else, see [how to continue it in this window](#the-conversation-is-still-open-somewhere-else). If the conversation opens with no messages showing, see [why a resumed conversation is blank at first](#a-resumed-conversation-is-blank-at-first). For more on resuming sessions, see [Manage sessions](/docs/en/sessions).
 
 * **Session titles**: new sessions receive AI-generated titles based on your first message.
 * **Rename and archive**: hover over a session to reveal these actions. Rename to give it a descriptive title, or archive to move it to the **Archived sessions** group at the bottom of the list.
 * **Conversations missing with [`claudeProcessWrapper`](#extension-settings) set**: update the extension to version 2.1.304 or later. The list then includes the conversations that were missing, along with sessions that `claude -p` or the [Agent SDK](/docs/en/agent-sdk/overview) started in this workspace.
-
-If the conversation is open in another Claude Code process, such as `claude` in a terminal or another VS Code window, this notice appears in place of the prompt box:
-
-```text theme={null}
-This conversation is still open somewhere else. Using it in two places at once can mix up its messages.
-```
-
-To continue here, close the conversation in the other place and then click **Open here anyway**. If you click without closing it, the conversation is open in both places. With [`claudeProcessWrapper`](#extension-settings) set, the extension skips this check and opens the conversation directly.
 
 By default, a session with no activity for 14 days moves to **Archived sessions** automatically, unless it is open, unread, or in a [group](#organize-sessions-into-groups). Automatic archiving requires Claude Code v2.1.265 or later. To change the period or turn it off, open the [Archive Inactive Sessions setting](vscode://settings/claudeCode.archiveInactiveSessions) and select a number of days or **Never**.
 
@@ -49103,6 +49198,21 @@ When the conversation you resume ended in plan mode, Claude Code restores plan m
 * The extension [chooses the starting permission mode](/docs/en/permission-modes#switch-permission-modes) from `claudeCode.initialPermissionMode` or a pick that carries over from an earlier conversation
 * You have `claudeCode.claudeProcessWrapper` configured
 * A [deny rule](/docs/en/permissions#manage-permissions) removes the [`ExitPlanMode`](/docs/en/tools-reference) tool
+
+#### The conversation is still open somewhere else
+
+To continue in this window when a notice says the conversation is still open somewhere else, click **Open here anyway** after the step for your case:
+
+* **You have nothing else open**: a Claude process from before the extension restarted may still have the conversation open. That process usually ends on its own within about 10 minutes, so wait that long and then click. If you click before it ends, the conversation is open in two places until it does.
+* **You have the conversation open somewhere else**: close it there first, for example by exiting `claude` in a terminal or closing its tab in another VS Code window
+
+When the conversation is still open in another Claude Code process, this notice appears in place of the prompt box:
+
+```text theme={null}
+This conversation is still open somewhere else. Using it in two places at once can mix up its messages. If the extension restarted recently, a Claude process from before the restart may still be finishing. It usually ends on its own within about 10 minutes. This notice stays until you choose Open here anyway.
+```
+
+With [`claudeProcessWrapper`](#extension-settings) set, the extension skips this check and opens the conversation directly.
 
 ### Resume cloud sessions from claude.ai
 
@@ -49186,7 +49296,7 @@ After you run **Developer: Reload Window** or restart VS Code, check where the c
 * **Editor tab**: the conversation comes back with its tab.
 * **Sidebar**: the conversation comes back if you sent a message or Claude responded in it within the last 10 minutes. If it doesn't come back, resume the conversation from [Session history](#resume-past-conversations).
 
-If another Claude Code process still has the conversation open, you're asked before it opens here, with the same **Open here anyway** notice as when you [resume it from session history](#resume-past-conversations). If the messages stay blank at first, see [why they're blank and when they appear](#a-resumed-conversation-is-blank-at-first).
+If a notice in place of the prompt box says the conversation is still open somewhere else, see [how to continue the conversation here](#the-conversation-is-still-open-somewhere-else). If the messages stay blank at first, see [why they're blank and when they appear](#a-resumed-conversation-is-blank-at-first).
 
 #### Interrupted steps after a reload
 
@@ -49711,6 +49821,7 @@ Sign-in, network, and launch errors have their own entries on the install troubl
 | You're asked to sign in again after you already signed in | [Not logged in or token expired](/docs/en/troubleshoot-install#not-logged-in-or-token-expired) |
 | Cloud provider credentials work in your terminal but not in the extension | [Bedrock, Agent Platform, or Foundry credentials not loading](/docs/en/troubleshoot-install#bedrock-agent-platform-or-foundry-credentials-not-loading) |
 | `SSL certificate verification failed` or `Self-signed certificate detected` | [SSL certificate errors](/docs/en/errors#ssl-certificate-errors) |
+| `Dictation error: WebSocket error:` followed by a certificate error such as `unable to get local issuer certificate`, or `Remote server is not connected` on the Web tab | [Dictation or the Web tab fails behind a TLS-inspecting proxy](#dictation-or-the-web-tab-fails-behind-a-tls-inspecting-proxy) |
 | `Claude Code process exited with code 1`, or another code | [Claude Code process exited with code N](/docs/en/errors#claude-code-process-exited-with-code-n) |
 | `Could not locate the Claude CLI on PATH` | [Could not locate the Claude CLI on PATH](/docs/en/errors#could-not-locate-the-claude-cli-on-path) |
 | `The connection to Claude Code ended before this message completed` | [The connection to Claude Code ended before this message completed](/docs/en/errors#the-connection-to-claude-code-ended-before-this-message-completed) |
@@ -49771,6 +49882,36 @@ If one formula shows as written while others near it are typeset, check it for t
 * **The formula contains an unescaped `%`**: ask Claude to rewrite it with `\%` for a percent sign.
 * **The formula is too large**: a formula longer than 8,192 characters, or one whose typeset output would be far larger than its TeX source, shows as written. Ask Claude to split it into smaller formulas or to write it more compactly.
 * **The formula follows a large amount of math**: within one block of text in a response, the panel typesets formulas in order up to a limit. A later formula that would go past the limit shows as written. Ask Claude to send the formula you need again by itself.
+
+### Dictation or the Web tab fails behind a TLS-inspecting proxy
+
+When dictation or the Web tab fails with a certificate error such as `unable to get local issuer certificate`, set [`NODE_EXTRA_CA_CERTS`](/docs/en/network-config#custom-ca-certificates) in the `env` block of `~/.claude/settings.json`. Set it to the path of a PEM file with your proxy's root CA certificate, which your IT team can give you. That error text is on the microphone button or in the extension's logs:
+
+* **Dictation**: the microphone button shows the error text after `Dictation error: WebSocket error:`.
+* **Web tab**: the tab that lists [cloud sessions](#resume-cloud-sessions-from-claude-ai) shows `Remote server is not connected` without the error text. To read it in the logs:
+  1. Run **Claude Code: Show Logs** from the [Command Palette](#vs-code-commands-and-shortcuts) to open the `Claude VSCode` output channel.
+  2. Click **Reconnect** on the tab and wait until it stops showing `Connecting…`.
+  3. Search the channel for `Error fetching remote sessions:` or `Failed to fetch organization UUID:`, then read the error text after that prefix on the newest matching line.
+
+This fix requires extension version 2.1.307 or later, so update the extension first. Then set `NODE_EXTRA_CA_CERTS` to the certificate file's full path, written without `~`. For a Windows path, write each backslash twice in `settings.json`, as in `C:\\certs\\example-ca.pem`.
+
+This example names a certificate file at the Linux or macOS path `/etc/ssl/certs/example-ca.pem`:
+
+```json ~/.claude/settings.json theme={null}
+{
+  "env": {
+    "NODE_EXTRA_CA_CERTS": "/etc/ssl/certs/example-ca.pem"
+  }
+}
+```
+
+Save `settings.json`, then start a recording or click **Reconnect** again. If the error comes back, open the output channel with **Claude Code: Show Logs** and search it for `use the CA certificates file`. Such a warning gives the reason the extension can't use your file and says where it read the path. Then find each place you set `NODE_EXTRA_CA_CERTS` in this table and do what its row says:
+
+| Where you set it | What to do |
+| - | - |
+| The environment VS Code was started with | A value set here takes precedence over one in `~/.claude/settings.json`, even when the file it names can't be used. Correct or remove it, then restart VS Code |
+| `env` in `~/.claude/settings.json` | Correct the value or the file it names, then start a recording or click **Reconnect** again |
+| VS Code's [`claudeCode.environmentVariables`](#extension-settings) setting, `~/.claude.json`, a project's `.claude/settings.json` or `.claude/settings.local.json`, or managed settings | A value set here doesn't apply to dictation or the Web tab. Set the variable in `env` in `~/.claude/settings.json` as well |
 
 ### Claude Code never responds
 
@@ -49888,7 +50029,7 @@ Go to [claude.ai/code](https://claude.ai/code) and sign in with your claude.ai a
 
 **2. Sign in with GitHub**
 
-After you sign in, claude.ai/code prompts you to connect GitHub. Follow the prompt, and claude.ai/code sends you to GitHub's authorization page. Approve the authorization request, and GitHub returns you to claude.ai/code. Cloud sessions work with existing GitHub repositories. To start a new project, [create an empty repository on GitHub](https://github.com/new) first.
+After you sign in, claude.ai/code prompts you to connect GitHub. Follow the prompt, and claude.ai/code sends you to GitHub's authorization page. Approve the authorization request, and GitHub returns you to claude.ai/code. Cloud sessions work with existing GitHub repositories. To start a new project, [create a repository with a README on GitHub](https://github.com/new) first.
 
 With this connection, a session can clone any public repository, but can work in a private repository only when the Claude GitHub App is installed on it. [Install the Claude GitHub App](https://github.com/apps/claude/installations/new) on each GitHub account or organization whose private repositories you want to use. On a GitHub organization, an organization owner may need to approve the installation. Installing it also enables [Auto-fix](/docs/en/claude-code-on-the-web#auto-fix-pull-requests), which lets Claude respond to CI failures and review comments on pull requests in those repositories.
 
@@ -61694,7 +61835,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `DISABLE_ERROR_REPORTING` | Set to any non-empty value, such as `1`, to opt out of error reporting. **Setting it to `0` or `false` still opts out**, unlike most on/off variables; unset the variable to turn error reporting back on |
 | `DISABLE_EXTRA_USAGE_COMMAND` | Set to `1` to hide the `/usage-credits` command that lets users purchase additional usage beyond rate limits |
 | `DISABLE_FEEDBACK_COMMAND` | Set to `1` to disable the `/feedback` command and [Claude-drafted feedback](/docs/en/tools-reference#sendfeedback-tool-behavior). Also disables `/bug` and `/share`, which report through the same path; before v2.1.212 they were aliases of `/feedback`, so the command was disabled under every name. The older name `DISABLE_BUG_COMMAND` is also accepted |
-| `DISABLE_GROWTHBOOK` | Set to `1` or `true` to disable GrowthBook feature-flag fetching and use code defaults for every flag. This makes [Remote Control](/docs/en/remote-control#requirements) and the other [features that need feature-flag fetching](#features-that-need-feature-flag-fetching) unavailable. Setting it to `0` or `false` leaves fetching on. Telemetry event logging stays on unless `DISABLE_TELEMETRY` is also set |
+| `DISABLE_GROWTHBOOK` | Set to `1` or `true` to disable feature-flag fetching and use code defaults for every flag. This makes [Remote Control](/docs/en/remote-control#requirements) and the other [features that need feature-flag fetching](#features-that-need-feature-flag-fetching) unavailable. Setting it to `0` or `false` leaves fetching on. Telemetry event logging stays on unless `DISABLE_TELEMETRY` is also set |
 | `DISABLE_INSTALLATION_CHECKS` | Set to `1` to disable installation warnings. Use only when manually managing the installation location, as this can mask issues with standard installations |
 | `DISABLE_INSTALL_GITHUB_APP_COMMAND` | Set to `1` to hide the `/install-github-app` command. Already hidden when using third-party providers (Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry) |
 | `DISABLE_INTERLEAVED_THINKING` | Set to `1` to prevent sending the interleaved-thinking beta header. Useful when your LLM gateway or provider does not support [interleaved thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking#interleaved-thinking) |
@@ -70896,9 +71037,9 @@ The denylist can further filter the servers in `managed-mcp.json`:
 * `deniedMcpServers` applies to managed servers too, so a managed server that matches an entry won't load.
 * A user's own `deniedMcpServers` merges in from their settings, so users can block a managed server for themselves.
 
-`allowedMcpServers` doesn't apply to the servers in `managed-mcp.json`, with one exception: Claude Code still checks a server whose definition uses [`${VAR}` expansion](/docs/en/mcp#environment-variable-expansion-in-mcp-json) against the allowlist, because that server's effective configuration comes from each user's environment rather than from the file alone. Before v2.1.259, every managed server had to pass the allowlist whenever one was set. See [How a server is evaluated](#how-a-server-is-evaluated) for which fields trigger the `${VAR}` check and the full order of checks.
+The servers in `managed-mcp.json` need no `allowedMcpServers` entry, with one exception: Claude Code checks a server against the allowlist when it uses [`${VAR}` expansion](/docs/en/mcp#environment-variable-expansion-in-mcp-json) outside `env`. Before v2.1.305, it also checked a server that used `${VAR}` expansion only in `env`, and before v2.1.259, every managed server whenever an allowlist was set. See [How a server is evaluated](#how-a-server-is-evaluated) for which fields trigger the `${VAR}` check and the full order of checks.
 
-If you used `allowedMcpServers` to keep some of your own `managed-mcp.json` servers from loading, those servers start loading on each user's first launch of v2.1.259 or later unless they use `${VAR}` expansion, with no prompt or notice: only `deniedMcpServers` still subtracts from those servers. Add denylist entries for them, or deploy a separate `managed-mcp.json` per group, before your users upgrade.
+If you used `allowedMcpServers` to keep some of your `managed-mcp.json` servers from loading, add `deniedMcpServers` entries for them, or deploy a separate `managed-mcp.json` per group, before your users upgrade. Unless they use `${VAR}` expansion outside `env`, these servers start loading on each user's first launch of a version that doesn't check them, with no prompt or notice.
 
 ### Validate the configuration
 
@@ -71149,11 +71290,11 @@ Before loading a server, including one from `managed-mcp.json`, Claude Code runs
 
 Three groups of servers skip the allowlist check, in addition to the in-process `type: "sdk"` servers that skip [all three checks](#how-a-server-is-evaluated):
 
-* The organization's own servers: every `managedMcpServers` entry, and any `managed-mcp.json` entry whose values use no `${VAR}` expansion.
+* The organization's own servers: every `managedMcpServers` entry, and any `managed-mcp.json` entry whose values use no `${VAR}` expansion outside `env`.
 * Built-in servers, such as Claude in Chrome, the `ide` server Claude Code connects to in a running VS Code or JetBrains IDE, and servers the CLI itself configures.
 * A [Claude Tag](/docs/en/claude-tag) session's Slack tools: the servers it uses to read the thread and post its replies load without an allowlist entry.
 
-A `managed-mcp.json` server that uses `${VAR}` expansion in its command, arguments, `env`, URL, or headers is still checked. Claude Code also checks every server a user, a plugin, or claude.ai adds, and every server a user passes with `--mcp-config`.
+A `managed-mcp.json` server that uses `${VAR}` expansion in its command, arguments, URL, or headers is still checked. Claude Code also checks every server a user, a plugin, or claude.ai adds, and every server a user passes with `--mcp-config`. For the versions that changed which `managed-mcp.json` servers are checked, and how to keep one from loading, see [How allowlists and denylists apply to the managed set](#how-allowlists-and-denylists-apply-to-the-managed-set).
 
 ### Example configuration
 
@@ -73604,6 +73745,8 @@ Keep these constraints in mind when you configure telemetry for cloud sessions:
 
 By default, metrics and events from a cloud session carry the [standard attributes](#standard-attributes), including `session.id`, `ccr.session.id`, and `organization.id`, so you can filter by session or organization without extra configuration. The `ccr.session.id` value is the session's `CLAUDE_CODE_REMOTE_SESSION_ID`. To turn it into the session's transcript URL, see [Link output back to the session](/docs/en/cloud-environments#link-output-back-to-the-session).
 
+To tell cloud sessions apart, group or filter on `ccr.session.id`, not `session.id`.
+
 To attribute telemetry in more detail, use these options:
 
 * **Identify Claude Tag sessions**: set `OTEL_METRICS_INCLUDE_ENTRYPOINT=true`, as described under [Metrics cardinality control](#metrics-cardinality-control). Metrics then carry `app.entrypoint`, whose value is `claude-in-slack` for Claude Tag sessions.
@@ -73619,7 +73762,7 @@ All metrics and events share these standard attributes:
 
 | Attribute | Description | Controlled By |
 | - | - | - |
-| `session.id` | Unique session identifier | `OTEL_METRICS_INCLUDE_SESSION_ID` (default: true) |
+| `session.id` | Claude Code's own session ID, which `/clear` replaces | `OTEL_METRICS_INCLUDE_SESSION_ID` (default: true) |
 | `ccr.session.id` | Cloud session identifier, the value of `CLAUDE_CODE_REMOTE_SESSION_ID`, on sessions that run in a [cloud environment](/docs/en/cloud-environments) | `OTEL_METRICS_INCLUDE_SESSION_ID` (default: true) |
 | `app.version` | Current Claude Code version | `OTEL_METRICS_INCLUDE_VERSION` (default: false) |
 | `app.entrypoint` | How the session was launched, such as `cli`, `sdk-cli`, `sdk-ts`, `sdk-py`, `claude-vscode`, or `claude-in-slack` for Claude Tag sessions | `OTEL_METRICS_INCLUDE_ENTRYPOINT` (default: false) |
@@ -76505,6 +76648,8 @@ Claude Code parses the PowerShell AST and checks each command in a compound comm
 
 To block Claude's file tools from reading a file or directory, add a `Read` deny rule for its path, such as `Read(./.env)` or `Read(./secrets/**)`; [Exclude sensitive files](/docs/en/settings-reference#exclude-sensitive-files) has a paste-ready example. If your project has a `.claudeignore` file, it has no effect, so move its entries into `Read` deny rules.
 
+#### What `Read` and `Edit` rules cover
+
 `Edit` rules apply to all built-in tools that edit files. Claude makes a best-effort attempt to apply `Read` rules to all built-in tools that read files like Grep and Glob, to `@file` mentions in your prompts, and to the selection and open-file context that a connected [IDE](/docs/en/vs-code#the-built-in-ide-mcp-server) shares with Claude.
 
 A `Read(path)` deny rule also applies to image paths you paste into a prompt and directories you @-mention:
@@ -76516,13 +76661,19 @@ Claude Code checks pasted image paths and directory listings in v2.1.290 and lat
 
 A `Read` deny rule also blocks the [Edit and Write tools](/docs/en/errors#file-is-covered-by-a-read-deny-rule) on the same path, including creating a new file there. NotebookEdit isn't covered, so add an `Edit` deny rule for paths no tool may change. For the Write tool, the check requires Claude Code v2.1.228 or later.
 
-Claude Code checks file permissions against `Edit(path)` and `Read(path)` rules only. If you write a path rule for `Write`, `NotebookEdit`, `Glob`, or the legacy `MultiEdit` tool instead, Claude Code accepts the rule but never consults it, and [warns at startup](/docs/en/errors#is-not-matched-by-file-permission-checks), except for a `Glob` rule passed in `--allowedTools`. Use `Edit(docs/**)` in place of `Write(docs/**)`, `NotebookEdit(docs/**)`, or `MultiEdit(docs/**)`, and `Read(docs/**)` in place of `Glob(docs/**)`. Claude Code doesn't warn about a tool-name rule with no path, such as a deny rule for `Write`; it matches that rule at the tool level everywhere.
-
 > [!WARNING]
 >
 > Read and Edit deny rules apply to Claude's built-in file tools, to file commands Claude Code recognizes in Bash, such as `cat`, `head`, `tail`, `sed`, and `tee`, and to the targets of Bash [redirections](#redirections) such as `> file` and `< file`. They don't apply to a command that reads files without naming them, such as `grep -r pattern .` run from the directory that holds the file, or to arbitrary subprocesses that read or write files indirectly, like a Python or Node script that opens files itself. For OS-level enforcement that blocks all processes from accessing a path, [enable the sandbox](/docs/en/sandboxing).
 
-Read and Edit rules both use [gitignore](https://git-scm.com/docs/gitignore) pattern syntax with four distinct pattern types; for single-segment directory patterns, the matching depth also depends on the rule type, described later in this section:
+#### `Write(path)`, `NotebookEdit(path)`, and `Glob(path)` rules never match
+
+Claude Code checks file permissions against `Edit(path)` and `Read(path)` rules only. If you write a path rule for `Write`, `NotebookEdit`, `Glob`, or legacy `MultiEdit`, Claude Code accepts the rule but never matches a read or edit against it.
+
+Use `Edit(docs/**)` in place of `Write(docs/**)`, `NotebookEdit(docs/**)`, or `MultiEdit(docs/**)`, and `Read(docs/**)` in place of `Glob(docs/**)`. To match every use of the Write, NotebookEdit, or Glob tool regardless of path, write only the tool name.
+
+#### How path patterns match
+
+Read and Edit rules both use [gitignore](https://git-scm.com/docs/gitignore) pattern syntax with four distinct pattern types:
 
 | Pattern | Meaning | Example | Matches |
 | - | - | - | - |
@@ -76534,6 +76685,8 @@ Read and Edit rules both use [gitignore](https://git-scm.com/docs/gitignore) pat
 > [!WARNING]
 >
 > A pattern like `/Users/alice/file` isn't an absolute path. The single leading slash anchors at the settings source, not the filesystem root. Use `//Users/alice/file` for absolute paths.
+
+##### Where a pattern anchors
 
 A `/path` pattern anchors at a directory associated with the settings source that defines it, so the same rule matches different locations depending on where you put it:
 
@@ -76559,6 +76712,8 @@ Examples:
 * `Read(~/.zshrc)`: reads your home directory's `.zshrc`
 * `Edit(//tmp/scratch.txt)`: edits the absolute path `/tmp/scratch.txt`
 * `Read(src/**)`: as an allow rule, reads from `<current-directory>/src/` only; as a deny or ask rule, matches a `src` directory at any depth under the current directory
+
+##### How deep a pattern matches
 
 A rule only matches files under its anchor; within that bound, matching depth depends on the pattern shape and, for single-segment directory patterns, the rule type, described below. Bare filenames follow gitignore semantics and match at any depth, so `Read(.env)` and `Read(**/.env)` are equivalent:
 
@@ -76596,6 +76751,8 @@ The following example shows each pattern shape against a project with a top-leve
 > [!NOTE]
 >
 > In gitignore patterns, `*` matches within a single path segment and can appear at any position in the pattern, while `**` matches across directories.
+
+#### Special characters and `!` negation
 
 When you approve a file path with "Yes, and don't ask again", Claude Code escapes gitignore pattern characters in that path, such as `[`, `]`, and `*`, so the generated rule matches only the literal path you approved. Rules you write yourself aren't escaped.
 
@@ -79891,7 +80048,9 @@ Anthropic's directory reads the `icon`, `documentationUrl`, `supportUrl`, `priva
 
 Set `icon` to the path of an image file inside the plugin, such as `./logo.png`, and each of the four URL fields to an `https://` URL.
 
-`claude plugin validate` accepts these fields without a warning on Claude Code v2.1.281 or later. Earlier versions print an `Unknown field` warning for each one, so a `--strict` run fails on those versions.
+> [!NOTE]
+>
+> `claude plugin validate` doesn't report these fields in `plugin.json` as unknown on Claude Code v2.1.281 or later. Earlier versions print an `Unknown field` warning for each one, so a `--strict` run fails on those versions.
 
 ### `defaultEnabled`
 
@@ -84921,7 +85080,7 @@ The runner sets the following in the wrapper's environment:
 | `CLAUDE_CONFIG_DIR` | Per-session Claude config directory, written at session start from the snapshot of the runner host's config that the runner captures at startup; see [Permissions and tool approval](#permissions-and-tool-approval). Writes here are isolated to this session. The directory stays under `<base-dir>/_sessions/` after the session ends unless you start the runner with [`--remove-session-state`](/docs/en/self-hosted-environments-reference#runner-cli-flags); see [Reuse a pre-warmed checkout](/docs/en/self-hosted-environments-deploy#reuse-a-pre-warmed-checkout). |
 | `CLAUDE_CODE_REMOTE_MCP_CONFIG` | Path to a file in `CLAUDE_CONFIG_DIR` holding the MCP server definitions that Anthropic's control plane delivered for this session. If your wrapper rebuilds the child's environment, carry this variable over. Without it, when the control plane updates the delivered servers, the child shuts down any stdio, HTTP, or SSE server your wrapper adds with [`--mcp-config`](/docs/en/cli-reference#cli-flags) that isn't in the update. Requires Claude Code v2.1.299 or later. |
 | `ANTHROPIC_BASE_URL` | The API base URL the child will use, delivered by the control plane per session and normally `https://api.anthropic.com`. Don't override it: the session's inference credential is an Anthropic-issued OAuth token that other providers don't accept. |
-| `CLAUDE_CODE_OAUTH_TOKEN` | The short-lived OAuth access token the child uses for model inference, scoped to model inference and file upload only, with a lifetime of about 30 minutes. The runner re-mints it before expiry and delivers the rotation over the child's stdin, so a wrapper that doesn't [keep stdin attached](#keep-stdin-and-file-descriptor-3-attached) sees only the initial value. Don't rely on your organization's IP allowlist to bound this token's use: treat it as a bearer credential that stays usable for roughly 30 minutes if it leaks, and don't log it, write it to disk, or forward it outside the session container. |
+| `CLAUDE_CODE_OAUTH_TOKEN` | The short-lived OAuth access token the child uses for model inference, with a lifetime of about 30 minutes. The runner re-mints it before expiry and delivers the rotation over the child's stdin, so a wrapper that doesn't [keep stdin attached](#keep-stdin-and-file-descriptor-3-attached) sees only the initial value. Don't rely on your organization's IP allowlist to bound this token's use: treat it as a bearer credential that stays usable for roughly 30 minutes if it leaks, and don't log it, write it to disk, or forward it outside the session container. |
 
 The wrapper also inherits the rest of the child's managed environment, including any server-provided environment variables. `exec` propagates all of it automatically; if your wrapper spawns the child another way, forward the full environment.
 
@@ -85029,7 +85188,9 @@ The hook fails when it exits non-zero, or exits 0 without leaving a usable check
 * **A repository the session pushes results to**: the runner fails the session, and on a non-zero exit surfaces the tail of the script's stderr to the user. Write the reason to stderr as one short line, write it last, and then exit non-zero. Don't print secrets to stderr, and remove `set -x` before you deploy the hook.
 
   If git's `couldn't find remote ref` appears in roughly the last 4 KB of the hook's stderr, the runner reports a deleted branch instead. The session's error message then says the branch no longer exists on the remote and asks the user to restore it. If that branch exists, see [A session fails with `no longer exists on the remote` or `couldn't find remote ref`](/docs/en/self-hosted-environments-deploy#no-longer-exists-on-the-remote).
-* **A repository the session only reads from**, such as a repository added to a running session: the runner logs a `[runner:warn]` line with the failure detail, posts a `Skipped` step to the session, removes whatever the hook left at the checkout path, and continues with the remaining repositories. If skipping leaves the session with no repository at all, the runner fails the session anyway.
+* **A repository the session only reads from**, such as a repository added to a running session: the runner skips it and continues with the remaining repositories. The runner posts a `Skipped` step to the session and removes whatever the hook left at the checkout path.
+
+  When the `Skipped` step mentions the checkout hook, find the failure detail on the `[runner:warn] checkout hook failed` line in the runner's log. When the step says a source ref `no longer exists on remote`, see [A session fails with `no longer exists on the remote` or `couldn't find remote ref`](/docs/en/self-hosted-environments-deploy#no-longer-exists-on-the-remote). If skipping leaves the session with no repository at all, the runner fails the session anyway.
 
 When the hook succeeds, the runner removes the checkout path after the session ends.
 
@@ -85159,7 +85320,7 @@ The orchestrator runs `${hooks-dir}/spawn-runner` once per spawn request. The ho
 | :- | :- |
 | `CLAUDE_RUNNER_WORK_ORDER_FILE` | Path to a temp file containing the signed work-order JWT the new runner registers with. Deleted after the hook exits. Don't log the file's contents. |
 | `CLAUDE_RUNNER_ORDER_ID` | Opaque idempotency key, unique per spawn request and safe for Kubernetes resource names. Use only the order ID as your provisioner's dedup key. |
-| `CLAUDE_RUNNER_SESSION_ID` | The session this request is for. It repeats on every re-request for the session, so use it for logging and routing, not as a dedup key. Empty for pre-warming requests, which boot a standby runner ahead of any specific session when [`--min-idle`](/docs/en/self-hosted-environments-reference#orchestrator-cli-flags) is set, so don't assume the variable is set. |
+| `CLAUDE_RUNNER_SESSION_ID` | The session this request is for, as the `session_...` ID in the session's URL. It repeats on every re-request for the session, so use it for logging and routing, not as a dedup key. Empty for pre-warming requests, which boot a standby runner ahead of any specific session when [`--min-idle`](/docs/en/self-hosted-environments-reference#orchestrator-cli-flags) is set, so don't assume the variable is set. |
 | `CLAUDE_RUNNER_SESSION_UUID` | The same session ID in canonical UUID form. Empty for pre-warming requests. |
 | `CLAUDE_RUNNER_ATTEMPT` | A per-session counter to use for logging. It isn't a retry count or a request count. `0` for pre-warming requests, though a request for a session can carry `0` too. |
 | `CLAUDE_RUNNER_ORDER_SERVER_TIME` | Server time from the poll response's HTTP `Date` header. When the hook verifies the work-order JWT's `exp`, compare against this value instead of the local clock to tolerate skew. Empty when the gateway omitted the header. |
@@ -85229,6 +85390,15 @@ Before v2.1.305, a hook that had exited still reached [`--hook-timeout`](/docs/e
 
 * **Activity tab**, in a failed session's spawn error: `spawn-runner hook timed out after 60000ms`, or the last lines on the hook's stderr.
 * **Orchestrator log**: `timed out after 60000ms, sending SIGTERM to process tree`.
+
+#### Exit the hook without waiting for the runner
+
+If every on-demand runner stops about 60 seconds after its hook starts, and your hook runs again for the same session, check whether the hook waits for the runner. The 60 seconds are the default [`--hook-timeout`](/docs/en/self-hosted-environments-reference#orchestrator-cli-flags), so if you set your own, runners stop that long after the hook starts.
+
+A hook that starts `claude self-hosted-runner` on the orchestrator's host and waits for it, in the foreground or with `wait`, is still running when `--hook-timeout` ends. The orchestrator then stops the hook and the processes running under it, including that runner and the session's Claude process, so a turn that's still running is cut off.
+
+* **To confirm that the timeout is what stops your runners**: look in the orchestrator's log for `timed out after 60000ms, sending SIGTERM to process tree` on every spawn request. The `60000` is your `--hook-timeout` in milliseconds.
+* **To fix it**: have the hook submit the runner to your platform and exit 0. If you raise `--hook-timeout` instead, the runner only stops later.
 
 #### Keep transient failures retryable in a shell hook
 
@@ -85476,6 +85646,13 @@ case "$in" in *'"stop_hook_active":true'*) exit 0 ;; esac
 
 d="$CLAUDE_PROJECT_DIR"
 
+# Hardening: this script runs outside Claude Code's Bash sandbox, so its git
+# calls skip some features that can start a program named in the checkout's
+# git settings. They don't skip them all, so don't count on the sandbox alone.
+GIT_OPTIONAL_LOCKS=0
+export GIT_OPTIONAL_LOCKS
+git() { command git -c core.fsmonitor= -c core.hooksPath=/dev/null "$@"; }
+
 # Not a git repo → nothing to nudge.
 git -C "$d" rev-parse --git-dir >/dev/null 2>&1 || exit 0
 
@@ -85486,7 +85663,7 @@ git -C "$d" rev-parse --git-dir >/dev/null 2>&1 || exit 0
 # entirely — operator-seeded settings and CLI-written runtime state
 # (scheduler lock, worktrees, routine state) live there and neither is
 # "uncommitted work" the model needs to push.
-s=$(git -C "$d" status --porcelain -- . ':(exclude).claude/' 2>/dev/null)
+s=$(git -C "$d" status --porcelain --ignore-submodules=dirty -- . ':(exclude).claude/' 2>/dev/null)
 if [ -n "$s" ]; then
   printf '{"decision":"block","reason":"There are uncommitted changes in the repository. Please commit and push these changes to the remote branch."}'
   exit 0
@@ -85530,6 +85707,35 @@ exit 0
 ```
 
 The hook prompts Claude to commit and push before the session ends, and stays silent when the directory isn't a git repository or has no remote. For a session with several repositories, see [what `$CLAUDE_PROJECT_DIR` names](#repository-settings-in-sessions-with-several-repositories).
+
+The Stop hook only prompts Claude. For the commit and push to work, set up:
+
+* **A git identity**: set `user.name` and `user.email` in your runner image, or start the runner with [`--configure-git`](/docs/en/self-hosted-environments-deploy#let-the-runner-configure-git)
+* **Push credentials**: use [Anthropic-managed git](/docs/en/self-hosted-environments-deploy#use-the-anthropic-git-proxy), or supply credentials as [Ship git config in your image](/docs/en/self-hosted-environments-deploy#ship-git-config-in-your-image) describes
+* **For resumed sessions**: set [`--push-outcome-on-release`](/docs/en/self-hosted-environments-reference#runner-cli-flags) on every runner in the environment. A resumed session then starts from the commits that Claude pushed to the session's branch. For the flag's limits, see [Resumed sessions lose unpushed work](/docs/en/self-hosted-environments-deploy#additional-limitations).
+
+The Stop hook prompts at most once per turn. If the commit or push fails, the turn still ends. Look for git's error in the session and fix what it names.
+
+On a large checkout, raise `timeout` in the Stop hook settings and restart the runners. The script's `git status` skips `core.fsmonitor`, so it can take longer than the 10 seconds set there. A hook that times out ends the turn with no prompt.
+
+### Submodules and the Stop hook
+
+The Stop hook checks which commit each submodule is on, not the files inside it:
+
+* **A new commit in a submodule**: Claude is prompted until the parent repository records it, even if `.gitmodules` sets `ignore = all` for that submodule
+* **Uncommitted files in a submodule**: Claude isn't prompted, so that work stays only on the runner's disk
+* **Unpushed commits in a submodule**: the Stop hook doesn't check whether they're pushed, so the parent can point at a commit that nobody else can fetch
+
+### Replace an earlier copy of the Stop hook script
+
+Search your copy of `stop-hook-nudge.sh` for `GIT_OPTIONAL_LOCKS`. If it's missing, you have an earlier copy. Replace it with the [current script](#prompt-sessions-to-push-their-work) wherever you installed it, then restart the runners. Keep your Stop hook settings, except to raise `timeout` on a large checkout.
+
+* **When**: if your sessions run with the [Bash sandbox](/docs/en/sandboxing) on, replace it now. Otherwise, replace it at your next image build or runner restart.
+* **What changes**: uncommitted files in a submodule no longer prompt Claude. A new commit in a submodule that `.gitmodules` marks `ignore = all` now does.
+
+> [!WARNING]
+>
+> Hooks run outside the Bash sandbox, so the current script's git calls skip some git features that can start a program named in the checkout's git settings. They don't skip them all. Don't count on the sandbox alone, and isolate sessions as [Harden your deployment](/docs/en/self-hosted-environments-deploy#harden-your-deployment) describes.
 
 ## Permissions and tool approval
 
@@ -86013,6 +86219,8 @@ spec:
             - /etc/claude/environment-secret
             - --capacity
             - "4"
+            - --base-dir
+            - /workspace
           volumeMounts:
             - name: environment-secret
               mountPath: /etc/claude
@@ -86066,6 +86274,8 @@ services:
       - /run/secrets/environment-secret
       - --capacity
       - "4"
+      - --base-dir
+      - /workspace
     secrets:
       - environment-secret
     restart: always
@@ -86088,8 +86298,6 @@ On `SIGTERM`, the runner stops accepting new sessions. It then begins a graceful
 
 The runner keeps polling Anthropic throughout the drain. That keeps its sessions assigned to it, so another runner doesn't pick one up while your `post-session` hook is still saving uncommitted work.
 
-Because `--drain-wait-sec` defaults to `0`, a rolling restart cuts off any turn that's still running, and the session resumes on another runner without its [unpushed work](#additional-limitations). To let turns finish first, set `--drain-wait-sec` and raise your stop timeout to match.
-
 The logged time is the sum of these values:
 
 * `--drain-wait-sec` for step 1, 0 seconds by default
@@ -86104,6 +86312,18 @@ Allow more time if you set either of these flags:
 
 * **With [`--retire-at`](/docs/en/self-hosted-environments-reference#runner-cli-flags)**: leave enough time between the retire time and the time the host stops for typical turns to finish, plus the wait for background tasks that [Runner lifecycle](/docs/en/self-hosted-environments#runner-lifecycle) describes, plus the logged time. Compute the retire time at each launch, for example `date +%s` plus the runner's intended lifetime.
 * **With [`--defer-shutdown-max-min`](#defer-the-drain-past-the-first-signal)**: the stop timeout must also cover the minutes you configure and a further wait before the drain starts, 75 seconds at default settings. [Defer the drain past the first signal](#defer-the-drain-past-the-first-signal) explains both. The runner logs this longer time at startup too.
+
+### Let running turns finish before a restart
+
+To let running turns finish before a rolling restart, set `--drain-wait-sec`, and raise your stop timeout to at least that wait plus 80 seconds. With the default wait of `0`, a restart cuts off any turn that's still running, and the session resumes on another runner without its [unpushed work](#additional-limitations).
+
+* **`--drain-wait-sec`**: about as long as the turns and background tasks you want to let finish. It's a maximum: the wait ends early if they finish first.
+* **Your stop timeout**: `terminationGracePeriodSeconds` in Kubernetes, `stop_grace_period` in Docker Compose. For example, with `--drain-wait-sec 120`, replace the `90` in the [Kubernetes](#kubernetes) or [Docker Compose](#docker-compose) recipe with `200`.
+* **If you changed other shutdown settings**: the 80 seconds are for default settings. Start one runner with your flags, and use at least the number in its startup line `This runner needs up to`, which includes the wait. With [`--defer-shutdown-max-min`](#defer-the-drain-past-the-first-signal) set, use the larger number in the next startup line, after `Size the stop timeout to at least`. [Shutdown timing](#shutdown-timing) lists what adds to these numbers.
+
+> [!WARNING]
+>
+> If the stop timeout runs out during the wait, your host kills the runner with work still running. Its sessions get no `post-session` hook. The runner also doesn't deregister, so the control plane can take a few minutes and sometimes longer to requeue them.
 
 ### Post a status message before a restart
 
@@ -86144,7 +86364,7 @@ When the drain starts, and again on a forced exit, the runner logs how many `pos
 
 If a runner dies mid-session, the server requeues the session and another runner in the environment picks it up. That runner derives the checkout path from its own `--base-dir` and `--capacity`: `--capacity 1` checks out directly under `--base-dir`, and a `--capacity` above `1` uses per-session worktrees instead. When runners in the same environment use different values for either flag, the resumed session's working directory changes, and absolute paths the agent recorded earlier, in edits, tool calls, or its own notes, point at a location that no longer exists.
 
-Use the same `--base-dir` and `--capacity` on every runner in an environment, and don't use a per-host value such as an instance ID or hostname.
+Use the same `--base-dir` and `--capacity` on every runner in an environment, and don't use a per-host value such as an instance ID or hostname. Pass both flags explicitly, as the [Kubernetes](#kubernetes) and [Docker Compose](#docker-compose) recipes do, so that neither value depends on a default.
 
 The base directory defaults to `/workspace`, with the exception the [`--base-dir` reference row](/docs/en/self-hosted-environments-reference#runner-cli-flags) records. The runner needs write access to it. At startup, before registering, the runner creates the directory and confirms it can write to it, and exits with `cannot create or write to base directory` when it can't. A runner started as root creates the default `/workspace` itself. For a non-root runner, create the directory and give the runner's user ownership before starting the runner, or point `--base-dir` at a directory that user already owns.
 
@@ -86280,7 +86500,7 @@ Common issues:
 
   Once the runner is upgraded or the cause is fixed, retry the session or start a new one. If none of these checks finds the cause, [report an issue](#report-an-issue).
 
-  For the source the session pushes results to, a deleted branch fails the session. For a git source the session only reads from, the runner skips that source and continues on the remaining ones. The runner fails the session with the same error when skipping would leave it with no repository at all. Before v2.1.228, such a session started in an empty directory.
+  For the source the session pushes results to, a deleted branch fails the session. For a git source the session only reads from, the runner skips that source and continues on the remaining ones. The runner fails the session when skipping would leave it with no repository at all. Before v2.1.228, such a session started in an empty directory.
 * **A session starts without one of its repositories**: on a runner with no [`checkout` hook](/docs/en/self-hosted-environments-configuration#checkout), the git host can refuse the runner's access check for a repository the session only reads from. The runner then skips that repository, logs a `[runner:warn] could not access context source` line naming the refusal, and starts the session on the remaining ones.
 
   The runner skips only a clear refusal: the host answers that the repository wasn't found, git finds no credentials for the host, or authentication fails. A network failure, a timeout, or an HTTP `403` still fails the session start, as does a refusal for a repository the session pushes results to. The runner still fails a session that skipping would leave with no repository at all. With [`--use-anthropic-git-proxy`](#use-the-anthropic-git-proxy), the runner skips only a repository the git proxy itself denies.
@@ -86313,6 +86533,8 @@ Don't restart an [on-demand runner](/docs/en/self-hosted-environments-configurat
 * **Lost contact**: a runner that can't reach Anthropic for longer than its [lease](/docs/en/self-hosted-environments#session-lifecycle), for example while its host sleeps, can be removed from the environment. When a removed runner reconnects, it exits. Its log can show a `[runner:fatal]` line that contains `runner record gone server-side` or, after a longer outage, [`poll auth failed`](/docs/en/self-hosted-environments-quickstart#set-up-an-environment-and-runner). The runner doesn't register again by itself, so restart it.
 
 Configure your supervisor to restart the runner whenever it exits, to wait longer between restarts when the runner keeps exiting right after it starts, and to tell someone when that keeps happening.
+
+For production, have your supervisor restart the runner on a fresh disk, in a new container or VM, as [Harden your deployment](#harden-your-deployment) recommends.
 
 #### Recognize a failed start
 
@@ -86569,7 +86791,7 @@ The table below lists the session token claims relevant to verification. Read id
 | `iat` | number | Issued-at as a Unix timestamp. |
 | `jti` | string | Unique token identifier. |
 | `ccr:role` | string | Always `session_worker` for session tokens. |
-| `ccr:session_id` | string | The session ID. Same value as the suffix of `sub`. |
+| `ccr:session_id` | string | The session ID in `cse_...` form. Same value as the suffix of `sub`, and the same string as [`CLAUDE_CODE_REMOTE_SESSION_ID`](/docs/en/self-hosted-environments-configuration#wrapper-scripts). To match it to the `CLAUDE_RUNNER_SESSION_ID` that [lifecycle hooks](/docs/en/self-hosted-environments-configuration#lifecycle-hooks) receive, replace the `cse_` prefix with `session_`. |
 | `ccr:pool_id` | string | Your environment ID. Same value that appears in `aud`. |
 | `ccr:org_id` | string | Your Anthropic organization ID. |
 | `ccr:account_id` | string | The creating user's Anthropic account ID: the value of `act.sub` without the `user:` prefix, a tagged `user_...` ID. The same value the [spawn-runner hook](/docs/en/self-hosted-environments-configuration#the-spawn-runner-hook)'s `CLAUDE_RUNNER_ACCOUNT_ID` carries and [`--lock-to-account`](/docs/en/self-hosted-environments-reference#runner-cli-flags) accepts, so the three compare as equal strings. |
@@ -86799,7 +87021,7 @@ Most flags have a corresponding environment variable. When both are set, the fla
 | `--defer-shutdown-max-min <n>` | `SELF_HOSTED_RUNNER_DEFER_SHUTDOWN_MAX_MS` | `0` | On the first `SIGTERM` or `SIGINT`, keep serving the sessions already attached instead of draining them, then release whatever is still attached N minutes later and exit. Raise your host's stop timeout before you set this. See [Defer the drain past the first signal](/docs/en/self-hosted-environments-deploy#defer-the-drain-past-the-first-signal). `0` disables. Requires Claude Code v2.1.238 or later. |
 | `--drain-grace-sec <n>` | `SELF_HOSTED_RUNNER_DRAIN_GRACE_MS` | `0` | Until the runner receives a shutdown signal or reaches its retire time, controls when the runner exits after its active sessions finish: `0` exits immediately without polling for more, and a positive value keeps the runner alive and re-polling the locked owner's queue for that many seconds first, at the cost of the per-session container isolation described in the [hardening section](/docs/en/self-hosted-environments-deploy#harden-your-deployment). After a first signal you deferred with [`--defer-shutdown-max-min`](/docs/en/self-hosted-environments-deploy#defer-the-drain-past-the-first-signal), the runner exits as soon as it holds no sessions, whatever you set here. |
 | `--drain-marker-file <path>` | `SELF_HOSTED_RUNNER_DRAIN_MARKER_FILE` | unset | Marker file that your host writes to announce a graceful drain before sending `SIGTERM`. When the file exists as the drain starts, the runner reports its exit to Anthropic as a host drain rather than a plain shutdown signal. The drain itself, including the `--drain-wait-sec` hold, runs the same as without the flag. Name a path on a local filesystem that sessions can't write to. Requires Claude Code v2.1.271 or later. |
-| `--drain-wait-sec <n>` | `SELF_HOSTED_RUNNER_DRAIN_WAIT_MS` | `0` | Once the drain starts, which is on `SIGTERM` unless you set [`--defer-shutdown-max-min`](/docs/en/self-hosted-environments-deploy#defer-the-drain-past-the-first-signal), wait up to N seconds for each session's in-flight turn and background tasks to finish before terminating the child. During this wait, the runner counts a background task that has just finished as still running until the follow-up turn that reads its result starts, for at most the [`SELF_HOSTED_RUNNER_BG_RESULT_GRACE_MS`](#environment-variable-only-settings) window. |
+| `--drain-wait-sec <n>` | `SELF_HOSTED_RUNNER_DRAIN_WAIT_MS` | `0` | Once the drain starts, which is on `SIGTERM` unless you set [`--defer-shutdown-max-min`](/docs/en/self-hosted-environments-deploy#defer-the-drain-past-the-first-signal), wait up to N seconds for each session's in-flight turn and background tasks to finish before terminating the child. During this wait, the runner counts a background task that has just finished as still running until the follow-up turn that reads its result starts, for at most the [`SELF_HOSTED_RUNNER_BG_RESULT_GRACE_MS`](#environment-variable-only-settings) window. [Raise your stop timeout too](/docs/en/self-hosted-environments-deploy#let-running-turns-finish-before-a-restart). |
 | `--environment-secret-file <path>` | `SELF_HOSTED_RUNNER_ENVIRONMENT_SECRET` | required | Path to a file containing the environment secret, or, for runners spawned by the [orchestrator](/docs/en/self-hosted-environments-configuration#on-demand-runners), the single-use work-order JWT. `SELF_HOSTED_RUNNER_ENVIRONMENT_SECRET` carries the secret value directly, not a file path. The older `--pool-secret-file` flag and `SELF_HOSTED_RUNNER_POOL_SECRET` variable still work and print a deprecation notice to stderr; preview-program runner builds older than 2.1.216 only recognize those older names. |
 | `--exec-path <path>` | `SELF_HOSTED_RUNNER_EXEC_PATH` | own binary | Binary or wrapper script to spawn for each session. See [Wrapper scripts](/docs/en/self-hosted-environments-configuration#wrapper-scripts). |
 | `--exit-if-unused-min <n>` | `SELF_HOSTED_RUNNER_IDLE_SHUTDOWN_MS` | `0` | Exit after N minutes of polling with no work ever assigned, for autoscaler scale-down. `0` disables. |
@@ -87078,6 +87300,13 @@ groups:
 Each session runs in its own child process with its own OpenTelemetry metrics; at `--capacity` above one, the runner rewrites how those child metrics are exposed. Setting `OTEL_METRICS_EXPORTER=prometheus` on the runner host and `CLAUDE_CODE_ENABLE_TELEMETRY=1` in the session's environment, for example from your [wrapper script](/docs/en/self-hosted-environments-configuration#wrapper-scripts) or the runner's own environment, which sessions inherit, re-exposes each child's counter and gauge instruments on the runner's own `/metrics` endpoint, alongside the runner's series. The runner rewrites the child's exporter to push over OTLP to a loopback-only receiver on the health port, tags each series with `session_id` and `client_platform` labels, and evicts a session's series when that session ends. Histograms don't pass through, and a child metric whose name would collide with the runner's own prefix is dropped.
 
 At the default `--capacity 1`, the rewrite doesn't apply: the session's child binds its own Prometheus endpoint on port 9464 as usual.
+
+#### Join a session's metrics to the runner's
+
+To put a session's own metrics beside `claude_code_self_hosted_runner_session_idle_seconds`, join on the runner's `session_id`:
+
+* **At `--capacity` above one**: join directly. On the runner's `/metrics`, the session's series carry the same `session_id` as that metric, in `session_...` form.
+* **At `--capacity 1`**: join on a converted `ccr_session_id`. By default, each Claude Code metric on port 9464 carries that label, which holds the session ID in `cse_...` form. In a new label, replace its `cse_` prefix with `session_` to get the runner's `session_id`. The metric's own `session_id` holds Claude Code's own [`session.id`](/docs/en/monitoring-usage#standard-attributes), which matches no runner series.
 
 ### Session lifecycle counter semantics
 
@@ -92252,7 +92481,7 @@ This example blocks one GitHub repository as a marketplace source:
 }
 ```
 
-A `github` entry may use the [owner-wildcard form](#owner-wildcards) `"owner/*"` to block every repository under that GitHub owner, which requires Claude Code v2.1.223 or later. Add `{ "source": "skills-dir" }` to stop Claude Code loading [`@skills-dir` plugins](/docs/en/plugins/loading#plugins-shared-through-a-repository) from `~/.claude/skills/` without restricting any marketplace. See [Managed marketplace restrictions](/docs/en/plugins/org#restrict-what-users-can-install).
+A `github` entry may use the [owner-wildcard form](#owner-wildcards) `"owner/*"` to block every repository under that GitHub owner, which requires Claude Code v2.1.223 or later. Add `{ "source": "skills-dir" }` to stop Claude Code loading [`@skills-dir` plugins](/docs/en/plugins/loading#plugins-shared-through-a-repository) from both `~/.claude/skills/` and a project's `.claude/skills/`, without restricting any marketplace. See [Managed marketplace restrictions](/docs/en/plugins/org#restrict-what-users-can-install).
 
 ### `channelsEnabled`
 
@@ -92359,7 +92588,7 @@ Each entry below shows one allowlist entry per source type and the fields it acc
 | `pathPattern` | `{ "source": "pathPattern", "pathPattern": "^/opt/approved/" }` | `pathPattern` required, a regex matched anywhere in the `path` of `file` and `directory` sources; start it with `^` to pin a prefix |
 | `skills-dir` | `{ "source": "skills-dir" }` | No fields |
 
-Three source types carry rules beyond the table:
+Some source types carry rules beyond the table:
 
 * **`url`**: a URL marketplace downloads only the `marketplace.json` file, and Claude Code doesn't fetch plugin files by relative path from that server, so its plugins must use a [plugin source](/docs/en/plugins/marketplace-reference#plugin-sources) other than a relative path, such as an archive URL, which can be on the same host. For plugins with relative paths, use a Git-based marketplace instead. See [Plugins with relative paths fail in URL-based marketplaces](/docs/en/plugins/troubleshooting#plugins-with-relative-paths-fail-in-url-based-marketplaces).
 * **`hostPattern`**: use it to allow every marketplace on an internal GitHub Enterprise or GitLab server without listing each repository. Claude Code matches `github` sources against `github.com`, takes the hostname from `url` sources, and takes it from `git` sources depending on the [git URL](https://git-scm.com/docs/git-clone#_git_urls)'s form:
@@ -92370,8 +92599,7 @@ Three source types carry rules beyond the table:
 
   `file` and `directory` sources have no host and never match a `hostPattern` entry.
 * **`pathPattern`**: use it to allow filesystem marketplaces alongside `hostPattern` entries for network sources. `".*"` allows every local path; a narrower pattern such as `"^/opt/approved/"` restricts to a directory.
-
-Any allowlist, even an empty one, also stops Claude Code loading [`@skills-dir` plugins](/docs/en/plugins/loading#plugins-shared-through-a-repository) from `~/.claude/skills/`. To keep loading them, add the `{ "source": "skills-dir" }` entry and leave [`strictPluginOnlyCustomization`](#strictpluginonlycustomization) unset. The entry has no meaning outside this key and `blockedMarketplaces`.
+* **`skills-dir`**: any allowlist, even an empty one, stops Claude Code loading [`@skills-dir` plugins](/docs/en/plugins/loading#plugins-shared-through-a-repository) from both `~/.claude/skills/` and a project's `.claude/skills/`. To keep loading them, add the `{ "source": "skills-dir" }` entry and leave [`strictPluginOnlyCustomization`](#strictpluginonlycustomization) unset. The entry has no meaning outside this key and `blockedMarketplaces`.
 
 #### Owner wildcards
 
@@ -92787,7 +93015,7 @@ Allowlist the MCP servers people can add. Claude Code blocks any server that doe
 
 Built-in servers such as Claude in Chrome, the `ide` server Claude Code connects to in a running [VS Code](/docs/en/vs-code#the-built-in-ide-mcp-server) or [JetBrains](/docs/en/jetbrains#the-built-in-ide-mcp-server) IDE, and servers the CLI itself configures are exempt from the allowlist, and the denylist still applies to them. On Claude Code v2.1.268 or later, a [Claude Tag](/docs/en/claude-tag) session's Slack tools are also exempt from the allowlist, and the denylist still applies to them. In-process `type: "sdk"` servers are exempt from both lists; the [app that started the session](/docs/en/mcp#how-connectors-reach-claude-code) registers them.
 
-Servers your organization delivers are also exempt from the allowlist, and the denylist still applies to them. The exemption covers every [`managedMcpServers`](#managedmcpservers) entry, and any [`managed-mcp.json`](/docs/en/managed-mcp#exclusive-control-with-managed-mcp-json) entry whose values use no `${VAR}` expansion. See [How a server is evaluated](/docs/en/managed-mcp#how-a-server-is-evaluated) for the full check order. Before v2.1.259, servers from `managed-mcp.json` had to match too.
+Servers your organization delivers are also exempt from the allowlist, and the denylist still applies to them. The exemption covers every [`managedMcpServers`](#managedmcpservers) entry, and any [`managed-mcp.json`](/docs/en/managed-mcp#exclusive-control-with-managed-mcp-json) entry whose values use [no `${VAR}` expansion outside `env`](/docs/en/managed-mcp#how-allowlists-and-denylists-apply-to-the-managed-set). See [How a server is evaluated](/docs/en/managed-mcp#how-a-server-is-evaluated) for the full check order. Before v2.1.259, servers from `managed-mcp.json` had to match too.
 
 * **Scope**: [`Any file`](#scopes). Entries from every file merge into one allowlist unless [`allowManagedMcpServersOnly`](#allowmanagedmcpserversonly) is set. Deploy it in managed settings to enforce it.
 * **Type**: array of objects, each with exactly one key. Use `serverName`, a string limited to letters, numbers, hyphens, and underscores; `serverCommand`, an array of the command and its arguments matched exactly; or `serverUrl`, a URL pattern with `*` wildcards
@@ -97685,8 +97913,10 @@ Common issues when voice dictation does not activate or record:
 * **Tapping `Space` types a space instead of recording in tap mode**: the first tap only starts recording when the prompt input is empty. Clear the input first, or check that you are in tap mode by running `/voice tap`.
 * **`No audio detected from microphone`**: recording started but captured silence. Confirm the correct input device is set as the system default and that its input level is not muted or near zero. On Windows, open Settings → System → Sound → Input and select your microphone. On macOS, open System Settings → Sound → Input.
 * **`Voice connection failed`**: your recording never reached the transcription service because the connection failed. Check your network and try again. A recording that captures no audio reports `No audio detected from microphone` instead of this message. Before v2.1.200, a silent microphone could report a connection failure, which suggested a network problem when the actual issue was the input device.
+* **`Dictation error: WebSocket error:` followed by a certificate error such as `unable to get local issuer certificate`**: see [Dictation or the Web tab fails behind a TLS-inspecting proxy](/docs/en/vs-code#dictation-or-the-web-tab-fails-behind-a-tls-inspecting-proxy) on the VS Code page.
 * **`Voice stream error: WebSocket upgrade rejected with HTTP <status>`**: a server refused your connection with the HTTP status shown, so this isn't a network outage. A status in the 400 range usually means a stale sign-in, or a proxy or bot-protection service answering in place of the transcription service. Run `/login` to refresh your sign-in, and check for a VPN or proxy on your network path if the status persists. If you're still recording when the rejection arrives, Claude Code retries a status outside the 400 range once before showing this message; it doesn't retry a status in the 400 range. In v2.1.229 through v2.1.231, native builds didn't show this message: Claude Code kept recording, the hold-mode footer still showed `listening…`, and it reported `Voice connection failed` after you stopped recording.
 * **`No speech detected`**: audio reached the transcription service but no words were recognized. Speak closer to the microphone, reduce background noise, and confirm your [dictation language](#change-the-dictation-language) matches the language you are speaking.
+* **`Dictation stopped: no speech recognized for 15 seconds` or `Dictation stopped at its 2-minute limit`**: in the VS Code extension, a recording ends after 15 seconds with no recognized words, or two minutes after it starts. If you were speaking during those 15 seconds, try the fixes for `No speech detected`. Words already recognized stay in the prompt box and aren't sent. To add more, click the microphone button again.
 * **Transcription is garbled or in the wrong language**: dictation defaults to English. If you are dictating in another language, set it in `/config` first. See [Change the dictation language](#change-the-dictation-language).
 
 ### Terminal not listed in macOS Microphone settings
@@ -102551,7 +102781,12 @@ For a complete working example of a remote server authenticated with headers, se
 
 ### OAuth2 authentication
 
-The [MCP specification supports OAuth 2.1](https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization) for authorization. The SDK doesn't open a browser or run an interactive OAuth flow. When a configured server returns an authorization challenge and no stored token is available, the agent run continues without that server's tools, and the server reports status `needs-auth`. The `mcp_servers` array of the [system init message](/docs/en/agent-sdk/typescript#sdksystemmessage) may still show `pending` for that server when it's emitted. To confirm whether a server needs credentials, poll `mcpServerStatus()` in the TypeScript SDK or [`get_mcp_status()`](/docs/en/agent-sdk/python#methods) in Python.
+The [MCP specification supports OAuth 2.1](https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization) for authorization. The SDK doesn't open a browser or run an interactive OAuth flow. When a configured server returns an authorization challenge and Claude Code has no token to send, the SDK reports the server as `needs-auth` or `failed`:
+
+* **`needs-auth`**: Claude Code found no sign-in it can use for the server. Pass a token in `headers`, or [sign in from an interactive Claude Code session](/docs/en/mcp#authenticate-with-remote-mcp-servers) on the same machine before the run.
+* **`failed`**, with an `error` in its [`McpServerStatus`](/docs/en/agent-sdk/typescript#mcpserverstatus) entry that starts with `Couldn't read the stored credentials` or `A request to MCP server`: Claude Code couldn't read its credential store. For what to do, see [Couldn't read the stored credentials for MCP server](/docs/en/errors#couldnt-read-the-stored-credentials-for-mcp-server). Before Claude Code v2.1.307, the status was `needs-auth` instead when a Mac's login keychain was locked.
+
+In either case, the agent run continues without that server's tools. The `mcp_servers` array of the [system init message](/docs/en/agent-sdk/typescript#sdksystemmessage) may still show `pending` for that server when it's emitted. To confirm whether a server needs credentials, poll `mcpServerStatus()` in the TypeScript SDK or [`get_mcp_status()`](/docs/en/agent-sdk/python#methods) in Python.
 
 To supply credentials, complete the OAuth flow in your own application and pass the resulting access token in the server's `headers`:
 
