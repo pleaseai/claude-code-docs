@@ -15594,7 +15594,7 @@ You can start a cloud session from any of these surfaces:
 
 * **Browser**: [claude.ai/code](https://claude.ai/code), also called Claude Code on the web
 * **Mobile**: the **Code** tab in the [Claude app](/docs/en/mobile)
-* **Desktop app**: select **Cloud** instead of **Local** when you [start a session](/docs/en/desktop#run-long-running-tasks-in-the-cloud)
+* **Desktop app**: select an environment under **Cloud** in the environment selector when you [start a session](/docs/en/desktop#run-long-running-tasks-in-the-cloud)
 * **Terminal**: [`claude --cloud`](#from-terminal-to-cloud)
 * **Cloud scheduled tasks**: [scheduled and triggered runs](/docs/en/routines) each run as a cloud session
 
@@ -15823,9 +15823,15 @@ Claude Code resumes a session in the permission mode it was in when you do eithe
 
 ### Review changes
 
-Each session shows a diff indicator with lines added and removed, like `+42 -18`. Select it to open the diff view, leave inline comments on specific lines, and send them to Claude with your next message.
+After Claude pushes its changes to a branch, the **Changes** card in the panel beside the chat shows the lines added and removed, such as `+42 -18`. Click the line counts on the **Changes** card to open the diff view.
 
-The diff view compares the session's changes against its base branch by default. To compare against any other branch in the repository, select **Compare against** and pick one.
+* You can also click **Changes** in the session's title bar, or in the bar's **⋮** menu.
+* To show the panel when it's hidden, click the **Show session rail** icon in the session's title bar, or in the bar's **⋮** menu.
+
+In the diff view, you can comment on lines and compare against another branch:
+
+* **Comment**: leave inline comments on specific lines, then send the comments to Claude with your next message
+* **Compare**: the diff view compares the session's changes against its base branch by default. To compare against any other branch in the repository, select **Compare against** and pick one
 
 Claude Code computes these diffs from raw git blob content, so diff drivers and `textconv` filters configured in the repository don't apply.
 
@@ -15889,16 +15895,19 @@ To require recipients to have repository access, or to hide your name from share
 
 ### Archive sessions
 
-You can archive sessions to keep your session list organized. Archived sessions are hidden from the default session list but can be viewed by filtering for archived sessions.
+Archive a session to remove it from the sidebar's session list. To archive one, hover over it in the sidebar, open its **⋯** menu, and select **Archive**.
 
-To archive a session, hover over the session in the sidebar and select the archive icon.
+#### Find an archived session
+
+To see your archived sessions, go to [claude.ai/code/sessions](https://claude.ai/code/sessions) and open the **Archived** tab. To put one back in the sidebar's session list, hover over it on that tab, open its **⋮** menu, and select **Unarchive**.
 
 ### Delete sessions
 
-Deleting a session permanently removes the session and its data. This action can't be undone. You can delete a session in two ways:
+Deleting a session permanently removes the session and its data. This action can't be undone. Delete a session from the sidebar, from the session menu, or from the **Archived** tab if you've already archived it:
 
-* **From the sidebar**: filter for archived sessions, then hover over the session you want to delete and select the delete icon
+* **From the sidebar**: hover over the session, open its **⋯** menu, and select **Delete**
 * **From the session menu**: open a session, select the dropdown next to the session title, and select **Delete**
+* **From the Archived tab**: hover over the session on the [**Archived** tab](#find-an-archived-session), open its **⋮** menu, and select **Delete**
 
 You will be asked to confirm before a session is deleted.
 
@@ -15912,12 +15921,12 @@ Claude can watch a pull request and automatically respond to CI failures and rev
 
 There are a few ways to turn on auto-fix depending on where the PR came from and what device you're using:
 
-* **PRs created in a cloud session**: open the session at claude.ai/code, open the CI status bar, and select **Auto-fix**
+* **PRs created in a cloud session**: open the session at claude.ai/code and find the pull request in the [**Changes** card](#review-changes). Open the **⋮** menu next to the pull request's title and turn on **Auto-fix**
 * **From your terminal**: run [`/autofix-pr`](/docs/en/commands) while on the PR's branch. Claude Code detects the open PR with `gh`, spawns a cloud session, and turns on auto-fix in one step
 * **From the mobile app**: tell Claude to auto-fix the PR, for example "watch this PR and fix any CI failures or review comments"
 * **Any existing PR**: paste the PR URL into a session and tell Claude to auto-fix it
 
-Auto-fix is a per-PR toggle. To stop monitoring, open the CI status bar in the session at claude.ai/code and clear the **Auto-fix** toggle, or tell Claude to stop watching the PR.
+To stop monitoring, turn off **Auto-fix** in the pull request's **⋮** menu in the session's [**Changes** card](#review-changes), or tell Claude to stop watching the PR.
 
 ### How Claude responds to PR activity
 
@@ -15956,6 +15965,17 @@ If a new session fails to start with `Session creation failed` or stalls at prov
 * Check [status.claude.com](https://status.claude.com) for cloud session incidents
 * Retry after a minute, as capacity is provisioned on demand
 * Confirm your GitHub connection can reach the repository by following [No repositories appear after connecting GitHub](/docs/en/web-quickstart#no-repositories-appear-after-connecting-github)
+
+### Your new session couldn't start
+
+Your prompt is back in the box you sent it from.
+
+* **Connection lost**: check your internet connection and any VPN or proxy you use, then send your prompt again
+* **Server error**: wait a moment, then send your prompt again. If the notice reappears, check [status.claude.com](https://status.claude.com)
+
+### Can't rewind to this message
+
+**Rewind to here** fails with this error on any message except the newest when your session runs on a [self-hosted runner](/docs/en/self-hosted-environments) with Claude Code before v2.1.246. Ask whoever runs your organization's runners to [upgrade them](/docs/en/self-hosted-environments-deploy#pin-the-version).
 
 ### Unable to get organization UUID
 
@@ -17068,7 +17088,7 @@ Each review leaves these on the pull request:
 
 * **Findings**: inline comments on the lines concerned, with a summary in the review body
 * **A check run**: named **Claude Code Review**, with the findings listed in its [details](/docs/en/code-review-pull-requests#check-run-output). The check run doesn't conclude as a failure.
-* **When it finds nothing**: the check run's title reads **Code review found no issues**, and Claude posts the same short note on the pull request
+* **A note in place of findings**: posted when the check run's title reads **Code review found no issues**
 
 Code Review chooses the Claude models that reviews run on, and its admin settings don't offer a model choice. To make reviews more or less thorough, change the [review level](#review-levels).
 
@@ -17746,7 +17766,10 @@ If a review is already running on the pull request's latest commit, a new reques
 
 ### What a later review covers
 
-A later review that starts on its own, such as after a push, focuses on what changed since the last review and posts fewer nits and pre-existing findings. Its summary counts what it left out, in a line that ends "found and not posted" or "outside the scope of this re-review and not posted."
+A later review that starts on its own, such as after a push, focuses on what changed since the last review and posts fewer [nits and pre-existing findings](#severity-levels). To see whether it left findings out as a result, look in the review body for a sentence that counts them:
+
+* **Findings on code that hasn't changed since the last review**: the sentence ends "outside the scope of this re-review and not posted"
+* **Nits and pre-existing findings**: the sentence ends "found and not posted"
 
 To get a review that leaves none of these out, comment [`@claude review`](#comment-commands). It covers the whole pull request again.
 
@@ -17949,7 +17972,7 @@ Find the **Claude Code Review** check run on your pull request, then match its t
 | Check run title | What it means | What to do |
 | :- | :- | :- |
 | **Code review queued...** or **Code review in progress...** | The review hasn't finished | Wait for the title to change |
-| **Code review found no issues** | The review finished and found nothing to flag | Nothing |
+| **Code review found no issues** | The review finished and posted no findings | If this isn't the pull request's first review, look in the review body for a count of [findings the review left out](/docs/en/code-review-pull-requests#what-a-later-review-covers). Otherwise, nothing |
 | A title that says issues were found | The review finished with findings | If you don't see them on the diff, see [Find issues that aren't showing as inline comments](#find-issues-that-aren’t-showing-as-inline-comments) |
 | **Code review skipped — no new changes** | An automatic review didn't run on your latest push | To get a review anyway, comment `@claude review` |
 | **Code review not repeated — earlier findings still open** | An automatic review didn't run on your latest push, and Important findings from the earlier review are still open | Push a fix, or to get a review anyway, comment `@claude review`. See [When a push keeps the earlier result](/docs/en/code-review-pull-requests#when-a-push-keeps-the-earlier-result) |
@@ -19768,7 +19791,7 @@ The session details panel is a set of cards beside the chat that show where the 
 
 #### Hide or show the session details panel
 
-To hide or show the panel, click **Hide session rail** or **Show session rail** in the session's title bar, or in the bar's **⋮** menu when the window is narrow. If you still don't see the panel, [check which Code tab layout you have](#check-which-layout-you-have).
+To hide or show the panel, click **Hide session rail** or **Show session rail** in the session's title bar, or in the bar's **⋮** menu. If you still don't see the panel, [check which Code tab layout you have](#check-which-layout-you-have).
 
 ### Run commands in the terminal
 
@@ -32736,7 +32759,7 @@ For sibling directories that everyone in this area needs, commit `additionalDire
 
 ## Add per-directory skills
 
-Any subdirectory can define [skills](/docs/en/skills) scoped to its own stack. A skill loads on demand when Claude determines it's relevant, so API-specific tooling doesn't consume context during frontend work.
+Any subdirectory can define [skills](/docs/en/skills) scoped to its own stack. A skill loads on demand when Claude determines it's relevant.
 
 Skills live under `.claude/skills/` inside the directory. Commit them alongside that area's code so anyone who clones the repository gets them. In a monorepo this can be one set of skills per package. In a large single-tree codebase it's one set per subsystem such as `src/db/.claude/skills/`.
 
@@ -32777,7 +32800,7 @@ Each route file has a corresponding `.test.ts` file.
 - Mock external services in `src/__tests__/mocks/`
 ```
 
-A different subdirectory holds different skills the same way: `packages/web/.claude/skills/component-patterns/` describes the frontend's component conventions instead of testing. When Claude works on a file in `packages/api/`, it loads the api-testing skill. When it works in `packages/web/`, it loads component-patterns instead. Neither directory's skills load during the other's tasks.
+A different subdirectory holds different skills the same way: `packages/web/.claude/skills/component-patterns/` describes the frontend's component conventions instead of testing. When Claude works on a file in `packages/api/`, it loads the api-testing skill. When it works in `packages/web/`, it loads component-patterns.
 
 You can also scope a skill by file pattern instead of by placement. The [`paths` frontmatter field](/docs/en/skills#frontmatter-reference) takes glob patterns, and Claude loads the skill automatically only when it works with matching files. Use this for a skill that lives in the repository root's `.claude/skills/` but applies only to certain files, such as a database-migration skill scoped to `**/migrations/**`.
 
@@ -37891,7 +37914,8 @@ The command runs in a shell, in the session's current working directory. It runs
 
 A monitor's command is limited in where it starts and what it can reference:
 
-* **Interactive sessions only**: plugin monitors start in an interactive session and never in non-interactive mode with the `-p` flag. They also don't start in sessions where the API provider or telemetry settings make the [Monitor tool](/docs/en/tools-reference#monitor-tool) unavailable
+* **Interactive sessions**: plugin monitors don't start in non-interactive mode with the `-p` flag
+* **Minimum version**: on Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform, or Microsoft Foundry, or with `DISABLE_TELEMETRY` or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` set, monitors require Claude Code v2.1.310 or later. The requirement applies when [feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) is off
 * **No user configuration**: `command` gets the [path variables](#path-variables-and-persistent-data) and `${ENV_VAR}` from the environment, but never `${user_config.*}`. A monitor that references one doesn't start, and monitor processes don't receive `CLAUDE_PLUGIN_OPTION_<KEY>` either
 * **Disabling mid-session**: if you disable a plugin mid-session, Claude Code doesn't stop monitors that are already running. They stop when the session ends
 
@@ -38831,7 +38855,7 @@ If you haven't added that marketplace yet, the command prints `Successfully adde
 
 A private marketplace is one in a repository you need credentials to clone, on GitHub or any other git host. You add it with the same `/plugin marketplace add` or `claude plugin marketplace add` command as a public one. Claude Code clones it with the git credentials already on your machine and never prompts, so each way of connecting has a requirement:
 
-* **HTTPS**: your git credential helpers apply, so access you set up with `gh auth login`, the macOS Keychain, or `git-credential-store` works. Interactive prompts are suppressed, so a host you have never authenticated to fails instead of asking for a password.
+* **HTTPS**: your git credential helpers apply, so access you set up with `gh auth login`, the macOS Keychain, or `git-credential-store` works. Git's prompts and askpass programs are off, including one set in `GIT_ASKPASS`, so the clone fails instead of prompting when git would have to ask for a credential.
 * **SSH**: the host must already be in your `known_hosts` file and the key must work without a passphrase prompt. If your git setup names an SSH program in `GIT_SSH_COMMAND`, `GIT_SSH`, or your git config's `core.sshCommand`, Claude Code runs that program.
 * **GitHub `owner/repo` shorthand**: Claude Code checks whether your SSH key authenticates to `github.com`, then clones over SSH if it does and over HTTPS if it doesn't. Set [`CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1`](/docs/en/env-vars#variables) to skip that check and always clone over HTTPS.
 
@@ -43665,7 +43689,7 @@ After a break longer than the [cache lifetime](#cache-lifetime), there is no cac
 >
 > Compaction works in your favor when the context you discard is content you no longer need. To choose when its overhead happens, run `/compact` at a natural break in your work, such as between tasks, instead of waiting for auto-compaction to trigger mid-task. If you've gone down a path you want to abandon entirely, [`/rewind`](#rewinding-the-conversation) to an earlier turn instead. Rewinding truncates back to a prefix that is already cached, rather than building a new one as compaction does.
 
-If you leave a long conversation idle in a terminal session while it is on the [one-hour TTL](#which-ttl-each-request-gets), Claude Code can compact it shortly before the cache expires. To turn idle compaction off, set [`idleCompaction`](/docs/en/settings-reference#idlecompaction) to `false`, which requires Claude Code v2.1.290 or later.
+If you leave a long conversation idle while it is on the [one-hour TTL](#which-ttl-each-request-gets), Claude Code can compact it. To turn idle compaction off, set [`idleCompaction`](/docs/en/settings-reference#idlecompaction) to `false`, which requires Claude Code v2.1.290 or later.
 
 ### Accumulating many images
 
@@ -44424,7 +44448,7 @@ A connected device shows the conversation in your terminal as it happens. These 
 * **Diff of your changes**: when the session's directory is in a git repository, a connected device's diff pane shows your changes. On a branch that has commits ahead of the repository's default branch, the pane shows the changes since the branch split from it, including your uncommitted edits. On the default branch itself, or on a branch that isn't ahead of it, the pane shows only your uncommitted changes.
 * **Model**: when you pick a [model](/docs/en/model-config) from a connected device, Claude Code runs the session on that model. Requires Claude Code v2.1.238 or later. A model you pick from the device's model control applies to the current session only. When you send `/model <name>` from the device to an interactive session, Claude Code also sets your default for new sessions.
 * **Effort level**: when you set the [effort level](/docs/en/model-config#adjust-effort-level) from a connected device, with `/effort` or the device's effort control, Claude Code applies it to the session on your machine. If you pinned a level with `CLAUDE_CODE_EFFORT_LEVEL`, the session keeps that level, and Claude Code refuses a different pick from the effort control. Picking a level from the effort control requires Claude Code v2.1.234 or later on your machine.
-* **Reconnecting after a connection failure**: run `/remote-control` to reconnect. If compaction rewrote the conversation or you switched conversations with `/resume` in the meantime, Claude Code archives the server session it was using instead of leaving it in the session list. You can still find it by [filtering for archived sessions](/docs/en/claude-code-on-the-web#archive-sessions). Switching conversations while a device is still connected doesn't archive the session.
+* **Reconnecting after a connection failure**: run `/remote-control` to reconnect. If compaction rewrote the conversation or you switched conversations with `/resume` in the meantime, Claude Code archives the server session it was using instead of leaving it in the session list. You can still find that session among your [archived sessions](/docs/en/claude-code-on-the-web#find-an-archived-session) at claude.ai/code. Switching conversations while a device is still connected doesn't archive the session.
 
 ### Enable Remote Control for all sessions
 
@@ -44646,6 +44670,14 @@ In the terminal, Claude Code prints `Successfully reconnected to claude.ai Slack
 
 ## Troubleshooting
 
+### "Remote Control disconnected" or "Can't reach"
+
+At [claude.ai/code](https://claude.ai/code) or in the Desktop app, **Remote Control disconnected** or a **Can't reach** message means your browser or app lost contact with Claude Code on your computer. Neither message tells you whether Claude or a subagent you were watching is still working on your computer. On that computer, check the state Claude Code is in and follow the matching step to reconnect:
+
+* **An interactive session shows `Remote Control disconnected`**: follow [the reconnect steps for the reason that line gives](#session-ended-elsewhere)
+* **Claude Code is running and shows no failure**: an interactive session reconnects by itself once the machine is awake and online, so you don't need to act. If you used `claude remote-control`, see **Extended network outage** under [Limitations](#limitations)
+* **Claude Code isn't running**: [start it again and bring the session back](#resume-sessions-after-stopping-the-server)
+
 ### "Remote Control requires a claude.ai subscription"
 
 You're not signed in with a claude.ai account, or another credential is taking precedence over your login. The message takes one of these forms:
@@ -44708,7 +44740,7 @@ Your organization's policy stopped allowing Remote Control while a session was c
 * **With `/remote-control`, `claude --remote-control`, or [auto-connect](#enable-remote-control-for-all-sessions)**: the session keeps running without Remote Control, and Claude Code archives it at claude.ai
 * **With `claude remote-control`**: the server stops and archives the sessions it was serving, then exits
 
-You can still find an archived session by [filtering for archived sessions](/docs/en/claude-code-on-the-web#archive-sessions).
+To find one of these sessions again, open your [archived sessions](/docs/en/claude-code-on-the-web#find-an-archived-session) at claude.ai/code.
 
 Remote Control doesn't reconnect on its own. To turn it back on after your organization allows it again, run `/remote-control` in the session or `claude remote-control` in your shell. Either command fails with [`Remote Control is disabled by your organization's policy`](#remote-control-is-disabled-by-your-organizations-policy) until Claude Code on this machine has fetched the changed policy. An open session fetches it about once an hour. To find out what is blocking Remote Control, match the full text the command prints against that entry.
 
@@ -45067,12 +45099,13 @@ Change the repository if needed, choose an event from the [supported events](#su
 
 #### Supported events
 
-GitHub triggers can subscribe to either of the following event categories. Within each category you can pick a specific action, such as `pull_request.opened`, or react to all actions in the category.
+Choose an event from any of the following categories. Within each category you can pick a specific action, such as `pull_request.opened`, or react to all actions in the category.
 
 | Event | Triggers when |
 | :- | :- |
 | Pull request | A PR is opened, closed, assigned, labeled, synchronized, or otherwise updated |
 | Release | A release is created, published, edited, or deleted |
+| Issue | An issue is opened, edited, closed, reopened, labeled, assigned, or otherwise updated |
 
 #### Filter pull requests
 
@@ -45107,9 +45140,13 @@ Click a scheduled task in the list to open its detail page. The detail page show
 
 Click any run to open it as a full session. From there you can see what Claude did, review changes, create a pull request, or continue the conversation. Each run session works like any other session: use the dropdown menu next to the session title to rename, archive, or delete it.
 
-> [!NOTE]
->
-> A green status in the run list means the session started and exited without an infrastructure error. It does not mean the work your prompt describes succeeded. Open the run to read the transcript and confirm what Claude actually did. Blocked network requests, missing connector tools, and failures in the work itself all surface there rather than in the status indicator.
+Under **History** on the task's detail page, each finished run's row ends with **Error** if the run failed, **Cancelled** if it was cancelled, and neither word if it succeeded. The **Status** filter names the same three outcomes **Failed**, **Cancelled**, and **Succeeded**. These outcomes say how the session ended, not whether Claude completed the work your prompt describes, so open the run and read its transcript to see what happened.
+
+* **Succeeded**: the session ended without Claude Code reporting a failure. Blocked network requests, missing connector tools, and work Claude couldn't complete appear in the transcript rather than on the row
+* **Failed**: the session didn't finish normally. For example, it stopped unexpectedly, ended on an error, or was archived before the run started
+* **Cancelled**: the run didn't fail, and its session was archived. If you archive the session of a run that succeeded, the run changes to **Cancelled**. Nothing in the task needs to change
+
+If a warning appears under **History**, see ["The last run" warnings](#the-last-run-didnt-start).
 
 ### Edit and control scheduled tasks
 
@@ -45272,6 +45309,21 @@ If the cause is your CLI sign-in or being inside a cloud session, you can still 
 ### "Routines are disabled by your organization's policy"
 
 An Owner in your Team or Enterprise organization has likely turned off the **Scheduled tasks (Was Routines)** toggle at [**Organization settings > Capabilities > Remote sessions**](https://claude.ai/admin-settings/capabilities). On Claude Code v2.1.227 or later, the same toggle also hides `/schedule` in the CLI. This is a server-side organization setting, so it cannot be overridden from your local configuration. Ask an Owner to turn scheduled tasks back on for your organization.
+
+### "The last run" warnings
+
+When a warning under **History** begins with "The last run", find it in the first column and do what its row says. The warning clears once a later run starts.
+
+| Warning | What to do |
+| :- | :- |
+| "The last run didn't start because your organization had reached its limit on cloud sessions running at once." | The task needs no change. Click **Run now** later, or wait for the next run |
+| "The last run didn't start because its cloud environment couldn't be found or used." | On the task's detail page, open the menu next to its name, select **Edit**, and find the [cloud environment selector](#environments-and-network-access). If it reads **Unavailable environment**, that environment was archived or is no longer available to your account, so choose another one there and save your changes. Otherwise, retry with **Run now** on the detail page, or pick another environment in the selector and save your changes |
+| "The last run was blocked because it couldn't access something it needs, or your organization's policy doesn't allow it." | Check that your [GitHub access](#repositories-and-branch-permissions) covers the task's repositories. If it does, ask an [Owner](/docs/en/server-managed-settings#access-control) of your Claude organization whether a policy blocks the task |
+| "The last run didn't start because of a problem that's usually temporary." | Click **Run now** to try again, or wait for the next run |
+| "The last run didn't start because its repository or branch wasn't available." | Check on GitHub that each repository in the task has the [branch the run starts from](#repositories-and-branch-permissions). Also check that your [GitHub access](#repositories-and-branch-permissions) covers each repository, and reconnect GitHub if your connection expired |
+| "The last run didn't start because some of its settings weren't accepted." | On the task's detail page, open the menu next to its name and select **Edit**. The dialog doesn't mark which setting wasn't accepted, so check each one there, including the task's name, prompt, model, repositories, environment, connectors, and triggers |
+| "The last run stopped because a usage limit was reached." | For when the task's runs can start again after a usage limit, see [Usage and limits](#usage-and-limits) |
+| "The last run failed." | Click **Run now** to try again, or wait for the next run. The failed run has no session to open |
 
 ## Related resources
 
@@ -52001,7 +52053,10 @@ When Claude finishes, review the changes, leave feedback on specific lines, and 
 
 **1. Open the diff view**
 
-A diff indicator shows lines added and removed across the session, for example `+42 -18`. Select it to open the diff view, with a file list on the left and changes on the right.
+After Claude pushes its changes to a branch, the **Changes** card in the panel beside the chat shows the lines added and removed across the session, for example `+42 -18`. Click those counts to open the diff view.
+
+* You can also click **Changes** in the session's title bar, or in the bar's **⋮** menu.
+* To show the panel when it's hidden, click the **Show session rail** icon in the session's title bar, or in the bar's **⋮** menu.
 
 The diff compares the session's changes against its base branch by default. To compare against a different branch, select **Compare against** and pick one.
 
@@ -52011,7 +52066,10 @@ Select any line in the diff, type your feedback, and press Enter. Comments queue
 
 **3. Create a pull request**
 
-When the diff looks right, select **Create PR** at the top of the diff view. You can open it as a full PR, a draft, or jump to GitHub's compose page with a generated title and description.
+When the diff looks right, [show the panel again](/docs/en/claude-code-on-the-web#review-changes) if the **Changes** card is out of view, then create a pull request or a draft from the card:
+
+* Click **Create PR**. Claude Code creates the pull request with a generated title and description.
+* To open a draft instead, right-click **Create PR**, select **Create draft PR** to change what the button does, then click the button
 
 **4. Keep iterating after the PR**
 
@@ -56353,10 +56411,11 @@ async function onInbound(message: PlatformMessage) {
 }
 ```
 
-A remote reply that doesn't exactly match the expected format fails in one of two ways, and in both cases the local terminal dialog stays open:
+If a remote reply has no effect and the local terminal dialog stays open, check for these causes:
 
-* **Different format**: your inbound handler's regex fails to match, so text like `approve it` or `yes` without an ID falls through as a normal message to Claude.
-* **Right format, wrong ID**: your server emits a verdict, but Claude Code finds no open request with that ID and drops it silently.
+* **The format is wrong**: your inbound handler's regex fails to match, so text like `approve it` or `yes` without an ID falls through as a normal message to Claude.
+* **The ID is wrong**: your server emits a verdict, but Claude Code finds no open request with that ID and drops it silently.
+* **The ID was used by an earlier prompt**: your server emits a verdict with the ID from the request, but an earlier prompt in the session had the same ID. Once an ID repeats, Claude Code drops any channel verdict carrying it, so that a reply meant for one prompt can't approve the other. An ID is five random letters, so a repeat is rare. Answer at the terminal instead.
 
 ### Full example
 
@@ -56642,9 +56701,9 @@ Checkpointing only tracks files that have been edited within the current session
 
 ### Messages sent mid-turn not checkpointed
 
-In the rewind menu, a message you [typed while Claude was still working](/docs/en/interactive-mode#queue-messages-while-claude-works) can be marked **No code restore**. Claude read that message before its turn ended. [Checkpoints are taken for prompts that start a turn](#how-checkpoints-work), so this message has none of its own. The edits Claude made after reading it count toward the prompt that started the turn.
+In the rewind menu, a message you [typed while Claude was still working](/docs/en/interactive-mode#queue-messages-while-claude-works) can be marked **No code restore**. The marked message has no [checkpoint](#how-checkpoints-work) of its own.
 
-You don't need to do anything about the message itself. To undo the file changes from that part of the session, select the prompt that started the turn and choose **Restore code** or **Restore code and conversation**. That reverts Claude's file edits from the whole turn, including the ones from before your message arrived. Selecting the marked message still offers **Restore conversation**, which rewinds the conversation to it and leaves your files as they are.
+To undo the file edits Claude made after that message, select the prompt that started the turn and choose **Restore code** or **Restore code and conversation**. That reverts Claude's file edits from the whole turn, including the ones from before your message arrived.
 
 ### Symlinked and hard-linked paths not restored
 
@@ -67237,7 +67296,7 @@ In addition to the [common input fields](#common-input-fields), Setup hooks rece
 
 Setup hooks can't block; execution continues on any exit code. On every exit code, Claude Code discards a Setup hook's [JSON output fields](#json-output), such as `systemMessage`, `continue`, and `hookSpecificOutput.additionalContext`. With `-p`, a Setup hook's stdout, stderr, and exit code appear in the run's output only as [`hook_response` events](/docs/en/headless#read-session-metadata) when you launch with `--output-format stream-json --verbose`.
 
-Setup hooks have access to `CLAUDE_ENV_FILE`. Variables written to that file persist into subsequent Bash commands for the session, as in [SessionStart hooks](#persist-environment-variables). Only `type: "command"` hooks run on `Setup`. A `type: "mcp_tool"` hook on `Setup` is always skipped, as described under [MCP tool hook fields](#mcp-tool-hook-fields).
+Setup hooks have access to `CLAUDE_ENV_FILE`. If your hook writes variables to that file, they persist into subsequent Bash commands for the session, as in [SessionStart hooks](#persist-environment-variables). Only `type: "command"` hooks run on `Setup`. A `type: "mcp_tool"` hook on `Setup` is always skipped, as described under [MCP tool hook fields](#mcp-tool-hook-fields).
 
 ### InstructionsLoaded
 
@@ -67293,6 +67352,12 @@ block certain types of prompts.
 Apart from a command hook you run with [`async: true`](#run-hooks-in-the-background), a `UserPromptSubmit` command, HTTP, or MCP tool hook that reaches its timeout is canceled and its output, including any `additionalContext`, is discarded. The prompt still reaches Claude without that context. To block the prompt instead, set [`onFailure: "block"`](#block-the-action-when-a-hook-fails) on a command or HTTP hook. The transcript shows a notice naming the hook, the timeout that fired, and that the output was discarded.
 
 An [Agent SDK callback hook](/docs/en/agent-sdk/hooks) on `UserPromptSubmit` that reaches its timeout blocks the prompt with a message naming the hook and the timeout, because a callback there can be acting as a policy gate that must not fail open. The session continues.
+
+#### `Esc` during a prompt check
+
+If you press `Esc` or interrupt the session while hooks are still checking a prompt, the check stops and the prompt doesn't reach Claude. Text you typed at the terminal returns to the prompt input, and the hooks check it again when you resend it.
+
+A hook can block the prompt at the same moment you interrupt. The prompt then stays blocked: you see that hook's [block message](#what-a-blocked-prompt-leaves-behind), and the text doesn't return to the input.
 
 #### UserPromptSubmit input
 
@@ -68781,7 +68846,7 @@ Claude Code acts on the blocking decision from a ConfigChange hook's JSON output
 
 Runs when a shell command in the main conversation changes the working directory, for example when Claude executes a `cd` command. Use this to react to directory changes: reload environment variables, activate project-specific toolchains, or run setup scripts automatically. Pairs with [FileChanged](#filechanged) for tools like [direnv](https://direnv.net/) that manage per-directory environment.
 
-CwdChanged hooks have access to [`CLAUDE_ENV_FILE`](#persist-environment-variables). Variables written to that file persist into subsequent Bash commands until the next CwdChanged event, when Claude Code clears them.
+CwdChanged hooks have access to [`CLAUDE_ENV_FILE`](#persist-environment-variables). If your hook writes variables to that file, they persist into subsequent Bash commands until the next CwdChanged event, when Claude Code clears them.
 
 CwdChanged doesn't support matchers and fires on every occurrence.
 
@@ -68946,7 +69011,10 @@ Runs when Claude Code creates a worktree in cases such as these:
 * Claude Code isolates a [background session](/docs/en/agent-view#how-file-edits-are-isolated) in its own worktree
 * [`claude remote-control`](/docs/en/remote-control#start-a-remote-control-session) in `worktree` mode starts a session in its own worktree
 
-When Claude runs `git worktree add` through the Bash tool rather than calling `EnterWorktree`, your WorktreeCreate hook doesn't run. To inspect or block that command, add a [`PreToolUse`](#pretooluse) hook with the `Bash` matcher.
+A WorktreeCreate hook doesn't run for a worktree Claude adds through Bash, and a plugin's hook doesn't run for the one created when you launch with `--worktree` and [`--tmux`](/docs/en/cli-reference#cli-flags):
+
+* **`git worktree add` through Bash**: to inspect or block that command, add a [`PreToolUse`](#pretooluse) hook with the `Bash` matcher.
+* **`--worktree` with `--tmux`**: Claude Code creates the worktree before it loads plugins, so a WorktreeCreate hook from a plugin doesn't run. To have your hook run with both flags, define it in a [settings file](#configuration) instead. Before v2.1.300, a plugin's WorktreeCreate hook didn't run with `--worktree` alone either.
 
 By default Claude Code creates the isolated working copy with `git worktree`. Configuring a WorktreeCreate hook replaces that default git behavior, letting you use a different version control system like SVN, Perforce, or Mercurial.
 
@@ -70699,6 +70767,8 @@ While the panel is open, you can:
 
 To rebind the keys that scroll the file list or change the comparison, see [Diff panel actions](/docs/en/keybindings#diff-panel-actions).
 
+During an unfinished merge, rebase, cherry-pick, or revert, the panel keeps showing the changes it last read from git, so it doesn't fill with the operation's incoming changes. It updates at its first refresh after the operation ends, for example when Claude next edits a file.
+
 ### Diff dialog
 
 The diff dialog opens as a bordered block above the prompt and lists your changed files with their added and removed line counts. It compares them against `HEAD`, or against whatever you last [chose in the diff panel](#diff-panel) for this repository.
@@ -71575,11 +71645,11 @@ At the main prompt, Claude Code matches every key against the active contexts, s
 
 ## Vim mode interaction
 
-When vim mode is enabled via `/config` → Editor mode, keybindings and vim mode operate independently:
+When you enable vim mode with the Editor mode setting in `/config`, keybindings and vim mode operate independently:
 
-* **Vim mode** handles input at the text input level (cursor movement, modes, motions)
-* **Keybindings** handle actions at the component level (toggle todos, submit, etc.)
-* The Escape key in vim mode switches INSERT to NORMAL mode; it does not trigger `chat:cancel`
+* **Vim mode** handles input at the text input level: cursor movement, modes, and motions
+* **Keybindings** handle actions at the component level, such as toggling todos or submitting a message
+* The Escape key in vim mode switches INSERT to NORMAL mode; it doesn't trigger `chat:cancel`
 * Most Ctrl+key shortcuts pass through vim mode to the keybinding system
 * Vim keys aren't remappable through the keybindings file. To map a two-key INSERT-mode sequence such as `jj` to Escape, use the [`vimInsertModeRemaps`](/docs/en/interactive-mode#remap-insert-mode-key-sequences) setting
 * In vim NORMAL mode, `?` shows the help menu (vim behavior)
@@ -72366,7 +72436,7 @@ The headers carry only what the rows below list: fixed vocabularies, tool names,
 | :- | :- |
 | `x-claude-code-request-class` | What kind of request this is: `main` for a turn of the main conversation, `subagent` for a turn of a [subagent](/docs/en/sub-agents), `workflow` for an agent running inside a workflow, `compaction` for the summarization request that compacts a conversation, or `auxiliary` for side requests such as session titles, classifiers, and summaries. Sent on every request |
 | `x-claude-code-agent-type` | The kind of subagent that issued the request: a built-in agent type name such as `Explore`, `Plan`, or `general-purpose`, or `custom` for a user-defined agent, `teammate` for an [agent team](/docs/en/agent-teams) member running in the lead's process, or `fork` for a [fork](/docs/en/sub-agents#fork-the-current-conversation). Present only on a subagent's own turns; a subagent's compaction or side requests keep the agent ID but carry no type. A user-chosen agent name is never sent |
-| `x-claude-code-compaction` | Present on the request that summarizes the conversation during a [compaction](/docs/en/prompt-caching#compacting-the-conversation). The value says what triggered it: `auto` when the context window approached capacity, `manual` for `/compact`, or `reactive` when the API rejected a request as too long. The value is also `auto` for [idle compaction](/docs/en/settings-reference#idlecompaction). Absent on every other request |
+| `x-claude-code-compaction` | Present on the request that summarizes the conversation during a [compaction](/docs/en/prompt-caching#compacting-the-conversation). The value says what triggered it: `auto` when the context window approached capacity, `manual` for `/compact`, or `reactive` when the API rejected a request as too long. The value is also `auto` for [idle compaction](/docs/en/settings-reference#idlecompaction) in an interactive terminal session. Absent on every other request, including one that writes a summary in the background before a compaction |
 | `x-claude-code-context-compacted` | Present once, on the first main-conversation request after a compaction, with the same values as `x-claude-code-compaction`. The conversation prefix before this request is no longer used, so a cache keyed on it can be dropped |
 | `x-claude-code-prev-tool-durations` | Measured run time of the tool calls whose results this request carries, as `<name>=<ms>;<name>=<ms>`, for example `Bash=742;Read=9`. Sent on the next request of the same conversation after a batch of tool calls, from the main session or a subagent |
 | `x-claude-code-prompt-id` | Random UUID that identifies the user prompt a request serves. Requests serving one prompt share the value, including the turns of subagents that prompt started. Requests not attributed to a prompt omit it. Use it to group a session's requests by prompt. Requires Claude Code v2.1.283 or later |
@@ -72456,7 +72526,10 @@ When the upstream rejects one of these capabilities, Claude Code can retry the r
 * When the upstream rejects only the `cache_control` marker on a mid-conversation system message, Claude Code keeps the system messages and retries once with the marker moved. The marker goes on the last entry in `messages` that isn't a system message, in that retry and in later requests until Claude Code exits
 * When the upstream rejects a [thinking signature](https://platform.claude.com/docs/en/build-with-claude/extended-thinking), including with a `400` whose message says the block is `bound to a different conversation`, Claude Code removes earlier thinking blocks from the request, retries, and keeps them out of every later request. New responses still include thinking
 * When the gateway or its upstream rejects the [advisor tool](/docs/en/advisor) entry in `tools` as an unrecognized tool type, Claude Code retries the request once without that entry and its `anthropic-beta` value. Later requests to that base URL leave the advisor out until Claude Code exits, and `/advisor` is unavailable to the developer for that time. Claude Code recognizes this rejection by a `400` or `422` response whose message names the tool type after `Input tag`, such as `Input tag 'advisor_20260301'`. Before v2.1.280, Claude Code didn't retry this rejection
-* When the upstream rejects `output_config.effort`, Claude Code retries the request without effort and leaves it out of later requests to that model until Claude Code exits. Claude Code recognizes this rejection by a `400` whose message names `output_config.effort` together with `Extra inputs are not permitted`, or says the model doesn't support the effort parameter
+* When the upstream rejects `output_config.effort` or its `anthropic-beta` value, Claude Code retries and adds neither to requests for that model until Claude Code exits. Your gateway needs no change if it forwards the upstream's `400` unmodified and the message:
+  * Names `output_config.effort` alongside `Extra inputs are not permitted`
+  * Says the model doesn't support the effort parameter
+  * Starts with `Unexpected value(s)` and lists `effort-2025-11-24` for the `anthropic-beta` header. Requires v2.1.310 or later. Developers whose [`ANTHROPIC_BETAS`](/docs/en/env-vars) lists the value keep sending it and getting the `400`, so have them remove that entry
 * When the upstream rejects the `context_management` field or its `anthropic-beta` value, the gateway sees the request once more without them. If the gateway sees them again in a later request and the upstream rejects them again, the same retry follows. Claude Code recognizes this rejection by its message, for example one containing `context_management: Extra inputs are not permitted`. Before v2.1.304, Claude Code didn't retry this rejection
 * When the upstream rejects a beta tool field other than `defer_loading`, such as `strict`, the `400` reaches the developer. Before it does, the gateway can see the request again [without the tool search fields](#retry-without-tool-search). To stop sending such fields, have developers set [`CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`](#disable-pre-release-capabilities)
 
@@ -76530,7 +76603,7 @@ Logged when conversation compaction completes.
 * `pre_tokens`: Approximate token count before compaction
 * `post_tokens`: Approximate token count after compaction
 * `error`: Error message when compaction failed
-* `precompute_reuse`: Only set when `trigger` is `"manual"` or for an [idle compaction](/docs/en/settings-reference#idlecompaction), which reports `trigger` as `"auto"`. Auto-compaction can prepare a summary in the background before the context window fills, and this attribute records whether the compaction reused that prepared summary. `"hit"` means it was reused; `"miss_custom_instructions"`, `"miss_hook"`, and `"miss_not_ready"` give the reason a fresh summary was computed instead
+* `precompute_reuse`: Only set when `trigger` is `"manual"`, or when `trigger` is `"auto"` for an [idle compaction](/docs/en/settings-reference#idlecompaction) in an interactive terminal session. Auto-compaction can prepare a summary in the background before the context window fills, and this attribute records whether the compaction reused that prepared summary. `"hit"` means it was reused; `"miss_custom_instructions"`, `"miss_hook"`, and `"miss_not_ready"` give the reason a fresh summary was computed instead
 
 #### Subagent completed event
 
@@ -77671,7 +77744,7 @@ For where `defaultMode` goes in a settings file, see the example under [Start in
 
 **Web and mobile**
 
-On [claude.ai/code](https://claude.ai/code), use the mode dropdown next to the prompt box. In the mobile app, tap the **+** button in the prompt box, then **Permission**. Cloud sessions and Remote Control sessions offer different permission modes:
+On [claude.ai/code](https://claude.ai/code), use the mode dropdown in the row under the prompt box. In the mobile app, tap the **+** button in the prompt box, then **Permission**. Cloud sessions and Remote Control sessions offer different permission modes:
 
 * **[Cloud sessions](/docs/en/claude-code-on-the-web)**: Accept edits, Plan, and Auto. Accept edits corresponds to `default` mode: cloud sessions pre-approve file edits regardless of mode, so the dropdown shows Accept edits instead of Manual. Cloud sessions still honor `defaultMode: "acceptEdits"` from settings. Auto mode appears only when your organization allows it and the selected model supports it. Bypass permissions isn't available.
 * **[Remote Control](/docs/en/remote-control) sessions** on your local machine: Manual, Accept edits, Plan, and Auto for a session you started yourself, and you can't select Bypass permissions from the app. To use Auto, the session has to meet the auto mode [availability requirements](#eliminate-prompts-with-auto-mode). For a project thread running on your computer, see [Run a thread on your own computer](/docs/en/claude-projects#run-a-thread-on-your-own-computer).
@@ -80788,7 +80861,7 @@ You choose whether the clone runs over SSH or HTTPS by the form of the add comma
 Tell users what each protocol needs on their machine:
 
 * **SSH**: the key must work without a passphrase prompt, for example because it's loaded in `ssh-agent`. The host must already be in `known_hosts`.
-* **HTTPS**: Claude Code leaves the user's git credential helper enabled but forbids it from prompting. A credential the helper already stores works; one it would have to ask for fails. On GitHub, `gh auth login` followed by `gh auth setup-git` stores one.
+* **HTTPS**: Claude Code leaves the user's git credential helper enabled but forbids it from prompting, and doesn't run askpass programs such as one set in `GIT_ASKPASS`. A credential the helper already stores works; one it would have to ask for fails. On GitHub, `gh auth login` followed by `gh auth setup-git` stores one.
 
 For a GitHub Enterprise Server host, users need git access to that host from their machine. See [Plugin marketplaces on GHES](/docs/en/github-enterprise-server#plugin-marketplaces-on-ghes) for what each Claude Code surface needs to reach a GHES-hosted marketplace.
 
@@ -81338,7 +81411,7 @@ If you haven't added that marketplace yet, the command prints `Successfully adde
 
 A private marketplace is one in a repository you need credentials to clone, on GitHub or any other git host. You add it with the same `/plugin marketplace add` or `claude plugin marketplace add` command as a public one. Claude Code clones it with the git credentials already on your machine and never prompts, so each way of connecting has a requirement:
 
-* **HTTPS**: your git credential helpers apply, so access you set up with `gh auth login`, the macOS Keychain, or `git-credential-store` works. Interactive prompts are suppressed, so a host you have never authenticated to fails instead of asking for a password.
+* **HTTPS**: your git credential helpers apply, so access you set up with `gh auth login`, the macOS Keychain, or `git-credential-store` works. Git's prompts and askpass programs are off, including one set in `GIT_ASKPASS`, so the clone fails instead of prompting when git would have to ask for a credential.
 * **SSH**: the host must already be in your `known_hosts` file and the key must work without a passphrase prompt. If your git setup names an SSH program in `GIT_SSH_COMMAND`, `GIT_SSH`, or your git config's `core.sshCommand`, Claude Code runs that program.
 * **GitHub `owner/repo` shorthand**: Claude Code checks whether your SSH key authenticates to `github.com`, then clones over SSH if it does and over HTTPS if it doesn't. Set [`CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1`](/docs/en/env-vars#variables) to skip that check and always clone over HTTPS.
 
@@ -82058,7 +82131,7 @@ For component keys such as `commands` and `hooks`, [Component path forms](#compo
 | `workflows` | Path, or array of paths | [Workflow](/docs/en/workflows#distribute-a-workflow-in-a-plugin) `.js` files or directories. Replaces the default `workflows/` scan |
 | `experimental` | Object | Container for `themes`, `monitors`, and `evals`, whose manifest shape may still change |
 | `experimental.themes` | Path, or array of paths | Theme files or directories. Replaces the default `themes/` scan. A top-level `themes` key still loads, with a `claude plugin validate` warning |
-| [`experimental.monitors`](#monitors) | Path, or inline array | A `.json` file holding the monitors array, or the array itself. Defaults to `monitors/monitors.json`. A top-level `monitors` key still loads, with a `claude plugin validate` warning. Monitors run only in interactive sessions, and not on Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry |
+| [`experimental.monitors`](#monitors) | Path, or inline array | A `.json` file holding the monitors array, or the array itself. Defaults to `monitors/monitors.json`. A top-level `monitors` key still loads, with a `claude plugin validate` warning. Monitors [don't start with the `-p` flag](/docs/en/plugins/components#monitors) |
 | `experimental.evals` | Path, or array of paths | Directory that holds the plugin's [eval cases](/docs/en/plugin-evals#use-a-different-eval-directory) when it isn't the default `evals/`. `claude plugin eval --eval-dir` overrides it |
 
 In the Type column, a path is a string relative to the plugin root, such as `"./custom/commands"`.
@@ -84634,12 +84707,12 @@ You added or updated a marketplace from a git repository, and the clone failed w
 
 First check the repository itself: a misspelled `owner/repo`, a repository that doesn't exist, or a private repository you can't see also ends in this message. Open the repository URL in your browser, or run `git ls-remote <url>` in your terminal, to confirm it exists and you have access.
 
-If the repository is right, the cause is credentials. Claude Code runs git with interactive prompts disabled, so it can't ask you for a password, a key passphrase, or a credential the way your terminal would. If git needs to prompt, you see `fatal: Cannot prompt because user interactivity has been disabled` or `terminal prompts disabled` in the original error. Only credentials that already work non-interactively succeed:
+If the repository is right, the cause is credentials. Claude Code turns off git's prompts and askpass programs, including one set in `GIT_ASKPASS`, and runs SSH in batch mode. When git needs to prompt, the clone's error includes `fatal: Cannot prompt because user interactivity has been disabled`, `terminal prompts disabled`, or `fatal: unable to get password from user`. Only credentials git can get without a prompt or askpass program succeed:
 
 * **SSH**: `ssh -T git@<host>` must succeed without prompting for a passphrase, and the host must already be in `known_hosts`
-* **HTTPS**: your credential helper must hold a token for the host. For GitHub, run `gh auth login` and `gh auth setup-git`. For another host, store a personal access token in your git credential helper. Test with `git ls-remote <url>`
+* **HTTPS**: your credential helper must hold a token for the host. For GitHub, run `gh auth login` and `gh auth setup-git`. For another host, store a personal access token in your git credential helper. To test, unset `GIT_ASKPASS` in your terminal and run `git -c core.askPass= ls-remote <url>`.
 
-Once `git ls-remote` succeeds in your terminal without a prompt, run the add or update again. A successful add prints `Successfully added marketplace: <name>`. A successful update prints `Successfully updated marketplace: <name>` from your shell, or `✔ Updated 1 marketplace` in a session.
+Once the check for your protocol succeeds without a prompt, run the add or update again. A successful add prints `Successfully added marketplace: <name>`. A successful update prints `Successfully updated marketplace: <name>` from your shell, or `✔ Updated 1 marketplace` in a session.
 
 To make Claude Code skip SSH for GitHub `owner/repo` sources, set `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1`. Without it, Claude Code clones those sources over SSH when an SSH key for `github.com` looks configured, and falls back to HTTPS when the SSH clone fails.
 
@@ -88719,6 +88792,7 @@ Set the flag above your longest expected session, such as `--kill-session-after-
   * **With a `checkout` hook**: repositories checked out via a [`checkout` lifecycle hook](/docs/en/self-hosted-environments-configuration#checkout) aren't pushed. Snapshot those from the [`post-session` hook](/docs/en/self-hosted-environments-configuration#post-session) instead.
   * **Before enabling the flag**: restrict who can push to `claude/*` refs on the source remote. On resume, the runner fetches the previously pushed branch without verifying who pushed it.
   * **Uncommitted changes are still lost**: to prompt Claude to commit and push when it finishes responding, see [Prompt sessions to push their work](/docs/en/self-hosted-environments-configuration#prompt-sessions-to-push-their-work)
+* **A command cut off by a lost runner can run again**: when the session resumes on another runner, Claude sees the interrupted tool call with a result saying its outcome is unknown.
 * **A repository added mid-session can fail to clone**: Claude clones it with `git clone` over HTTPS. On a runner without [`--use-anthropic-git-proxy`](#use-the-anthropic-git-proxy), the clone fails with a git authentication error if nothing on the host can read the repository. Where you can, select every repository the session needs when you create it.
 * **Some connectors don't appear in self-hosted sessions**: a connector you haven't yet connected in claude.ai Settings isn't listed in a self-hosted session, and the session won't prompt you to connect it. Connect it in Settings first, then start a fresh session. Adding a connector to an already-running session also doesn't make its tools available to Claude; start a fresh session to pick up a newly added connector.
 * **When someone archives or deletes a session, or releases its runner from the session's menu**: don't count on the [`--push-outcome-on-release`](/docs/en/self-hosted-environments-reference#runner-cli-flags) push. To save commits in those cases, push `HEAD` to a rescue branch from a [`post-session` hook](/docs/en/self-hosted-environments-configuration#post-session). If you start from the example there, make it push even when nothing is uncommitted, because it pushes only after a snapshot commit.
@@ -89360,7 +89434,7 @@ Most flags have a corresponding environment variable. When both are set, the fla
 | `--retire-at <epoch-seconds>` | `SELF_HOSTED_RUNNER_RETIRE_AT` | unset | Retire the runner at an absolute Unix timestamp in seconds, for infrastructure that kills the runner at a known time; [Runner lifecycle](/docs/en/self-hosted-environments#runner-lifecycle) describes the release sequence and how to size the margin. Values before 2001 or after the year 5138 are rejected by the flag and ignored by the environment variable. |
 | `--server-auto-mode-lists <mode>` | `SELF_HOSTED_RUNNER_SERVER_AUTO_MODE_LISTS` | `no-allow` | Which of the [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) classifier rule lists that the control plane sends with a session may reach that session: `all`, `no-allow`, or `none`. See [Auto mode rule lists](#auto-mode-rule-lists) for what each value applies. An invalid value stops the runner at startup. Requires Claude Code v2.1.295 or later. |
 | `--session-stop-grace-sec <n>` | `SELF_HOSTED_RUNNER_SESSION_STOP_GRACE_MS` | `5` | How long to wait for the Claude process to exit cleanly after a session ends, before force-killing it. Raise the value if the child's own `SessionEnd` hooks need more time. |
-| `--startup-timeout-min <n>` | `SELF_HOSTED_RUNNER_STARTUP_TIMEOUT_MS` | `15` | Release a session slot if the child hasn't signaled on the [activity channel](/docs/en/self-hosted-environments-configuration#keep-stdin-and-file-descriptor-3-attached) that it initialized within N minutes. The N minutes start at spawn, after cloning, and start over at each `user` or `assistant` message the child emits before it has initialized or reported its state. Before v2.1.299, this timeout stopped applying at the session's first such message. For release after the init signal, see `--release-idle-session-min`. `0` disables. |
+| `--startup-timeout-min <n>` | `SELF_HOSTED_RUNNER_STARTUP_TIMEOUT_MS` | `15` | How long to wait on a child process that hasn't initialized before releasing the session's slot. See [Session startup timeout](#session-startup-timeout) for where the count starts and which sessions it leaves running. `0` disables the timeout. |
 | `--trust-workspace [bool]` | `SELF_HOSTED_RUNNER_TRUST_WORKSPACE` | on | Seed persisted trust for each session's repository paths so repo-committed `permissions.allow` and `additionalDirectories` are honored. Set `false` to drop repo-committed permission grants and configure allow rules in the host config's `settings.json` instead; repository-committed `sandbox.*` settings still apply either way, which is why the [repo-settings guard](/docs/en/self-hosted-environments-deploy#harden-your-deployment) scans them regardless of this flag. |
 | `--use-anthropic-git-proxy` | `CLAUDE_RUNNER_USE_GIT_PROXY=1` | off | Clone repositories on github.com via the [Anthropic git proxy](/docs/en/self-hosted-environments-deploy#use-the-anthropic-git-proxy) instead of customer-managed git auth. Requires `--capacity 1` and git 2.32 or later; the runner refuses to start otherwise. Supersedes the rewrite flags. |
 
@@ -89368,6 +89442,12 @@ Most duration flags have a maximum, chosen to keep each timeout inside the runti
 
 * **Flag**: startup fails with an error.
 * **Environment variable**: the runner clamps the value to the timer ceiling rather than rejecting it.
+
+### Session startup timeout
+
+If a session lost its slot during a turn such as `/code-review`, update the runner and the child binary to v2.1.309 or later. From v2.1.299 through v2.1.308, the runner released a session, even mid-turn, once the startup timeout passed without a `user` or `assistant` message.
+
+With `--startup-timeout-min <n>`, the runner releases a session's slot when its child hasn't initialized within `<n>` minutes after cloning. During a turn that begins before the child initializes, the session keeps its slot until `<n>` minutes pass with no line on the child's [activity channel](/docs/en/self-hosted-environments-configuration#keep-stdin-and-file-descriptor-3-attached). Once the child initializes, the runner clears that count and `--release-idle-session-min` governs release. To limit a session whose child is alive but stuck, set `--kill-session-after-min`.
 
 ### Auto mode rule lists
 
@@ -91177,7 +91257,7 @@ Every key below links to its entry. Scope lists the [files](/docs/en/settings#se
 | [`gcpAuthRefresh`](#gcpauthrefresh) | Refresh [Google Cloud credentials](/docs/en/google-vertex-ai#advanced-credential-configuration) with your own command | Authentication and providers | Any file |
 | [`hooks`](#hooks) | Run your own commands as [hooks](/docs/en/hooks) at points in Claude Code's lifecycle | Hooks and automation | Any file |
 | [`httpHookAllowedEnvVars`](#httphookallowedenvvars) | Limit which env vars [HTTP hooks](/docs/en/hooks) can put in headers | Hooks and automation | Any file |
-| [`idleCompaction`](#idlecompaction) | Stop Claude Code from compacting a long conversation while your terminal session is idle | Memory and context | Any file |
+| [`idleCompaction`](#idlecompaction) | Stop Claude Code from compacting a long conversation that you've stepped away from | Memory and context | Any file |
 | [`includeCoAuthoredBy`](#includecoauthoredby) | Deprecated; use `attribution` to hide or change commit and PR attribution | Git and attribution | Any file |
 | [`includeGitInstructions`](#includegitinstructions) | Remove the built-in commit and PR instructions from Claude's context | Git and attribution | Any file |
 | [`inputNeededNotifEnabled`](#inputneedednotifenabled) | Get a [push notification](/docs/en/remote-control#mobile-push-notifications) when Claude is waiting on you | Remote, desktop, and notifications | Any file |
@@ -93475,11 +93555,15 @@ In a `-p` run or an Agent SDK session, Claude Code ignores this key. The SDK tur
 
 ### `idleCompaction`
 
-Idle compaction [compacts](/docs/en/context-window#what-survives-compaction) a long conversation that you've stepped away from, shortly before its prompt cache expires. Your next message then sends a summary instead of the whole conversation. When you come back, the conversation shows a line that starts with `Compacted while idle, before the prompt cache expired`.
+Idle compaction [compacts](/docs/en/context-window#what-survives-compaction) a long conversation that you've stepped away from. Your next message then sends a summary instead of the whole conversation. Once compacted, the conversation shows a notice:
+
+* **Terminal**: a line that starts with `Compacted while idle, before the prompt cache expired`
+* **[VS Code chat panel](#idle-compaction-in-vs-code-and-the-desktop-app)**: a notice that includes `a summary written while you were away`
+* **[Desktop app](#idle-compaction-in-vs-code-and-the-desktop-app)**: the same notice, inside a row whose label includes `Claude Code notice`. If you don't see that row or its text, switch to the [Verbose view mode](/docs/en/desktop#switch-view-modes).
 
 Idle compaction is on by default for conversations that meet all of these conditions:
 
-* **Session**: you're in an interactive terminal session
+* **Session**: you're in an interactive terminal session, or in the VS Code extension's chat panel or the desktop app's Code tab on an [account that Anthropic selects](#idle-compaction-in-vs-code-and-the-desktop-app)
 * **Auto-compaction**: [`autoCompactEnabled`](#autocompactenabled) is on
 * **Prompt cache**: the conversation is on the [one-hour prompt cache TTL](/docs/en/prompt-caching#which-ttl-each-request-gets)
 * **Feature flags**: Claude Code can [fetch feature flags from Anthropic](/docs/en/env-vars#features-that-need-feature-flag-fetching)
@@ -93501,7 +93585,7 @@ To turn idle compaction off, set this key to `false`.
 }
 ```
 
-To turn idle compaction off or on from inside a session, run `/config` and change the **Idle compaction** row. Your choice is saved to your user settings and applies right away. The row requires Claude Code v2.1.302 or later. If you run one of those versions and `/config` doesn't show the row, check for these causes:
+To turn idle compaction off or on from inside a terminal session, run `/config` and change the **Idle compaction** row. Your choice is saved to your user settings and applies right away. The row requires Claude Code v2.1.302 or later. If you run one of those versions and `/config` doesn't show the row, check for these causes:
 
 * **Another settings source sets the key**: a value in managed settings, the `--settings` flag, or a project or local settings file overrides your user settings. Change the key in that source instead
 * **Feature flags are unavailable**: where Claude Code can't [fetch feature flags from Anthropic](/docs/en/env-vars#features-that-need-feature-flag-fetching), idle compaction doesn't run, so there is nothing to turn off
@@ -93521,6 +93605,18 @@ At the default, a conversation on a 200K context window auto-compacts before it 
   }
 }
 ```
+
+#### Idle compaction in VS Code and the desktop app
+
+A notice like this one means Claude Code [replaced your earlier conversation with a summary](/docs/en/context-window#what-survives-compaction) that Claude now works from:
+
+```text theme={null}
+Compacted using a summary written while you were away · turn off with "idleCompaction": false in settings.json
+```
+
+You don't need to do anything. To turn idle compaction off, set `idleCompaction` to `false` in `~/.claude/settings.json` or another [settings file](/docs/en/settings#settings-files-and-who-they-affect).
+
+In the VS Code extension's chat panel and the desktop app's Code tab, idle compaction runs for accounts that Anthropic selects. Claude Code writes the summary while you're away, then compacts with it only if your next message comes an hour or more after the last request.
 
 ### `plansDirectory`
 
@@ -94582,6 +94678,7 @@ When you set it to `true`, Claude Code changes which hooks and hook-like command
 
 * **Managed and SDK hooks run**: hooks from managed settings and hooks the [Agent SDK](/docs/en/agent-sdk/overview) registers in process
 * **Force-enabled plugin hooks run**: hooks from plugins your managed settings force-enable through [`enabledPlugins`](#enabledplugins). Claude Code matches on the full `plugin@marketplace` ID, so a plugin with the same name from a different marketplace stays blocked. This lets you distribute vetted hooks through an organization marketplace while blocking everything else. A [mod](/docs/en/plugins/mods/overview) in such a plugin loads only when it [counts as your organization's](/docs/en/plugins/mods/admin#install-your-organizations-mods)
+* **Monitors from other plugins are blocked**: a plugin's [monitors](/docs/en/plugins/components#monitors) don't start unless the plugin is force-enabled. Requires Claude Code v2.1.310 or later
 * **Everything else is blocked**: user, project, and local hooks, hooks and mods from other installed plugins, and hooks declared in agent frontmatter. [Mods built into Claude Code](/docs/en/plugins/mods/overview#mods-built-into-claude-code) keep running. To block only users' mods, set [`allowManagedModsOnly`](/docs/en/plugins/mods/admin#set-options-on-the-built-in-guard) instead.
 * **Command-sourced plugins are disabled**: Claude Code also disables plugins with a [`command` source](/docs/en/plugins/marketplace-reference#command-plugin-source), including plugins force-enabled in managed `enabledPlugins`, unless you set [`disableCommandPluginSources`](#disablecommandpluginsources) to `false` explicitly
 * **Marketplace `headersHelper` commands are blocked**: Claude Code also blocks marketplace [`headersHelper` commands](/docs/en/plugins/host-marketplace#authenticate-archive-downloads) unless [`disableCommandPluginSources`](#disablecommandpluginsources) is explicitly set to `false`, except for a marketplace that managed settings themselves declare. Requires Claude Code v2.1.238 or later
@@ -99048,6 +99145,8 @@ If it does and you see no status for a session, check for each of these causes:
 * **Background session**: a [background session](/docs/en/agent-view) doesn't report its status to your terminal, even while you're attached to it. Agent view shows its status instead.
 * **[`CLAUDE_CODE_DISABLE_TERMINAL_TITLE`](/docs/en/env-vars#variables)**: if you set this variable to `1`, Claude Code doesn't check for support or report status. Unset it.
 
+The tab title doesn't start with a status glyph in a terminal that reports support for the protocol. The terminal shows the session's state itself, so Claude Code leaves out the glyph it puts in front of the title in other terminals.
+
 ## Configure tmux
 
 When Claude Code runs inside tmux, by default Shift+Enter submits instead of inserting a newline, and desktop notifications and the [progress bar](/docs/en/settings-reference#terminalprogressbarenabled) never reach the outer terminal. Add these lines to `~/.tmux.conf`, then run `tmux source-file ~/.tmux.conf` to apply them to the running server:
@@ -99731,7 +99830,7 @@ These checks must pass for an edit to apply. Before any of them, a path matched 
 
 A file that changed on disk after Claude last read it can still be edited when `old_string` matches the current content exactly and unambiguously and Claude Code can read the file without prompting. Matching against the file's current content keeps this safe, and the result notes that the file carries other changes so Claude re-reads it before edits that depend on surrounding content. In any other case, such as a stale `old_string` or one that matches more than once without `replace_all`, Claude reads the file again before editing.
 
-Claude can also edit a file without a separate Read after it views the file with a Bash command such as `cat` or `grep`. Those commands are `cat`, `nl`, `bat`, `batcat`, `head`, `tail`, `sed -n 'X,Yp'`, `grep`, `egrep`, `fgrep`, and `rg`, each run on one file with no pipes or redirects. A search that prints no matches doesn't count as a read, nor does any command outside this list.
+Claude can also edit a file without a separate Read after viewing it with a Bash command such as `cat` or `grep`. Those commands are `cat`, `nl`, `bat`, `batcat`, `head`, `tail`, `sed -n 'X,Yp'`, `grep`, `egrep`, `fgrep`, and `rg`, each run on one file with no pipes or redirects. If the command printed none of the file's text, as when a search matches nothing, the read-before-edit check still applies.
 
 When Claude views a file this way, Claude Code also loads any [subdirectory `CLAUDE.md`](/docs/en/memory#how-claude-md-files-load) and [path-scoped rules](/docs/en/memory#path-specific-rules) that apply to that file. See [Read and Edit permission rules](/docs/en/permissions#read-and-edit) for which Bash commands your `Read` and `Edit` deny rules cover.
 
@@ -99856,7 +99955,10 @@ When Monitor runs a command, it uses the same [permission rules as Bash](/docs/e
 
 The [WebSocket source](#websocket-source) has its own approval prompt, which the classifier also decides in auto mode.
 
-The tool is not available on Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry. It is also not available when `DISABLE_TELEMETRY` or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is set. On Windows, the tool is available only when [Git Bash](/docs/en/setup#set-up-on-windows) is installed.
+Monitor needs a minimum version or Git Bash in these cases:
+
+* **Minimum version**: on Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform, or Microsoft Foundry, or with `DISABLE_TELEMETRY` or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` set, Monitor requires Claude Code v2.1.310 or later. The requirement applies when [feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) is off
+* **Windows**: the tool is available only when [Git Bash](/docs/en/setup#set-up-on-windows) is installed
 
 Plugins can declare monitors that start automatically when the plugin is active, instead of asking Claude to start them. See [plugin monitors](/docs/en/plugins/components#monitors).
 
