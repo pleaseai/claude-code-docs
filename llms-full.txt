@@ -16457,7 +16457,7 @@ On your first project, Claude takes a turn of its own as soon as the project is 
 
 The project is now listed under **Projects** in the sidebar, and its conversation is open. [Your first batch](#your-first-batch) covers what to set up before you send it work.
 
-### Start from an existing cloud session
+### Start from an existing session
 
 If a cloud session you started yourself is doing work that belongs in a project, open its sidebar menu and choose **Move to project**, then pick from the submenu:
 
@@ -16466,7 +16466,12 @@ If a cloud session you started yourself is doing work that belongs in a project,
 
 A **Set up project** banner can also appear above a cloud session's message box. If you use it instead of **Continue as new project**, the result is the same, except that the session's running turn stops once the project opens.
 
-A local session doesn't have these options. To continue its work in a project, describe the work in the project conversation, or push its branch, add that repository to the project, and name the branch in the task.
+A session on your own machine gets the same sidebar menu at claude.ai/code once you connect it through [Remote Control](/docs/en/remote-control#start-a-remote-control-session). From a project, Claude can't read the transcript of a session that connected while [**Require trusted devices**](/docs/en/remote-control#trusted-devices) was on for your account. If that setting is off:
+
+1. If the session isn't connected yet, run `/remote-control` in it. If it connected while that setting was on, disconnect it and connect it again first.
+2. In a browser, find the session's row in the sidebar at [claude.ai/code](https://claude.ai/code), open its menu, and pick from the same submenu.
+
+If **Require trusted devices** is on, or you don't use Remote Control, describe the work in the project conversation yourself. Or push the session's branch, add its repository to the project, and tell Claude the branch name.
 
 ### Set up GitHub access
 
@@ -16771,7 +16776,7 @@ Several Claude Code features let more than one session work at the same time, so
 * **Cloud sessions**: every thread is a [cloud session](/docs/en/claude-code-on-the-web) unless you ask Claude to run it on your machine. Either way, Claude starts and tracks it instead of you. You can also bring the work of a cloud session you started yourself into a project: choose [**Move to project**](#start-from-an-existing-cloud-session) in that session's sidebar menu.
 * **Scheduled tasks**: when you ask for scheduled work in a project, Claude creates a [cloud scheduled task](/docs/en/routines) that runs as threads in that project and appears on its **Scheduled tasks** tab. Scheduled tasks you create outside a project keep working on their own.
 * **Remote Control**: [Remote Control](/docs/en/remote-control) connects claude.ai to a Claude Code session running on your machine. When you ask Claude in a project to run a thread on your computer, the project [uses Remote Control to do it](#run-a-thread-on-your-own-computer).
-* **Local sessions and agent view**: a session you start yourself in your terminal, IDE, or the desktop app's local environment can't be added to a project. [Agent view](/docs/en/agent-view) is a screen for tracking several local sessions side by side, and you still start each one and give it its task yourself.
+* **Local sessions and agent view**: a session you start yourself in your terminal, IDE, or the desktop app's local environment stays outside your projects, though you can [bring its work into one](#start-from-an-existing-cloud-session). [Agent view](/docs/en/agent-view) is a screen for tracking several local sessions side by side, and you still start each one and give it its task yourself.
 * **Worktrees**: a [worktree](/docs/en/worktrees) gives each local session its own working copy of a repository. Cloud threads don't need them: each clones its repositories into its own cloud sandbox and works on its own branch.
 * **Agent teams**: an [agent team](/docs/en/agent-teams) is one session that starts teammate sessions for a single task, on your machine or inside a cloud session, and ends with that task.
 * **Subagents**: a [subagent](/docs/en/sub-agents) runs inside one session, does a side task in its own context window, and returns a summary to that session. A project's threads are whole sessions that Claude starts and that report back to the project conversation, and a thread can still use subagents for its own side tasks.
@@ -16783,7 +16788,7 @@ Several Claude Code features let more than one session work at the same time, so
 
 * Projects are available at claude.ai/code, in the desktop app, and in the Claude mobile app, not in the terminal CLI, the VS Code extension, or the JetBrains plugin, and not through Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry.
 * Project threads are [cloud sessions](/docs/en/claude-code-on-the-web), or sessions on your own machine through [Remote Control](/docs/en/remote-control), with Anthropic as the model provider in both cases. [Security](/docs/en/security) and [Data usage](/docs/en/data-usage) cover how cloud sessions are isolated and what's retained, and [Connection and security](/docs/en/remote-control#connection-and-security) covers how a thread on your machine connects and what's stored.
-* You can't add a session you started yourself on your machine to a project. A project reaches your machine only by [running a thread there through Remote Control](#run-a-thread-on-your-own-computer), and that section lists what it needs.
+* You can't add a session you started yourself on your machine to a project, though you can [bring its work into one](#start-from-an-existing-cloud-session). A project reaches your machine by [running a thread there through Remote Control](#run-a-thread-on-your-own-computer), and that section lists what it needs.
 * A cloud thread's sandbox pauses between turns and resumes when the thread continues. If the sandbox can't be resumed, the thread continues from a fresh clone, so uncommitted changes can be lost. On long tasks, ask Claude to commit and push work in progress.
 * A project belongs to one user. You can't share a project or its threads with another user, and thread transcripts don't have the share option other cloud sessions have. There are no organization-level controls for projects during the beta.
 * A thread belongs to the one project that started it. You can't move or copy a thread to another project, or move it out to stand alone. [**Move to project**](#start-from-an-existing-cloud-session) goes the other way only: it brings a cloud session's work into a project. You can't merge two projects into one.
@@ -20552,7 +20557,12 @@ A Linux or macOS remote machine needs a supported processor, an SSH server with 
 
 * **System**: an x86\_64 or arm64 processor. The machine also has to meet Claude Code's [system requirements](/docs/en/setup#system-requirements). On Linux, Claude Code needs glibc 2.17 or later, or musl. To see which one the machine has, run `ldd --version` there. On a musl-based distribution such as Alpine Linux, also install the [packages that Claude Code needs](/docs/en/setup#alpine-linux-and-musl-based-distributions).
 * **SFTP**: the SSH server has to offer the SFTP subsystem, which a `Subsystem sftp` line in its `sshd_config` turns on. To check, connect to the same host and port with `sftp` in a terminal on your computer. A working server shows the `sftp>` prompt.
-* **Sessions per connection**: Desktop on macOS and Linux opens several sessions on one SSH connection. If the server's `sshd_config` sets `MaxSessions 1`, raise it, for example to OpenSSH's default of 10.
+* **`MaxSessions 1` on the server**: to connect to a server whose `sshd_config` sets `MaxSessions 1`, do one of these:
+  * **Your computer runs macOS or Linux**: update to Claude Desktop v3.1623.0 or later
+  * **Your computer runs Windows**: make sure that Desktop [connects through the OpenSSH client](#use-your-ssh-configuration), because Desktop's built-in SSH client can't connect to that server
+  * **You can change the server**: raise `MaxSessions`, for example to OpenSSH's default of 10
+* **Logins with `MaxSessions 1`**: use a login that works without a prompt, such as a key that your SSH agent holds. Desktop logs in at least twice each time it connects or reconnects. Expect at least one more login for each [terminal](#run-commands-in-the-terminal) tab, and for each Desktop session in which you run commands that start with `!`. Expect none for commands that Claude runs.
+* **One-time codes with `MaxSessions 1`**: if every login prompts you, as with one-time codes, `!` commands fail. Run those commands in a terminal tab instead, which prompts in its own pane.
 * **Install folder**: Desktop installs a helper program and Claude Code under `~/.claude/remote/` in your home directory. It runs them from there, so that folder can't be on a file system mounted `noexec`. Allow about 1 GB of disk space in the home directory of each user who connects. For what that folder holds, see [Files and processes on the remote machine](#files-and-processes-on-the-remote-machine).
 * **Shell**: the shell set for your account on the remote machine has to run commands sent over SSH, as Bash, Zsh, and `sh` do
 * **Network**: Claude Code runs on the remote machine and makes its network requests from there, so the machine needs the [network access that Claude Code requires](/docs/en/network-config#network-access-requirements). If the machine can't download Claude Code, Desktop downloads it on your computer and uploads it. Claude Code's other requests still go out from the remote machine. On a Linux remote machine, if those requests need a proxy, [set it for SSH sessions](#set-a-proxy-or-a-ca-certificate-for-ssh-sessions).
@@ -20561,7 +20571,7 @@ A Linux or macOS remote machine needs a supported processor, an SSH server with 
 
 If a Linux remote machine reaches the internet through a proxy or needs a CA certificate, add the [proxy and CA variables](/docs/en/network-config) under `env` in `~/.claude/settings.json` there. Add them even if you already export them in `~/.profile`, `~/.bash_profile`, `~/.zprofile`, or `~/.zshrc` on that machine.
 
-An SSH session doesn't get them from those files, even when `claude` in a terminal on that machine does. The session can then hang, or show **The connection from … to the API failed** or **Authentication failed**, and signing in again doesn't help.
+In an SSH session, Claude Code doesn't get the variables from those files, even when `claude` in a terminal on that machine does. The session can then hang, or show **The connection from … to the API failed** or **Authentication failed**, and signing in again doesn't help.
 
 **1. Add the variables**
 
@@ -20596,19 +20606,42 @@ If the list has the variable, change it in the file that sets it, such as `~/.zs
 
 Restart the remote machine, or quit Desktop and end the helper's processes, as in the first two steps to [remove the helper](#files-and-processes-on-the-remote-machine). Do this when no task is running, because either way interrupts Claude's work.
 
-#### Use your SSH configuration on macOS and Linux
+#### Use your SSH configuration
 
-On macOS and Linux, Desktop connects by running the OpenSSH client on your computer, so it uses your `~/.ssh/config`. Connecting through the OpenSSH client requires Claude Desktop v1.37937.0 or later. Enter a `Host` name from that file in the **SSH host** field to use settings from its entry, such as `HostName`, `User`, `IdentityFile`, `CertificateFile`, `ProxyJump`, and `ProxyCommand`.
+You can use your SSH configuration on macOS, Linux, and Windows when Desktop connects through the OpenSSH client on your computer:
+
+* **macOS and Linux**: Desktop connects by running the OpenSSH client on your computer, so it uses your `~/.ssh/config`. Connecting through the OpenSSH client requires Claude Desktop v1.37937.0 or later.
+* **Windows**: when Desktop connects through the OpenSSH client, it uses your `%USERPROFILE%\.ssh\config`. If you use a Claude account rather than a third-party provider, connecting through the OpenSSH client requires all of these:
+
+  * Claude Desktop v2.2553.0 or later. To find your version, see [Check your version](#check-your-version).
+  * Microsoft's OpenSSH 9.4 or later
+  * Desktop installed with the download buttons at the top of this page, because Desktop from the Microsoft Store doesn't connect through the OpenSSH client
+
+  If you can't meet these requirements, or you use a third-party provider, see [Connect on Windows without the OpenSSH client](#connect-on-windows-without-the-openssh-client).
+
+With the OpenSSH client, enter a `Host` name from your configuration file in the **SSH host** field. Desktop then uses settings from that `Host` entry, such as `HostName`, `User`, `IdentityFile`, `CertificateFile`, `ProxyJump`, and `ProxyCommand`.
 
 Before you add the connection, check the client and the entry in a terminal on your computer:
 
-* **Client version**: run `ssh -V`. The client has to be OpenSSH 7.6 or later.
-* **Entry**: run `ssh` with the `Host` name, such as `ssh devbox`. If that fails, fix the entry first.
+* **Client version on macOS and Linux**: run `ssh -V`. The client has to be OpenSSH 7.6 or later.
+* **Client version on Windows**: Desktop tries the `ssh` on your `PATH` first, so run `ssh -V`. The client passes if the output shows `OpenSSH_for_Windows_` and 9.4 or later. If it doesn't pass, check the two folders that Desktop tries next: run `.\ssh.exe -V` in `C:\Windows\System32\OpenSSH`, then in `C:\Program Files\OpenSSH`.
+* **No client passes on Windows**: add the **OpenSSH Client** optional feature in Windows and install pending Windows updates, or install [Microsoft's newer build](https://learn.microsoft.com/en-us/troubleshoot/windows-server/system-management-components/upgrade-in-box-openssh-to-latest-openssh-release). Then quit and reopen Desktop. To see whether Desktop found a usable OpenSSH client, look in [`ssh.log`](#get-desktops-logs-for-an-ssh-problem) for `Windows OpenSSH client:` and a version, or for `no usable Windows OpenSSH client`.
+* **Entry**: on Windows, use the client that passed the version check. Run `ssh` with the `Host` name, such as `ssh devbox`. If that fails, fix the entry first.
 
 You can leave the **SSH port** and **SSH key (optional)** fields empty. If you fill one in, Desktop uses it with the entry:
 
 * **SSH port**: a value here overrides the entry's `Port`
-* **SSH key (optional)**: Desktop offers the key file you pick in addition to the entry's `IdentityFile` and the keys in your SSH agent
+* **SSH key (optional)**: with the OpenSSH client, Desktop offers the key file you pick in addition to the entry's `IdentityFile` and the keys in your SSH agent. On Windows, pick a key in OpenSSH format, because `ssh` doesn't read a PuTTY `.ppk` file.
+
+##### Connect on Windows without the OpenSSH client
+
+On Windows, you connect through Desktop's built-in SSH client if your computer doesn't meet [the requirements for the OpenSSH client](#use-your-ssh-configuration). With a third-party provider, you connect through the built-in client by default, and your administrator can change that. For the setting, see [SSH remote sessions in Claude Desktop on 3P](https://claude.com/docs/third-party/claude-desktop/ssh-remote-sessions).
+
+With the built-in client, you can still enter a `Host` name from your SSH configuration in the **SSH host** field if your `PATH` has an `ssh` command, with these limits:
+
+* **Settings from the entry**: Desktop takes `HostName`, `User`, `Port`, and `IdentityFile`. It also takes `ProxyCommand` if an `sh` shell is on your `PATH`.
+* **SSH key (optional)**: leave this field empty to keep the entry's `IdentityFile`, because a key file that you pick here replaces the `IdentityFile`
+* **`CertificateFile` and `ProxyJump`**: Desktop ignores `CertificateFile`, and the connection fails if the entry sets `ProxyJump`. To use either setting, [connect through the OpenSSH client](#use-your-ssh-configuration).
 
 ##### Reach a machine behind a jump host
 
@@ -20663,7 +20696,7 @@ Then enter `devbox-container` in the **SSH host** field.
 
 ##### Use variables from your shell in a `ProxyCommand`
 
-To use an environment variable of your own in a `ProxyCommand` or `Match exec` command, export it in a shell startup file, such as `~/.zshrc`, then quit and reopen Desktop. When Desktop starts, it reads what your login shell exports, and it keeps those values until you quit.
+On macOS and Linux, to use an environment variable of your own in a `ProxyCommand` or `Match exec` command, export it in a shell startup file, such as `~/.zshrc`. Then quit and reopen Desktop. When Desktop starts, it reads what your login shell exports, and it keeps those values until you quit.
 
 This requires Claude Desktop v2.37337.0 or later and an `env` command that accepts `-0`, which you can check by running `env -0` in a terminal on your computer.
 
@@ -20671,7 +20704,7 @@ This requires Claude Desktop v2.37337.0 or later and an `env` command that accep
 >
 > If your shell sets temporary AWS credentials, [give the AWS CLI a profile](#use-aws-credentials-in-a-proxycommand) instead of exporting `AWS_*` variables.
 
-##### Use AWS credentials in a `ProxyCommand`
+##### Use AWS credentials in a `ProxyCommand` on macOS and Linux
 
 If you set temporary AWS credentials in a shell startup file, a `ProxyCommand` that runs the AWS CLI can connect in a terminal and fail in Desktop. When your shell exports `AWS_SESSION_TOKEN`, `AWS_SECURITY_TOKEN`, or `AWS_CREDENTIAL_EXPIRATION`, `ssh` and your `ProxyCommand` in Desktop don't get the shell's AWS credentials, `AWS_REGION`, or `AWS_PROFILE`.
 
@@ -20810,8 +20843,9 @@ When you come back and the task isn't done, check for word that Desktop can't re
 
 ##### Prepare a long task
 
-* **Update first**: update Desktop before you start a long task. On macOS and Windows, Desktop can restart on its own to install an update that it has downloaded. That restart waits while Claude is working on an SSH task. On macOS with a Claude account, by default the restart can go ahead anyway once the update has waited 72 hours.
-* **Don't quit on Windows, or before v2.42304.0 with a third-party provider**: after a quit there you lose the running task, so leave Desktop open during the task. In any other case, see [what you get back](#reopen-a-session-after-you-quit-desktop) before you quit.
+* **Update first**: update Desktop before you start a long task. On macOS and Windows, Desktop can restart on its own to install an update that it has downloaded. That restart waits while Claude is working on an SSH task. By default, once the update has waited 72 hours, the restart can go ahead during the task if Desktop can [rejoin the task afterward](#reopen-a-session-after-you-quit-desktop).
+* **Check before you quit**: you don't always get the running task back after a quit or restart, for example after some Desktop updates. For the cases, see [Reopen a session after you quit Desktop](#reopen-a-session-after-you-quit-desktop).
+* **On an older version, leave Desktop open**: on Windows with Claude Desktop before v3.1623.0, you don't get the running task back after Desktop quits or restarts. The same is true with a third-party provider on macOS or Linux before v2.42304.0. In both cases, leave Desktop open during the task. To find your version, see [Check your version](#check-your-version).
 * **Reduce requests**: choose a permission mode, rules, or hooks that [make the task wait for you less often](#handle-requests-that-arrive-while-you-are-away)
 * **Check the jump host**: if your jump host asks for a sign-in, for example a push to a phone, switch to a login that works without a prompt. Otherwise Desktop can send another push each time it tries to reconnect.
 * **Test the remote machine**: start a short task, quit Desktop while the task is still running, and open the session again well after the task should be done. If the task isn't finished and the session shows no authentication error, check the remote machine for [what can end a task](#limits-while-desktop-is-disconnected).
@@ -20888,11 +20922,11 @@ If Desktop hasn't reconnected when you come back, send a message in the session.
 
 After you quit Desktop, the task keeps running on the remote machine, but it stops when the session opens again unless Desktop can rejoin its process. While Desktop is closed, the task runs until it finishes, needs you, or reaches one of the [limits](#limits-while-desktop-is-disconnected).
 
-* **Desktop on Windows**: you don't get the running task back, because Desktop never rejoins after a quit. Start Desktop again only when you expect the task to be done, because the session can open as Desktop starts.
-* **Third-party provider, task from an earlier version**: if you started the task in a Desktop version before v2.42304.0, you don't get it back on macOS or Linux either. Start Desktop again only when you expect the task to be done.
-* **Any other task, with Desktop on macOS or Linux**: start Desktop and open the session, and the task goes on if Desktop rejoins. It can't always rejoin, for example after some Desktop updates, so [update before a long task](#prepare-a-long-task).
+* **Desktop on Windows, task started in a version before v3.1623.0**: you don't get the task back, even if Desktop has updated since. Start Desktop again only when you expect the task to be done, because the session can open as Desktop starts, and the task stops when the session opens. If you don't know which version you started the task in, also wait until you expect it to be done.
+* **Third-party provider on macOS or Linux, task started in a version before v2.42304.0**: you don't get the task back. Start Desktop again only when you expect the task to be done.
+* **Any other task**: start Desktop and open the session, and the task goes on if Desktop rejoins. It can't always rejoin, for example after some Desktop updates, so [update before a long task](#prepare-a-long-task).
 
-When Desktop can't rejoin, you also lose any approval or question that was waiting for you. If the task doesn't continue on its own, send a message, and Claude continues from the conversation's saved history.
+When the task stops, the session can show `Restarting Claude Code on <host>…` while Desktop starts a new process. You also lose any approval or question that was waiting for you. If Claude doesn't continue on its own, send a message, and Claude continues from the conversation's saved history.
 
 For third-party deployments, see [SSH remote sessions in Claude Desktop on 3P](https://claude.com/docs/third-party/claude-desktop/ssh-remote-sessions).
 
@@ -20978,6 +21012,8 @@ Programs that Claude Code starts, such as shell commands and MCP servers, start 
 ##### See who connected to the remote machine
 
 To find out who connected to a remote machine, read the SSH server's log on that machine, where a login from Desktop looks like one from a terminal. With Desktop on macOS or Linux, expect an entry each time Desktop connects, not one for each session.
+
+If the server sets `MaxSessions 1`, expect at least two entries each time Desktop connects or reconnects. Expect at least one more for each terminal tab, and for each Desktop session in which you run commands that start with `!`.
 
 You won't find Desktop's SSH connections in Claude Code's [metrics and events](/docs/en/monitoring-usage#available-metrics-and-events). To find out from them which remote machine an SSH session ran on, see [Attribute telemetry to Desktop SSH sessions](/docs/en/monitoring-usage#attribute-telemetry-to-desktop-ssh-sessions). For Desktop's own record of its connections, see [Get Desktop's logs for an SSH problem](#get-desktops-logs-for-an-ssh-problem).
 
@@ -21680,7 +21716,7 @@ Find the card's title, or the code that ends the error message, in this table, t
 | - | - | - |
 | `<host>'s SSH server has SFTP turned off` | `[SFTP_UNAVAILABLE]` | Turn on SFTP in the server's `sshd_config`, as described under [remote machine requirements](#remote-machine-requirements-for-ssh-sessions) |
 | `SFTP doesn't start on <host>` | `[SFTP_NOT_STARTED]` | Connect to the same host with `sftp` in a terminal on your computer to see what stops it, then check the settings and files that Desktop's message names |
-| `<host> allows too few SSH sessions per connection` | `[SESSION_LIMIT]` | Raise `MaxSessions` in the server's `sshd_config`, for example to OpenSSH's default of 10 |
+| `<host> allows too few SSH sessions per connection` | `[SESSION_LIMIT]` | Update to Claude Desktop v3.1623.0 or later, or raise `MaxSessions` in the server's `sshd_config`, for example to OpenSSH's default of 10 |
 | `<host> is out of disk space` | `[ENOSPC]` or `[EDQUOT]` | Free space or quota on the remote machine, in your home directory or `/tmp` |
 | `Free up disk space on this computer` | `[ENOSPC]` or `[EDQUOT]`, in a message that starts with `Couldn't prepare the deploy locally` | Free space on your computer |
 | `Claude Code won't start on <host>` | `[CLI_UNRESPONSIVE]` | Wait a minute, then try again. If it keeps failing, run the command that the message names on the remote machine to see whether Claude Code answers there. |
@@ -22747,6 +22783,8 @@ Match the message you see to a section below.
 | `Cannot read this as an image: <path> is a pipe or a device` | [Tool errors](#file-is-too-large-to-read-as-an-image) |
 | `subagent_type is required: the general-purpose agent is not available in this session` | [Tool errors](#subagent-type-is-required) |
 | `Error: this write left the memory index at MEMORY.md at ..., over its ... read limit` | [Tool errors](#memory-index-is-over-its-read-limit) |
+| `Sandbox is required but failed to initialize: <reason>` | [Sandboxing troubleshooting](/docs/en/sandboxing#commands-refused-with-sandbox-is-required) |
+| `Sandbox is required (sandbox.failIfUnavailable) and stopped being available in this session: <reason>` | [Sandboxing troubleshooting](/docs/en/sandboxing#commands-refused-with-sandbox-is-required) |
 | `pkill: refusing to run` | [Tool errors](#pkill-pattern-matches-the-claude-code-process) |
 | `Failed to write to <name>'s inbox — nothing was sent` | [Tool errors](#failed-to-write-to-a-teammate-inbox) |
 | `Failed to write the plan approval request to the lead's inbox — plan not submitted` | [Tool errors](#failed-to-write-to-a-teammate-inbox) |
@@ -28840,7 +28878,7 @@ Skills are extra capabilities in Claude's toolkit. They can be reference materia
 
 **Context cost:** Low until used. User-only skills have zero cost until invoked.
 
-**In subagents:** Skills work differently in subagents. Instead of on-demand loading, skills listed in the subagent's `skills` field are fully preloaded into its context at launch. Subagents can still discover and invoke unlisted project, user, and plugin skills through the Skill tool.
+**In subagents:** The full content of skills listed in a subagent's `skills` field [loads into its context at launch](/docs/en/sub-agents#preload-skills-into-subagents), rather than on demand. Subagents can still discover and invoke unlisted project, user, and plugin skills through the Skill tool.
 
 > [!TIP]
 >
@@ -32130,7 +32168,7 @@ To change or remove the attribution lines, set [`attribution`](/docs/en/settings
 
 #### When context fills up
 
-Claude Code manages context automatically as you approach the limit. It clears older tool outputs first, then summarizes the conversation if needed. Your requests and key code snippets are preserved; detailed instructions from early in the conversation may be lost. Put persistent rules in CLAUDE.md rather than relying on conversation history.
+Claude Code manages context automatically as you approach the limit. It compacts the conversation into a summary. The summary keeps your requests and key code snippets, but detailed instructions from early in the conversation may be lost. Put persistent rules in CLAUDE.md rather than relying on conversation history.
 
 To control what's preserved during compaction, add a "Compact Instructions" section to CLAUDE.md or run `/compact` with a focus (like `/compact focus on the API changes`).
 
@@ -37978,7 +38016,7 @@ You don't know where your plugin will be installed, so refer to its files and da
 
 In the data directory path, `<id>` is the plugin identifier with every character other than letters, digits, `_`, and `-` replaced by `-`, so `my-plugin@my-marketplace` becomes `my-plugin-my-marketplace`.
 
-On Windows, the substituted paths use forward slashes so a shell doesn't read backslashes as escapes.
+On Windows, most substituted paths use forward slashes, as in `C:/Users/you/...`. They keep their native backslashes in an [exec-form hook](/docs/en/hooks#exec-form-and-shell-form) and in a hook that runs through PowerShell, which is the default shell on Windows when Git Bash isn't installed.
 
 ### Install dependencies into the data directory
 
@@ -39487,9 +39525,9 @@ For a call that rejects, such as `$.command.run`, catch the error and test its m
 
 #### What refused calls return
 
-In the results, `<reason>` stands for `the session was stopped and nobody has sent input since`:
+In the results, `<reason>` stands for the reason the call was refused. After an interruption, that's `the session was stopped and nobody has sent input since`. For other reasons, see [Calls refused in `claude -p` runs and Agent SDK sessions](#calls-refused-in-non-interactive-runs).
 
-| Some refused calls | Result until the user's next input |
+| Some refused calls | Result |
 | :- | :- |
 | `$.prompt.submit` | Resolves with `{ drop: '<reason>' }` and queues no prompt |
 | `$.command.run` | Rejects with an error whose message ends with `<reason>` |
@@ -39498,7 +39536,7 @@ In the results, `<reason>` stands for `the session was stopped and nobody has se
 | `$.session.send` to an [agent team](/docs/en/agent-teams) teammate | Resolves with `{ isDelivered: false, reason: 'Teammate "<name>" was not messaged: <reason>.' }`, where `<name>` is the teammate's name |
 | [`$.tool.call`](/docs/en/plugins/mods/reference#mods-api-methods) of Bash with `run_in_background: true`, Monitor, or CronCreate | Resolves with `{ deny: '<tool> was not run: it starts background work, a schedule or a goal, and <reason>' }`, where `<tool>` is the tool's name |
 
-Along with these `$.session.send` and `$.tool.call` results, the user can see the [`Stopped:` toast](/docs/en/plugins/mods/troubleshoot#stopped-type-a-message-to-continue).
+When one of these `$.session.send` or `$.tool.call` calls is refused after an interruption in an interactive session, the user can see the [`Stopped:` toast](/docs/en/plugins/mods/troubleshoot#stopped-type-a-message-to-continue).
 
 #### Work your mod started before the interruption
 
@@ -39514,6 +39552,31 @@ After the user stops a running turn, for example with Esc, some work your mod ha
 | A subagent your mod spawned and later resumed with `$.session.send` that finishes before the user's next input | Its finish notice waits, and reaches the conversation after that input | Nothing needed |
 
 When a scheduled job comes due or a monitor raises an event before the user's next input, the user can see the [`Stopped:` toast](/docs/en/plugins/mods/troubleshoot#stopped-type-a-message-to-continue).
+
+### Calls refused in `claude -p` runs and Agent SDK sessions
+
+In a `claude -p` run or an [Agent SDK](/docs/en/agent-sdk/overview) session, a result such as `{ drop: 'the run reached its --max-turns limit' }` means the run refused your mod's call.
+
+A refused `$.prompt.submit` resolves with `{ drop: '<reason>' }`. Other refused calls, such as `$.command.run` and `$.agent.spawn`, give the results shown in [What refused calls return](#what-refused-calls-return) with the reason in place of `<reason>`. Find your `<reason>` below for what to do about it:
+
+* **`the run reached its --max-turns limit`**: turns from your mod's prompts and from subagents it spawns count toward [`--max-turns`](/docs/en/cli-reference#cli-flags) or the Agent SDK's [turn limit](/docs/en/agent-sdk/configuration#limit-turns-and-spend). For more turns, start the run with a higher limit. If you can't, have your mod stop making the refused call. If the run takes another prompt from the user or the SDK application, the turn count resets and the run accepts calls again.
+* **`the run is past its --max-budget-usd limit`**: start the run with a higher `--max-budget-usd`, or raise the Agent SDK's [spend limit](/docs/en/agent-sdk/configuration#limit-turns-and-spend). If you can't, have your mod stop making the refused call. The limit applies to the run's total cost so far. That total keeps adding up when the run takes another prompt, so a retry returns the same reason.
+* **`the host has ended its input`**: for example, the SDK application ended its [streaming input](/docs/en/agent-sdk/streaming-vs-single-mode), or stdin closed on a run started with [`--input-format stream-json`](/docs/en/cli-reference#cli-flags). The run is ending and takes no more input, so a retry returns the same reason. Have your mod stop making the refused call. If you start the run yourself, next time keep that input open until your mod has no more calls to make.
+* **`the session was stopped and nobody has sent input since`**: the run was [interrupted](#calls-and-background-work-after-the-user-interrupts-a-turn), for example with the Agent SDK's [`interrupt()`](/docs/en/agent-sdk/typescript#query-object). To make the call again after the next message from the user or the SDK application, follow [Retry a refused or dropped call](#retry-a-refused-or-dropped-call).
+
+### A `claude -p` run with your mod never exits
+
+If your mod submits a prompt at the end of every turn, each prompt starts another turn. Without [`--max-turns`](/docs/en/cli-reference#cli-flags) or `--max-budget-usd`, a `claude -p` run that loads the mod goes on until you stop it yourself.
+
+To make the run end on its own, add either flag to the command in your shell. If other people start the run, have your mod stop submitting prompts once its work is done. This command adds `--max-turns`:
+
+```bash theme={null}
+claude -p "find the TODOs" --max-turns 5
+```
+
+Once the run reaches that limit, the mod's next prompt is [refused](#calls-refused-in-non-interactive-runs) instead of starting a turn, and the run ends.
+
+If the run still goes past the limit, run `claude --version` in your shell, and [update Claude Code](/docs/en/setup#update-claude-code) if yours is earlier than v2.1.304. The mod's prompts are refused at the limit from v2.1.299. If your mod spawns subagents, their turns count toward `--max-turns` from v2.1.304.
 
 ## Send and receive messages between sessions
 
@@ -39564,7 +39627,7 @@ A mod reaches the file system, processes, and the network through the mods API, 
 | `$.http` | `fetch(url, init)` over `http` or `https`. It resolves to `{ status, ok, headers, text }` once the body is read. |
 | `$.store` | A JSON key-value store of your plugin's own, kept between sessions |
 | `$.env` | `get` and `set` environment variables. Write the name as a string literal. |
-| `$.settings` | `read` what the settings files and managed policy hold |
+| `$.settings` | `read()` resolves to all settings, merged into one object. With `{ source }` or `{ key }`, it resolves to [one source's settings or one key's value](#read-one-source-or-one-key) instead. |
 | `$.session` | `messages()` returns the transcript as a list of `{ role, text, toolUses }`. Also the working directory, model, and more. [`usage()`](/docs/en/plugins/mods/reference#mods-api-methods) returns context window use and plan limits. |
 | `$.mcp` | `call` a tool on a connected MCP server |
 
@@ -39581,6 +39644,27 @@ A mod can refuse your `$.process.spawn` call after the command has produced outp
 
 * **`$.process.spawn started, and a plugin withheld its result:`**: the refusing mod hadn't read the command's output to the end. Claude Code stops the command if it's still running.
 * **`$.process.spawn ran, and a plugin withheld its result:`**: the refusing mod had read the command's output to the end, so the command had exited
+
+### Read all settings, one source, or one key
+
+`$.settings.read()` resolves to one object that holds the settings from all sources in use, merged by [precedence](/docs/en/settings#settings-precedence). Pass `{ source }` to read one source instead, `{ key }` to read one key, or both:
+
+| Call | Resolves to |
+| :- | :- |
+| `$.settings.read()` | The merged settings as one object. Its top-level keys are those of a `settings.json` file, such as `permissions` and `hooks`. |
+| `$.settings.read({ source: 'policy' })` | That one source's settings as one object, or `{}` when that source holds no settings |
+| `$.settings.read({ key: 'spinnerTipsEnabled' })` | That key's value in the merged settings, or `undefined` when the key isn't set |
+| `$.settings.read({ key: 'spinnerTipsEnabled', source: 'user' })` | That key's value in that one source, or `undefined` when that source doesn't set it |
+
+For `source`, pass the name of the one settings source to read:
+
+* **`user`**: `~/.claude/settings.json`
+* **`project`**: `.claude/settings.json`
+* **`local`**: `.claude/settings.local.json`
+* **`flag`**: what you pass with `--settings`, and the SDK's inline settings
+* **`policy`**: [managed settings](/docs/en/managed-settings#how-claude-code-combines-managed-sources)
+
+For `key`, pass the exact name of one top-level key, not a dotted path into a nested object. The `key` argument requires Claude Code v2.1.304 or later.
 
 ## Next steps
 
@@ -39636,6 +39720,8 @@ Run `/plugin` at the Claude Code prompt and press Tab until the **Installed** ta
 **4. Try the mod**
 
 Use what you asked for. For the example prompt, the current branch name appears above the prompt box. If the mod doesn't do what you wanted, tell Claude what to change. The mod reloads at the end of each turn that changes its files, so you can try the change as soon as Claude finishes.
+
+If a transcript line that starts with the mod's name says the [change didn't load](/docs/en/plugins/mods/troubleshoot#this-mods-change-didnt-load), paste that line into your next message when you ask Claude for a fix. Claude doesn't see the line unless you paste it.
 
 ### Use the mod in other sessions
 
@@ -40047,7 +40133,7 @@ Register each event once per matcher. If you call `on` twice for `session.start`
 
 ## Hook what Claude is doing
 
-Handle these events to see or change a tool call, a prompt, or a turn as it happens. For every event and what a hook can return, see the [events reference](/docs/en/plugins/mods/reference#events).
+Handle these events to see or change a tool call, a prompt, a turn, or a settings read as it happens. For every event and what a hook can return, see the [events reference](/docs/en/plugins/mods/reference#events).
 
 ### Guard or change a tool call
 
@@ -40068,6 +40154,8 @@ on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
 ```
 
 When Claude tries `git push --force`, the command doesn't run and no permission prompt appears, because the hook never calls `next`. Claude reads the `deny` text as the tool's result, so write it as an instruction Claude can act on. Every other Bash command runs as it would without the mod.
+
+If this hook throws or times out, Claude Code skips it and the command goes on as it would without the mod. To refuse the command instead, [add a `.catch` handler](#handle-a-hook-that-fails) to the hook.
 
 To act after a tool has run, `await next(e)`, do your work, and return what `next` gave you. This hook logs each `.mdx` file Claude changes, with [`$.ui.log`](/docs/en/plugins/mods/api#show-something-without-starting-a-turn), which adds a dim line to the transcript that Claude doesn't read:
 
@@ -40131,7 +40219,9 @@ When Claude tries a command such as `rm -rf build`, the question appears with th
 * **The user types an answer**: `$.ui.ask` resolves to the typed text. The hook compares it with `Run it`, so any other text refuses the command.
 * **Nobody answers**: `$.ui.ask` rejects when the user dismisses the question or picks **Chat about this**, and in a `claude -p` run, so the `catch` block leaves the answer at `Refuse`
 
-Keep the wait inside a mods API call such as `$.ui.ask`, because that time doesn't count against the hook's [time limit](/docs/en/plugins/mods/reference#limits). Time spent awaiting a promise of your own does count. Claude Code skips a hook that times out, so the held command would run.
+Keep the wait inside a mods API call such as `$.ui.ask`, because that time doesn't count against the hook's [time limit](/docs/en/plugins/mods/reference#limits). Time spent awaiting a promise of your own does count.
+
+Claude Code skips a hook that times out, so the held command would run. To refuse it instead, chain [a `.catch` handler](#handle-a-hook-that-fails) onto the registration that `on` returns. That handler is separate from the `catch` block inside the hook.
 
 #### Approve or refuse a tool call before the user is asked
 
@@ -40161,6 +40251,7 @@ The hook denies `git push` on `main` and passes every other call through:
 
 * **On `main`**: the hook returns `deny`, even when a rule allows `git push`
 * **On another branch, and for other commands**: the call gets the decision it would get without the mod
+* **The hook throws or times out**: the call also gets the decision it would get without the mod. To refuse the call instead, [add a `.catch` handler](#handle-a-hook-that-fails) that returns `{ decision: 'deny', reason: 'the reason' }`.
 
 The hook matches the text of the command, so treat it as a reminder for Claude. To block pushes to `main` for everyone, protect the branch on your Git host.
 
@@ -40223,7 +40314,10 @@ on('prompt.submit', async ($, e, next) => {
 
 When you send a prompt such as `open a PR for this change`, your message looks the same in the transcript, and Claude also reads a line such as `Current branch: feature/auth` after it. A prompt that doesn't mention a pull request goes through unchanged, and `git` doesn't run.
 
-To stop a prompt, return `{ drop: 'the reason' }` without calling `next`. The text goes back into the user's prompt input, and they see `Prompt dropped by a hook:` followed by your reason, so address the reason to them. If your hook returns a `drop` after its `next(e)` call let the prompt through, the turn still runs, and the hook [fails](#handle-a-hook-that-fails) with a message that includes `a drop after its next() was answered`.
+To stop a prompt, return `{ drop: 'the reason' }` without calling `next`. The text goes back into the user's prompt input, and they see `Prompt dropped by a hook:` followed by your reason, so address the reason to them. The prompt still goes through in these cases:
+
+* **Your hook returns a `drop` after its `next(e)` call let the prompt through**: the turn still runs, and the hook [fails](#handle-a-hook-that-fails) with a message that includes `a drop after its next() was answered`
+* **Your hook throws or times out**: Claude Code skips it and sends the prompt. [Add a `.catch` handler](#handle-a-hook-that-fails) so that a failure doesn't send a prompt the hook would have stopped.
 
 [Other events](/docs/en/plugins/mods/reference#prompts-and-what-claude-reads) cover the rest of what Claude reads: `prompt.section` for each section of the system prompt, `prompt.context` for the context sent with the first message, and `skill.prompt` for a skill's text. Text from these hooks that changes between requests [invalidates the prompt cache](/docs/en/prompt-caching). In a `skill.prompt` hook, you can also read [which plugin or file the skill came from](/docs/en/plugins/mods/reference#skill-prompt-fields).
 
@@ -40258,6 +40352,68 @@ Claude's response streams to the screen as it does without the mod. After each r
 `result.usage` holds the token counts the Claude API reports for a request, plus the `model` that answered: `input_tokens`, `output_tokens`, `cache_read_input_tokens`, and `cache_creation_input_tokens`. The hook runs for subagents' requests too, so check `e.agentId` when you want only the main conversation.
 
 To see the tool calls that the API ran itself during the request, such as calls to the [advisor tool](/docs/en/advisor), read `result.serverToolUses`. Claude Code doesn't run these calls, so no `tool.call` or `tool.check` hook fires for them. The field is absent when the response has no such calls, and it requires Claude Code v2.1.290 or later.
+
+### Change or refuse a settings read
+
+A `settings.read` hook runs on a mod's read and on Claude Code's own read:
+
+* **A mod's read**: a mod calls [`$.settings.read`](/docs/en/plugins/mods/api#read-one-source-or-one-key).
+* **Claude Code's own read**: Claude Code builds the session's merged settings. This read repeats when settings or the loaded plugins change.
+
+Before you rely on either read, check the guard and your version:
+
+* **The built-in guard**: with managed settings, or with a Team or Enterprise [`/login`](/docs/en/authentication#authentication-precedence) as the session's credential, the [built-in guard](/docs/en/plugins/mods/admin#know-what-happens-by-default) can skip this hook in a mod you install or load with `--plugin-dir`. To check, search the [debug log](/docs/en/plugins/mods/troubleshoot#read-the-debug-log) for `settings.read bypassed by cc-plugin-sec-default`. If a line with that text names your mod, ask your organization's administrator to [install the mod as one of the organization's mods](/docs/en/plugins/mods/admin#install-your-organizations-mods).
+* **The version**: the event firing on Claude Code's own read, and the `e.layers` field, require Claude Code v2.1.304 or later.
+
+#### What a `settings.read` hook receives
+
+| Field | Type | What it holds |
+| :- | :- | :- |
+| `e.layers` | array | One `{ source, settings }` object for each source in use that holds settings, lowest [precedence](/docs/en/settings#settings-precedence) first: `plugin`, `user`, `project`, `local`, `flag`, `policy`. Empty in `claude plugin test`. |
+| `e.source` | string | The one source a mod asked for, as in `$.settings.read({ source: 'policy' })`. `e.layers` then holds that layer alone. Absent on Claude Code's own read and on any other read of the merged settings. |
+
+In `e.layers`, `plugin` holds settings that enabled plugins supply, and is a layer name only, not a `source` you can pass to `$.settings.read`. `flag` holds the settings passed with `--settings`, and `policy` holds managed settings.
+
+#### Tell Claude Code's own read from a mod's read
+
+On [Claude Code's own read](#settings-read-hook), [`next.origin`](/docs/en/plugins/mods/reference#the-hook-function) is `{ plugin: 'engine', tier: 'core' }`, and on a mod's read `next.origin.plugin` is the calling mod's name.
+
+#### What a `settings.read` hook can return
+
+Your hook can return [`next(e)`](/docs/en/plugins/mods/reference#the-hook-function)'s result unchanged, a `{ value }` of its own, or `{ deny: reason }`. On [Claude Code's own read](#settings-read-hook) and a mod's read, a `{ value }` replaces what the read gives and `{ deny: reason }` refuses the read:
+
+| Return | On Claude Code's own read | On a mod's read |
+| :- | :- | :- |
+| `{ value }` | For each key you change, what you return replaces that key's whole value in the session's merged settings, if it [fits the key's schema](/docs/en/plugins/mods/troubleshoot#settings-read-key-refused) | That mod's call resolves to your `value`, or to the `key` it asked for taken from your `value`, so return a whole object and not an array |
+| `{ deny: reason }` | The session keeps the settings as they were merged before any hook answered, and the [debug log records your `reason`](/docs/en/plugins/mods/troubleshoot#settings-read-refused) | That mod's call rejects with `<calling mod>: $.settings.read: <reason>` |
+
+On Claude Code's own read, build your `{ value }` from [`next(e)`'s `value`](#settings-read-next), since a key you leave out is unset. Where Claude Code reads a key such as `env` from each source separately, changing it in your `value` [has no effect](/docs/en/plugins/mods/troubleshoot#settings-read-key-no-effect).
+
+#### What `next(e)` gives a `settings.read` hook
+
+`next(e)` resolves to `{ value }` or to `{ deny }`:
+
+* **`{ value }`**: `value` is the merged settings, or one source's settings when [`e.source`](#settings-read-receives) is set. If a hook that [runs after yours](#the-order-mods-run-in) returned a `{ value }` of its own, you get that hook's `value` instead.
+* **`{ deny }`**: a hook that runs after yours refused the read. Return that `{ deny }` unchanged.
+
+#### Change one setting from a `settings.read` hook
+
+First check [which mods get this event, and from which version](#settings-read-hook).
+
+To change one key, spread the `value` from [`next(e)`](/docs/en/plugins/mods/reference#the-hook-function) and set that key, as this hook does with [`spinnerTipsEnabled`](/docs/en/settings-reference#spinnertipsenabled). The hook doesn't check [`next.origin`](#settings-read-origin), so the hook changes the key on [Claude Code's own read](#settings-read-hook) and on a mod's merged read alike:
+
+```javascript theme={null}
+on('settings.read', async ($, e, next) => {
+  const read = await next(e)
+  // Pass through a read of one source, so that only the merged settings change.
+  // Pass through a { deny } from a later hook too: it has no value.
+  if (e.source || !read.value) return read
+  // Keep every other key and change this one
+  return { value: { ...read.value, spinnerTipsEnabled: false } }
+})
+```
+
+On Claude Code's own read, if your hook returns a value outside the key's schema, such as a string, that key alone keeps the value merged before any hook answered. The debug log then says [`the answer for <key> is no value the key can hold`](/docs/en/plugins/mods/troubleshoot#settings-read-key-refused). If your value fits and the key still doesn't change, see [why a returned key has no effect](/docs/en/plugins/mods/troubleshoot#settings-read-key-no-effect).
 
 ### Handle the settings hook events
 
@@ -41252,7 +41408,16 @@ When the user presses a button, types into a field, or picks from a list your mo
 * **`Input`**: takes `onSubmit(value)` and `onInput(value)`
 * **`Select`**: takes `onSelect(value)` with its choices in `options`, a list of at least one choice with unique values, such as `[{ value: 'sm', label: 'Small' }, { value: 'lg', label: 'Large' }]`
 
-A test presses or types into a control by its `key`, so give each control one. Each use of a control also fires [`ui.press`, `ui.input`, or `ui.select`](/docs/en/plugins/mods/reference#interface) with the `key` in `e.element`, and another mod can handle those events. Its hook runs before your callback, so it sees what the user types into your `Input` and can change it or answer in place of your callback. The mods API has no method that presses another mod's button.
+### Which controls need a `key`
+
+Give every `Input` and `Select` a `key` prop, such as `key: 'size'`. A `Button` can go without a `key` when it has a `label` prop or a single string child. Its key is then the `label` value or that string.
+
+Tests and other mods identify a control by its key:
+
+* **Tests**: a [test](/docs/en/plugins/mods/test#test-a-drawing) presses or types into a control by its key.
+* **Other mods**: Claude Code fires [`ui.press`, `ui.input`, or `ui.select`](/docs/en/plugins/mods/reference#interface) with the control's key in `e.element` before it runs the control's callback. Another mod's hook for that event sees what the user typed into your `Input` and can change that text or keep your callback from running. The mods API gives that mod no method to press your buttons.
+
+If a message says `needs a key` or `is drawn twice`, [find the cause by that message](/docs/en/plugins/mods/troubleshoot#needs-a-key).
 
 ### Keyboard focus and hotkeys
 
@@ -41897,7 +42062,7 @@ A mod is a plugin directory with these files:
 | `.claude-plugin/plugin.json` | Yes | The plugin [manifest](/docs/en/plugins/manifest-reference). Mods add no required fields. |
 | `hooks/hooks.json` | Yes | `modules`: an array with one path, relative to this file, to the hooks module, as in `"modules": ["./register.js"]`. Can also hold [settings hooks](/docs/en/hooks) under `hooks`. |
 | The hooks module, such as [`hooks/register.js`](/docs/en/plugins/mods/create#write-a-mod-yourself) | Yes | The mod's entry point. Exports `register(on, options)`. Named `.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.mts`, `.cts`, or `.tsx`. An ES module. |
-| [`types/index.d.ts`](/docs/en/plugins/mods/interface#declare-the-values), named by `types` in the manifest | When the mod uses `$.state` or adds a namespace to the mods API | Declares `PluginState` values and any namespace the mod adds |
+| [`types/index.d.ts`](/docs/en/plugins/mods/interface#declare-the-values), unless `types` in the manifest names another path | When the mod uses `$.state` or adds a namespace to the mods API | Declares `PluginState` values and any namespace the mod adds. To leave `types` out of the manifest, you need v2.1.299 or later. |
 | Files whose names end in `.test.ts` or `.test.tsx` | No | Tests that [`claude plugin test`](/docs/en/plugins/mods/test#write-a-test) runs |
 
 `register` receives `on` and `options`. `options` holds the values of the [`userConfig`](/docs/en/plugins/components#user-configuration) fields the manifest declares, with defaults filled in.
@@ -41986,7 +42151,7 @@ On `skill.prompt`, `e.source`, `e.pluginName`, `e.path`, `e.frontmatter`, and `e
 
 ### Commands and configuration
 
-Command and configuration events fire when a command runs or is listed, and when a `/config` row is shown or changed:
+Command and configuration events fire when a command runs or is listed, when a `/config` row is shown or changed, and on a settings read:
 
 | Event | Fires when | A hook can return |
 | :- | :- | :- |
@@ -41994,6 +42159,14 @@ Command and configuration events fire when a command runs or is listed, and when
 | `command.describe` | Once for each command, for the command list | `{ description, argumentHint, isHidden }` |
 | `config.set` | A `/config` row is about to change | `next({ ...e, value })` or `{ deny: reason }` |
 | `config.describe` | Once for each `/config` row | `{ label, description, isHidden }` |
+| [`settings.read`](/docs/en/plugins/mods/events#settings-read-hook) | A mod calls [`$.settings.read`](/docs/en/plugins/mods/api#reach-files-processes-and-the-network), or Claude Code builds the session's merged settings | `next(e)`, `{ value }`, or `{ deny: reason }` |
+
+#### `e.layers` and `e.source` on `settings.read`
+
+* **`e.layers`**: one `{ source, settings }` object for each source in use that holds settings, lowest [precedence](/docs/en/settings#settings-precedence) first. See [What a `settings.read` hook receives](/docs/en/plugins/mods/events#settings-read-receives).
+* **`e.source`**: the one source a mod asked for, as in `$.settings.read({ source: 'policy' })`. Absent on Claude Code's own read and on any other read of the merged settings
+
+On `settings.read`, the event firing on Claude Code's own read and the `e.layers` field require Claude Code v2.1.304 or later. For when the hook runs and what the hook can return, with an example, see [Change or refuse a settings read](/docs/en/plugins/mods/events#settings-read-hook).
 
 ### Turns
 
@@ -42862,6 +43035,15 @@ There's nothing to fix.
 
 Before v2.1.292, the call ran a second time, so the prompt was submitted, the command run, or the subagent started twice.
 
+### `This mod's change didn't load` or `the earlier version is no longer running`
+
+A change to a [mod Claude wrote in this session](/docs/en/plugins/mods/create#ask-claude-for-a-mod) couldn't load. The transcript line starts with the mod's name and ends with the reason:
+
+* `This mod's change didn't load, so the earlier version is still running: <reason>.`
+* `This mod didn't load, and the earlier version is no longer running: <reason>.`
+
+Claude doesn't see this line, so paste it into your next message when you ask Claude for a fix.
+
 ### `$.agent.register refused: the hooks module that made the call is no longer loaded`
 
 The line starts with your mod's name, as in `first-mod: $.agent.register refused: the hooks module that made the call is no longer loaded (it was reloaded or removed)`, and the agent isn't registered. Your mod was reloaded or unloaded before the call. A reload loads a fresh copy of the hooks module, and this call came from code still running in the old copy, such as a hook that hadn't returned yet.
@@ -42918,6 +43100,15 @@ After the change, you see nothing in the band if any of the mods returns a tree 
 The [tree](/docs/en/plugins/mods/interface#build-a-tree-from-elements) your hook returned didn't validate. With `--plugin-dir`, the transcript says `ui.render (Pane) refused:` with the reason, as in `first-mod: ui.render (Pane) refused: Box prop "flexDirection" must be one of row, column, row-reverse, column-reverse; the engine drew its own`. The debug log has `a hook returned a tree that does not validate` with the same reason.
 
 Read the reason on that line. Common causes are a prop the element doesn't take and an element the app doesn't have.
+
+### `needs a key`, `is drawn twice`, or `key each once`
+
+An element in the tree your `ui.render` hook returns has no valid [`key`](/docs/en/plugins/mods/interface#which-controls-need-a-key), or two elements share one. Find the message you got:
+
+* **`<Input> needs a key` or `<Select> needs a key`**: the element has no `key` prop, or its `key` is empty or isn't a string, as in `key: 3`. Give it a non-empty string as its `key`.
+* **`<Button> needs a key`**: give the button a non-empty string as its `key`
+* **`is drawn twice; each takes its own key`**: two elements of the kind the message names have the same `key`, as in `Input "size" is drawn twice; each takes its own key`. Give each element its own `key`.
+* **`key each once` from `press` in a [test](/docs/en/plugins/mods/test#test-a-drawing)**: the drawing has more than one button with the key you passed. Buttons with the same label and no `key` prop share that label as their key. Give each button its own `key`.
 
 ### A `ui.render` line says `threw while drawn`
 
@@ -42996,6 +43187,48 @@ Module-level variables are re-initialized on each reload.
 A value resets, or a saved value is replaced by its default. Each of those commands resets `$.state` to its defaults, and `session.start` doesn't fire again.
 
 [Load the saved value again](/docs/en/plugins/mods/interface#load-a-saved-value-again-after-clear) in a `classic.SessionStart` hook.
+
+### A key your `settings.read` hook returns doesn't take effect
+
+Returned `env` entries don't become environment variables. Returned `allow`, `ask`, and `deny` rules aren't checked on tool calls. Set those in a [settings file](/docs/en/settings), or call [`$.env.set`](/docs/en/plugins/mods/api#reach-files-processes-and-the-network) for environment variables.
+
+For another key, check [which mods get `settings.read` and from which version](/docs/en/plugins/mods/events#settings-read-hook), then search the [debug log](#read-the-debug-log) for `settings.read` and look for one of these lines:
+
+| Log line | Meaning and step |
+| :- | :- |
+| `settings.read hook skipped`, after your mod's name | Your hook failed. [Fix the error the line reports](#hook-skipped). |
+| `settings.read bypassed by cc-plugin-sec-default`, on a line that names your mod ahead of it | The [built-in guard](/docs/en/plugins/mods/admin#know-what-happens-by-default) skipped your hook. Ask your organization's administrator to [install the mod as one of the organization's mods](/docs/en/plugins/mods/admin#install-your-organizations-mods). |
+| `settings.read: the answer for <key> is no value the key can hold` | The returned value doesn't fit the key's schema. [Return one it allows](#settings-read-key-refused). |
+| `settings.read: the merge never settles for <key>` | The keys the line names keep the settings sources' values. Set them in a settings file. |
+| `answered settings.read without next()`, after a mod's name | Relevant only if that mod [runs before yours](/docs/en/plugins/mods/events#the-order-mods-run-in). Then your hook didn't run on that read. [Turn that mod off](/docs/en/plugins/mods/overview#turn-mods-on-or-off), or if your organization deployed it, ask its administrator to. |
+| `settings.read: refused to the engine` | The read was refused, so no hook's `{ value }` applied. [Find what refused it](#settings-read-refused). |
+
+If no line explains the key, check the mods that run before yours for a `settings.read` hook that [changes the key](/docs/en/plugins/mods/events#settings-read-example). Turn that mod off, or ask your organization's administrator to. If no hook does, set the key in a settings file.
+
+### `the answer for <key> is no value the key can hold`
+
+This [debug log](#read-the-debug-log) line means Claude Code refused the value your [`settings.read`](/docs/en/plugins/mods/events#settings-read-hook) hook returned for the named key, and that key alone:
+
+```text theme={null}
+settings.read: the answer for <key> is no value the key can hold; the settings' own value stands
+```
+
+The value you returned for the named key didn't fit that key's schema, for example by type or by range. Return a value that the key's [settings reference](/docs/en/settings-reference) entry allows. While your value doesn't fit, the key keeps the value merged from the settings sources before any hook answered. The line calls it the settings' own value.
+
+### `settings.read: refused to the engine`
+
+This [debug log](#read-the-debug-log) line means [Claude Code's own read](/docs/en/plugins/mods/events#settings-read-hook) was refused, so no hook's `{ value }` applied, yours included. When a `settings.read` hook refuses that read with [`{ deny: reason }`](/docs/en/plugins/mods/events#settings-read-returns), the line carries that hook's reason:
+
+```text theme={null}
+settings.read: refused to the engine (engine: $.settings.read: <reason>); the settings' own values stand
+```
+
+Search your own hook's code for the `<reason>` text:
+
+* **Your code has it**: your hook refused the read. Make it return `{ value }` when [`next.origin`](/docs/en/plugins/mods/events#settings-read-origin) shows Claude Code's own read.
+* **Your code doesn't have it**: [turn off](/docs/en/plugins/mods/overview#turn-mods-on-or-off) your other mods one at a time. After each, rerun this session's command from your shell with one `--debug-file` on a new path, and search that file for `refused to the engine`. If the line is there, turn off the next mod. If not, the last mod you turned off refused the read, so keep it off.
+
+With no other mod left, use a [settings file](/docs/en/settings) for the keys your hook returns. Its values hold while the read is refused.
 
 ## Read the debug log
 
@@ -43605,9 +43838,12 @@ Before v2.1.260, changing effort on Fable 5.1 with an API key or a Claude subscr
 
 ### Turning on fast mode
 
-Enabling [fast mode](/docs/en/fast-mode) adds a request header that is part of the cache key, so the first request Claude Code sends with fast mode on reads the entire conversation history with no cache hits. Claude Code sets that header once when a turn starts and keeps it for the whole turn, so when you turn fast mode on while Claude is working, the cache miss from the header happens on the first request of your next turn. Those uncached input tokens are billed at [fast mode rates](/docs/en/fast-mode#understand-the-cost-tradeoff), which is why turning it on at the start of a session costs less than turning it on deep into a long one. If your current model doesn't support fast mode, enabling fast mode also [switches your model](#switching-models), and that switch starts a fresh cache on its own from the next request in the running turn.
+[Fast mode](/docs/en/fast-mode) and standard speed keep separate caches, so after you turn fast mode on or off, the next request can't use what the other speed cached. The first time you turn fast mode on in a conversation, the next request reads the whole conversation so far uncached at [fast mode rates](/docs/en/fast-mode#understand-the-cost-tradeoff). To keep that cost small, turn it on at the start of a session.
 
-The cost applies once per conversation. After the first fast mode turn, Claude Code keeps sending the header and varies only the request's speed setting, which is not part of the cache key. Turning fast mode off, the [automatic fallback to standard speed](/docs/en/fast-mode#handle-rate-limits) after a rate limit, and turning it back on later all keep the cache. If you [run out of usage credits](/docs/en/fast-mode#handle-rate-limits) mid-session, Claude Code retries each rejected fast mode request at standard speed the same way, so this fallback also keeps the cache. `/clear` and `/compact` reset this, since they rebuild the cache at those points anyway.
+* If you turn it on while Claude is working, that turn finishes at standard speed, and you pay for any uncached read on your next turn's first request.
+* If your current model doesn't support fast mode, enabling fast mode also [switches you to Opus](/docs/en/fast-mode#toggle-fast-mode). That [model switch](#switching-models) starts a fresh cache on its own from the next request in the running turn.
+
+Each later toggle reads uncached whatever the speed you switch to doesn't have cached. Speed changes Claude Code makes on its own, such as the [fallback to standard speed](/docs/en/fast-mode#handle-rate-limits) after a rate limit and the return to fast mode later, count as toggles too.
 
 ### Connecting or removing an MCP server
 
@@ -43814,9 +44050,12 @@ To get one hour through a gateway or on Amazon Bedrock:
 
 In Claude Code, the cache is effectively scoped to one machine and directory. The system prompt embeds your auto memory paths, and the conversation opens with an announcement of the working directory, platform, shell, and OS version. Two sessions in different directories therefore build different prefixes and miss each other's cache.
 
-Sessions you run in parallel in the same directory build matching prefixes and read each other's cache. Sequential sessions share the prefix only when the git status snapshot taken at startup matches, since each conversation also carries the branch and recent commits from that snapshot.
+* Sessions you run in parallel in the same directory build matching prefixes and can read each other's cache.
+* Sequential sessions share the prefix only when the git status snapshot taken at startup matches, since each conversation also carries the branch and recent commits from that snapshot.
 
-The underlying API cache is broader. Caches are isolated between organizations, and on some providers, [between workspaces within an organization](https://platform.claude.com/docs/en/build-with-claude/prompt-caching#cache-storage-and-sharing). Within those boundaries, any two requests with the same model and prefix read the same cache. For Agent SDK callers running fleets of automated processes, see [improve prompt caching across users and machines](/docs/en/agent-sdk/modifying-system-prompts#improve-prompt-caching-across-users-and-machines) to move the auto memory location out of the system prompt and share the system prompt's cache entry across users and machines.
+The underlying API cache is broader. Caches are isolated between organizations, and on some providers, [between workspaces within an organization](https://platform.claude.com/docs/en/build-with-claude/prompt-caching#cache-storage-and-sharing). Within those boundaries, two requests share a cache only when their model, [speed](#turning-on-fast-mode), and prefix match.
+
+For Agent SDK callers running fleets of automated processes, see [improve prompt caching across users and machines](/docs/en/agent-sdk/modifying-system-prompts#improve-prompt-caching-across-users-and-machines) to move the auto memory location out of the system prompt.
 
 ## Check cache performance
 
@@ -60475,7 +60714,7 @@ Each display needs a minimum Claude Code version on the developer's machine and 
 
 The warnings and the percentage come from the `anthropic-ratelimit-unified-*` headers, which the gateway adds to each successful `/v1/messages` response for a developer who has a cap. The headers always describe the developer's own cap: the gateway strips the upstream provider's rate-limit headers, which describe your shared quota, and never forwards them.
 
-The spend a developer sees is the gateway's own [estimate](#how-requests-are-priced), the same figure it enforces the cap with, and not an amount from your provider's bill. Claude Code reads the dollar amounts with a separate request to the gateway. If you set `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` on developers' machines, as [Compliance posture](/docs/en/claude-apps-gateway-deploy#compliance-posture) suggests, Claude Code skips that request. With that variable set, or with a gateway server older than v2.1.284, the bar and the status line stay percentage-only.
+The spend a developer sees is the gateway's own [estimate](#how-requests-are-priced), the same figure it enforces the cap with. It isn't an amount from your provider's bill. Claude Code reads the dollar amounts with a separate request to the gateway, which it sends even if you set `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` on developers' machines. Before v2.1.295, Claude Code skipped that request when the variable was set, and `/usage` and the status line showed the percentage and the reset date, with no dollar amounts.
 
 ## Admin API reference
 
@@ -64038,7 +64277,7 @@ Fast mode has higher per-token pricing than standard Opus:
 
 Fast mode pricing is flat across the full 1M token context window. For the standard Opus rate to compare against, see the [Claude pricing reference](https://platform.claude.com/docs/en/about-claude/pricing).
 
-The first time you enable fast mode in a conversation, you pay the full fast mode uncached input token price for the entire conversation context. The deeper into a conversation you are, the more this costs, so the charge is smallest when you enable fast mode at the start. The cost applies once per conversation, so toggling fast mode off and on again later doesn't repeat it. For the mechanism, see [how fast mode interacts with the prompt cache](/docs/en/prompt-caching#turning-on-fast-mode).
+The first time you enable fast mode in a conversation, you pay the full fast mode uncached input token price for the entire conversation context. The deeper into a conversation you are, the more this costs, so the charge is smallest when you enable fast mode at the start. Fast mode and standard speed keep [separate caches](/docs/en/prompt-caching#turning-on-fast-mode), so each later switch reads part or all of the conversation uncached again.
 
 ### See where fast mode spend appears
 
@@ -65042,9 +65281,9 @@ Learn more: [Commands](/docs/en/commands) · [Skills](/docs/en/skills)
 
 ### Compaction
 
-Automatic summarization of your conversation when the [context window](#context-window) approaches its limit. Older tool outputs are cleared first, then the conversation is summarized. Project-root CLAUDE.md and auto memory survive compaction and reload from disk; instructions given only in conversation may be lost. Run `/compact` to trigger manually, optionally with a focus like `/compact focus on the API changes`.
+Automatic summarization of your conversation when the [context window](#context-window) approaches its limit. Project-root CLAUDE.md and auto memory survive compaction, but instructions given only in conversation may not. Run `/compact` to trigger manually, optionally with a focus like `/compact focus on the API changes`.
 
-Learn more: [What survives compaction](/docs/en/context-window#what-survives-compaction) · [When context fills up](/docs/en/how-claude-code-works#when-context-fills-up)
+Learn more: [What survives compaction](/docs/en/context-window#what-survives-compaction) · [When context fills up](/docs/en/how-claude-code-works#when-context-fills-up) · [When Claude Code compacts a conversation you leave idle](/docs/en/settings-reference#idlecompaction)
 
 ### Connector
 
@@ -67617,7 +67856,7 @@ To run a hook when a specific file changes on disk, whatever wrote it, use [File
 
 Use [PreToolUse decision control](#pretooluse-decision-control) to allow, deny, ask, or defer the tool call.
 
-An [Agent SDK callback hook](/docs/en/agent-sdk/hooks) on `PreToolUse` that exceeds its timeout blocks the tool call, and Claude receives an error result naming the timeout.
+An [Agent SDK callback hook](/docs/en/agent-sdk/hooks#hook-timeout) on `PreToolUse` that exceeds its timeout blocks the tool call.
 
 #### PreToolUse input
 
@@ -69956,7 +70195,7 @@ Claude Code delivers an async hook's results only while the session runs:
 
 When an async hook fires, Claude Code starts the hook process and immediately continues without waiting for it to finish. The hook receives the same JSON input via stdin as a synchronous hook.
 
-After the background process exits, Claude Code delivers the `additionalContext` and `systemMessage` fields from the hook's JSON response to Claude on the next conversation turn. Unlike a synchronous hook's `systemMessage`, neither field is shown to you.
+After the background process exits, Claude Code delivers the `additionalContext` and `systemMessage` fields from the hook's JSON response to Claude on the next conversation turn, except for [repeated `SessionStart` output](#limitations). Unlike a synchronous hook's `systemMessage`, neither field is shown to you.
 
 Print the JSON response alone on stdout or on one line of its own:
 
@@ -70024,6 +70263,7 @@ Async hooks have additional constraints compared to synchronous hooks:
 
 * Hook output is delivered on the next conversation turn. If the session is idle, the response waits until the next user interaction. Exception: an `asyncRewake` hook that exits with code 2 wakes Claude immediately even when the session is idle.
 * Each execution creates a separate background process.
+* An async `SessionStart` hook runs every time the event fires. Claude Code skips the hook's output when the `additionalContext` and `systemMessage` text matches what Claude last received from that hook, unless a synchronous `SessionStart` hook has added other text since. Claude Code delivers the text when it changes, and again the next time the hook runs after a compaction or `/clear`. Before v2.1.295, Claude Code added the same text to the conversation again on every resume.
 
 ## Security considerations
 
@@ -75670,7 +75910,7 @@ When nothing else sets the variable, `host.name` arrives in the resource block, 
 If the name doesn't arrive, check for one of these causes:
 
 * **You set it on the computer that runs Desktop**: Desktop doesn't pass a value you set there to the SSH session
-* **You exported it in a login file**: only login shells read a file such as `/etc/profile`. A value you `export` there reaches Claude Code that you start from a login shell. It doesn't reach a Desktop SSH session, because Desktop doesn't start Claude Code through a login shell.
+* **You exported it in `/etc/profile` or another file that only login shells read**: the name arrives when you run `claude` from a login shell, but not in a Desktop SSH session. Desktop doesn't start Claude Code through a login shell. Set the variable under `env` in the [managed settings file](/docs/en/desktop#managed-settings) on the remote machine instead.
 * **A value has a space inside it**: Claude Code then copies none of the keys onto events or datapoints and reports no error. [Take the space out of the value](#multi-team-organization-support).
 * **Something else already sets the variable**: in a session that the desktop app starts, a variable already set in the launch environment [takes precedence over settings files](/docs/en/settings-reference#how-env-values-interact-with-your-shell). The [debug log](/docs/en/debug-your-config) names each ignored variable. When a third-party Desktop deployment [names an OTLP endpoint](#how-managed-settings-lock-the-otlp-destination) in the environment it provides, that environment carries Desktop's own `OTEL_RESOURCE_ATTRIBUTES`.
 
@@ -80678,6 +80918,19 @@ A marketplace plugin has an entry `name` in `marketplace.json` and a `name` in i
 
 When the two names differ and someone installs by the manifest name, Claude Code reports `Plugin "<manifest-name>" not found in marketplace "<marketplace>"`. Keep the two names the same. For more on how Claude Code uses the two names, see [Plugin loading reference](/docs/en/plugins/loading#find-where-a-plugin-came-from).
 
+### Keep unused submodules out of the clone
+
+When someone adds your marketplace, Claude Code clones the repository and fetches only the git submodules that hold plugin files. Requires Claude Code v2.1.295 or later.
+
+You decide which submodules Claude Code fetches by where you put each plugin:
+
+* **A plugin in a subdirectory**: Claude Code fetches the submodules inside the plugin's directory and a submodule that contains it. Put a submodule your plugin needs inside the plugin's directory, and keep one it doesn't need outside
+* **A plugin at the marketplace root**: Claude Code fetches every submodule in the repository as soon as one of the plugin's files refers to a path inside any of them. If your repository has a large submodule that only your build uses, move the plugin into a subdirectory
+
+If a plugin at the root runs a file from a submodule, write the file's path out in the plugin's hook or server configuration, such as `${CLAUDE_PLUGIN_ROOT}/vendor/tool/run.sh`. Claude Code reads those paths to find out whether the plugin needs the submodules. It can't see a path that a script builds while it runs.
+
+For the full rule, see [Git submodules in the marketplace repository](/docs/en/plugins/marketplace-reference#git-submodules-in-the-marketplace-repository).
+
 ## Choose a plugin source
 
 Each plugin entry in `marketplace.json` has a `source` that tells Claude Code where to fetch that one plugin. Pick the source by where the plugin's files are stored. The table lists the sources most marketplace owners use.
@@ -81603,7 +81856,7 @@ Plugins load at session start from `installed_plugins.json` and the cache withou
 * **A marketplace that settings declare but `known_marketplaces.json` lacks**: Claude Code clones it, then reloads plugins and downloads enabled plugins that aren't cached yet
 * **A declared marketplace whose source changed in settings**: Claude Code re-fetches it from the new source and shows `Plugins changed. Run /reload-plugins to activate.`
 
-An enabled plugin that neither path fetched and that has no usable cache directory shows `Plugin "<name>" not cached at <path>` in the `/plugin` **Errors** tab, and `claude plugin list` adds `— run /plugin to refresh` to the same line. For the fix, see [`Plugin "<name>" not cached at <path>`](/docs/en/plugins/troubleshooting#plugin-not-cached-at).
+An enabled plugin that neither path fetched and that has no usable cache directory shows `Plugin "<name>" not cached at <path>` in the `/plugin` **Errors** tab. For the fix, see [`Plugin "<name>" not cached at <path>`](/docs/en/plugins/troubleshooting#plugin-not-cached-at).
 
 ## Find where a plugin came from
 
@@ -82582,7 +82835,7 @@ This shell-form hook runs a script bundled with the plugin:
 }
 ```
 
-On Windows, the substituted paths use forward slashes so a shell doesn't read backslashes as escapes.
+On Windows, most substituted paths use forward slashes, as in `C:/Users/you/...`. They keep their native backslashes in an [exec-form hook](/docs/en/hooks#exec-form-and-shell-form) and in a hook that runs through PowerShell, which is the default shell on Windows when Git Bash isn't installed.
 
 ## Standard layout
 
@@ -82844,6 +83097,36 @@ A relative path resolves only when Claude Code has the marketplace's files, so c
 * **`github`, `git`, `file`, and `directory`**: Claude Code has the marketplace's files.
 * **`url`**: Claude Code fetches only `marketplace.json`, so relative paths can't resolve. Give each plugin an object source instead, such as `github` or `git-subdir`.
 * **`settings`**: relative paths are rejected outright.
+
+#### Git submodules in the marketplace repository
+
+When Claude Code clones a marketplace repository, it fetches only the git submodules that hold plugin files. Requires Claude Code v2.1.295 or later.
+
+Earlier versions fetch every submodule, nested ones included. If the repository has a large submodule, Claude Code can then run past the [clone timeout](/docs/en/plugins/troubleshooting#git-clone-timed-out-after-120s) while fetching it.
+
+For a plugin in a subdirectory, such as `./plugins/formatter`, Claude Code fetches a submodule in these cases:
+
+* **The plugin is inside the submodule**: the submodule is the plugin's directory or a directory above it
+* **The submodule is inside the plugin**: the submodule is anywhere under the plugin's directory
+* **A symbolic link points into the submodule**: a link committed to the repository has its target in the submodule
+
+A plugin at the marketplace root, with `"source": "./"`, gets every submodule in the repository or none of them. Claude Code fetches every submodule when one of these points into any submodule:
+
+* **A component directory**: a directory at the root that holds plugin components, such as `skills/`, `hooks/`, or `bin/`
+* **A path in the plugin's configuration**: a path in the plugin's marketplace entry, in its `plugin.json`, or in a config file such as `.mcp.json` or `hooks/hooks.json`
+* **A symbolic link**: a link committed to the repository
+* **Text in the plugin's files**: a submodule's path, such as `vendor/tool`, written in a config file or in a file under a component directory
+
+When none of them does, Claude Code fetches no submodule for that plugin. A repository that is both a project and a plugin often has submodules that only the project's build uses, and this rule leaves them out.
+
+Claude Code also fetches every submodule where it can't tell which ones hold plugin files, such as:
+
+* **A `SKILL.md` at the root**: the whole repository is then one skill's directory
+* **A file Claude Code can't read**: the marketplace file, one of the plugin's config files, or `.gitmodules`
+
+If you add a marketplace with `--sparse`, or its source sets `sparsePaths`, Claude Code checks out only the directories named there and fetches no submodule. Earlier versions do the same.
+
+To keep a submodule your plugins don't use out of the clone, see [Keep unused submodules out of the clone](/docs/en/plugins/create-marketplace#keep-unused-submodules-out-of-the-clone).
 
 #### Bare names under pluginRoot
 
@@ -84774,6 +85057,8 @@ Then retry in the same shell.
 
 If the repository is a monorepo, limit the checkout to the directories you name with `claude plugin marketplace add <source> --sparse <paths>`.
 
+If the repository has large git submodules, update Claude Code. On v2.1.295 and later, Claude Code fetches only the [submodules that hold plugin files](/docs/en/plugins/marketplace-reference#git-submodules-in-the-marketplace-repository). Earlier versions fetch every submodule, which can use up the 120 seconds on its own.
+
 ### Marketplace updates keep failing offline
 
 You work in an environment where the marketplace's git host is unreachable, and every session repeats a failed refresh in the background. Your existing checkout of the marketplace stays in place and startup isn't delayed.
@@ -85065,7 +85350,7 @@ The table lists each message and its fix. To declare dependencies as an author, 
 | `<Plugin or Dependency> "<name>" has conflicting version requirements` | No version satisfies every range that pins it. The message lists the ranges. | Uninstall or update one of the conflicting plugins, or ask the upstream author to widen its constraint. |
 | `... has version requirements too complex to intersect` or `has an invalid version requirement` | A range isn't valid semver, or the combined ranges can't be intersected. | Fix the invalid range or simplify long `\|\|` chains. |
 | `... has no git tag satisfying <range>` | The dependency's repository has no `<name>--v*` tag in the range. | Check that the upstream tags releases with that convention, or relax the range. |
-| `Dependency "<dep>" (required by <plugin>) is in <marketplace>, which is not in the allowlist` | The dependency is in a different marketplace, and cross-marketplace resolution is off by default. | Install the dependency yourself at the same scope, in your shell with `claude plugin install <dep>@<marketplace>` plus the `--scope` you're installing the plugin at, then retry. |
+| `Dependency "<dep>" (required by <plugin>) is in marketplace "<marketplace>", which is not in the allowlist` | The dependency is in a different marketplace, and cross-marketplace resolution is off by default. | Install the dependency yourself at the same scope, in your shell with `claude plugin install <dep>@<marketplace>` plus the `--scope` you're installing the plugin at, then retry. |
 
 To see these programmatically, run `claude plugin list --json` in your shell. Plugins with problems carry an `errors` field with the messages and an `errorDetails` field with a `type` for each: the first three rows are `dependency-unsatisfied` and the fourth is `dependency-version-unsatisfied`.
 
@@ -85435,9 +85720,9 @@ Claude Code copies an installed plugin into its cache and loads it from there, s
 
 ### `${CLAUDE_PLUGIN_ROOT}` shows forward slashes on Windows
 
-On Windows, a plugin hook receives `${CLAUDE_PLUGIN_ROOT}` as `C:/Users/you/...` rather than `C:\Users\you\...`, and a script that expected backslashes breaks.
+On Windows, a plugin hook that runs through Git Bash receives `${CLAUDE_PLUGIN_ROOT}` as `C:/Users/you/...` rather than `C:\Users\you\...`, and a script that expected backslashes breaks.
 
-Claude Code runs shell-form hooks through Git Bash on Windows and substitutes the plugin root in the forward-slash Win32 form on purpose. Bash builtins, MSYS tools, and native Windows binaries all accept that form.
+With Git Bash installed, a [shell-form hook](/docs/en/hooks#exec-form-and-shell-form) runs through Git Bash by default. For a hook that runs through Git Bash, Claude Code passes the path with forward slashes so that Bash doesn't read backslashes as escapes. Bash builtins, MSYS tools, and native Windows binaries all accept that form.
 
 If your script needs backslashes, switch the hook to one of the forms that keep native paths, described under [exec form and shell form](/docs/en/hooks#exec-form-and-shell-form):
 
@@ -85546,6 +85831,14 @@ When a user adds a URL-based marketplace, Claude Code downloads only the `market
 
 Alternatively, host the marketplace in a git repository and tell users to add it with the repository URL. For a git source, Claude Code clones the whole repository, so relative paths resolve. Source types are on the [marketplace reference](/docs/en/plugins/marketplace-reference).
 
+### A root plugin's files from a git submodule are missing after install
+
+Your plugin is at the marketplace root and runs or reads a file from a git submodule of the repository. After install, the submodule's directory is empty. Before v2.1.295, Claude Code fetched every submodule, so the directory was populated.
+
+When Claude Code clones your marketplace, it fetches only the [submodules that hold plugin files](/docs/en/plugins/marketplace-reference#git-submodules-in-the-marketplace-repository). For a plugin at the root, it decides by reading the paths in the plugin's configuration and the text of the plugin's files. It can't see a path that a script builds while it runs.
+
+Write a path into the submodule out in full where Claude Code can read it, such as `${CLAUDE_PLUGIN_ROOT}/vendor/tool/run.sh` in a hook command. Claude Code then fetches every submodule in the repository for that plugin.
+
 ### Marketplace validation errors
 
 You ran `claude plugin validate .` from your marketplace directory and it reported errors or warnings on the marketplace file itself.
@@ -85577,7 +85870,7 @@ Your organization deploys managed settings that restrict plugins, and a command 
 
 ### `Marketplace source '<source>' is blocked by enterprise policy`
 
-You ran `/plugin marketplace add`, `update`, or an install, and Claude Code refused with this line. For a GitHub or git source, the host follows the source in parentheses, as in `'github:owner/repo' (github.com)`.
+You ran `/plugin marketplace add`, `update`, or an install, and Claude Code refused with this line.
 
 Your administrator set `blockedMarketplaces` or `strictKnownMarketplaces` in managed settings, and this source isn't permitted. Ask your administrator to allow the source, or add one of the allowed sources the message lists.
 
@@ -86043,6 +86336,8 @@ These rules and settings change who approves the retry:
 * **A matching allow rule**: if an allow rule such as `Bash(curl *)` matches the command, it also approves the retry, so the command runs outside the sandbox with no prompt
 * **An ask rule for the parameter**: add an [ask rule](/docs/en/permissions#match-by-input-parameter) for `Bash(dangerouslyDisableSandbox:true)` to be prompted on Bash retries. You get the prompt in auto mode and `bypassPermissions` mode too, and the rule takes precedence over a matching allow rule
 * **[`permissions.blockReadsOutsideWorkingDirectories`](/docs/en/settings-reference#permissions-blockreadsoutsideworkingdirectories)**: [Actions no mode auto-approves](/docs/en/permission-modes#actions-no-mode-auto-approves) covers the retries that prompt while it's on
+
+While commands are refused with a [`Sandbox is required` message](#commands-refused-with-sandbox-is-required), Claude Code ignores the `dangerouslyDisableSandbox` parameter and refuses the retry too.
 
 #### Turn off the retry with strict sandbox mode
 
@@ -86720,9 +87015,16 @@ In an unprivileged container, [bubblewrap](#os-level-enforcement) can't mount a 
 
 ### 0-byte read-only files appear at `.claude` settings paths, and "Yes, and don't ask again" doesn't save
 
-On Linux and WSL2, the sandbox holds a write denial on a file that doesn't exist yet by creating a 0-byte read-only placeholder there while a sandboxed command runs. The sandbox removes the placeholder afterward. If a session is killed before that cleanup runs, for example by SIGKILL, the placeholders stay behind. Later sessions bind the placeholders read-only again on every start, so a settings write such as saving a permission choice fails at a path where a placeholder remains.
+On Linux and WSL2, the sandbox holds a write denial on a file that doesn't exist yet by creating a 0-byte read-only placeholder there while a sandboxed command runs. The sandbox removes the placeholder afterward.
 
-Run `claude doctor` in your terminal to list the leftover placeholder files. The [`Sandbox mask files left behind at write-deny paths`](/docs/en/errors#stale-sandbox-mask-files-left-by-a-killed-session) warning names some of them and counts the rest. Delete each file with `rm` while no other Claude Code session is running in that project. Before v2.1.257, Claude Code left the same placeholders behind without flagging them.
+A placeholder stays behind in cases such as these:
+
+* The session is killed before that cleanup runs, for example by SIGKILL
+* The session exits while a sandboxed command is still running, such as a background command
+
+Later sessions bind the placeholders read-only again on every start, so a settings write such as saving a permission choice fails at a path where a placeholder remains.
+
+Run `claude doctor` in your terminal to list the leftover placeholder files. The [`Sandbox mask files left behind at write-deny paths`](/docs/en/errors#stale-sandbox-mask-files-left-by-a-killed-session) warning names some of them and counts the rest. Delete each file with `rm` while no other Claude Code session is running in that project. Before v2.1.257, Claude Code left the same placeholders behind when a session was killed, without flagging them.
 
 ### `git` over SSH fails with the sandbox on
 
@@ -86820,6 +87122,21 @@ Add the IP address the name resolves to alongside the hostname in `allowedDomain
 An IP address entry with no port lets sandboxed commands reach every service listening on that address.
 
 Before v2.1.284, the proxy connected to whatever address an allowed hostname resolved to.
+
+### Commands are refused with `Sandbox is required`
+
+If you require the sandbox with [`sandbox.failIfUnavailable`](/docs/en/settings-reference#sandbox-failifunavailable) and it fails in one of these ways after Claude Code starts, each sandboxed command Claude runs is refused with the message shown. The session keeps running, and the refused command doesn't run unsandboxed:
+
+* **`Sandbox is required but failed to initialize: <reason>`**: Claude Code started, but the sandbox then failed to initialize. Take the step the message gives: `Restart to retry.` or `Fix the sandbox settings to retry`.
+* **`Sandbox is required (sandbox.failIfUnavailable) and stopped being available in this session: <reason>`**: on Linux or WSL2, the sandbox started and Claude Code then found a dependency missing. Fix what the reason names, such as [installing a missing dependency](#set-up-linux-and-wsl2), then restart Claude Code.
+
+Excluded commands and commands you type yourself keep running, and Claude can't retry a refused command unsandboxed:
+
+* **Excluded commands**: commands that match an [`excludedCommands`](#run-commands-outside-the-sandbox-with-excludedcommands) entry keep running outside the sandbox. When one writes to a [`filesystem.allowWrite`](/docs/en/settings-reference#sandbox-filesystem-allowwrite) path outside your working directory, that write goes through the regular permission flow. Under an [admin-required sandbox](#repository-settings-under-an-admin-required-sandbox), Claude Code ignores entries from the repository's settings
+* **Commands you type at the [`!` shell-mode prompt](/docs/en/interactive-mode#shell-mode-with-prefix)**: keep running outside the sandbox. In a [background session](/docs/en/agent-view), they're refused too
+* **Unsandboxed retries**: Claude Code ignores the `dangerouslyDisableSandbox` parameter of an [unsandboxed retry](#the-unsandboxed-retry-escape-hatch)
+
+In a Linux session with `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` set, every command runs sandboxed, so excluded commands and commands you type are refused too.
 
 ### `/sandbox` fails with `Sandbox settings are overridden by a higher-priority configuration`
 
@@ -87965,7 +88282,7 @@ Sessions also read these settings files:
 
 For the order these sources apply in, see [settings precedence](/docs/en/settings#settings-precedence).
 
-When Anthropic's control plane supplies a session with [Claude Code hooks](/docs/en/hooks), the runner installs them alongside, not over, your own configuration. Requires Claude Code v2.1.229 or later.
+When Anthropic's control plane supplies a session with [Claude Code hooks](/docs/en/hooks), the runner installs them alongside, not over, your own configuration. Requires Claude Code v2.1.229 or later; older runners ignore supplied hooks. The supplied hooks run `python3`, so install `python3` in your [runner image](/docs/en/self-hosted-environments-deploy#build-the-runner-image).
 
 * **Where they land**: the runner writes each supplied hook script to a reserved `hooks/.ccr-launcher/` subdirectory of the session's config directory and registers the scripts in a separate settings file it passes to the session with `--settings`, leaving the seeded `settings.json` and your own scripts at `hooks/<name>` untouched. The runner recreates the reserved subdirectory for each session and doesn't seed host content at `~/.claude/hooks/.ccr-launcher/` into sessions.
 * **Who authors them**: the control plane populates the scripts from fixed constants in its own deployment, never from per-session or third-party input.
@@ -88372,12 +88689,12 @@ Anthropic doesn't publish a pre-built runner image. Build your own around the `c
 
 The recipes below use `--capacity 4`, so one container serves up to four concurrent sessions from the same locked owner. That doesn't provide the per-session container isolation in the [hardening section](#harden-your-deployment): before connecting an environment to production systems, either run the recipes at `--capacity 1` with one container per session, or use [on-demand runners](/docs/en/self-hosted-environments-configuration#on-demand-runners), which also keep the environment secret off session-running hosts. If you add the [Anthropic git proxy](#use-the-anthropic-git-proxy) to one of these recipes, also change `--capacity` to `1`.
 
-This Dockerfile is a minimal starting point:
+This Dockerfile is a minimal starting point. It installs `python3` because the [hooks Anthropic's control plane supplies](/docs/en/self-hosted-environments-configuration#how-each-session’s-config-is-assembled) to Claude Tag sessions, including the one that has Claude post its reply in Slack, run `python3`. Keep `python3` on `PATH` in any image that serves Claude Tag sessions:
 
 ```dockerfile theme={null}
 FROM debian:bookworm-slim
 ARG CLAUDE_CODE_VERSION
-RUN apt-get update && apt-get install -y --no-install-recommends git curl ca-certificates openssh-client jq \
+RUN apt-get update && apt-get install -y --no-install-recommends git curl ca-certificates openssh-client jq python3 \
  && rm -rf /var/lib/apt/lists/*
 RUN curl -fsSL "https://downloads.claude.ai/claude-code-releases/${CLAUDE_CODE_VERSION:?set with --build-arg CLAUDE_CODE_VERSION}/linux-x64/claude" \
       -o /usr/local/bin/claude && chmod +x /usr/local/bin/claude
@@ -88387,7 +88704,7 @@ RUN git config --system user.name "Claude" \
 ENTRYPOINT ["claude"]
 ```
 
-Swap `linux-x64` for `linux-arm64` if your nodes are ARM, or for `linux-x64-musl` or `linux-arm64-musl` on a musl-based image such as Alpine; see [Alpine Linux setup](/docs/en/setup#alpine-linux-and-musl-based-distributions) for the extra packages musl images need. The URL is the standard Claude Code release location, so you can verify the downloaded binary against the release's signed manifest as described in [Binary integrity and code signing](/docs/en/setup#binary-integrity-and-code-signing). The runner requires Claude Code version 2.1.224 or later. Build the image, then push it to your registry and reference it in the recipes below:
+Swap `linux-x64` for `linux-arm64` if your nodes are ARM, or for `linux-x64-musl` or `linux-arm64-musl` on a musl-based image such as Alpine; see [Alpine Linux setup](/docs/en/setup#alpine-linux-and-musl-based-distributions) for the extra packages musl images need. The URL is the standard Claude Code release location, so you can verify the downloaded binary against the release's signed manifest as described in [Binary integrity and code signing](/docs/en/setup#binary-integrity-and-code-signing). The runner requires Claude Code version 2.1.224 or later, or 2.1.229 or later to serve Claude Tag sessions. Build the image, then push it to your registry and reference it in the recipes below:
 
 ```bash theme={null}
 docker build \
@@ -88849,6 +89166,7 @@ Common issues:
   Once the runner is upgraded or the cause is fixed, retry the session or start a new one. If none of these checks finds the cause, [report an issue](#report-an-issue).
 
   For the source the session pushes results to, a deleted branch fails the session. For a git source the session only reads from, the runner skips that source and continues on the remaining ones. The runner fails the session when skipping would leave it with no repository at all. Before v2.1.228, such a session started in an empty directory.
+* **Claude Tag sometimes doesn't post its reply in Slack**: the reply reminder is a [hook the control plane supplies](/docs/en/self-hosted-environments-configuration#how-each-session’s-config-is-assembled). Confirm the runner is Claude Code v2.1.229 or later with `claude --version`, since older runners ignore supplied hooks; confirm `python3 --version` succeeds inside the runner image, since the hooks run `python3`; and confirm no settings file turns hooks off, whether `disableAllHooks` in `managed-settings.json`, the runner user's `~/.claude/settings.json`, or the repository's `.claude/settings.json` or `.claude/settings.local.json`, or `allowManagedHooksOnly` or a [`strictPluginOnlyCustomization`](/docs/en/settings-reference#strictpluginonlycustomization) that covers hooks in managed settings.
 * **A session starts without one of its repositories**: on a runner with no [`checkout` hook](/docs/en/self-hosted-environments-configuration#checkout), the git host can refuse the runner's access check for a repository the session only reads from. The runner then skips that repository, logs a `[runner:warn] could not access context source` line naming the refusal, and starts the session on the remaining ones.
 
   The runner skips only a clear refusal: the host answers that the repository wasn't found, git finds no credentials for the host, or authentication fails. A network failure, a timeout, or an HTTP `403` still fails the session start, as does a refusal for a repository the session pushes results to. The runner still fails a session that skipping would leave with no repository at all. With [`--use-anthropic-git-proxy`](#use-the-anthropic-git-proxy), the runner skips only a repository the git proxy itself denies.
@@ -89264,7 +89582,7 @@ The runner host needs:
 
 Install on the host before you start:
 
-* **Claude Code v2.1.224 or later**, with any of the [standard install methods](/docs/en/setup). The runner is part of the standard `claude` binary, and earlier versions don't recognize the `self-hosted-runner` subcommand. To pin the exact version your fleet runs, see [Install a specific version](/docs/en/setup#install-a-specific-version). For container images, see the Dockerfile in [Deploy to production](/docs/en/self-hosted-environments-deploy#build-the-runner-image).
+* **Claude Code v2.1.224 or later**, with any of the [standard install methods](/docs/en/setup). The runner is part of the standard `claude` binary, and earlier versions don't recognize the `self-hosted-runner` subcommand. A runner that serves Claude Tag sessions needs v2.1.229 or later and `python3` on its `PATH`, since the [hooks the control plane supplies](/docs/en/self-hosted-environments-configuration#how-each-session’s-config-is-assembled) for those sessions run `python3`. To pin the exact version your fleet runs, see [Install a specific version](/docs/en/setup#install-a-specific-version). For container images, see the Dockerfile in [Deploy to production](/docs/en/self-hosted-environments-deploy#build-the-runner-image).
 * **Git 2.24 or newer**. Some git options on the deploy page need newer versions; [Configure git](/docs/en/self-hosted-environments-deploy#configure-git) states each floor.
 
 Confirm the host is ready:
@@ -89762,10 +90080,21 @@ At the default `--capacity 1`, the rewrite doesn't apply: the session's child bi
 
 #### Join a session's metrics to the runner's
 
-To put a session's own metrics beside `claude_code_self_hosted_runner_session_idle_seconds`, join on the runner's `session_id`:
+To see what idle sessions have cost, join the runner's `claude_code_self_hosted_runner_session_idle_seconds` to Claude Code's cost metric on `ccr_session_id`. The runner's metric doesn't carry that label, so give it one with `label_replace`, as in this query:
 
-* **At `--capacity` above one**: join directly. On the runner's `/metrics`, the session's series carry the same `session_id` as that metric, in `session_...` form.
-* **At `--capacity 1`**: join on a converted `ccr_session_id`. By default, each Claude Code metric on port 9464 carries that label, which holds the session ID in `cse_...` form. In a new label, replace its `cse_` prefix with `session_` to get the runner's `session_id`. The metric's own `session_id` holds Claude Code's own [`session.id`](/docs/en/monitoring-usage#standard-attributes), which matches no runner series.
+```text theme={null}
+sum by (ccr_session_id) (claude_code_cost_usage_total)
+and on (ccr_session_id)
+label_replace(
+  claude_code_self_hosted_runner_session_idle_seconds > 600,
+  "ccr_session_id", "cse_$1", "session_id", "session_(.*)"
+)
+```
+
+The query returns one result per session idle for over ten minutes: the cost in US dollars its Claude Code process has counted so far. To join another Claude Code metric, replace `claude_code_cost_usage_total` in the query. The query works at any `--capacity`.
+
+* **`session_id`**: on port 9464, that label on Claude Code metrics holds Claude Code's own [`session.id`](/docs/en/monitoring-usage#standard-attributes), which matches no runner series. A join on it returns nothing, so join on `ccr_session_id`.
+* **Claude Code metrics have no `ccr_session_id`**: check that [`OTEL_METRICS_INCLUDE_SESSION_ID`](/docs/en/monitoring-usage#metrics-cardinality-control) isn't set to `false`
 
 ### Session lifecycle counter semantics
 
@@ -92370,11 +92699,11 @@ On a platform the sandbox doesn't support, Claude Code doesn't start with this k
 
 * **Scope**: [`Any file`](#scopes), with [limits on project and local settings](/docs/en/sandboxing#repository-settings-under-an-admin-required-sandbox)
 * **Type**: Boolean
-  * `true`: Claude Code exits with an error at startup when `sandbox.enabled` is `true` but the sandbox can't start
+  * `true`: Claude Code exits with an error at startup when `sandbox.enabled` is `true` but the sandbox can't start. If the sandbox passes that check and then fails to initialize, the session keeps running and Claude Code [refuses each sandboxed command](/docs/en/sandboxing#commands-refused-with-sandbox-is-required)
   * `false`: Claude Code runs commands unsandboxed when the sandbox can't start
 * **Default**: `false`
 
-This makes every managed machine sandbox commands or refuse to start:
+This turns the sandbox on for managed machines and sets `failIfUnavailable` to `true`:
 
 ```json managed-settings.json theme={null}
 {
@@ -98193,7 +98522,7 @@ Behind a [Claude apps gateway with spend limits](/docs/en/claude-apps-gateway-sp
 * `used_percentage` and `resets_at`: come with every response, so they are present whenever `spend_limit` is. `used_percentage` runs from 0 to 100, or above 100 once you exceed the limit, and `resets_at` is the Unix epoch seconds when the limit's period resets.
 * `used_usd`, `limit_usd`, and `period`: your estimated spend so far and your limit in US dollars, and the period the limit covers, one of `daily`, `weekly`, or `monthly`. The gateway [computes `used_usd` from token counts](/docs/en/claude-apps-gateway-spend-limits#how-requests-are-priced), so it's an estimate and not a billed amount. Claude Code reads them from the gateway in a separate request, about every five minutes while you send requests. The dollar amounts can be about five minutes older than `used_percentage`, so the two may briefly disagree. Requires v2.1.284 or later on both Claude Code and the gateway.
 
-Treat `used_usd`, `limit_usd`, and `period` as optional even when `spend_limit` is present. Your script receives the percentage before them, and they stay absent if you set `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, which turns that request off. Read each with a fallback in your script, such as `jq -r '.rate_limits.spend_limit.used_usd // empty'`.
+Treat `used_usd`, `limit_usd`, and `period` as optional even when `spend_limit` is present, because your script receives the percentage before them. Read each with a fallback in your script, such as `jq -r '.rate_limits.spend_limit.used_usd // empty'`. Before Claude Code v2.1.295, they stayed absent if you set `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`, which turned that request off.
 
 ### Prompt cache fields
 
@@ -104409,7 +104738,9 @@ Claude Code runs each callback with a timeout, which you set in seconds with the
 
 When a callback exceeds its timeout, Claude Code cancels it and discards its output, and the session continues rather than hanging. What happens next depends on the event:
 
-* `PreToolUse`: Claude Code blocks the tool call. In its place, Claude receives a tool result saying the hook didn't respond before its timeout, and the turn continues. Before v2.1.210, Claude Code reported the timeout to Claude as a user rejection, which made unattended sessions stop and wait for input.
+* `PreToolUse`: Claude Code blocks the tool call. If every other hook returned nothing or only an `allow` decision, the tool result tells Claude the hook didn't respond before its timeout, and the turn continues. If another of your hooks already denied the call, its deny still reaches Claude: the tool result includes that hook's reason, and the timeout text can follow it.
+
+  Before v2.1.210, Claude Code reported the timeout to Claude as a user rejection, which made unattended sessions stop and wait for input.
 * `PostToolUse` and `PostToolUseFailure`: Claude Code keeps the tool result and the turn continues.
 * `UserPromptSubmit` and [`UserPromptExpansion`](/docs/en/hooks#userpromptexpansion): Claude Code blocks the prompt with a message naming the hook and the timeout, and the session continues. Before v2.1.208, Claude Code ended the query with `error_during_execution` when a callback on these events timed out.
 * `Stop` and `SubagentStop`: the timed-out callback counts as returning no decision. The agent or subagent stops as if that callback had allowed it, and a decision from your other hooks on the event still applies. Before Claude Code v2.1.273, a timed-out `Stop` or `SubagentStop` callback counted as a failed hook run, and Claude Code discarded the decisions of your other hooks on the event.
@@ -115622,12 +115953,13 @@ function getSessionMessages(
 | `options.dir` | `string` | `undefined` | Project directory to find the session in. When omitted, searches all projects |
 | `options.limit` | `number` | `undefined` | Maximum number of messages to return |
 | `options.offset` | `number` | `undefined` | Number of messages to skip from the start |
+| `options.includeSystemMessages` | `boolean` | `false` | When `true`, also return system messages such as compact boundaries alongside user and assistant messages |
 
 #### Return type: `SessionMessage`
 
 | Property | Type | Description |
 | :- | :- | :- |
-| `type` | `"user" \| "assistant"` | Message role |
+| `type` | `"user" \| "assistant" \| "system"` | Message role. `"system"` appears only when `options.includeSystemMessages` is `true` |
 | `uuid` | `string` | Unique message identifier |
 | `session_id` | `string` | Session this message belongs to |
 | `message` | `unknown` | Raw message payload from the transcript |
@@ -115945,13 +116277,19 @@ interface Query extends AsyncGenerator<SDKMessage, void> {
   }): Promise<SDKControlReloadPluginsResponse>;
   reloadSkills(): Promise<SDKControlReloadSkillsResponse>;
   reloadOutputStyles(): Promise<SDKControlReloadOutputStylesResponse>;
+  seedReadState(path: string, mtime: number): Promise<void>;
   accountInfo(): Promise<AccountInfo>;
   reconnectMcpServer(serverName: string): Promise<void>;
   toggleMcpServer(serverName: string, enabled: boolean): Promise<void>;
   setMcpServers(servers: Record<string, McpServerConfig>): Promise<McpSetServersResult>;
+  setMcpPermissionModeOverride(
+    serverName: string,
+    mode: 'default' | 'auto' | null
+  ): Promise<{ warning?: string }>;
   readMcpResource(serverName: string, uri: string): Promise<SDKControlMcpReadResourceResponse>;
   streamInput(stream: AsyncIterable<SDKUserMessage>): Promise<void>;
   stopTask(taskId: string): Promise<void>;
+  backgroundTasks(toolUseId?: string): Promise<boolean>;
   close(): void;
 }
 ```
@@ -115978,14 +116316,54 @@ interface Query extends AsyncGenerator<SDKMessage, void> {
 | `reloadPlugins(options?)` | Reloads plugins from disk, so plugins you install or edit mid-session reach the running session. Resolves with an [`SDKControlReloadPluginsResponse`](#sdkcontrolreloadpluginsresponse) listing the session's commands, subagents, plugins, and MCP server status. Requires Agent SDK v0.2.85 or later. The [`holdOnCacheImpact` option](#sdkcontrolreloadpluginsresponse) requires Agent SDK v0.3.268 or later |
 | `reloadSkills()` | Reloads skills from disk, so skills you add or edit mid-session become available to the running session. Resolves with an [`SDKControlReloadSkillsResponse`](#sdkcontrolreloadskillsresponse) listing the skills available after the reload. Requires Agent SDK v0.3.163 or later |
 | `reloadOutputStyles()` | Re-reads [output styles](/docs/en/output-styles) from disk, so a style file you add or edit mid-session becomes available to the running session. Resolves with an [`SDKControlReloadOutputStylesResponse`](#sdkcontrolreloadoutputstylesresponse) listing the style names available after the reload. Requires Agent SDK v0.3.261 or later |
+| `seedReadState(path, mtime)` | Marks a file as already read so a later Edit doesn't fail with `File has not been read yet`. See [`seedReadState()`](#seedreadstate). Requires TypeScript SDK v0.2.83 or later |
 | `accountInfo()` | Returns account information |
 | `reconnectMcpServer(serverName)` | Reconnect an MCP server by name. If the name also matches an entry in a settings file such as `.mcp.json` or `~/.claude.json`, Claude Code reconnects the server you configured through [`mcpServers`](#options) or `setMcpServers()`, not the settings-file entry. That resolution order requires Claude Code v2.1.257 or later |
 | `toggleMcpServer(serverName, enabled)` | Enable or disable an MCP server by name, with the same name resolution as `reconnectMcpServer()`. Disabling a server disconnects it and removes its tools. See [`toggleMcpServer()`](#togglemcpserver) for the Claude Code version this needs for each kind of server |
 | `setMcpServers(servers)` | Replace the MCP servers this method manages: servers added through it and [in-process SDK servers](#createsdkmcpserver). Resolves with an [`McpSetServersResult`](#mcpsetserversresult) naming which servers were added and removed, and any errors; that section says which other servers stay connected |
+| `setMcpPermissionModeOverride(serverName, mode)` | Overrides the permission mode for one MCP server's tools with a stricter mode than the session's, or clears the override with `null`. Only available in streaming input mode. See [`setMcpPermissionModeOverride()`](#setmcppermissionmodeoverride). Requires TypeScript SDK v0.3.187 or later |
 | `readMcpResource(serverName, uri)` | *Alpha.* Reads one MCP Apps `ui://` resource from a connected MCP server so your application can render a tool's widget. Resolves with an [`SDKControlMcpReadResourceResponse`](#sdkcontrolmcpreadresourceresponse). Requires TypeScript Agent SDK v0.3.280 or later |
 | `streamInput(stream)` | Stream input messages to the query for multi-turn conversations |
 | `stopTask(taskId)` | Stop a running background task by ID |
+| `backgroundTasks(toolUseId?)` | Moves the running Bash commands and subagents that the turn is waiting on to the background, the same as pressing Ctrl+B in the interactive terminal. See [`backgroundTasks()`](#backgroundtasks). Requires TypeScript SDK v0.2.139 or later |
 | `close()` | Close the query and terminate the underlying process. Forcefully ends the query and cleans up all resources |
+
+#### `setMcpPermissionModeOverride()`
+
+Overrides the permission mode for one MCP server's tools with a stricter mode than the session's, or clears the override with `null`. Use it when a session runs in a mode that skips per-action prompts but one server's tools should still be reviewed. Requires TypeScript SDK v0.3.187 or later.
+
+Pass one of three values as `mode`:
+
+* `'default'`: Claude Code evaluates that server's tool calls as [Manual mode](/docs/en/permission-modes#available-modes) does.
+* `'auto'`: Claude Code routes that server's tool calls through the [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) classifier. Claude Code rejects this value when the classifier isn't available to the session.
+* `null`: clears the override.
+
+The override only takes effect while the session is in a mode that skips per-action prompts: `bypassPermissions` or `auto`. In any other session mode Claude Code ignores the override, so it can never widen what the session allows.
+
+The promise resolves with `{ warning }` when no server by that name is known yet. Claude Code stores the override anyway and applies it once a server with that exact name connects, so the warning is a typo check, not a failure.
+
+Only available in streaming input mode, the same constraint as `setModel()` and `setPermissionMode()`.
+
+#### `seedReadState()`
+
+Marks a file as already read so a later Edit doesn't fail with `File has not been read yet`. Use it when your application has dropped an earlier `Read` result from the conversation context and Claude will edit that file next. Requires TypeScript SDK v0.2.83 or later.
+
+Pass `mtime` as the file's modification time at the moment of that earlier read, in whole milliseconds since the epoch, for example `Math.floor(stat.mtimeMs)`. If the file on disk changed after that time, Claude Code skips the mark.
+
+The promise resolves whether or not the file was marked, so a resolved promise doesn't tell you which happened.
+
+#### `backgroundTasks()`
+
+Moves the running Bash commands and subagents that the turn is waiting on to the background, the same as pressing Ctrl+B in the interactive terminal. Pass the `toolUseId` of a tool call to background only the Bash command or subagent that call started, or omit it to background every foreground task. Requires TypeScript SDK v0.2.139 or later.
+
+Each backgrounded tool call returns to Claude immediately with a running-in-the-background result, the turn continues, and Claude Code emits an [`SDKTaskNotificationMessage`](#sdktasknotificationmessage) when the task finishes.
+
+In a session where background tasks are enabled, the promise resolves to a boolean:
+
+* **`true`**: a task was backgrounded, or you omitted `toolUseId`.
+* **`false`**: the `toolUseId` you passed matched no foreground task.
+
+If background tasks are disabled for the session, such as with [`CLAUDE_CODE_DISABLE_BACKGROUND_TASKS`](/docs/en/env-vars), the promise rejects instead and nothing is backgrounded.
 
 #### `applyFlagSettings()`
 
@@ -116785,10 +117163,19 @@ type SDKMessage =
   | SDKPermissionDeniedMessage
   | SDKPromptSuggestionMessage
   | SDKAPIRetryMessage
+  | SDKControlRequestProgressMessage
+  | SDKModelRefusalFallbackMessage
+  | SDKModelRefusalNoFallbackMessage
   | SDKMirrorErrorMessage
   | SDKInformationalMessage
   | SDKConversationResetMessage;
 ```
+
+Three messages in this union report control-request progress and model refusals. Each has `type: "system"`, so tell them apart by the `subtype` listed with each one:
+
+* `SDKControlRequestProgressMessage`, `subtype: "control_request_progress"`: reports progress on a long-running control request that your client sent. `request_id` matches the message to that request, and `status` is `"started"` or `"api_retry"`. Requires Agent SDK v0.3.203 or later.
+* `SDKModelRefusalFallbackMessage`, `subtype: "model_refusal_fallback"`: emitted when the model ends the stream with a refusal and the turn is retried on a fallback model. Carries `original_model` and `fallback_model`. Requires Agent SDK v0.3.170 or later.
+* `SDKModelRefusalNoFallbackMessage`, `subtype: "model_refusal_no_fallback"`: emitted when the model ends the stream with a refusal and no retry runs, for example because no fallback model is configured. Carries `original_model`. Requires Agent SDK v0.3.193 or later.
 
 ### `SDKAssistantMessage`
 
@@ -116949,6 +117336,7 @@ type SDKResultMessage =
       stop_reason: string | null;
       ttft_ms?: number;
       ttft_stream_ms?: number;
+      time_to_request_ms?: number;
       user_message_uuid?: string;
       user_message_uuids?: string[];
       resume_reason?: string;
@@ -117014,6 +117402,7 @@ Several fields on the result carry diagnostic detail beyond `subtype`:
 * `api_error_status`: the HTTP status code of the API error that terminated the conversation. Absent or `null` when the turn ended without an API error.
 * `ttft_ms`: time to first token in milliseconds, measured when the first complete assistant message arrives. Present on the success arm only.
 * `ttft_stream_ms`: time in milliseconds until the first `message_start` stream event, when the response stream opens. Lower than `ttft_ms`; the gap between the two is time spent streaming the first message. Present on the success arm only.
+* `time_to_request_ms`: time in milliseconds from the start of the turn until Claude Code sends the API request. Present on the success arm only. Requires Claude Code v2.1.162 or later.
 * `user_message_uuid`: the `uuid` of the message you sent that this turn answered. See [`user_message_uuid`](#user_message_uuid) for which results carry it.
 * `user_message_uuids`: the `uuid`s of every message you sent that Claude Code answered in this turn. See [`user_message_uuids`](#user_message_uuids).
 * `resume_reason`: why this turn continues one that a restart interrupted. Present on both arms. See [`resume_reason`](#resume_reason).
@@ -117085,13 +117474,17 @@ Claude Code omits the field in these cases:
 * Turns that answer no message of yours, or answer a message you sent without a `uuid`
 * Results that answer no message you sent, such as the zeroed result after a crashed worker process
 
+When a [`UserPromptSubmit`](/docs/en/hooks#userpromptsubmit) hook blocks a message that starts its own turn, or stops it with `continue: false`, you still get a result for that message. It's a success result with `is_error: false` and `num_turns: 0`, its `result` is the [block message](/docs/en/hooks#what-a-blocked-prompt-leaves-behind) or [stop message](/docs/en/hooks#json-output), and it echoes the message's `uuid` under the same rules as any other result. The result has no `terminal_reason`, and nothing on it besides the `result` text says a hook ended the turn. A message that a hook blocks while another turn is running may get no result: see [`user_message_uuids`](#user_message_uuids).
+
 #### `user_message_uuids`
 
 The `uuid`s of every message you sent that Claude Code answered in this turn. When you send several messages close together, Claude Code can merge them into one turn, and `user_message_uuid` then names only the last of them. To match the reply to any of the merged messages, look for that message's `uuid` anywhere in this list. Requires Agent SDK v0.3.259 or later.
 
 Claude Code sets the list together with `user_message_uuid` on each reply frame that carries that field and on the result. For the full set of turn frames that echo the answered message's `uuid`, and the version each requires, see [`user_message_uuid`](#user_message_uuid). The list always contains `user_message_uuid` and holds at most 64 entries.
 
-When Claude Code picks up a regular message you sent while a turn was running, it adds that message's `uuid` to the result's list.
+When Claude Code picks up a regular message you sent while a turn was running, it adds that message's `uuid` to the result's list. When a [`UserPromptSubmit`](/docs/en/hooks#userpromptsubmit) hook blocks the message at pickup, Claude Code drops it instead: the message never reaches Claude and isn't kept for a later turn. You get no result for it, and its `uuid` appears in no result's list. If a hook can block messages, set a timeout on waiting for a result that lists a message you sent while a turn was running.
+
+That holds when the hook's output is a block alone. If the output sets `continue: false`, even beside `decision: "block"`, or the hook is a prompt hook that answers [`ok: false`](/docs/en/hooks#response-schema) without `continueOnBlock: true`, Claude Code stops the message instead of dropping it. The message waits for its own turn, you get a result for it, and its text stays in the conversation, so Claude sees it on the next turn.
 
 When a first reply or result carries `user_message_uuid` without the list, it came from an earlier Claude Code version, so fall back to the single field.
 
