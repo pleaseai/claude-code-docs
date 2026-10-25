@@ -2034,9 +2034,7 @@ Open the published artifact in a desktop browser to review the artboards. Select
 
 Claude Docs reaches Claude Code as a claude.ai [connector](/docs/en/mcp#use-mcp-servers-from-claude-ai) rather than a command. When it's connected, `/mcp` lists it as `claude.ai Claude Docs`. A request for a document meant for other people then goes to Claude Docs instead of an artifact page: a spec, a proposal, or a write-up of the plan you worked through in the session. Claude gives you the doc's link when it's drafted.
 
-A document that belongs in the codebase, such as a README, stays a file. To get a file for something Claude would otherwise put in Claude Docs, name the format, such as `.docx` or a Markdown file in the repository.
-
-To turn the connector off, add `claude.ai Claude Docs` to `deniedMcpServers` or use the `/mcp` toggle, both described in [Disable claude.ai connectors](/docs/en/mcp#disable-claude-ai-connectors).
+A document that belongs in the codebase, such as a README, stays a file. To get a file for something Claude would otherwise put in Claude Docs, name the format, such as `.docx` or a Markdown file in the repository. To turn off only the `claude.ai Claude Docs` connector, see [Disable claude.ai connectors](/docs/en/mcp#disable-claude-ai-connectors).
 
 ## Page constraints
 
@@ -15586,7 +15584,7 @@ Run Claude Code sessions in the cloud from your browser, phone, Desktop app, or 
 
 > [!NOTE]
 >
-> Cloud sessions are available on Pro, Max, and Team plans, and for Enterprise users with premium seats or Chat + Claude Code seats. If your Enterprise organization manages your access with [custom roles](https://support.claude.com/en/articles/13930452), you also need a role that includes the cloud sessions permission. Ask an Owner to check your roles and add it at [**Organization settings > Roles**](https://claude.ai/admin-settings/roles) if it's missing.
+> Cloud sessions are available on Pro, Max, and Team plans, and for Enterprise users with premium seats or Chat + Claude Code seats. If [custom roles](https://support.claude.com/en/articles/13930452) govern your access, you also need a role with the cloud sessions permission to start sessions on Anthropic's infrastructure from the browser, apps, or terminal. Ask an Owner to add it to one of your roles at [**Organization settings > Roles**](https://claude.ai/admin-settings/roles).
 
 A cloud session is a Claude Code session that runs on cloud infrastructure instead of on your machine. By default it runs on infrastructure Anthropic manages, or on your organization's [self-hosted environment](/docs/en/self-hosted-environments) when routed there. The session keeps running after you close your laptop, and you can check on it or steer it from any device. It counts toward your plan's usage limits alongside the rest of your Claude and Claude Code usage, and there's no separate charge for the cloud VM.
 
@@ -17315,12 +17313,72 @@ Code Review includes the files when it reads `REVIEW.md` from a protected branch
 
 When a review doesn't apply an included file, check each of these:
 
-* **Location**: move the file to the repository root. A path into a subdirectory such as `@docs/review-rules.md` isn't included.
+* **Location**: move the file to the repository root. Except for a [skill file](#include-a-skill-file), a path into a subdirectory such as `@docs/review-rules.md` isn't included.
 * **Name**: match the file name exactly, including case, and use a name without spaces. A line whose name matches no file beside `REVIEW.md` stays in `REVIEW.md` as plain text, and the check run doesn't report it as a skipped include.
-* **One level**: list every file in the root `REVIEW.md`. An `@` line in an included file or in a subdirectory `REVIEW.md` stays as plain text, and a Markdown link to another file isn't an include.
+* **One level**: list every file in the root `REVIEW.md`. An `@` line in an included file or in a subdirectory `REVIEW.md` stays as plain text ([skill files differ](#include-a-skill-file)), and a Markdown link to another file isn't an include.
 * **Limits**: include at most eight different files, and keep `REVIEW.md` and the files it includes under 150,000 bytes combined. A file that would reach the byte limit is skipped whole, not cut short. The check run reports how many include lines it skipped for either limit.
-* **Links**: keep Markdown links at 64 or fewer across `REVIEW.md` and the files it includes. Links to `http`, `https`, or `mailto` addresses and to `#` anchors don't count. Past that limit, the review skips your whole root `REVIEW.md`, not only the included files. The check run then [says the instructions weren't applied](/docs/en/code-review-troubleshooting#the-check-run-mentions-review-md).
+* **Links**: keep Markdown links at 64 or fewer across `REVIEW.md` and the files it includes. Links to `http`, `https`, or `mailto` addresses and to `#` anchors don't count, and neither do links in a [skill file](#include-a-skill-file). Past that limit, the review skips your whole root `REVIEW.md`, not only the included files. The check run then [says the instructions weren't applied](/docs/en/code-review-troubleshooting#the-check-run-mentions-review-md).
 * **Merged copy**: merge the included file into the [branch `REVIEW.md` is read from](#which-branch-review-md-is-read-from). The review reads both from the same commit, never from the pull request's own changes.
+
+### Include a skill file
+
+To have reviews follow guidance you keep in a [skill](/docs/en/skills), include the skill's `SKILL.md` in your root `REVIEW.md`. Code Review doesn't run skills.
+
+Add `@` and the path to `SKILL.md`, in the form `.claude/skills/<folder>/SKILL.md`, on a line of its own:
+
+```markdown theme={null}
+# Review instructions
+
+Report at most five Nits per review.
+
+@.claude/skills/api-review/SKILL.md
+
+Treat any change under `migrations/` as Important.
+```
+
+Protect the [branch that `REVIEW.md` is read from](#which-branch-review-md-is-read-from), because Code Review includes a skill file only when it reads `REVIEW.md` from a protected branch. The skill file counts toward the limits of eight files and 150,000 bytes, and has its own limit of 30,000 bytes.
+
+#### Write a skill line that Code Review includes
+
+Use a folder name without spaces. A line with a space in its path stays in `REVIEW.md` as plain text, and the check run doesn't report it as a skipped include.
+
+If the `@` line for a skill breaks one of the rules below, Code Review doesn't include the skill from that line:
+
+* **Path**: write the path as `.claude/skills/<folder>/SKILL.md` from the repository root, with the skill's folder directly under `skills/`. Unlike a file name at the root, a path of this form that matches no file is skipped and counted.
+* **Source**: copy guidance from any other file under `.claude/`, or from a [bundled, personal, or plugin skill](/docs/en/skills#where-skills-live), into a file beside `REVIEW.md`. You can't include those directly.
+* **File**: commit `SKILL.md` as a regular text file. Code Review doesn't follow a symbolic link, whether the link is the file or a folder in its path.
+* **Size**: keep `SKILL.md` at 30,000 bytes or less, frontmatter included
+* **Count**: write at most eight skill lines. A repeated line counts again toward the eight.
+* **Blocks in `REVIEW.md`**: keep the `@` line out of code fences. Close every HTML comment and every `<pre>`, `<script>`, `<style>`, or `<textarea>` block above it.
+
+When Code Review skips a skill line for breaking the File, Size, Count, or Blocks rule, the check run's [message about skipped include lines](/docs/en/code-review-troubleshooting#the-check-run-mentions-review-md) counts it. The message appears only when the review applies `REVIEW.md` from a protected branch.
+
+#### Check what a review gets from a skill
+
+When the skill is included, a review gets the body of `SKILL.md` and nothing else from the skill, so check the skill against the list below.
+
+* **Frontmatter**: repeat in the body anything a review needs from the [frontmatter](/docs/en/skills#frontmatter-reference), for example the conditions that `description` gives for using the skill
+* **Injected commands**: write out what a [`!` command](/docs/en/skills#inject-dynamic-context) would supply. Code Review doesn't run the command, and replaces the whole line or block that holds it with a placeholder.
+* **Substitutions**: replace `$ARGUMENTS` and other [substitutions](/docs/en/skills#available-string-substitutions) with fixed text, because a review passes no arguments and leaves them as written
+* **Supporting files**: copy what a review needs into `SKILL.md`, because Code Review doesn't load scripts, linked files, or `@file` references
+* **Exclusions and Nit caps**: write instructions that exclude findings or cap Nits in `REVIEW.md` or a file beside it, not in the skill. Code Review doesn't accept a skill's text as the reason for either.
+* **Links to repository files**: state in words what a link or `@file` reference points to. The review sees the path as plain text or as a placeholder.
+
+If you edit the skill's `!` commands, `$ARGUMENTS`, or links, you also change how it works in Claude Code. If your team relies on those, copy the guidance into a file beside `REVIEW.md` and include that file in place of the skill.
+
+#### Characters that Code Review changes in skill text
+
+Code Review changes some characters in the skill's text, so your code samples reach a review in the form below.
+
+```text theme={null}
+In SKILL.md:       Use `items[0]`, never `List<String>`.
+The review reads:  Use ˋitems(0)ˋ, never ˋList< String>ˋ.
+
+In SKILL.md:       Run `ps | grep api` and ask @alice.
+The review reads:  Run ˋps ¦ grep apiˋ and ask @ alice.
+```
+
+Where a rule depends on one of those characters, state it in words too.
 
 ### Which branch REVIEW\.md is read from
 
@@ -17331,6 +17389,8 @@ Keep `REVIEW.md` on your default branch and protect that branch. When a review r
 * Lowering a finding's severity
 * Excluding paths, files, or classes of issue
 * Capping nit comments
+
+Write exclusions and Nit caps in `REVIEW.md` or a file beside it, not in an [included skill](#include-a-skill-file).
 
 #### What counts as branch protection
 
@@ -17941,7 +18001,7 @@ If the check run title says issues were found but you don't see inline review co
 
 ## The check run mentions REVIEW\.md
 
-These are three of the messages a check run can carry about `REVIEW.md`:
+These are four of the messages a check run can carry about `REVIEW.md`:
 
 * **"This review applied the repository's review instructions (REVIEW\.md) from its default branch, which is not protected against direct pushes."**: the review read the root file only. See [Which branch REVIEW.md is read from](/docs/en/code-review-customize#which-branch-review-md-is-read-from) for what protecting the branch changes.
 * **"were not applied to this review: branch protection could not be confirmed"**: the review read no `REVIEW.md`.
@@ -17949,6 +18009,7 @@ These are three of the messages a check run can carry about `REVIEW.md`:
   * **Too many links**: it carries more than 64 Markdown links. Cut links to [64 or fewer](/docs/en/code-review-customize#include-other-files-in-review-md).
   * **A link the review can't parse**: it has a malformed Markdown link. Fix or remove the link.
   * **A link to a changed file**: it links to a file or folder this pull request changes, and the review couldn't leave out only the lines with that link. Write the rule in `REVIEW.md` itself.
+* **"include line(s) in the root REVIEW\.md were skipped on this review"**: your root `REVIEW.md` applied, but the files those lines name didn't. Check the lists under [Include other files in REVIEW.md](/docs/en/code-review-customize#include-other-files-in-review-md) and, for a skill, under [Include a skill file](/docs/en/code-review-customize#include-a-skill-file).
 
 ## Setup problems
 
@@ -22107,6 +22168,10 @@ The Desktop app's **Scheduled tasks** page lists both local scheduled tasks and 
 
 This page covers local scheduled tasks; for cloud scheduled tasks and their trigger options, see [Automate work with scheduled tasks](/docs/en/routines).
 
+> [!NOTE]
+>
+> If your app shows the feature under its [earlier name](/docs/en/routines#where-the-name-routines-still-appears), click **Routines** wherever this page says **Scheduled** and **New routine** where it says **New task**.
+
 ## Compare scheduling options
 
 Claude Code offers three ways to schedule recurring or one-off work:
@@ -22137,11 +22202,15 @@ Local scheduled tasks require Claude Desktop 1.1.5368 or later.
 
 **1. Open the Scheduled tasks page**
 
-In the [**Code** tab](/docs/en/desktop), click **Scheduled** in the sidebar or in the sidebar's **More** menu.
+In the [**Code** tab](/docs/en/desktop), click **Scheduled** in the sidebar or in the sidebar's **More** menu. If the sidebar shows **Routines** instead of **Scheduled**, click **Routines**, then click **New routine**, and continue with [Full-page form](#full-page-form).
 
 **2. Start a new task**
 
-Click **New task**. If a menu opens with **Create with Claude** and **Set up manually**, select **Set up manually**. The **New scheduled task** dialog opens. If **Only on this computer** is at the top of the dialog, go to [Dialog with Only on this computer at the top](#dialog-with-only-on-this-computer-at-the-top) before you enter anything.
+Click **New task** to open the **New scheduled task** dialog. Check for these screens before you continue:
+
+* If a menu opens with **Create with Claude** and **Set up manually**, select **Set up manually** to open the dialog.
+* If **Only on this computer** is at the top of the dialog, go to [Dialog with Only on this computer at the top](#dialog-with-only-on-this-computer-at-the-top) before you enter anything.
+* If a menu with **Local** and **Cloud** opens, or a full page opens in place of the dialog, go to [Full-page form](#full-page-form).
 
 **3. Name the task**
 
@@ -22191,9 +22260,20 @@ Then fill in the local form's fields:
 
 Click **Create**. The task's detail page opens.
 
+### Full-page form
+
+If a menu with **Local** and **Cloud** opens, select **Local**. A page titled **New local routine** or **New local scheduled task** opens. Fill in its fields:
+
+* **Name**: enter a name that is unique across your tasks.
+* **Description**: enter one.
+* **Instructions**: enter what Claude should do when the task runs. In the same box, select the permission mode, the model, and the folder the task runs in.
+* **Schedule**: select one of the [schedule options](#schedule-options).
+
+If **Create** is unavailable, hover over it to see what the form still needs. Click **Create**, and the task's detail page opens.
+
 ## Schedule options
 
-When you turn on **Only on this computer** under **Advanced settings**, the **Trigger** card offers Hourly, Daily, Weekdays, and Weekly. To get **Manual** or **Custom** for such a task, open its [**Edit** form](#manage-scheduled-tasks) after you create it. That form and the [dialog with **Only on this computer** at the top](#dialog-with-only-on-this-computer-at-the-top) offer these six options:
+When you turn on **Only on this computer** under **Advanced settings**, the **Trigger** card offers Hourly, Daily, Weekdays, and Weekly. To get **Manual** or **Custom** for such a task, open its [**Edit** form](#manage-scheduled-tasks) after you create it. That form, the [dialog with **Only on this computer** at the top](#dialog-with-only-on-this-computer-at-the-top), and the [full-page form](#full-page-form) offer these six options:
 
 * **Hourly**: runs every hour
 * **Daily**: runs every day at the local time you pick
@@ -22634,6 +22714,7 @@ Match the message you see to a section below.
 | `Skipping connection (recent failure cached; retries automatically in 15 min, or edit the plugin config to retry now)` | [Plugin errors](#skipping-connection-recent-failure-cached) |
 | `Error: No such tool available: <tool name>` | [Tool errors](#no-such-tool-available) |
 | `MCP server "<name>" connection closed before the tool call was answered` | [Tool errors](#connection-closed-before-the-tool-call-was-answered) |
+| `MCP server "<name>" is disabled — re-enable it via /mcp to use its tools` | [Tool errors](#mcp-server-is-disabled) |
 | `MCP server "<name>" tool "<tool>" timed out after <N>s. The server asked the user a question, and no answer came before the time limit.` | [Tool errors](#mcp-tool-call-timed-out-with-the-servers-question-unanswered) |
 | `would be spawned with zero tools — refusing` | [Tool errors](#agent-would-be-spawned-with-zero-tools) |
 | `File is covered by a Read deny rule in your permission settings` | [Tool errors](#file-is-covered-by-a-read-deny-rule) |
@@ -22666,6 +22747,7 @@ Match the message you see to a section below.
 | `Your disk quota is full on the filesystem with Claude Code's temp directory <dir> (EDQUOT)` / `The filesystem with Claude Code's temp directory <dir>, or your disk quota on it, is full (ENOSPC)` | [Tool errors](#disk-quota-or-temp-filesystem-is-full) |
 | `Command output was lost: the temp filesystem at <dir> is full` / `is out of inodes` | [Tool errors](#disk-quota-or-temp-filesystem-is-full) |
 | `File is not valid UTF-8. It may use a legacy encoding such as Windows-1252, Shift-JIS or GBK, or be binary` | [Tool errors](#file-is-not-valid-utf-8) |
+| `git is not installed on this Mac. To install it, run xcode-select --install, then try again.` | [Tool errors](#git-is-not-installed-on-this-mac) |
 | `the source file is not valid UTF-8 text` / `the source file is not valid UTF-16 text` | [Tool errors](#the-source-file-is-not-valid-utf-8-text) |
 | `the source file has the replacement character U+FFFD` | [Tool errors](#the-source-file-is-not-valid-utf-8-text) |
 | `Not published: that file is on a network share` | [Tool errors](#not-published-that-file-is-on-a-network-share) |
@@ -22804,6 +22886,16 @@ If no data arrives on the response stream for 20 seconds while a request is stil
 The banner clears on its own once data resumes or a retry succeeds. If it reappears on every attempt, treat it as a [network issue](#unable-to-connect-to-api). Before v2.1.185, the banner appeared after 10 seconds with different wording.
 
 While Claude is consulting the [advisor](/docs/en/advisor), the banner appears after 90 seconds without data instead of 20, because a long advisor review can send nothing for well over 20 seconds. Before v2.1.214, the 20-second threshold applied during advisor calls too, so the banner appeared during advisor reviews even when nothing was wrong.
+
+#### The waiting banner comes and goes behind a gateway
+
+If the `Waiting for API response` banner comes and goes while Claude thinks and you connect through a gateway, [update Claude Code](/docs/en/setup#update-claude-code) to v2.1.309 or later. The banner appears after 45 seconds without data on these connections:
+
+* [`ANTHROPIC_BASE_URL`](/docs/en/env-vars) set to a host other than the Anthropic API, such as an [LLM gateway](/docs/en/llm-gateway)
+* A [Claude apps gateway](/docs/en/claude-apps-gateway) session
+* [Claude Platform on AWS](/docs/en/claude-platform-on-aws) with `ANTHROPIC_AWS_BASE_URL` set
+
+Before v2.1.309, the banner appeared after 20 seconds on these connections.
 
 ### Tune retry behavior
 
@@ -25574,7 +25666,7 @@ For example, the subcommand can't ask when its standard input or standard output
 
 **What to do:**
 
-* In a script or CI job, append `--trust-workspace` to trust the checkout for that run only: `claude ultrareview --trust-workspace`. Append it only for code you trust, because the checkout's git configuration and Claude Code project settings can then run programs. To review a pull request whose code you don't trust, see [how to review it from a checkout you do trust](/docs/en/ultrareview#trust-the-folder-before-the-review-runs).
+* In a script or CI job, append `--trust-workspace` to trust the folder for that run: `claude ultrareview --trust-workspace`. Append it only for code you trust, because git and Claude Code can then run programs named in the folder's git configuration and project settings. For a pull request whose code you don't trust, [run the review from a branch you trust](/docs/en/ultrareview#trust-the-folder-before-the-review-runs).
 * On your own machine, run `claude` in that folder and accept the [workspace trust dialog](/docs/en/permissions#project-allow-rules-and-workspace-trust), then run your original command again
 
 Each of these messages from `claude ultrareview` means that no review started and the exit code is 1:
@@ -26737,6 +26829,20 @@ Repeating the call could repeat the tool's action, such as creating a second iss
 * If the action didn't happen, ask Claude to run the tool again. You don't need to reconnect the server first, because Claude Code connects to it again for the next call to one of its tools. If that connection fails too, see [Mid-session drops of a remote server](/docs/en/mcp#mid-session-drops-of-a-remote-server).
 * If you build the server and the tool is safe to call twice, [mark it as safe to repeat](/docs/en/mcp#tool-calls-pending-when-a-connection-closes) so that Claude Code can repeat a lost call
 
+### MCP server is disabled
+
+This message in a tool result means Claude called a tool on an [MCP server](/docs/en/mcp) that is [turned off](/docs/en/mcp#disable-a-server-without-removing-it). Claude Code didn't connect to the server, so the tool didn't run, and Claude received this text in place of a result:
+
+```text wrap theme={null}
+MCP server "<name>" is disabled — re-enable it via /mcp to use its tools
+```
+
+**What to do:**
+
+* If you meant to turn the server off, you don't need to do anything
+* If Claude needs the server's tools, turn it back on from `/mcp` at the Claude Code prompt
+* In an [Agent SDK](/docs/en/agent-sdk/overview) application, turn the server back on by calling [`toggleMcpServer()`](/docs/en/agent-sdk/typescript#togglemcpserver) in TypeScript with `enabled` set to `true`, or [`toggle_mcp_server()`](/docs/en/agent-sdk/python#claudesdkclient) in Python with `enabled` set to `True`
+
 ### MCP tool call timed out with the server's question unanswered
 
 In [non-interactive mode](/docs/en/headless), an [MCP server](/docs/en/mcp) asked for input through [elicitation](/docs/en/mcp#respond-to-mcp-elicitation-requests) during a tool call, and the call's time limit ran out before an answer came:
@@ -27076,7 +27182,7 @@ Claude Code saves each Bash and PowerShell command's output to a file under that
 The command was not started: this computer's disk is full (ENOSPC) on the volume holding /tmp/claude-501 (Claude Code's temporary directory), so the file that captures command output could not be created there and nothing ran. Free space on that volume, or restart Claude Code with CLAUDE_CODE_TMPDIR set to a directory on another one, then retry. If this is the user's own computer, tell them before deleting anything to make room.
 ```
 
-The other three messages follow a command that ran and exited with a nonzero code. This example is the `Disk full:` form:
+The `Disk full:`, `Disk quota used up:`, and `Nearly out of inodes:` messages follow a command that ran and exited with a nonzero code. For example:
 
 ```text wrap theme={null}
 Disk full: this computer's volume holding /tmp/claude-501 (Claude Code's temporary directory) has 3 MB free, so whatever this command printed was lost and its own writes may have failed with "No space left on device". Free space on that volume, or restart Claude Code with CLAUDE_CODE_TMPDIR set to a directory on another one, then retry. If this is the user's own computer, tell them before deleting anything to make room.
@@ -27086,8 +27192,7 @@ Disk full: this computer's volume holding /tmp/claude-501 (Claude Code's tempora
 
 * On macOS and Linux, run `df -h <dir>` in your shell to see which volume holds the directory and how full it is. `df -i <dir>` shows how many inodes are free. `<dir>` is the directory your message names, as in `df -i /tmp/claude-501`
 * **`Disk full: this computer's volume` or `disk is full (ENOSPC)`**: anywhere on that volume, delete files you don't need
-* **`Disk quota used up:` or `Disk full: a test write`**: delete your own files on that volume, even if it still shows free space
-* **`disk quota is used up (EDQUOT)`**: delete your own files on that volume
+* **`Disk quota used up:`, `disk quota is used up (EDQUOT)`, or `Disk full: a test write`**: delete your own files on that volume, even if it still shows free space
 * **`Nearly out of inodes:`**: delete many files on that volume. Each takes one inode whatever its size, so their number matters, not their size
 * Or restart Claude Code with [`CLAUDE_CODE_TMPDIR`](/docs/en/env-vars) set to a directory on a volume with room
 * Then have Claude run the command again
@@ -27100,6 +27205,20 @@ Before v2.1.309, the messages read as follows, and the same steps apply:
 * `The command was not started: this computer's disk is full (ENOSPC), so the file that captures command output could not be created. Nothing ran.`, or the same with `(EDQUOT)`. This form names no directory: look on the volume holding your system temp directory, such as `/tmp`, or the directory set in `CLAUDE_CODE_TMPDIR`
 
 Before v2.1.305, a command that Claude Code couldn't start because the disk was full returned only the operating system's error text. That text read, for example, `ENOSPC: no space left on device, open <path>.output`.
+
+### git is not installed on this Mac
+
+This message means a step in Claude Code needed git, and the git it found is Apple's stand-in at `/usr/bin/git`. The developer tools that provide git aren't installed.
+
+Claude Code doesn't start the stand-in and shows this text instead, for example inside a longer message:
+
+```text wrap theme={null}
+git is not installed on this Mac. To install it, run xcode-select --install, then try again.
+```
+
+**What to do:**
+
+* In Terminal, run `xcode-select --install`, finish the installation it starts, then retry what you were doing in Claude Code
 
 ### File is not valid UTF-8
 
@@ -31734,7 +31853,7 @@ Keep these constraints in mind when designing hooks:
 * `PostToolUse` hooks can't undo actions since the tool has already executed.
 * [`PermissionRequest`](/docs/en/hooks#permissionrequest) hooks fire when Claude Code is about to ask you for permission, or when it would otherwise auto-deny a call that can't prompt. In [non-interactive mode](/docs/en/headless) with the `-p` flag, they still run outside [`dontAsk` mode](/docs/en/permission-modes#allow-only-pre-approved-tools-with-dontask-mode), and a call that no hook decides and nothing else can answer is denied.
 * `Stop` hooks fire whenever Claude finishes responding, not only at task completion. They don't fire on user interrupts. API errors fire [StopFailure](/docs/en/hooks#stopfailure) instead.
-* When multiple `PreToolUse` hooks return [`updatedInput`](/docs/en/hooks#pretooluse) to rewrite a tool's arguments, the last one to finish takes effect. Since hooks run in parallel, the order is non-deterministic. Avoid having more than one hook modify the same tool's input.
+* When multiple `PreToolUse` hooks return [`updatedInput`](/docs/en/hooks#pretooluse) to rewrite a tool's input, Claude Code doesn't merge the rewrites or guarantee which rewrite the tool runs with. Avoid having more than one hook rewrite the same tool's input.
 
 ### Hooks and permission modes
 
@@ -34118,7 +34237,7 @@ In Claude Code, use the command:
 
 Servers from claude.ai appear in the list with indicators showing they come from claude.ai.
 
-Anthropic also provides some connectors itself, without you or an admin adding them. On accounts where [Claude Docs](/docs/en/artifacts#write-a-document-with-claude-docs) is available, `/mcp` lists `claude.ai Claude Docs` with no setup, and Claude uses it when you ask for a document meant for other people. To turn it off, add a `serverName` entry of `"claude.ai Claude Docs"` to `deniedMcpServers` or use the `/mcp` toggle, both described in [Disable claude.ai connectors](#disable-claude-ai-connectors).
+Anthropic also provides some connectors itself, without you or an admin adding them. On accounts where [Claude Docs](/docs/en/artifacts#write-a-document-with-claude-docs) is available, `/mcp` lists `claude.ai Claude Docs` with no setup, and Claude uses it when you ask for a document meant for other people. To turn off only this connector, see [Disable claude.ai connectors](#disable-claude-ai-connectors).
 
 Claude Code marks a connector `managed` in `/mcp` and in the [`/plugin`](/docs/en/plugins/install) manager when your organization manages its authentication in claude.ai. Managed status doesn't change how Claude Code connects to the connector or applies your organization's [tool controls](#organization-controls-on-connector-tools).
 
@@ -40556,12 +40675,35 @@ An `Image` draws as a picture in these terminals:
 
 In any other terminal, the user sees the `Image`'s `alt` text, dimmed, in place of the picture. Write `alt` text that stands on its own, because it also shows in these cases, among others:
 
-* **tmux and screen**: a session running inside tmux or screen, in any terminal.
+* **GNU screen**: a session running inside screen, in any terminal.
+* **tmux**: a session running inside tmux that misses a [requirement for drawing inside tmux](#draw-an-image-inside-tmux).
 * **Background sessions**: every [background session](/docs/en/agent-view), whatever terminal it's attached from.
 * **iTerm2 outside fullscreen rendering**: in iTerm2 the picture draws only under [fullscreen rendering](/docs/en/fullscreen), and not while [`CLAUDE_CODE_ALT_SCREEN_FULL_REPAINT`](/docs/en/env-vars) is set to `1`. To see the picture, run `/tui fullscreen` at the Claude Code prompt and leave that variable unset.
-* **A file path source in iTerm2**: iTerm2 draws an `Image` whose `source` prop holds `png` or `rgba` bytes, and shows the `alt` text for one whose `source` names a `file`. If your mod has iTerm2 users, pass the picture as base64 in `source.png` or `source.rgba` rather than as a path in `source.file`.
+* **A file path source in iTerm2 or tmux**: in iTerm2 and inside tmux, an `Image` whose `source` names a `file` shows the `alt` text instead of the picture. If your mod has iTerm2 or tmux users, pass the picture as base64 in `source.png` or `source.rgba` rather than as a path in `source.file`.
 
-If your mod's users see the dimmed text in a terminal that draws kitty graphics protocol images with Unicode placeholders, they can set [`CLAUDE_CODE_FORCE_TERMINAL_IMAGES`](/docs/en/env-vars) to `1`. Inside tmux or screen that doesn't help: the `alt` text goes away, and Claude Code sends the picture without wrapping it for tmux or screen passthrough.
+If your mod's users see the dimmed text in a terminal that draws kitty graphics protocol images with Unicode placeholders, they can set [`CLAUDE_CODE_FORCE_TERMINAL_IMAGES`](/docs/en/env-vars) to `1`. They shouldn't set it inside GNU screen, inside tmux older than 3.3, in a tmux popup, or with tmux's `allow-passthrough` off. There they see no picture and a box in place of the `alt` text.
+
+#### Draw an `Image` inside tmux
+
+If an `Image` shows its `alt` text inside tmux, check these requirements along with the [other `alt` text cases](#image-and-client) such as a background session:
+
+* Claude Code v2.1.310 or later
+* tmux 3.3 or later
+* Claude Code runs in a tmux pane, not a tmux popup
+* tmux runs inside kitty 0.28 or later, Ghostty, or iTerm2 3.5 or later
+* The tmux options `focus-events` and `allow-passthrough` are `on`. Inside kitty or Ghostty, `allow-passthrough` can also be `all`.
+* Inside iTerm2, tmux runs [without `-CC`](/docs/en/fullscreen#use-with-tmux), [fullscreen rendering](/docs/en/fullscreen) is on, and `CLAUDE_CODE_ALT_SCREEN_FULL_REPAINT` is unset.
+* Inside iTerm2, the tmux window is no bigger than the iTerm2 window. To check, run `tmux display-message -p '#{window_bigger}'` in that tmux window. If it prints `1`, make the tmux window fit, then restart Claude Code.
+* The mod's author passes the picture as `png` or `rgba` bytes, not as a `file` path. If you use a mod you didn't write and the other requirements hold, ask its author to check this one.
+
+For each tmux option that isn't already set as required, run its command in your shell:
+
+```bash theme={null}
+tmux set -g allow-passthrough on
+tmux set -g focus-events on
+```
+
+Then detach from tmux, attach again, and restart Claude Code. Restart it again whenever you attach tmux from a different terminal. To keep both options across tmux server restarts, [add both lines to `~/.tmux.conf`](/docs/en/terminal-config#configure-tmux) too.
 
 ## See where a mod can draw
 
@@ -42634,7 +42776,7 @@ Rewrite the code so its scopes nest less deeply.
 
 Code in the hooks module is nested too deeply, or its chain of imports is too long, for Claude Code to load it. The line starts with the mod's name and `hooks module did not load:`, then gives a file's name and this reason.
 
-Look through that file and the files reached through its imports for the most deeply nested part and rewrite it to nest less, or shorten the chain of imports. If you installed the mod and didn't write it, ask its author to.
+In that file and the files its imports reach, find the most deeply nested code and rewrite it to nest less, or shorten the chain of imports. If you didn't write the mod, ask its author to fix it.
 
 ### `the parser stopped` or `the engine ran out of stack loading the file`
 
@@ -44657,7 +44799,7 @@ A scheduled task doesn't need a schedule:
 * A task with only an API trigger runs when you call its endpoint.
 * A task with only a GitHub trigger runs when a matching repository event occurs.
 
-Scheduled tasks are available on Pro, Max, Team, and Enterprise plans. Create and manage them at [claude.ai/code/routines](https://claude.ai/code/routines), or from the CLI with `/schedule`. The earlier name, routines, [still appears](#where-the-name-routines-still-appears) in the web address, the CLI, and the API.
+Scheduled tasks are available on Pro, Max, Team, and Enterprise plans. Create and manage them at [claude.ai/code/routines](https://claude.ai/code/routines), or from the CLI with `/schedule`. The earlier name, routines, [still appears](#where-the-name-routines-still-appears).
 
 > [!NOTE]
 >
@@ -44698,7 +44840,12 @@ Scheduled tasks belong to your individual claude.ai account. They are not shared
 
 **1. Open the creation dialog**
 
-Go to [claude.ai/code/routines](https://claude.ai/code/routines) and click **New task**. If a menu opens first, select **Set up manually**. The **New scheduled task** dialog opens. The menu's other option, **Create with Claude**, lets you describe the task in a chat and have Claude create it instead.
+Go to [claude.ai/code/routines](https://claude.ai/code/routines) and click **New task** to open the **New scheduled task** dialog. Check for these screens before you continue:
+
+* If the button reads **New routine** instead of **New task**, click **New routine** and continue with [Full-page form](#full-page-form).
+* In the Desktop app, if a menu with **Local** and **Cloud** opens, go to [Full-page form](#full-page-form).
+* If a menu opens with **Create with Claude** and **Set up manually**, select **Set up manually** to open the dialog. **Create with Claude** lets you describe the task in a chat and have Claude create it instead.
+* If a full page opens in place of the dialog, go to [Full-page form](#full-page-form).
 
 If **Repositories** and **Environment** are already showing when the dialog opens, see [how that dialog differs](#dialog-with-repositories-and-environment-in-the-main-view). Otherwise, this dialog also creates scheduled tasks for claude.ai chat. To make yours what the dialog calls a Claude Code task, select a repository or add a GitHub event or API trigger in the steps that follow. That kind of task runs Claude Code in a cloud session.
 
@@ -44758,6 +44905,17 @@ Follow the [steps to create from the web](#create-from-the-web), and fill in eac
 
 Select the repository before you add a GitHub event trigger, because that trigger is unavailable until a repository is selected.
 
+#### Full-page form
+
+In the Desktop app, if a menu with **Local** and **Cloud** opens, select **Cloud**. A page titled **New routine** or **New scheduled task** opens. Fill in its fields:
+
+* **Name**: enter one.
+* **Instructions**: enter the prompt. In the same box, select the model, the repositories, and the environment. For what each one controls, see the steps under [Create from the web](#create-from-the-web).
+* **Select a trigger**: select **Schedule**, **GitHub event**, or **API**. For a schedule, see [Add a schedule trigger](#add-a-schedule-trigger). For a [GitHub event](#add-a-github-trigger), select a repository. For an [API trigger](#add-an-api-trigger), copy the token from the **API token** dialog that opens after you click **Create**, because it is shown once. To combine several triggers, click **Add another trigger**.
+* **Connectors**: all of your connected connectors are included by default, so remove the ones the task doesn't need.
+
+If **Create** is unavailable, hover over it to see what the form still needs. Click **Create**, and the task's detail page opens.
+
 ### Create from the CLI
 
 Run `/schedule` in any session to create a scheduled task conversationally. You can also pass a description directly, for a recurring task like `/schedule daily PR review at 9am` or a one-off like `/schedule clean up feature flag in one week`. Claude walks through the same information the web dialog collects, then saves the task to your account. The command is also available under the alias `/routines`.
@@ -44784,6 +44942,7 @@ A schedule trigger runs the task on a recurring cadence, or once at a specific f
 * **Runs on the hour**: if you schedule a run exactly on the hour, such as 9:00, it can start several minutes late. To start close to the scheduled time, pick a few minutes past the hour, for example 9:07.
 * **Custom intervals**: for a cadence the presets lack, create the task and select **Custom** in its [edit dialog](#edit-and-control-scheduled-tasks). Then enter a cron expression, such as `0 */2 * * *` for every two hours. To set one from the CLI, run [`/schedule update`](#manage-scheduled-tasks-from-the-cli). Expressions that run more often than once per hour are rejected.
 * **Time zone**: when you pick a preset frequency, enter the time in your local time zone.
+* **Cron expression time zone**: when the expression is five fields alone, write the hours in UTC, so `0 9 * * 1-5` runs at 9:00 AM UTC on weekdays. If the field opens with a `CRON_TZ=` prefix, keep it and write the hours in its zone, or delete it and write them in UTC.
 
 #### Schedule a one-off run
 
@@ -45087,6 +45246,7 @@ While your subscription is paused, your scheduled tasks are put on hold and don'
 
 Scheduled tasks were previously called routines, and these places keep the earlier name. Each one refers to the same feature:
 
+* **App**: in some accounts the sidebar entry and page title read **Routines**, the button reads **New routine**, and other labels say routine. To create a task there, see [Full-page form](#full-page-form).
 * **Web address**: `claude.ai/code/routines`
 * **CLI**: the `/routines` alias for `/schedule`, the command's description, and Claude's replies while it sets up a task
 * **API**: the `/fire` endpoint path, its beta header, its response `type`, the `<routine-fire-payload>` tag, and the [Trigger a routine through the API](https://platform.claude.com/docs/en/api/claude-code/routines-fire) reference page
@@ -50535,7 +50695,7 @@ Running `claude ultrareview` requires the same authentication and usage-credits 
 The subcommand exits with one of three codes:
 
 * **0**: the review completed, with or without findings
-* **1**: the review failed to launch or was stopped before it finished, the cloud session errored, or the timeout elapsed. The code is also 1 when the [folder isn't trusted](#trust-the-folder-before-the-review-runs), including when you answer `n` or press Ctrl-C at the trust question.
+* **1**: the review failed to launch or was stopped before it finished, the cloud session errored, or the timeout elapsed. The code is also 1 when the [folder isn't trusted](#trust-the-folder-before-the-review-runs), including when you answer `n`, press Enter, or press Ctrl-C at the trust question.
 * **130**: you pressed Ctrl-C while the subcommand was launching the review, waiting for the findings, or sending the `--post` comment, rather than at the trust question
 
 If the subcommand exits before the findings arrive, they never reach your terminal. The review may still be running in the cloud. Running the subcommand again starts a new review rather than resuming that one, and the new review [uses a free run or bills as usage credits](#pricing-and-free-runs).
@@ -50557,7 +50717,7 @@ When it can't ask you, such as in a CI job or with output sent to a file, it exi
 claude ultrareview 1234 --trust-workspace
 ```
 
-To review an untrusted pull request, run `claude ultrareview <PR number> --trust-workspace` from a branch you trust. Unlike `y`, the flag saves nothing. The PR is [cloned in the cloud](#review-a-pull-request), so you don't need its branch locally.
+To review an untrusted pull request, run `claude ultrareview <PR number> --trust-workspace` from a branch you trust. The PR is [cloned in the cloud](#review-a-pull-request), so you don't need its branch locally.
 
 ## How ultrareview compares to /code-review
 
@@ -51580,15 +51740,20 @@ If one formula shows as written while others near it are typeset, check it for t
 
 ### Dictation or the Web tab fails behind a TLS-inspecting proxy
 
-When dictation or the Web tab fails with a certificate error such as `unable to get local issuer certificate`, set [`NODE_EXTRA_CA_CERTS`](/docs/en/network-config#custom-ca-certificates) in the `env` block of `~/.claude/settings.json`. Set it to the path of a PEM file with your proxy's root CA certificate, which your IT team can give you. That error text is on the microphone button or in the extension's logs:
+When dictation or the Web tab fails with a certificate error such as `unable to get local issuer certificate`, set [`NODE_EXTRA_CA_CERTS`](/docs/en/network-config#custom-ca-certificates) in the `env` block of `~/.claude/settings.json`. Set it to the path of a PEM file with your proxy's root CA certificate, which your IT team can give you. The failure appears on the microphone button or Web tab, or in the logs:
 
 * **Dictation**: the microphone button shows the error text after `Dictation error: WebSocket error:`.
 * **Web tab**: the tab that lists [cloud sessions](#resume-cloud-sessions-from-claude-ai) shows `Remote server is not connected` without the error text. To read it in the logs:
   1. Run **Claude Code: Show Logs** from the [Command Palette](#vs-code-commands-and-shortcuts) to open the `Claude VSCode` output channel.
   2. Click **Reconnect** on the tab and wait until it stops showing `Connecting…`.
   3. Search the channel for `Error fetching remote sessions:` or `Failed to fetch organization UUID:`, then read the error text after that prefix on the newest matching line.
+* **Log warning**: a warning naming `an authority that Claude Code does not trust` reports a certificate error. Behind a TLS-inspecting proxy, set `NODE_EXTRA_CA_CERTS` in `env` in `~/.claude/settings.json`. Versions before v2.1.309 don't log this warning.
 
 This fix requires extension version 2.1.307 or later, so update the extension first. Then set `NODE_EXTRA_CA_CERTS` to the certificate file's full path, written without `~`. For a Windows path, write each backslash twice in `settings.json`, as in `C:\\certs\\example-ca.pem`.
+
+> [!NOTE]
+>
+> In a window connected to WSL, an SSH host, a dev container, or another system, save the certificate file and edit `~/.claude/settings.json` on that system, not on your local computer.
 
 This example names a certificate file at the Linux or macOS path `/etc/ssl/certs/example-ca.pem`:
 
@@ -56955,17 +57120,19 @@ Under the default first-wins setting, an admin value blocks the parent's only wh
 
 #### How hook and skill keys in parent settings take effect
 
-If you pass `disableAllHooks: true` as a parent setting through the Agent SDK's `managedSettings` option, not every hook stops. Your [SDK hook callbacks](/docs/en/agent-sdk/hooks) still run, and so do the administrator's hooks, which your application can't switch off.
+Keys your application passes in the Agent SDK's [`managedSettings`](/docs/en/agent-sdk/typescript#options) option are parent settings. On a machine where an administrator deploys managed settings, Claude Code ignores parent settings unless the administrator [lets an embedding host add policy](/docs/en/managed-settings#let-an-embedding-host-add-policy).
 
-On a machine where an administrator deploys managed settings, Claude Code ignores parent settings unless the administrator [lets an embedding host add policy](/docs/en/managed-settings#let-an-embedding-host-add-policy).
+If you pass [`disableAllHooks: true`](/docs/en/settings-reference#disableallhooks) in `managedSettings`:
+
+* **Stop**: user, project, and local hooks, plus hooks declared in agent frontmatter or in the SDK's [`settings` option](/docs/en/agent-sdk/typescript#options).
+* **Keep running**: your application's [SDK hook callbacks](/docs/en/agent-sdk/hooks) and an administrator's hooks from managed settings. Your application can't turn the administrator's hooks off.
 
 | What you pass | What happens |
 | :- | :- |
-| `disableAllHooks: true` | Treated as `allowManagedHooksOnly: true`, so the hooks listed as [blocked under `allowManagedHooksOnly`](/docs/en/settings-reference#what-runs-under-allowmanagedhooksonly) stop, and so do hooks in the SDK's [`settings` option](/docs/en/agent-sdk/typescript#options). |
-| [`disableSkillShellExecution: true`](/docs/en/settings-reference#disableskillshellexecution) | Takes effect. |
+| `hooks`, or `allowedHttpHookUrls` or `httpHookAllowedEnvVars` with entries | Claude Code ignores the key. Use the SDK `settings` option instead. |
 | `allowedHttpHookUrls: []` | Takes effect unless the administrator defines `hooks` or enables a plugin. No HTTP hook runs, except for URLs another settings source lists. |
 | `httpHookAllowedEnvVars: []` | Takes effect unless the administrator defines `hooks` or enables a plugin. HTTP hook headers can include only environment variables another settings source lists. |
-| `allowedHttpHookUrls` or `httpHookAllowedEnvVars` with entries | Claude Code ignores it, since merging would widen an administrator's list. Use the SDK `settings` option instead. |
+| [`disableSkillShellExecution: true`](/docs/en/settings-reference#disableskillshellexecution) | Takes effect. |
 
 Passing these keys in `managedSettings` requires Claude Code v2.1.309 or later, or TypeScript Agent SDK v0.3.309 or later.
 
@@ -60803,7 +60970,7 @@ These requirements decide whether you can add a secret and whether the agent pro
 
 #### Add a secret
 
-You add secrets one at a time, and you can't edit a secret after you add it. To change a secret's hosts or value, delete it and add it again.
+You add secrets one at a time. To change a secret's hosts or value, delete it and add it again.
 
 To add a secret to a [shared environment](#organization-shared-environments), open it for editing from the **Cloud environments** page in [admin settings](https://claude.ai/admin-settings), then continue from step 2 in its **Network secrets** section. If you're on a Team plan and don't hold an [organization admin role](#requirements), follow step 1 on your own environment, then [fill in the shorter form](#add-a-secret-without-the-role).
 
@@ -60813,7 +60980,7 @@ To add a secret to a [shared environment](#organization-shared-environments), op
 
 **2. Add the secret**
 
-Select **Add secret** and fill in the form. Keep the default **Secret type**, **Bearer**, for an API key that travels in a request header, and fill in these fields:
+Select **Add secret**, labeled **Add** in admin settings, and fill in the form. Keep the default **Secret type**, **Bearer**, for an API key that travels in a request header, and fill in these fields:
 
 * **Name**: a label for the secret, such as `Internal billing API`
 * **Allowed websites**: the API's hosts, such as `api.example.com`. A leading `*.` matches every subdomain
@@ -61137,11 +61304,12 @@ apt update && apt install -y shellcheck
 
 ### Script requirements
 
-A setup script has three constraints to write around:
+A setup script has four constraints to write around:
 
 * **Exit zero**: if the script exits non-zero, the session fails to start. Append `|| true` to non-critical commands so an intermittent install failure doesn't block the session.
 * **Finish within five minutes**: keep the script's total runtime under roughly five minutes so the [environment cache](#environment-caching) can build. When setup takes longer than that, the environment isn't cached. Run independent installs in parallel with `&` and `wait`, and move any single download that won't fit into a [SessionStart hook](#setup-scripts-vs-sessionstart-hooks) that launches it in the background. If new sessions stall or fail during setup, see [New sessions hang or time out during setup](/docs/en/web-quickstart#new-sessions-hang-or-time-out-during-setup).
 * **Network access for installs**: package installs need to reach registries. The default **Trusted** level covers [common package registries](#default-allowed-domains) including npm, PyPI, RubyGems, and crates.io; with **None** network access, installs fail.
+* **The environment's variables aren't set yet**: the script runs before the session sets the environment's [environment variables](#set-environment-variables). Set any value the script needs in the script itself.
 
 ### Environment caching
 
@@ -63428,7 +63596,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_FORCE_SESSION_PERSISTENCE` | Set to `1` to force transcript persistence, prompt history, and `claude agents` registration even when this `claude` was launched from inside another Claude Code session. Use when an inherited `CLAUDE_CODE_CHILD_SESSION` value, for example from a `screen` session or a background launcher first started by Claude Code's Bash tool, causes a genuine top-level session to be misclassified as nested. As of v2.1.178, Claude Code detects the tmux case automatically and ignores the inherited marker, so tmux no longer needs this variable. Also honored on v2.1.169 and earlier; has no effect on v2.1.170 and v2.1.171, where the nested-session detection it overrides was removed |
 | `CLAUDE_CODE_FORCE_STRIKETHROUGH` | Set to `1` to force strikethrough rendering for `~~text~~` in Claude's responses when your terminal supports it but is not auto-detected, such as over SSH without `TERM_PROGRAM` forwarded. Without this, undetected terminals show the literal `~~` markers instead of rendering the text as strikethrough. Requires Claude Code v2.1.186 or later |
 | `CLAUDE_CODE_FORCE_SYNC_OUTPUT` | Set to `1` to force-enable DEC private mode 2026 [synchronized output](https://gist.github.com/christianparpart/d8a62cc1ab659194337d73e399004036) when your terminal supports it but is not auto-detected. Useful for emulators such as Emacs `eat` that implement BSU/ESU but do not reply to the capability probe. Has no effect under tmux. Unlike `CLAUDE_CODE_NO_FLICKER`, which switches to [fullscreen rendering](/docs/en/fullscreen), this doesn't change the renderer |
-| `CLAUDE_CODE_FORCE_TERMINAL_IMAGES` | Set to `1` to draw [mod `Image` elements](/docs/en/plugins/mods/reference#elements) as pictures when your terminal draws kitty graphics protocol images with Unicode placeholders and you still see an `Image`'s dimmed `alt` text. See [which terminals draw an `Image`](/docs/en/plugins/mods/gallery#image-and-client) and why this variable doesn't help inside tmux or screen |
+| `CLAUDE_CODE_FORCE_TERMINAL_IMAGES` | Set to `1` to draw [mod `Image` elements](/docs/en/plugins/mods/reference#elements) as pictures when your terminal draws kitty graphics protocol images with Unicode placeholders and you still see an `Image`'s dimmed `alt` text. See [which terminals draw an `Image` and where not to set this variable](/docs/en/plugins/mods/gallery#image-and-client) |
 | `CLAUDE_CODE_FORK_SUBAGENT` | Controls fork mode, which is on by default and lets Claude start [forks](/docs/en/sub-agents#fork-the-current-conversation) on its own. While fork mode is on, Claude also can't [wait for a subagent](/docs/en/sub-agents#run-subagents-in-foreground-or-background) in interactive terminal, VS Code, or desktop sessions on your machine. Set to `0` to turn fork mode off. For versions, see [Turn fork mode off](/docs/en/sub-agents#turn-fork-mode-on-or-off) |
 | `CLAUDE_CODE_FORWARD_SUBAGENT_TEXT` | Set to `1` to emit [subagent](/docs/en/sub-agents) text and thinking blocks in `claude -p --output-format stream-json` output, the same behavior as the [`--forward-subagent-text`](/docs/en/cli-reference#cli-flags) flag. Use the variable when a harness invokes `claude` and can't pass the flag itself. Unlike the flag, which exits with an error outside non-interactive mode with stream-json output, the variable is ignored there so that nested invocations keep working when it's set process-wide. Requires Claude Code v2.1.211 or later |
 | `CLAUDE_CODE_GATEWAY_HINT_HEADERS` | Set to `1` to send the [gateway hint headers](/docs/en/llm-gateway-protocol#gateway-hint-headers), such as `x-claude-code-request-class` and `x-claude-code-compaction`, on a custom proxy or a third-party provider such as Amazon Bedrock or Claude Platform on AWS. Set to `0` to stop sending them on every connection, including a direct connection to the Anthropic API, where Claude Code sends them by default. Requires Claude Code v2.1.273 or later |
@@ -63886,25 +64054,35 @@ Another option to disable fast mode entirely is to set `CLAUDE_CODE_DISABLE_FAST
 
 Before offering fast mode, Claude Code checks your organization's fast mode availability with a request directly to `api.anthropic.com`. The check doesn't follow [`ANTHROPIC_BASE_URL`](/docs/en/llm-gateway-connect#set-the-base-url-and-credential), so on a network that routes Claude traffic through an [LLM gateway](/docs/en/llm-gateway) and blocks direct egress to `api.anthropic.com`, the check fails even though inference requests work. The check does use a configured [HTTP proxy](/docs/en/network-config#proxy-configuration), so a network block fails the check only where `api.anthropic.com` is unreachable even through the proxy.
 
-When the check fails, `/fast` reports "Fast mode unavailable due to network connectivity issues", and requests run at standard speed, even when your organization has fast mode enabled. A check that succeeded in the past keeps working from its cached result, so a blocked check mostly affects new installations.
+If your organization has fast mode enabled and `/fast` says otherwise, find the message it shows among these cases.
 
-The same connectivity message appears on an open network when the check reaches `api.anthropic.com` but presents a credential Anthropic rejects. A session whose resolved key is a gateway-issued credential, held in [`ANTHROPIC_API_KEY`](/docs/en/llm-gateway-connect#set-the-base-url-and-credential) or produced by an [`apiKeyHelper`](/docs/en/settings-reference#apikeyhelper), sends the check with that key, and the rejected request is reported as a connectivity failure.
+#### Fast mode unavailable due to network connectivity issues
 
-To restore fast mode, allowlist direct egress to `api.anthropic.com` where a network block is the cause, or set whichever variable matches how the check fails:
+The availability check failed, for example because your network blocks `api.anthropic.com`, and requests run at standard speed. A check that succeeded in the past keeps working from its cached result, so a blocked check mostly affects new installations.
 
-* `CLAUDE_CODE_SKIP_FAST_MODE_NETWORK_ERRORS=1` treats a failed check as available and still honors a "disabled by your organization" response. Use it when your network refuses the connection, or when Anthropic rejects a gateway credential; allowlisting doesn't help the credential case, since nothing is blocked.
-* `CLAUDE_CODE_SKIP_FAST_MODE_ORG_CHECK=1` skips the check entirely. Use it when your network intercepts the request rather than refusing it.
+To restore fast mode, allowlist direct egress to `api.anthropic.com`, or set `CLAUDE_CODE_SKIP_FAST_MODE_NETWORK_ERRORS=1`, which treats a failed check as available and still honors a "disabled by your organization" response.
 
-Two gateway configurations report "Fast mode has been disabled by your organization" rather than the connectivity message, even when your organization has fast mode enabled:
+#### Fast mode is currently unavailable
 
-* A session that authenticates with [`ANTHROPIC_AUTH_TOKEN`](/docs/en/llm-gateway-connect#set-the-base-url-and-credential) alone skips the check: without a claude.ai login or an Anthropic API key, and without a cached successful check, Claude Code treats fast mode as disabled by your organization without sending the request.
-* A proxy that intercepts the check and answers with its own page, for example a TLS-inspecting proxy returning an HTTP 200 block page, is read as a response saying your organization has fast mode disabled.
+Behind a gateway, check for these configurations, in which Claude Code doesn't send the availability check and has no earlier successful check cached:
 
-In both cases, set `CLAUDE_CODE_SKIP_FAST_MODE_ORG_CHECK=1` to restore fast mode. `CLAUDE_CODE_SKIP_FAST_MODE_NETWORK_ERRORS` doesn't apply to either case, since it only bypasses failed checks and both of these produce a disabled response instead. Allowlisting direct egress doesn't help the bearer-token case, which never sends the request.
+* You point `ANTHROPIC_BASE_URL` at your gateway and set [`ANTHROPIC_API_KEY`](/docs/en/llm-gateway-connect#set-the-base-url-and-credential) to a gateway-issued key that isn't in the format of an Anthropic API key.
+* You set [`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`](/docs/en/env-vars), so Claude Code skips the check.
 
-The variables affect only the client-side check. When your organization has fast mode disabled, the API rejects fast mode requests whether or not they're set. A rejection from the API stands even with a skip variable set. Claude Code retries the rejected request at standard speed, turns fast mode off, and `/fast` reports that your organization has disabled fast mode.
+To restore fast mode in either configuration, set `CLAUDE_CODE_SKIP_FAST_MODE_NETWORK_ERRORS=1`.
 
-Setting `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` also suppresses the availability check. Without a previously cached successful check, `/fast` reports "Fast mode is currently unavailable"; both skip variables restore fast mode in that configuration too.
+#### Fast mode has been disabled by your organization
+
+Behind a gateway, you can see this message even when your organization has fast mode enabled, in either of these configurations:
+
+* You authenticate with [`ANTHROPIC_AUTH_TOKEN`](/docs/en/llm-gateway-connect#set-the-base-url-and-credential) alone, with no claude.ai login, no API key, and no cached successful check. Claude Code then treats fast mode as disabled by your organization without sending the request.
+* A proxy intercepts the check and answers with its own page, for example a TLS-inspecting proxy returning an HTTP 200 block page. Claude Code reads that page as a response saying your organization has fast mode disabled.
+
+In both cases, set `CLAUDE_CODE_SKIP_FAST_MODE_ORG_CHECK=1`, which skips the check entirely, rather than `CLAUDE_CODE_SKIP_FAST_MODE_NETWORK_ERRORS`, which doesn't apply to either.
+
+> [!NOTE]
+>
+> The skip variables change only the client-side check. When your organization has fast mode disabled, the API rejects fast mode requests whether or not they're set. Claude Code then retries the request at standard speed, turns fast mode off, and `/fast` reports that your organization has disabled fast mode.
 
 ### Require per-session opt-in
 
@@ -66594,17 +66772,26 @@ If the error for a blocked tool call includes this text, a `PreToolUse` or `Perm
 blocking because Git Bash wasn't found, so only exit code 0 or 2 counts as this hook's verdict.
 ```
 
-To find out why the hook failed, check the [debug log](#debug-hooks). Pick the fix that matches your hook:
+If the error also says `PowerShell started no program`, start with [the fixes for a `command` that is only quoted strings](#powershell-started-no-program), which PowerShell prints instead of running.
 
-* **The action should go ahead when the hook fails**: add [`"onFailure": "continue"`](#block-the-action-when-a-hook-fails) to the hook
-* **The hook is written for Bash**: a [shell-form](#exec-form-and-shell-form) hook with no `shell` set runs in PowerShell when Git Bash isn't installed, where a script written for Bash may not run as written. Install [Git for Windows](https://git-scm.com/downloads/win), or set [`CLAUDE_CODE_GIT_BASH_PATH`](/docs/en/env-vars) if Git Bash is installed where Claude Code doesn't find it, then start a new session
+Without Git Bash, any exit code other than 0 or 2 from that hook counts as a [failure](#block-the-action-when-a-hook-fails), even when it prints JSON that doesn't deny the call. To find out why the hook failed, check the [debug log](#debug-hooks). Then pick the fix that matches your hook:
+
+* **The call should go ahead when the hook fails**: add [`"onFailure": "continue"`](#block-the-action-when-a-hook-fails) to the hook
+* **The hook exits 1 to warn but must block when it crashes**: with `"onFailure": "continue"`, the call goes ahead on exit code 1, warning or crash alike. Add `"onFailure": "block"` instead, and have the script exit 0 where it warns, so those calls go ahead. To still show the warning on `PreToolUse`, print it to stdout as the [`systemMessage`](#json-output) field of one JSON object.
+* **The hook is written for Bash**: without Git Bash, a [shell-form](#exec-form-and-shell-form) hook with no `shell` set runs in PowerShell, where it can fail. Install [Git for Windows](https://git-scm.com/downloads/win), or set [`CLAUDE_CODE_GIT_BASH_PATH`](/docs/en/env-vars) if Git Bash is installed where Claude Code doesn't find it. Then start a new session.
 * **The hook runs one `.exe`, not a `.cmd` or `.bat` file**: put the program in `command` and its arguments in `args` to use exec form, and add `"onFailure": "block"`. Claude Code then starts the program with no shell. Without `"onFailure": "block"`, the call can go ahead when the program fails, is missing, or times out
-* **The hook exits 1 to warn but must block when it crashes**: with `"onFailure": "continue"`, the call goes ahead on exit code 1, warning or crash alike. Add `"onFailure": "block"` instead, and end the script with exit code 0 where it warns, so those calls go ahead. To show the warning on `PreToolUse` after exit code 0, print it to stdout in the [`systemMessage`](#json-output) field of one JSON object
 * **A PowerShell guard hook that must block on failure**: with `onFailure` unset, it stops doing so once Git for Windows is installed and Claude Code finds Git Bash. Add `"onFailure": "block"` so a failure or a timeout blocks the call with or without Git Bash. Also set `"shell": "powershell"` so the hook keeps running in PowerShell from then on instead of in Git Bash
 
-For a hook that shows this error, any exit code other than 0 or 2 counts as a [failure](#block-the-action-when-a-hook-fails), even when the hook prints JSON that doesn't deny the call.
-
 Before v2.1.309, the message read `blocking because Git Bash wasn't found and this hook doesn't set "shell" to "powershell", so only exit code 0 or 2 counts as its verdict.`
+
+#### PowerShell started no program
+
+A hook with this error ran in PowerShell, which prints a `command` that is only quoted strings, such as `"command": "\"C:\\Tools\\guard.exe\""`, instead of running it.
+
+* **To print text, such as JSON**: set `"shell": "powershell"`, and the hook exits 0
+* **To run a `.ps1`, `.cmd`, or `.bat` file, or a `.exe` whose path has a variable**: set `"shell": "powershell"` and put `&` before the quoted path. Leave `$HOME` as written, and spell environment variables as the [`check.ps1` example](#reference-scripts-by-path-in-powershell-hooks) spells `$env:CLAUDE_PROJECT_DIR`
+* **To run one `.exe` at a path without `$`**: remove the inner quotes from `command`, then apply the [fix for a hook that runs one `.exe`](#failed-hooks-on-windows-without-git-bash), writing `"args": []` if the program takes no arguments
+* **To run a script written for Bash**: apply the [fix for a hook written for Bash](#failed-hooks-on-windows-without-git-bash)
 
 #### Exit code 2 behavior per event
 
@@ -69820,6 +70007,8 @@ On Windows, you can run individual hooks in PowerShell by setting `"shell": "pow
 }
 ```
 
+### Reference scripts by path in PowerShell hooks
+
 To reference the project root from a PowerShell shell-form command, write `${CLAUDE_PROJECT_DIR}` or `$env:CLAUDE_PROJECT_DIR`. Claude Code rewrites the `${CLAUDE_PROJECT_DIR}`, `${CLAUDE_PLUGIN_ROOT}`, and `${CLAUDE_PLUGIN_DATA}` placeholders in a PowerShell shell-form command to PowerShell's `${env:NAME}` form, whether the hook is defined in `settings.json`, a plugin, or a skill. PowerShell then resolves the value from the exported environment after parsing, so the placeholder works inside double-quoted strings but not inside single-quoted strings, where PowerShell never expands variables.
 
 Don't write the bare `$CLAUDE_PROJECT_DIR` spelling in a PowerShell hook. PowerShell parses it as an undefined local variable and resolves it to `$null`, which leaves the script path without its project-root prefix. Claude Code doesn't rewrite that form; it logs a warning in the [debug log](#debug-hooks) instead.
@@ -72010,8 +72199,9 @@ These are the most common errors when running Claude Code through a gateway, wit
 | `400` errors on every request, in the gateway's own words rejecting a tool's input schema or its `pattern`, on Claude Code v2.1.265 through v2.1.267 | In a gradual rollout on those versions, the [Artifact tool](/docs/en/artifacts#availability) schema carries a regular expression with `\p{...}` Unicode character classes. The Anthropic API accepts it, but a gateway or upstream that checks each tool schema's `pattern` with its own regex engine rejects the whole request | Update to v2.1.268 or later, which doesn't send the regular expression. On an affected version, [turn artifacts off](/docs/en/artifacts#disable-artifacts), which removes the tool and its schema from requests |
 | `400` errors on every request, in the gateway's own words rejecting an unrecognized tool type, such as `Input tag 'advisor_20260301'`, on Claude Code v2.1.275 | In a gradual rollout on that version, requests carry an [advisor tool](/docs/en/advisor) entry even with the advisor off. The Anthropic API accepts it, but a gateway or upstream that validates tool types rejects the whole request; one that [forwards request body fields unchanged](/docs/en/llm-gateway-protocol#forward-as-open-lists) passes it through unaffected. The entry is a declaration that carries no conversation content | Update to v2.1.276 or later, which doesn't send the entry behind an `ANTHROPIC_BASE_URL` gateway unless you turn the advisor on. On v2.1.275, set [`CLAUDE_CODE_DISABLE_ADVISOR_TOOL=1`](/docs/en/env-vars), which removes the entry from requests |
 | Models missing from the `/model` picker | Gateway model names aren't in Claude Code's built-in list, or Claude Code is showing a [`modelPicker`](/docs/en/settings-reference#modelpicker) lineup that replaces the built-in options | Enable [gateway model discovery](#add-gateway-models-to-the-model-picker) or add names with the [model configuration](/docs/en/model-config) variables. If Claude Code shows a replacing `modelPicker` lineup, add the gateway models to it, or ask your administrator to add them when managed settings supply it |
-| `/fast` reports `Fast mode unavailable due to network connectivity issues` while inference requests work | The [fast mode](/docs/en/fast-mode) availability check goes directly to `api.anthropic.com` and doesn't follow `ANTHROPIC_BASE_URL`, so blocked direct egress fails the check. The same message appears on an open network when the check presents a gateway-issued key from `ANTHROPIC_API_KEY` or an `apiKeyHelper` and Anthropic rejects it | Allowlist `api.anthropic.com` if egress is blocked, or set a skip variable; for a rejected gateway key only the skip variables help. See [use fast mode behind proxies and LLM gateways](/docs/en/fast-mode#use-fast-mode-behind-proxies-and-llm-gateways) |
-| `/fast` reports `Fast mode has been disabled by your organization` in a session authenticated with `ANTHROPIC_AUTH_TOKEN`, even though the organization has fast mode enabled | The availability check requires a claude.ai login or an Anthropic API key; with only a bearer token, Claude Code treats fast mode as disabled without sending the check | Set `CLAUDE_CODE_SKIP_FAST_MODE_ORG_CHECK=1`; see [use fast mode behind proxies and LLM gateways](/docs/en/fast-mode#use-fast-mode-behind-proxies-and-llm-gateways) |
+| `/fast` reports `Fast mode unavailable due to network connectivity issues` while inference requests work | The [fast mode](/docs/en/fast-mode) availability check goes directly to `api.anthropic.com` and doesn't follow `ANTHROPIC_BASE_URL`, so blocked direct egress fails the check | Allowlist `api.anthropic.com` if egress is blocked, or set a skip variable. See [use fast mode behind proxies and LLM gateways](/docs/en/fast-mode#use-fast-mode-behind-proxies-and-llm-gateways) |
+| `/fast` reports `Fast mode is currently unavailable` in a session that authenticates with a gateway-issued key in `ANTHROPIC_API_KEY` | While `ANTHROPIC_BASE_URL` points at your gateway and the key isn't in the format of an Anthropic API key, Claude Code doesn't send the [fast mode](/docs/en/fast-mode) availability check. Without an earlier successful check cached, it treats fast mode as unavailable | Set `CLAUDE_CODE_SKIP_FAST_MODE_NETWORK_ERRORS=1`; see [use fast mode behind proxies and LLM gateways](/docs/en/fast-mode#use-fast-mode-behind-proxies-and-llm-gateways) |
+| `/fast` reports `Fast mode has been disabled by your organization` in a session authenticated with `ANTHROPIC_AUTH_TOKEN`, even though the organization has fast mode enabled | The availability check requires a claude.ai login or an API key; with only a bearer token, Claude Code treats fast mode as disabled without sending the check | Set `CLAUDE_CODE_SKIP_FAST_MODE_ORG_CHECK=1`; see [use fast mode behind proxies and LLM gateways](/docs/en/fast-mode#use-fast-mode-behind-proxies-and-llm-gateways) |
 | Claude Code asks you to log in even though the [curl test](#verify-the-connection) succeeds | The CLI has no credential of its own: a reachable base URL isn't one, and in an interactive session an `env` block in a project's `.claude/settings.json` or `.claude/settings.local.json` applies only after the first-run wizard and [trust prompt](/docs/en/permissions#what-runs-before-you-trust-a-folder) | Set `ANTHROPIC_AUTH_TOKEN` somewhere Claude Code reads before first-run setup: a shell export, the `env` block in `~/.claude/settings.json`, or managed settings |
 | `ANTHROPIC_API_KEY` is set but ignored, with no prompt | The key needs a one-time approval in interactive sessions, and a previously declined key is ignored without asking again | Enable it under `/config` with the `Use custom API key` option |
 | `This machine's managed settings require a first-party login`, or [`Administrator policy requires a Cloud gateway sign-in`](/docs/en/errors#administrator-policy-requires-a-cloud-gateway-sign-in) when managed settings set `forceLoginMethod` to `"gateway"` or also set `forceLoginGatewayUrl` | Managed settings include `forceLoginMethod` or `forceLoginOrgUUID`, which cannot coexist with `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, or `apiKeyHelper` | Your administrator must remove `forceLoginMethod`, `forceLoginOrgUUID`, and `forceLoginGatewayUrl` from managed settings to use gateway credentials, or remove the gateway credential and use the sign-in the managed settings require. The two cannot be combined |
@@ -74225,7 +74415,7 @@ Without `enforceAvailableModels` or the `env` block, a user who selects Default 
 
 When the managed settings Claude Code applies define `availableModels`, that list alone applies, apart from a [host platform that supplies its own](/docs/en/settings#exceptions-to-managed-settings-precedence): entries in user, project, or local settings cannot extend it, and Claude Code never merges `availableModels` across managed sources either; [how Claude Code combines managed sources](/docs/en/managed-settings#how-claude-code-combines-managed-sources) says which source's list applies. Otherwise, lists from user, project, and local settings are [concatenated and deduplicated](/docs/en/settings#settings-precedence) like other array settings. Before Claude Code v2.1.175, entries from lower-precedence scopes merged into the managed list instead of being replaced by it.
 
-Within the effective list, an entry naming a specific model in a family, whether a version prefix or a full model ID, disables that family's wildcard entry: `["sonnet", "claude-sonnet-4-5"]` allows only Sonnet 4.5 versions, not every Sonnet model.
+Within the effective list, an entry naming a specific model in a family, whether a version prefix or a full model ID, disables that family's wildcard entry. For example, with `["sonnet", "claude-sonnet-4-5"]`, users can pick only the model IDs that `claude-sonnet-4-5` [matches](#restrict-model-selection), not every Sonnet model.
 
 ### Mantle model IDs
 
@@ -74823,7 +75013,12 @@ When you set an `ANTHROPIC_DEFAULT_*_MODEL` variable, the `/model` picker shows 
 >
 > An `availableModels` allowlist delivered through [MDM or a managed settings file](/docs/en/managed-settings#delivery-mechanisms) still applies when using third-party providers; [server-managed settings are not delivered there](/docs/en/server-managed-settings#platform-availability).
 >
-> Filtering matches on a model alias such as `opus`, a version prefix such as `claude-opus-4-8`, or the full provider-form model ID. Provider-specific prefixes such as `us.anthropic.` are not stripped, so to allow a specific model, list its full provider-form ID, or map it through [`modelOverrides`](#override-model-ids-per-version). For a pinned model, that ID is the value you set in its `ANTHROPIC_DEFAULT_*_MODEL` variable. Any `[1m]` suffix is stripped from both the allowlist entry and the requested model before matching.
+> Filtering matches on a model alias such as `opus`, a version prefix such as `claude-opus-4-8`, or the full provider-form model ID. Provider-specific prefixes such as `us.anthropic.` are not stripped, so to allow a specific model, map it through [`modelOverrides`](#override-model-ids-per-version) or list its full provider-form ID:
+>
+> * **Google Cloud's Agent Platform**: when the ID Claude Code requests carries an `@` date, such as `claude-sonnet-4-5@20250929`, include the date in your allowlist entry. On its own, `claude-sonnet-4-5` doesn't match that ID under either [`availableModelsMatch`](/docs/en/settings-reference#availablemodelsmatch) setting.
+> * **Pinned models**: list the value you set in the model's `ANTHROPIC_DEFAULT_*_MODEL` variable
+>
+> Any `[1m]` suffix is stripped from both the allowlist entry and the requested model before matching.
 
 ### Customize pinned model display and capabilities
 
@@ -76987,9 +77182,11 @@ If you install Claude Code through npm or manage your own binary distribution, e
 
 The two Datadog intake hosts carry only optional operational telemetry, and setting [`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC`](/docs/en/env-vars) disables both. Sessions on third-party providers never send to these hosts, even when a platform sets [`CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST`](/docs/en/env-vars) and telemetry metrics default on. See [Telemetry services](/docs/en/data-usage#telemetry-services) for everything Claude Code sends and how to disable it before finalizing your allowlist.
 
+### Cloud provider and LLM gateway routing
+
 When using [Amazon Bedrock](/docs/en/amazon-bedrock), [Google Cloud's Agent Platform](/docs/en/google-vertex-ai), [Microsoft Foundry](/docs/en/microsoft-foundry), or a signed-in [Claude apps gateway](/docs/en/claude-apps-gateway) session, model traffic and authentication go to your provider or gateway instead of `api.anthropic.com`, `claude.ai`, or `platform.claude.com`. The WebFetch tool still calls `api.anthropic.com` for its [domain safety check](/docs/en/data-usage#webfetch-domain-safety-check) unless you set `skipWebFetchPreflight: true` in [settings](/docs/en/settings).
 
-When routing through an [LLM gateway](/docs/en/llm-gateway) with [`ANTHROPIC_BASE_URL`](/docs/en/llm-gateway-connect#set-the-base-url-and-credential), the [fast mode](/docs/en/fast-mode) availability check still calls `api.anthropic.com` rather than the gateway base URL. The check does honor a configured HTTP proxy, so where a network block is the cause, an allowlist entry for `api.anthropic.com` in the proxy is the fix. A network block fails the check only where the host is unreachable even through the proxy, and fast mode then reports a connectivity error. The same connectivity error appears when the check presents a gateway-issued credential that Anthropic rejects; allowlisting doesn't help there, since nothing is blocked. See [use fast mode behind proxies and LLM gateways](/docs/en/fast-mode#use-fast-mode-behind-proxies-and-llm-gateways) for the variables that restore it.
+If your developers use [fast mode](/docs/en/fast-mode) behind an [LLM gateway](/docs/en/llm-gateway) set with [`ANTHROPIC_BASE_URL`](/docs/en/llm-gateway-connect#set-the-base-url-and-credential), keep `api.anthropic.com` reachable through your proxy. When Claude Code sends the fast mode availability check, it goes to that host through any configured HTTP proxy, never to the gateway. For when the check isn't sent, and the variable that restores fast mode in each case, see [Use fast mode behind proxies and LLM gateways](/docs/en/fast-mode#use-fast-mode-behind-proxies-and-llm-gateways).
 
 ### Organization IP allowlists and proxy egress
 
@@ -86088,7 +86285,7 @@ Inside the directories that sandboxed commands can write to, the sandbox still d
 
 * **In your working directory and the directories above it**: the `.claude` settings files, the `.claude/skills`, `.claude/agents`, `.claude/commands`, and `.claude/hooks` directories, `.mcp.json`, and the files Claude Code runs on its own, such as `.claude/workflows` and `.claude/scheduled_tasks.json`
 * **In your working directory only**: shell startup files such as `.bashrc` and `.zshrc`, `.gitconfig`, the `.vscode` and `.idea` directories, and `hooks` and `config` inside `.git`
-* **Files that would turn your working directory into a bare git repository**: `HEAD`, `objects`, and `refs` at the top level, plus existing `config` and `hooks` entries there when a `HEAD` sits beside them. A file named `config` is denied even with no `HEAD`. On Linux and WSL2, the sandbox deletes a top-level `HEAD` file or `objects` or `refs` directory that appears while a sandboxed command is running
+* **Files that would turn your working directory into a bare git repository**: `HEAD`, `objects`, and `refs` at the top level, plus existing `config` and `hooks` entries there when a `HEAD` file or symlink sits beside them. A file named `config` is denied even with no `HEAD`. [A `HEAD`, `objects`, or `refs` that appears later can be deleted](#when-the-sandbox-deletes-head-objects-or-refs). On Linux and WSL2, a sandboxed command can create one where none exists.
 * **In `~/.claude`, or the directory `CLAUDE_CONFIG_DIR` points to**: most of its contents, plus `~/.claude.json` and the `.credentials.json` credential store
 
 If a symlink appears at a protected settings file's path during the session, the sandbox also denies writes to the file it points to, starting with the next command.
@@ -86102,6 +86299,12 @@ If you add an `allowWrite` entry or an `Edit` allow rule that covers one of thes
 To see most of these paths resolved for your machine, run `/sandbox` and open the **Config** tab, which lists them under **Denied within allowed**, mixed in with your own `denyWrite` entries.
 
 If `git merge` or `git checkout` fails with `unable to unlink old` on one of these paths, see [A git command fails with `unable to unlink old`](#a-git-command-fails-with-unable-to-unlink-old).
+
+#### When the sandbox deletes `HEAD`, `objects`, or `refs`
+
+After a sandboxed command ends, a newer top-level `HEAD`, `objects`, or `refs` entry in your working directory is deleted unless it's a folder with contents. Newer means the entry wasn't there when the sandbox last built its configuration: at session start, or after a change such as [`/cd`](/docs/en/commands).
+
+A newer `objects` or `refs` folder with contents is deleted too, with its contents, when a `HEAD` file or symlink was there the last time the sandbox built its configuration. To keep a folder, see [A folder named `objects` or `refs` disappears after a command](#a-folder-named-objects-or-refs-disappears-after-a-command).
 
 #### Denied paths that pass through a symlink
 
@@ -86431,6 +86634,12 @@ When Claude pipes text to one of these tools, adding the tool to [`excludedComma
 * Outside the directories the sandbox lets commands write to at all
 
 After the failure, Claude may [offer to rerun the command outside the sandbox](#the-unsandboxed-retry-escape-hatch). Approve that retry, or run the git command yourself in another terminal. If you've set `allowUnsandboxedCommands` to `false`, Claude can't offer the retry, so run the command yourself.
+
+### A folder named `objects` or `refs` disappears after a command
+
+A top-level `objects` or `refs` folder that appeared during the session can be [deleted after a sandboxed command ends](#when-the-sandbox-deletes-head-objects-or-refs). It doesn't matter whether a command, Claude, or you created it. To keep a folder, leave something in it. If a `HEAD` file or symlink has been at the top level during the session, move it away, then restart every Claude Code session open there.
+
+Before v2.1.307, the folder was deleted even with something in it and no `HEAD`. On an earlier version, [update Claude Code](/docs/en/setup#update-claude-code).
 
 ### Bubblewrap fails to start inside a container
 
@@ -86788,7 +86997,7 @@ When a developer starts a cloud session, the session-start UI shows an environme
 
 The two Claude Code boxes in the diagram are session processes: one runner executing two sessions at once, up to its configured capacity. A runner serves one [owner](#key-concepts) at a time and locks to that owner when it claims its first session, so checked-out code never mixes between owners; [Runner lifecycle](#runner-lifecycle) covers the rule.
 
-You can start runners yourself and keep them running, or run the [autoscaling orchestrator](/docs/en/self-hosted-environments-configuration#on-demand-runners), a second process you host, which starts runners as sessions queue; each runner exits on its own when its work finishes. Either way, you set the environment up once, and it appears in the picker on every supported surface.
+You can start runners yourself and keep them running, or run the [autoscaling orchestrator](/docs/en/self-hosted-environments-configuration#on-demand-runners), a second process you host, which starts runners as sessions queue. Either way, you set the environment up once, and it appears in the picker on every supported surface.
 
 ## Availability and limitations
 
@@ -86880,7 +87089,8 @@ By default, model inference uses the Anthropic API. The control plane delivers t
 
 Corporate egress proxies are supported. The runner and the optional [autoscaling orchestrator](/docs/en/self-hosted-environments-configuration#on-demand-runners) honor the proxy and mTLS environment variables described in [Network configuration](/docs/en/network-config), such as `HTTPS_PROXY` and `NO_PROXY`; set them in each process's environment. The variables cover control-plane calls, the orchestrator's [SCM connector](/docs/en/self-hosted-environments-reference#scm-connector-flags) WebSocket, and the built-in clone for HTTPS remotes, and sessions inherit them from the runner. Session streaming uses server-sent events over HTTPS, so a proxy in the path must not buffer responses.
 
-If your proxy also requires a `Proxy-Authorization` header, the runner can add it to each connection it opens to the proxy; see [Authenticate to an egress proxy](/docs/en/self-hosted-environments-deploy#authenticate-to-an-egress-proxy).
+* **Proxy authentication**: if your proxy also requires a `Proxy-Authorization` header, the runner can add it to each connection it opens to the proxy; see [Authenticate to an egress proxy](/docs/en/self-hosted-environments-deploy#authenticate-to-an-egress-proxy).
+* **Long-lived responses**: if a runner picks up a session but Claude never answers its first message, your proxy may be the cause. See [A session is picked up, but Claude never answers its first message](/docs/en/self-hosted-environments-deploy#when-a-sessions-first-message-is-never-answered).
 
 ## What stays on your infrastructure
 
@@ -86935,6 +87145,7 @@ The runner sets the following in the wrapper's environment:
 | `CLAUDE_CODE_REMOTE_SESSION_UUID` | The same session ID in canonical UUID form, for systems that key on UUIDs. |
 | `CLAUDE_CODE_REMOTE_SLACK_THREAD_URL` | For a [Claude Tag](https://claude.com/docs/claude-tag/overview) session that belongs to one Slack thread, the link to that thread. Unset for other sessions, and can be unset for a thread session too. |
 | `CLAUDE_CODE_REMOTE_SLACK_THREAD_TS` | For a Claude Tag session that belongs to one Slack thread, that thread's Slack timestamp, such as `1700000000.000100`. Can be unset, and can be set when `CLAUDE_CODE_REMOTE_SLACK_THREAD_URL` isn't, so check each variable on its own. |
+| `CLAUDE_CODE_REMOTE_SLACK_CHANNEL_ID` | For a Claude Tag session, the ID of the Slack channel or direct message that the session serves or that its thread is in, such as `C0123ABCDE`. A Slack timestamp identifies a message within one channel, so record this ID together with `CLAUDE_CODE_REMOTE_SLACK_THREAD_TS`. Unset for other sessions, and can be unset for a Claude Tag session too. |
 | `CLAUDE_SESSION_INGRESS_TOKEN_FILE` | Absolute path to a per-session file holding the current session JWT, kept fresh across token refreshes. Shell subprocesses read it for their `Authorization` header when downloading attachments the user added to the session. `exec` preserves the variable automatically; a wrapper that rebuilds the child's environment must carry the variable over, or attachment downloads silently stop working. |
 | `CLAUDE_CONFIG_DIR` | Per-session Claude config directory, written at session start from the snapshot of the runner host's config that the runner captures at startup; see [Permissions and tool approval](#permissions-and-tool-approval). Writes here are isolated to this session. The directory stays under `<base-dir>/_sessions/` after the session ends unless you start the runner with [`--remove-session-state`](/docs/en/self-hosted-environments-reference#runner-cli-flags); see [Reuse a pre-warmed checkout](/docs/en/self-hosted-environments-deploy#reuse-a-pre-warmed-checkout). |
 | `CLAUDE_CODE_REMOTE_MCP_CONFIG` | Path to a file in `CLAUDE_CONFIG_DIR` holding the MCP server definitions that Anthropic's control plane delivered for this session. If your wrapper rebuilds the child's environment, carry this variable over. Without it, when the control plane updates the delivered servers, the child shuts down any stdio, HTTP, or SSE server your wrapper adds with [`--mcp-config`](/docs/en/cli-reference#cli-flags) that isn't in the update. Requires Claude Code v2.1.299 or later. |
@@ -86943,11 +87154,11 @@ The runner sets the following in the wrapper's environment:
 
 The wrapper also inherits the rest of the child's managed environment, including any server-provided environment variables. `exec` propagates all of it automatically; if your wrapper spawns the child another way, forward the full environment.
 
-`CLAUDE_CODE_REMOTE_SLACK_THREAD_URL` and `CLAUDE_CODE_REMOTE_SLACK_THREAD_TS` reach your wrapper or [`command` hook](#command). They also reach what the session runs, such as shell commands, git hooks, and Claude Code hooks. The `checkout`, `post-session`, and `spawn-runner` hooks don't receive them.
+You can read the `CLAUDE_CODE_REMOTE_SLACK_*` variables in your wrapper or [`command` hook](#command), and in what the session runs, such as shell commands, git hooks, and Claude Code hooks. The `checkout`, `post-session`, and `spawn-runner` hooks don't receive them.
 
 ### Give a default to variables that can be unset
 
-`CCR_SESSION_ACCOUNT_EMAIL`, `CLAUDE_RUNNER_CLIENT_PLATFORM`, `CLAUDE_CODE_REMOTE_SLACK_THREAD_URL`, and `CLAUDE_CODE_REMOTE_SLACK_THREAD_TS` can each be unset. If your script uses `set -u`, Bash stops with `unbound variable` when it expands one that's unset, so expand them with a default, such as `"${CCR_SESSION_ACCOUNT_EMAIL:-}"`.
+If your script uses `set -u`, expand `CCR_SESSION_ACCOUNT_EMAIL`, `CLAUDE_RUNNER_CLIENT_PLATFORM`, `CLAUDE_CODE_REMOTE_SLACK_THREAD_URL`, `CLAUDE_CODE_REMOTE_SLACK_THREAD_TS`, and `CLAUDE_CODE_REMOTE_SLACK_CHANNEL_ID` with a default, such as `"${CCR_SESSION_ACCOUNT_EMAIL:-}"`. Each can be unset, and under `set -u` Bash stops with `unbound variable` when it expands an unset one.
 
 ### Quote the arguments and variables your script expands
 
@@ -86988,6 +87199,26 @@ In your wrapper script or [`command` hook](#command), handle these flags as foll
 * **Pass them through**: end the wrapper with `exec "$CLAUDE_RUNNER_CLAUDE_BIN" "$@"`, which forwards the file flags along with every other argument. Don't drop or rewrite them. If a session loses a prompt file flag, it runs without the instructions the control plane sent for it.
 * **On a runner at v2.1.281 or later, a file flag you append replaces the server's, never adds to it**: each prompt file flag takes a single value and Claude Code keeps the last occurrence, so if you append `--append-system-prompt-file <path>` after `"$@"`, your file's contents replace the server's appended instructions. To add instructions on top of the server's, put them in the runner image's `CLAUDE.md`, which the runner [seeds into every session's user-level config](#how-each-session’s-config-is-assembled).
 
+#### Fix `Argument list too long` at session start
+
+On Linux, if you join the control plane's prompt and your own text into one `--append-system-prompt` argument, the runner logs a line like this once the argument reaches 128 KB:
+
+```text theme={null}
+Session <id> finished: failed — reason: child exited 126: /opt/wrapper.sh: line 9: /usr/local/bin/claude: Argument list too long
+```
+
+Linux limits each single argument to 32 memory pages, or 128 KB with the usual 4 KB pages. The figure from `getconf ARG_MAX`, often 2 MB, is a separate limit on all arguments and the environment together.
+
+On Claude Code v2.1.283 or later, leave the file flags in `"$@"` and pass only your own text as `--append-system-prompt`. Claude Code [uses both](/docs/en/cli-reference#system-prompt-flags), the control plane's prompt first and then your own text:
+
+```bash theme={null}
+exec "$CLAUDE_RUNNER_CLAUDE_BIN" "$@" --append-system-prompt "$(cat /opt/team-instructions.md)"
+```
+
+On Linux, if your own text reaches 128 KB, move it to the runner image's `CLAUDE.md`, because it's still one argument.
+
+On v2.1.281 or v2.1.282, that command exits with `Cannot use both --append-system-prompt and --append-system-prompt-file`. On earlier versions, your text replaces the control plane's prompt with no error. On any of them, update first, or move your own text to `CLAUDE.md`.
+
 ### Provision credentials scoped to the session creator
 
 Use the `decode-token` subcommand to read claims from the session JWT. It reads the token from an argument, from `CLAUDE_CODE_SESSION_ACCESS_TOKEN`, or from stdin, in that order; see [Verify the token inside the session](/docs/en/self-hosted-environments-identity#verify-the-token-inside-the-session) for what it checks. The example below decodes the creator identity, exchanges it for short-lived AWS credentials, and execs into Claude Code:
@@ -87021,7 +87252,7 @@ Runs once per repository, in place of the runner's built-in clone and fetch. Use
 | Variable | Description |
 | :- | :- |
 | `CLAUDE_RUNNER_REPO_URL` | Repository URL to clone, after any `--git-host-rewrite` and `--git-ssh-rewrite` have been applied |
-| `CLAUDE_RUNNER_REPO_REF` | Revision to check out, as the session requested it: a branch, tag, commit SHA, or full reference name such as `refs/pull/<number>/head`. Empty means the repository's default branch. |
+| `CLAUDE_RUNNER_REPO_REF` | Revision to check out, as the session requested it: a branch, tag, commit SHA, or full reference name such as `refs/heads/<branch>` or `refs/pull/<number>/head`. Empty means the repository's default branch. |
 | `CLAUDE_RUNNER_CHECKOUT_PATH` | Absolute path where the working tree must be left |
 | `CLAUDE_RUNNER_SESSION_ID` | Session ID in the tagged `session_...` form, for logging and correlation |
 | `CLAUDE_RUNNER_SESSION_UUID` | The same session ID in canonical UUID form |
@@ -87202,12 +87433,12 @@ The spawned runner registers with the work order in place of the environment sec
 
 The contract has four rules, whichever platform your hook provisions on:
 
-1. **Be idempotent on `CLAUDE_RUNNER_ORDER_ID`.** Redelivery of the same request must spawn at most one runner. Derive a deterministic resource name from the order ID and let your platform reject the duplicate. Don't key on `CLAUDE_RUNNER_SESSION_ID` instead. Every re-request for a session carries the same session ID with a new order ID, so a workload named or deduplicated by the session ID is created once and never again for that session.
+1. **Be idempotent on `CLAUDE_RUNNER_ORDER_ID`.** Redelivery of the same request must spawn at most one runner. Derive a deterministic resource name from the order ID and let your platform reject the duplicate. Don't key on `CLAUDE_RUNNER_SESSION_ID` instead. Every re-request for a session carries the same session ID with a new order ID. A workload named or deduplicated by the session ID isn't created again while the first one exists.
 2. **Don't retry the workload.** One order ID means at most one created workload. If the runner never registers, Anthropic re-requests with a fresh order ID after `--expected-spawn-seconds`.
 3. **Use the exit-code contract.** Exit with the status that matches the outcome:
 
    * **Exit 0**: submitted.
-   * **Exit 1, or still running when `--hook-timeout` ends**: retryable failure. The session backs off and is re-offered.
+   * **Exit 1, or still running when `--hook-timeout` ends**: retryable failure. The session backs off and is re-offered. After 10 failed requests in a row, it's blocked as it is after exit 2 or higher.
    * **Exit 2 or higher**: non-retryable failure. The session is blocked from spawning again until a user sends it a new message or an [Owner](/docs/en/cloud-environments#organization-shared-environments) selects **Retry** on it in the environment's **Activity** tab.
 
    While a session backs off, it shows **Queued** in the **Activity** tab with no spawn error, so read the hook's output in the orchestrator's log. Once blocked, the session shows **Failed**. Expand it to read the spawn error, taken from the last 512 characters of the hook's stderr. Write an actionable error to stderr, and no secrets. In a shell hook, [keep transient failures retryable](#keep-transient-failures-retryable-in-a-shell-hook).
@@ -87217,7 +87448,41 @@ The contract has four rules, whichever platform your hook provisions on:
 
 Everything the hook writes to stdout or stderr appears in the orchestrator's log with credentials automatically redacted. If sessions stay queued, check the orchestrator's `/healthz` body for queue counts, then open your environment's **Activity** tab on the [**Cloud environments** admin page](https://claude.ai/admin-settings/cloud-environments): expand a failed session there for its spawn error, and select **Retry** to re-request it.
 
-A session that stays queued with no spawn error in the **Activity** tab can mean the hook is keyed on the session ID. To confirm, check whether your platform has a workload for that session's first spawn request and none for the re-requests. If so, key the workload on `CLAUDE_RUNNER_ORDER_ID` instead.
+#### Fix re-opened sessions that stay Queued or show Failed
+
+If re-opened sessions stay **Queued** or show **Failed**, or your hook times out on them, one cause is a hook that names or deduplicates workloads by the session ID. A session is re-opened when its user sends it a message after its runner has exited. For example, take a hook that builds each workload's name like this:
+
+```bash theme={null}
+name="runner-${CLAUDE_RUNNER_SESSION_ID}"
+```
+
+1. At the session's first spawn request, the hook creates a workload with that name, and a runner starts
+2. The runner exits, for example after [`--release-idle-session-min`](#make-on-demand-runners-exit-when-idle), and the user later re-opens the session
+3. The session's next spawn request carries the same session ID and a new order ID, so the hook builds the same name
+4. If your platform still has the workload from the first request, because nothing [removed](#make-on-demand-runners-exit-when-idle) it when its runner exited, the hook creates no new workload and no runner starts
+5. Each later spawn request for the session ends the same way
+
+Open your own hook and read what it does when the workload already exists, for example when your platform rejects the duplicate name. Find that behavior in the first column to see what the re-opened session shows in the **Activity** tab:
+
+| When the workload exists, your hook | **Queued** changes to **Failed** | Spawn error |
+| :- | :- | :- |
+| Exits 0 without creating anything | After 10 such requests in a row | `runner did not register within ETA after max attempts` |
+| Exits 1 | After 10 such requests in a row | Your hook's stderr tail, or `exit 1` if it wrote nothing to stderr |
+| Exits 2 or higher | Right away | Your hook's stderr tail, or `exit` and the code, such as `exit 2`, if it wrote nothing to stderr |
+| Waits until `--hook-timeout` ends | After 10 such requests in a row | Your hook's stderr tail, or `spawn-runner hook timed out after 60000ms` if it wrote nothing to stderr |
+
+In the last row's spawn error, `60000` is your `--hook-timeout` in milliseconds. When a hook waits until `--hook-timeout` ends, the orchestrator's log also gets a `timed out after` line.
+
+To fix the hook, build each name or key from `CLAUDE_RUNNER_ORDER_ID`, as [rule 1 of the hook contract](#the-spawn-runner-hook) requires. In the example, the name becomes:
+
+```bash theme={null}
+name="runner-${CLAUDE_RUNNER_ORDER_ID}"
+```
+
+If your hook waits, also make it exit once it has submitted the workload, because a waiting hook [delays its orchestrator's next hooks](/docs/en/self-hosted-environments-reference#orchestrator-cli-flags). After you change the hook, check each stuck session's status in the **Activity** tab:
+
+* **Queued**: the session gets its next spawn request on its own
+* **Failed**: select **Retry** on it as an Owner, or have its user send it a new message
 
 #### Make on-demand runners exit when idle
 
@@ -87639,6 +87904,27 @@ Outside [Claude Tag](https://claude.com/docs/claude-tag/overview) sessions, a se
 
 The runner's snapshot of the host's `~/.claude/` leaves out the `projects/` directory. Auto memory's default storage location is under that directory. If you put memory files there, the runner doesn't seed them into sessions, and they don't turn auto memory on.
 
+### Stop sessions that fail to fetch server-managed settings
+
+To keep a session that fetches [server-managed settings](/docs/en/server-managed-settings) from starting when that fetch fails, set [`forceRemoteSettingsRefresh`](/docs/en/settings-reference#forceremotesettingsrefresh) to `true` in the [`managed-settings.json`](/docs/en/settings#where-settings-live) in your runner image. A reply from Anthropic's API that your organization has no server-managed settings counts as a successful fetch.
+
+Before you add the key, check whether the environment runs Claude Tag channel sessions or sends model requests to Bedrock or Agent Platform:
+
+* **Claude Tag channel sessions**: leave the key out on runners in an environment that an Owner [routes Claude Tag channels to](/docs/en/cloud-environments#set-the-environment-a-claude-tag-channel-uses). Anthropic's API refuses these sessions' request for server-managed settings, so with the key set they fail to start. Put their rules in the runner image's `managed-settings.json`, which [they still read](/docs/en/managed-settings#where-and-when-a-policy-applies). To use the key for your other sessions, run those in a separate environment.
+* **Bedrock or Agent Platform**: sessions on these providers [don't fetch server-managed settings](#what-differs-from-sessions-on-the-anthropic-api), so they start whether or not you set the key. Enforce your rules from the same `managed-settings.json` instead.
+
+This `managed-settings.json` sets the key:
+
+```json managed-settings.json theme={null}
+{
+  "forceRemoteSettingsRefresh": true
+}
+```
+
+Set the key in that file even if you also set it in the claude.ai admin console. A new session has no [cached copy](/docs/en/server-managed-settings#fetch-and-caching-behavior) of your server-managed settings, so if you set the key only in the console, the session doesn't have it yet. If its fetch then fails, the session runs without those settings until a later fetch succeeds.
+
+To confirm that a failed settings fetch is why a session didn't start, look at [Claude Code's last output](#keep-stdin-and-file-descriptor-3-attached) in the session or the runner's log. It includes `Your organization requires remote managed settings to load, but they could not be loaded.`
+
 ### Repository settings in sessions with several repositories
 
 In a thread in a [project](/docs/en/claude-projects#what-threads-pick-up-from-your-repositories), no repository's `.claude/settings.json` takes effect as project settings and no repository's `.mcp.json` or skills load, wherever the thread starts. To give those threads a skill, add it to your runner image.
@@ -87978,6 +88264,26 @@ The per-session certificate file needs a system CA bundle at `/etc/ssl/certs/ca-
 
 For each session that uses Anthropic-managed git, the runner also logs a `[runner:warn]` line that begins `governed git: GIT_SSL_CAINFO is set` or `governed git: GIT_SSL_NO_VERIFY is set`. The line says what the runner did with that variable for its own git, for git inside the session, and for your lifecycle hooks. It ends with whether you need to change anything.
 
+### Add github.com repositories to Claude Tag channel sessions
+
+If Claude can't add a github.com repository to a Claude Tag channel session, make sure the channel has access to it, even when your runner can clone it. That access comes from settings on GitHub and in your Claude organization, not from your runner's git credentials.
+
+**1. Install the Claude GitHub App**
+
+Install the [Claude GitHub App](https://github.com/apps/claude) on the GitHub organization or account that owns the repository, and include that repository in the installation.
+
+**2. Link the GitHub organization or account**
+
+In [**Organization settings > Git providers**](https://claude.ai/admin-settings/source-control), link that organization or account to your Claude organization. An Owner of your Claude organization who also owns the GitHub organization can link it. See [Link your GitHub organization](https://claude.com/docs/claude-tag/admins/configure-github#link-your-github-organization).
+
+**3. Grant the repository**
+
+In [Claude Tag admin settings](https://claude.ai/admin-settings/claude-tag), grant the repository to the channel or to a wider scope that includes the channel: its Slack workspace or all of Slack. Someone with the Owner role or the Claude Tag Admin permission can grant it. A channel manager can also add it to their own channel if their GitHub account is an admin of the repository. See [Grant repository access](https://claude.com/docs/claude-tag/admins/configure-github#grant-repository-access).
+
+Then start a new thread in the channel and [name the repository](https://claude.com/docs/claude-tag/admins/configure-github#how-granted-repositories-reach-a-session) in your first message.
+
+If Claude still can't add the repository, see [If Claude can't reach a repository](https://claude.com/docs/claude-tag/admins/configure-github#if-claude-can%E2%80%99t-reach-a-repository) for where to check the GitHub link and the repository grant.
+
 ### Rewrite git URLs for private networks
 
 Repository URLs arrive from the control plane as HTTPS, with the hostname of your git host; for GitHub Enterprise, that's the hostname you configured for the [GitHub Enterprise integration](/docs/en/github-enterprise-server) on claude.ai. Two repeatable flags rewrite those URLs before clone:
@@ -88041,10 +88347,89 @@ resources:
 
 Builds and tests are usually the largest and most variable part of a session's load, so run a representative build of your repository, measure its peak CPU and memory, and raise any starting value that leaves no room for the Claude Code process on top of that peak.
 
-The runner uses `--capacity` to cap how many sessions it runs at once. It doesn't divide CPU or memory between them, so the sessions on a runner share the container's CPU and memory. To cap one session's share, apply limits from your [wrapper script](/docs/en/self-hosted-environments-configuration#wrapper-scripts). What to give one container therefore depends on how many sessions it serves at once:
+The runner uses `--capacity` to cap how many sessions it runs at once. It doesn't divide CPU or memory between them, so the sessions on a runner share the container's CPU and memory. To keep one session's memory use from ending the others, run one session per runner with [its own memory limit](#give-each-session-its-own-memory-limit).
 
 * **One session per runner**: give each container one session's values. Use this sizing at `--capacity 1`, which the [hardening section](#harden-your-deployment) recommends, and for [on-demand runners](/docs/en/self-hosted-environments-configuration#on-demand-runners), where you set the values on the workload your [`spawn-runner` hook](/docs/en/self-hosted-environments-configuration#the-spawn-runner-hook) submits, such as a Kubernetes Job's pod template.
 * **Several sessions per runner**: at a `--capacity` above one, multiply one session's values by the capacity, because up to that many sessions can run in the container at the same time. The [Kubernetes](#kubernetes) and [Docker Compose](#docker-compose) recipes run `--capacity 4` with no CPU or memory limits, so add limits sized for the capacity you run.
+* **Several runner containers on one host**: size the host for the sum of the runners' capacities, because each runner counts only its own sessions against `--capacity`:
+
+  * **Memory**: multiply one session's memory by the sum, then add what the host's own processes use
+  * **CPU**: multiply one session's CPU request by the sum. To let every session burst at once, multiply its CPU limit instead.
+
+  Give each runner its own container. Use the [same `--base-dir` path](#keep-the-base-directory-and-capacity-identical-across-runners) in each, on storage that no other runner's container mounts, so that each runner has [its own working directory](#harden-your-deployment).
+
+### Give each session its own memory limit
+
+To stop one session from ending the others when memory runs out, run each runner at `--capacity 1` under its own memory limit, set to one session's memory:
+
+* **In a container**: run one runner per container, and set the container's memory limit, such as `limits.memory` on Kubernetes, `--memory` on Docker, or `mem_limit` in a Compose file. Keep the sum of the containers' limits below the host's memory, because when the host itself runs out, the kernel can kill processes anywhere on the host.
+* **Under systemd without a container**: set `MemoryMax` on the runner's unit, and run one runner per host, because runners that [use the same `--base-dir`](#keep-the-base-directory-and-capacity-identical-across-runners) on one filesystem share the repositories cloned there. For example, at `--capacity 1` with no `checkout` hook, their sessions on one repository can work in the same checkout at once. To run several runners on one host, give each a container.
+
+When a container or unit reaches its memory limit, the kernel kills processes only inside it. If you set `--capacity` above one, the sessions share one limit. When they reach it, the kernel doesn't choose by session which processes to kill, so one session's memory use can end the others.
+
+On Kubernetes, you can't separate the sessions with either value of the kubelet's `singleProcessOOMKill` setting. You can't cap a session's total memory with a memory `ulimit` in your [wrapper script](/docs/en/self-hosted-environments-configuration#wrapper-scripts) either. The kernel applies a value such as `ulimit -v` to each process separately.
+
+### Leave room under process and thread limits
+
+To size a process and thread limit, measure what one session needs and multiply it by the number of sessions that share the limit. When those sessions reach the limit, the kernel refuses new processes and threads, so commands, builds, and tests in any of them can fail. The refused call returns `EAGAIN`, whose standard message is `Resource temporarily unavailable`.
+
+Suppose one session peaks at 300 processes and threads, and four sessions share the limit. Together they need 1,200, and with a limit of 2,400, you leave room for builds that need twice as much.
+
+#### Where to set each limit
+
+Each limit in this table counts threads as well as processes, and `pids.max` is the file that holds a cgroup's limit:
+
+| Limit | Where you set it | What shares it |
+| :- | :- | :- |
+| `pids.max` on Kubernetes | `podPidsLimit` in the kubelet configuration of the nodes that run runners. You can't set it in a Pod spec. | The containers of one Pod |
+| `pids.max` on Docker | `--pids-limit`, or `pids_limit` in a Compose file | One container |
+| `pids.max` under systemd | `TasksMax` on the runner's unit | One unit |
+| `ulimit -u` | The shell or service that starts the runner | Everything on the host that runs as the runner's user ID. Not enforced for root. |
+
+When you don't set `TasksMax`, systemd applies `DefaultTasksMax`, which defaults to 15% of the lowest of `kernel.pid_max`, `kernel.threads-max`, and the root cgroup's `pids.max`.
+
+#### Measure one session's peak
+
+To get the numbers for your own runners, measure one session on its host, which on Kubernetes is the node:
+
+**1. Start one runner alone**
+
+Start one runner at `--capacity 1` with nothing else in its container or systemd unit, alone on its host and in its environment:
+
+* **Its host**: use one that runs no other runner. You can then pick out its process in the next step.
+* **Its environment**: make it the only runner there, for example in an environment you [create for the test](/docs/en/self-hosted-environments-quickstart#set-up-manually). Sessions are routed to an environment and not to a runner.
+
+Don't start a session yet, because you need the directory from the next step before the build starts.
+
+**2. Find the runner's cgroup directory**
+
+On the host, not inside the container, find the runner's process ID, for example with `ps`. Read `/proc/<pid>/cgroup` for that ID:
+
+* **A line contains `:pids:`**: the host uses cgroup v1, and the directory is `/sys/fs/cgroup/pids` followed by the text after `:pids:`
+* **The only line starts with `0::`**: the host uses cgroup v2, and the directory is `/sys/fs/cgroup` followed by the text after `0::`
+
+**3. Run a representative build and record the peak**
+
+Run one session through a representative build, and take the peak from the runner's cgroup directory:
+
+* **The directory has `pids.peak`**: read the file after the build finishes
+* **The directory has no `pids.peak`**: read `pids.current` once a second while the build runs, and keep the highest value. A peak between two reads goes unseen, so treat that value as a low estimate.
+
+**4. Multiply by the sessions that share the limit**
+
+* **One runner's Pod, container, or unit**: multiply the peak by the runner's `--capacity`
+* **A limit that several runners share**: multiply the peak by the sum of their capacities
+
+Then add the peak of anything else that shares the limit, such as another container in the Pod.
+
+**5. Set the limit above the result**
+
+With a higher limit, you leave room for heavier builds, and with a lower one, you stop a fork bomb sooner.
+
+#### Check a `pids.max` limit
+
+* **Check whether `pids.max` was reached**: search the host's kernel log, for example with `dmesg`, for a line that contains `cgroup: fork rejected by pids controller in` and a cgroup's path. The kernel logs it only the first time it refuses a process or thread in that cgroup, so search the whole log.
+* **See the limit in force**: read `pids.max` in the runner's cgroup directory and in each directory above it. The lowest value is the limit in force, and `max` means no limit at that level.
 
 ## Kubernetes
 
@@ -88242,7 +88627,7 @@ Supply the clone in the image or on a persistent volume:
 
 What the reuse path does and doesn't guarantee:
 
-* **Any clone shape works**: a full, shallow, or single-branch clone at the path is used as-is. The runner never passes `--depth` when fetching into an existing clone, so a full pre-warm keeps its full history and a shallow one stays shallow. `CLAUDE_RUNNER_FETCH_DEPTH` (`full`, `0`, or a number; default 50) controls only the cold clone the runner makes when no clone exists yet.
+* **Clone depth**: build the clone without `--depth`, with or without `--single-branch`. The runner never passes `--depth` when it fetches into a clone with an `origin` remote, even if you set [`CLAUDE_RUNNER_FETCH_DEPTH`](/docs/en/self-hosted-environments-reference#environment-variable-only-settings). With a full clone, each session downloads only the commits the clone lacks. With a shallow clone, a session on a branch that forked before the clone's oldest commit downloads that branch's whole history.
 * **Tracked changes reset, untracked files persist**: at `--capacity 1`, each session starts from a hard reset that wipes the previous session's tracked modifications, but the runner never runs `git clean`, so untracked files from the locked owner's earlier sessions stay in the tree.
 * **Per-session directories persist too**: alongside the checkout, the runner creates per-session entries under `<base-dir>/_sessions/` for every session it runs. The session's Claude config directory holds a local copy of the conversation transcript. Next to it sit the session's uploaded files, when the session has any. The session directory sits there too: it holds any per-session worktrees and `checkout` hook checkouts while the session runs, and it keeps whatever else Claude wrote in it.
 
@@ -88251,6 +88636,12 @@ What the reuse path does and doesn't guarantee:
 * **With the git proxy, the reset becomes a checkout**: with [`--use-anthropic-git-proxy`](#use-the-anthropic-git-proxy), the runner sanitizes the clone's `.git/` before each session. It keeps the object store and shallow state, and deletes the index. Without the index, each session starts with a full working-tree checkout instead of a near-instant reset. The runner still fetches into the existing clone rather than cloning the repository again. Submodule pre-warms aren't supported under the proxy.
 * **With the git proxy, a `reftable` pre-warm loses its refs**: when the runner sanitizes `.git/` before each session, it keeps `.git/refs/` and removes the `.git/reftable/` directory. A clone pre-warmed in git's `reftable` ref format loses its refs that way, so pre-warm the clone in git's `files` ref format instead.
 * **Long clones need no workaround**: the runner bounds each git operation with a 120-second no-progress watchdog and a 30-minute hard cap, not a flat timeout, so a slow cold clone that keeps reporting progress completes.
+
+### Confirm that the runner uses your clone
+
+To confirm that the runner uses your clone, start it with [`--log-level debug`](/docs/en/self-hosted-environments-reference#runner-cli-flags) and start a session on the repository. The runner logs `Prefetched repo found at` and the clone's path. If it logs `No prefetched repo, fresh init at` instead, it found no usable clone at the path in that line. Check that your clone is at that path, owned by the runner's user, with a remote named `origin`.
+
+If the runner finds your clone and sessions still start slowly, check whether the clone is shallow.
 
 ## Pin the version
 
@@ -88273,6 +88664,23 @@ Two scaling approaches are available:
 
 * **Fixed fleet**: run a static set of runner replicas and scale on the [Prometheus metrics](/docs/en/self-hosted-environments-reference#prometheus-metrics) each runner serves
 * **On-demand runners**: run the `claude self-hosted-runner orchestrator` subcommand, which polls Anthropic for sessions that are queued with no runner available and invokes your `spawn-runner` hook to boot one per session. See [On-demand runners](/docs/en/self-hosted-environments-configuration#on-demand-runners).
+
+### Release idle sessions on a fixed fleet
+
+If sessions stay queued on a fixed fleet while every runner is online, idle sessions may be the cause. By default, a session keeps its slot after its turn finishes, and its runner stays locked to that session's [owner](/docs/en/self-hosted-environments#key-concepts). If your team's [cloud scheduled task](/docs/en/routines) starts a new session at each run, its idle sessions can fill every slot.
+
+To check, read `claude_code_self_hosted_runner_session_idle_seconds` in each runner's [Prometheus metrics](/docs/en/self-hosted-environments-reference#prometheus-metrics). Each session a runner holds has its own series: `0` while the session is busy, otherwise the seconds since it went idle. Choose the idle time you'd allow: longer than the pauses people take mid-task, and short enough that each run is released before the scheduled task's next one starts. Compare the series with it.
+
+* **Series above that time, such as `1800` for 30 minutes**: idle sessions hold those slots, so set `--release-idle-session-min`
+* **Every series below it**: no session has been idle that long. Add runners, or set [`--kill-session-after-min`](/docs/en/self-hosted-environments-reference#runner-cli-flags) for [sessions that never go idle](#some-sessions-don’t-count-as-idle).
+* **A runner with no series**: no session holds it. See **Sessions stay queued** under [Troubleshooting](#troubleshooting).
+* **A runner whose metrics don't answer**: its process may have exited. See **An environment that looks healthy** under [When the runner exits](#when-the-runner-exits).
+
+To release idle sessions, start every runner with [`--release-idle-session-min`](/docs/en/self-hosted-environments-reference#runner-cli-flags) and that time in minutes, such as `--release-idle-session-min 30`. The runner then releases any session that stays idle that long, whether a scheduled task or a person started it.
+
+* **Unpushed work**: a released session resumes at its next message, without the work it hadn't pushed. To keep its commits, see [Resumed sessions lose unpushed work](#additional-limitations).
+* **Runner exits**: a runner that releases its last session starts a [normal exit](#when-the-runner-exits). Have your supervisor restart it on a fresh filesystem, as [Harden your deployment](#harden-your-deployment) describes.
+* **Sessions that never go idle**: also set [`--kill-session-after-min`](/docs/en/self-hosted-environments-reference#runner-cli-flags), because [some sessions don't count as idle](#some-sessions-don’t-count-as-idle)
 
 ## Known issues and limitations
 
@@ -88307,9 +88715,10 @@ Set the flag above your longest expected session, such as `--kill-session-after-
 ### Additional limitations
 
 * **Resumed sessions lose unpushed work**: a fresh runner clones the repository again from its starting branch, so work the session hadn't pushed is gone.
-  * **To keep committed work**: set [`--push-outcome-on-release`](/docs/en/self-hosted-environments-reference#runner-cli-flags) on every runner in the environment, because a runner without the flag resumes the session from its starting branch. A runner with the flag makes a best-effort push of the session's outcome branches before it releases, and the resumed session starts from those commits. The push uses the runner host's own git credentials, including on a runner that uses [Anthropic-managed git](#use-the-anthropic-git-proxy). Uncommitted changes are still lost.
+  * **To keep committed work**: set [`--push-outcome-on-release`](/docs/en/self-hosted-environments-reference#runner-cli-flags) on every runner in the environment, because a runner without the flag resumes the session from its starting branch. A runner with the flag makes a best-effort push of the session's outcome branches before it releases, and the resumed session starts from those commits. The push uses the runner host's own git credentials, including on a runner that uses [Anthropic-managed git](#use-the-anthropic-git-proxy).
   * **With a `checkout` hook**: repositories checked out via a [`checkout` lifecycle hook](/docs/en/self-hosted-environments-configuration#checkout) aren't pushed. Snapshot those from the [`post-session` hook](/docs/en/self-hosted-environments-configuration#post-session) instead.
   * **Before enabling the flag**: restrict who can push to `claude/*` refs on the source remote. On resume, the runner fetches the previously pushed branch without verifying who pushed it.
+  * **Uncommitted changes are still lost**: to prompt Claude to commit and push when it finishes responding, see [Prompt sessions to push their work](/docs/en/self-hosted-environments-configuration#prompt-sessions-to-push-their-work)
 * **A repository added mid-session can fail to clone**: Claude clones it with `git clone` over HTTPS. On a runner without [`--use-anthropic-git-proxy`](#use-the-anthropic-git-proxy), the clone fails with a git authentication error if nothing on the host can read the repository. Where you can, select every repository the session needs when you create it.
 * **Some connectors don't appear in self-hosted sessions**: a connector you haven't yet connected in claude.ai Settings isn't listed in a self-hosted session, and the session won't prompt you to connect it. Connect it in Settings first, then start a fresh session. Adding a connector to an already-running session also doesn't make its tools available to Claude; start a fresh session to pick up a newly added connector.
 * **When someone archives or deletes a session, or releases its runner from the session's menu**: don't count on the [`--push-outcome-on-release`](/docs/en/self-hosted-environments-reference#runner-cli-flags) push. To save commits in those cases, push `HEAD` to a rescue branch from a [`post-session` hook](/docs/en/self-hosted-environments-configuration#post-session). If you start from the example there, make it push even when nothing is uncommitted, because it pushes only after a snapshot commit.
@@ -88349,6 +88758,7 @@ Common issues:
 * **Sessions fail immediately after pickup**: open the session in claude.ai/code to see the error. If the error shows that git couldn't authenticate, check the runner's [git credentials](#configure-git). On a runner started with `--use-anthropic-git-proxy`, see [When sessions fail to start on a runner with the git proxy](#when-anthropic-doesnt-serve-a-session).
 
   An unwritable base directory stops the runner at startup instead of failing sessions. See the **Runner exits at startup with `cannot create or write to base directory`** entry in this list.
+* **A session is picked up, but Claude never answers its first message**: if your runners reach `api.anthropic.com` through a proxy, configure it to pass the session's `/worker/events/stream` response through as it arrives. Raising the runner's timeouts doesn't help. To confirm the cause in the runner's log, see [A session is picked up, but Claude never answers its first message](#when-a-sessions-first-message-is-never-answered).
 * **Sessions fail to start on a runner that set `--use-anthropic-git-proxy`**: look in the runner's log for `access denied by the git proxy`, or for a git error that names an `api.anthropic.com` address containing `/git_proxy/`. To tell whether Anthropic served the session and fix the cause, see [When sessions fail to start on a runner with the git proxy](#when-anthropic-doesnt-serve-a-session).
 * **Sessions can't reach the network through an authenticating egress proxy**: when the source you set with [`--proxy-authorization-command` or `--proxy-authorization-file`](#authenticate-to-an-egress-proxy) fails, times out after 30 seconds, or yields an empty value, the runner answers that connection `502 Bad Gateway` and logs why. The runner redacts the command's stderr in that log and never logs the header value. With `--proxy-authorization-command`, run the command yourself on the host to confirm it prints the whole header value on stdout. If the runner instead exits at startup with `could not start the proxy-authorization listener`, it couldn't open its loopback listener.
 * **Runner logs `Poll failed` lines containing `rejecting the malformed poll response`**: the runner received a work-poll response whose body isn't the queue's expected JSON. One cause is an intercepting proxy or a captive portal answering with its own page. If the runner connects through a proxy, configure the proxy to pass responses from `api.anthropic.com` through unaltered.
@@ -88373,7 +88783,11 @@ Common issues:
 * **A session fails to start with `This runner couldn't read`**: the runner asked the git host for a repository with its [git credentials](#configure-git) and got a not-found answer. The repository doesn't exist, or those credentials can't reach the repository.
   * **If you administer the runner**: give its git credentials read access to the repository, then start a new session.
   * **If you started the session**: if the repository doesn't exist, start a new session with the right repository. If the runner can't reach the repository, ask the runner's administrator to grant access, then start a new session.
-* **Sessions take minutes to start**: the initial clone usually dominates. Watch the `claude_code_self_hosted_runner_session_init_duration_seconds` [metric](/docs/en/self-hosted-environments-reference#prometheus-metrics) to confirm, and cut the clone with a [pre-warmed checkout](#reuse-a-pre-warmed-checkout) or a smaller `CLAUDE_RUNNER_FETCH_DEPTH`.
+* **Sessions take minutes to start or resume**: one cause is a fresh clone. On a fleet that starts each runner on an empty disk, with no [`checkout` hook](/docs/en/self-hosted-environments-configuration#checkout), the runner clones the session's repositories afresh before it starts Claude Code. A session that resumes on an empty disk waits for the same clone again.
+
+  To skip the fresh clone, supply a [pre-warmed checkout](#reuse-a-pre-warmed-checkout). If you already supply one, [confirm that the runner uses it](#confirm-that-the-runner-uses-your-clone). Where the runner makes the clone itself and exits after one session, lower [`CLAUDE_RUNNER_FETCH_DEPTH`](/docs/en/self-hosted-environments-reference#environment-variable-only-settings) from its default of 50 commits to fetch less history.
+
+  If you use a hook, it runs in place of the runner's clone, so look at what your hook does instead. Watch the `claude_code_self_hosted_runner_session_init_duration_seconds` [metric](/docs/en/self-hosted-environments-reference#prometheus-metrics) to see how long starts take.
 * **Turns fail with a 401**: when a turn ends with a 401 or 403 from the Anthropic API, the runner fetches a fresh [`CLAUDE_CODE_OAUTH_TOKEN`](/docs/en/self-hosted-environments-configuration#wrapper-scripts) from Anthropic and passes it to the session. The failed turn isn't retried. This token is short-lived, and the runner rotates it over the session's stdin.
 
   When a fetch fails, the runner logs an `inference_token refresh failed` line that says when it will retry, and it keeps retrying for as long as the session runs.
@@ -88452,6 +88866,43 @@ When the runner has exited right after starting several times in a row, stop and
 * **The environment's Activity tab**: open the environment and select **Activity**. If new runners keep appearing there and none picks up work, your supervisor is restarting the runner.
 
 For guided diagnosis on the runner host, run the [doctor subcommand](#troubleshooting).
+
+### A session is picked up, but Claude never answers its first message
+
+If a runner picks up a session but Claude never answers the first message, and your runners reach `api.anthropic.com` through a proxy, the proxy may be the cause. Anthropic sends a session its messages over one streaming response that stays open. If your proxy buffers it, or ends it before passing anything on, the first message never arrives. Other requests from the session still succeed.
+
+To fix it, change how the proxy handles this request:
+
+```text theme={null}
+GET https://api.anthropic.com/v1/code/sessions/<session-id>/worker/events/stream
+```
+
+* **Don't buffer the response**: pass it through as it arrives. Its content type is `text/event-stream`.
+* **Let the response stay open**: it can stay open for up to an hour. If the proxy has an idle timeout, keep it well above 15 seconds, because Anthropic sends a keep-alive at least that often by default.
+
+Then start a new session and check that Claude answers. Raising the runner's timeouts doesn't help: you only wait longer before the runner stops the session.
+
+#### Confirm the cause in the runner's log
+
+These steps are for runners on Claude Code v2.1.287 or later, at the default `--log-level info`. Older runners log these lines later, or not at all.
+
+1. Wait for [`--startup-timeout-min`](/docs/en/self-hosted-environments-reference#runner-cli-flags) to pass, 15 minutes by default. The runner then stops the session and logs a line that contains `no child output for` and ends `— releasing`.
+2. Search the runner's log for `SDKStartup: SSE`. These lines follow a `finished: interrupted` line, a few lines after the one in step 1. Most have no timestamp, so a log collector may show them elsewhere.
+3. Find the line in this table:
+
+| Log line contains | What to do |
+| :- | :- |
+| `SSE connect failed (no response in 30s)` or `SSE liveness timeout` | Check that the proxy forwards the request, passes the response's headers and data through as they arrive, and doesn't drop the connection |
+| `SSE connect failed (HTTP` and a status code | Check the proxy's own log. If the proxy answered the request itself, let the request through it. |
+| `SSE connect failed (` and any other text | The text in the parentheses is the error. Look for the same connection in the proxy's own log. |
+| `SSE stream ended by server`, again and again | Check the proxy's time limit for long-lived responses. A single such line is normal. |
+| `SSE reconnected after` | Look for one of the other lines after it. This one doesn't mean that anything reached the session. |
+
+If the log has none of these lines, or the proxy's log shows nothing wrong, [report an issue](#report-an-issue).
+
+#### Stop the session from trying again
+
+The session keeps the message pending, and a runner that can serve the session's owner picks the session up again. Until you change the proxy, the session waits the same way each time. To stop that, archive the session in claude.ai/code.
 
 ## What's next
 
@@ -88825,6 +89276,8 @@ If the session doesn't start working, match what you see:
 * **The session fails to start with a git error**: if the error includes git's `could not read Username for` followed by your git host's URL, the runner had no HTTPS credentials for that host.
   * **Supply HTTPS credentials**: see [Configure git](/docs/en/self-hosted-environments-deploy#configure-git)
   * **Clone over SSH instead**: if the runner host already has an SSH key, see [Rewrite git URLs for private networks](/docs/en/self-hosted-environments-deploy#rewrite-git-urls-for-private-networks)
+  * **After either fix**: start the runner again and watch the failed session instead of starting a new one. If it has failed several times, wait several minutes for the runner to log `Picked up session`.
+  * **To use a different repository instead**: [archive](/docs/en/claude-code-on-the-web#archive-sessions) or [delete](/docs/en/claude-code-on-the-web#delete-sessions) the failed session, then start the runner again and start a new session. Otherwise, the runner can pick up the failed session instead of the new one.
 
 ### If the runner exits
 
@@ -88938,7 +89391,7 @@ The `self-hosted-runner orchestrator` subcommand, which spawns [on-demand runner
 
 | Flag | Default | Description |
 | :- | :- | :- |
-| `--hook-concurrency <n>` | `4` | Maximum `spawn-runner` hooks running in parallel. Also caps how many spawn requests are claimed per poll. |
+| `--hook-concurrency <n>` | `4` | Maximum `spawn-runner` hooks running in parallel. Also caps how many spawn requests are claimed per poll. The orchestrator checks for new spawn requests only after every hook it started has finished, so one slow hook delays that orchestrator's next hooks. |
 | `--hook-timeout <sec>` | `60` | Terminate the hook's process tree after this many seconds. The timeout plus its 5-second kill grace must stay below `--expected-spawn-seconds`; the orchestrator enforces this at startup. |
 | `--expected-spawn-seconds <sec>` | `120` | Expected p99 time from when the orchestrator receives a spawn request to when the runner registers, including any wait for capacity on your platform. The server enforces a range of 10 to 3600. Sent on every poll as the server-side lease: if no runner registers before it elapses, the session is re-offered with a fresh order ID. All replicas must share this value. |
 | `--min-idle <n>` | `0` | Keep at least N idle session slots free by spawning standby runners proactively. `0` disables pre-warming. Pair with the runner's `--exit-if-unused-min` so surplus standby runners reclaim themselves. |
@@ -88971,7 +89424,7 @@ These runner settings are read from the environment only and cover behavior most
 | `SELF_HOSTED_RUNNER_MAX_LIFETIME_GRACE_MS` | `900000` | How long the runner waits after a session reaches its `--kill-session-after-min` limit, for a running turn to finish or the release to complete, before it terminates the session |
 | `SELF_HOSTED_RUNNER_POST_TURN_SETTLE_MS` | `7000` | Cap on how long the runner counts a session as busy for the `--drain-wait-sec` drain after a turn finishes, while the session's process reports the turn's end to Anthropic. `0` or an unusable value falls back to the default, so the hold can't be turned off. Requires Claude Code v2.1.275 or later. |
 | `SELF_HOSTED_RUNNER_SIGKILL_GRACE_MS` | `30000` | How long the runner waits for the OS to deliver `SIGKILL` to a child stuck in uninterruptible I/O before exiting itself. Floored at `--post-session-hook-timeout-sec` plus 15 seconds, and 30 more when `--push-outcome-on-release` is set, so the effective minimum is 75 seconds at defaults. |
-| `CLAUDE_RUNNER_FETCH_DEPTH` | `50` | Git fetch depth for fresh clones. Set a positive integer, or `full` or `0` for a complete fetch. Repositories already present in the workspace keep their existing depth. |
+| `CLAUDE_RUNNER_FETCH_DEPTH` | `50` | Git fetch depth for fresh clones. Set a positive integer, or `full` or `0` for a complete fetch. For a clone that's already in the workspace, see [Reuse a pre-warmed checkout](/docs/en/self-hosted-environments-deploy#reuse-a-pre-warmed-checkout). |
 | `CLAUDE_RUNNER_FETCH_SERVER_PROGRESS_CAP_MS` | `600000` | How long in milliseconds, per attempt, a git fetch may wait for its first data while the git server's own progress numbers keep rising, as when the server prepares the pack for a large repository. `0` or `off` turns the wait off: such a fetch is then cut off after two minutes without data. Any other whole number is clamped to between `120000` and `1800000`, 2 to 30 minutes. Requires Claude Code v2.1.295 or later. |
 | `CLAUDE_RUNNER_SKIP_GIT_VERIFY` | unset | When `1`, skip the `.git` presence check after a `checkout` hook runs. Set this when your hook materializes a non-git source. |
 | `FORCE_AUTOUPDATE_PLUGINS` | unset | When `1`, let plugin marketplaces auto-update even though the binary is pinned |
@@ -89086,6 +89539,8 @@ spec:
       interval: 30s
 ```
 
+### Sample alert rules
+
 These sample alert rules are a starting point; tune the thresholds for your fleet size:
 
 ```yaml theme={null}
@@ -89107,11 +89562,11 @@ groups:
         annotations:
           summary: "Runners are running mixed versions"
       - alert: ClaudeRunnerInitErrorsHigh
-        expr: increase(claude_code_self_hosted_runner_session_init_errors_total[10m]) > 3
+        expr: sum by (namespace) (increase(claude_code_self_hosted_runner_session_init_errors_total[10m])) > 3
         for: 5m
         labels: {severity: warning}
         annotations:
-          summary: "Runner {{ $labels.pod }}: >3 session init failures in 10m (checkout hook / git / token / pre-init crash)"
+          summary: "Sessions are failing before init (checkout hook / git / token / pre-init crash)"
       - alert: ClaudeRunnerPollErrors
         expr: sum by (pod) (rate(claude_code_self_hosted_runner_poll_errors_total[5m])) > 0
         for: 2m
@@ -89119,11 +89574,11 @@ groups:
         annotations:
           summary: "Runner {{ $labels.pod }}: PollWork failing ({{ $value | humanize }}/s over 5m)"
       - alert: ClaudeRunnerSessionStartHookErrors
-        expr: increase(claude_code_self_hosted_runner_session_start_hook_errors_total[10m]) > 3
+        expr: sum by (namespace) (increase(claude_code_self_hosted_runner_session_start_hook_errors_total[10m])) > 3
         for: 5m
         labels: {severity: warning}
         annotations:
-          summary: "Runner {{ $labels.pod }}: >3 SessionStart hook failures in 10m"
+          summary: "SessionStart hooks are failing"
 
   - name: claude-code-self-hosted-orchestrator
     rules:
@@ -89140,7 +89595,7 @@ groups:
         annotations:
           summary: "Orchestrator {{ $labels.pod }} has not polled in >90s (poll loop waits on hook execution)"
       - alert: ClaudeOrchestratorCircuitBroken
-        expr: claude_code_self_hosted_orchestrator_queue_circuit_broken_sessions > 0
+        expr: max by (namespace) (claude_code_self_hosted_orchestrator_queue_circuit_broken_sessions and on (instance) max_over_time(claude_code_self_hosted_orchestrator_connected[2m]) == 1) > 0
         for: 1m
         labels: {severity: critical}
         annotations:
@@ -89158,6 +89613,66 @@ groups:
         annotations:
           summary: "Orchestrator {{ $labels.pod }}: >3 spawn-runner hook failures in 5m"
 ```
+
+### Alert on lost runners and waiting sessions
+
+On a [fixed fleet](/docs/en/self-hosted-environments-deploy#scale-the-fleet), load `ClaudeRunnersBelowFloor`. With [on-demand runners](/docs/en/self-hosted-environments-configuration#on-demand-runners), load `ClaudeOrchestratorSessionsWaiting` and `ClaudeOrchestratorQueueWaitHigh` instead.
+
+#### Alert when a fixed fleet loses runners
+
+`ClaudeRunnersBelowFloor` fires when fewer registered, scraped runners than the floor are left for 10 minutes:
+
+```yaml theme={null}
+groups:
+  # Fixed fleets only. With on-demand runners the count follows demand,
+  # so ClaudeRunnersBelowFloor would fire whenever demand is low.
+  - name: claude-code-self-hosted-fixed-fleet-capacity
+    rules:
+      - alert: ClaudeRunnersBelowFloor
+        expr: (count(claude_code_self_hosted_runner_info{namespace="claude-runners"}) or vector(0)) < 2
+        for: 10m
+        labels: {severity: critical, namespace: claude-runners}
+        annotations:
+          summary: "Runners registered and scraped: {{ $value }}, below the floor. Check the runner workloads first, then the scrape targets if all are running."
+```
+
+* **Floor**: set the `2` in `expr` to about half your replica count, rounded up. With three replicas keep `2`, and the alert fires when one runner or none is left.
+* **Namespace**: replace `claude-runners` in the matcher and in `labels`, and copy the alert for each further namespace. If your targets have no `namespace` label, remove the matcher and the label, or the alert reads 0 and fires.
+* **`ClaudeRunnerPollStale` and `ClaudeRunnerPollErrors`**: keep them loaded from the [sample alert rules](#sample-alert-rules), because `ClaudeRunnersBelowFloor` still counts a runner that can't poll
+
+#### Alert when sessions wait for on-demand runners
+
+`ClaudeOrchestratorSessionsWaiting` fires when the number of sessions waiting for a runner stays above 0 for 10 minutes. `ClaudeOrchestratorQueueWaitHigh` fires when over 1% of queue waits in the last 10 minutes exceeded 160 seconds, and that holds for 5 minutes:
+
+```yaml theme={null}
+groups:
+  # On-demand runners only. Needs no edit for the namespace.
+  - name: claude-code-self-hosted-on-demand-capacity
+    rules:
+      - alert: ClaudeOrchestratorSessionsWaiting
+        expr: |
+          max by (namespace) (
+            claude_code_self_hosted_orchestrator_pool_pending_sessions
+            and on (instance)
+            max_over_time(claude_code_self_hosted_orchestrator_connected[2m]) == 1
+          ) > 0
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "Sessions waiting for a runner: {{ $value }}, above the threshold for 10 minutes. Check claude_code_self_hosted_orchestrator_spawn_hooks_total by result, then runner workloads that don't start."
+      - alert: ClaudeOrchestratorQueueWaitHigh
+        expr: |
+          histogram_quantile(0.99, sum by (namespace, le) (
+            rate(claude_code_self_hosted_orchestrator_session_queue_wait_seconds_bucket[10m])
+          )) > 160
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "Over 1% of queue waits in the last 10 minutes exceeded 160 seconds. Check whether ClaudeOrchestratorDisconnected is firing, then claude_code_self_hosted_orchestrator_spawn_hooks_total by result and claude_code_self_hosted_orchestrator_spawn_hook_duration_seconds."
+```
+
+* **Threshold**: if some session is always waiting, raise the `> 0` in `ClaudeOrchestratorSessionsWaiting` above the number you usually see
+* **`ClaudeOrchestratorDisconnected`**: keep it loaded from the [sample alert rules](#sample-alert-rules), because `ClaudeOrchestratorSessionsWaiting` stops firing about 2 minutes after the last orchestrator in the namespace disconnects
 
 ### Pass through session-child metrics
 
@@ -90869,7 +91384,7 @@ This example lets people select only Sonnet and Haiku models:
 }
 ```
 
-A model ID entry such as `"claude-opus-5"` also permits later versions that extend it, such as Opus 5.5. To block one of those versions, use [`deniedModels`](#deniedmodels). To make each model ID entry permit only the version it names, use [`availableModelsMatch`](#availablemodelsmatch). See [Restrict model selection](/docs/en/model-config#restrict-model-selection).
+A model ID entry such as `"claude-opus-5"` also permits later versions that extend it, such as Opus 5.5. To block one of those versions, use [`deniedModels`](#deniedmodels). To make each model ID entry permit only the version it names, use [`availableModelsMatch`](#availablemodelsmatch). See [Restrict model selection](/docs/en/model-config#restrict-model-selection). For third-party provider IDs, see [Pin models for third-party deployments](/docs/en/model-config#pin-models-for-third-party-deployments).
 
 ### `availableModelsMatch`
 
@@ -90878,7 +91393,7 @@ Choose how [`availableModels`](#availablemodels) entries match model IDs. By def
 * **Scope**: [`Managed`](#scopes). Claude Code ignores the key in user, project, and local settings and in `--settings`, with a warning
 * **Type**: string, one of:
   * `"prefix"`: a model ID entry permits its version and any model ID that extends it with another segment
-  * `"exact"`: a model ID entry permits only the version it names, including that version's dated IDs, so `"claude-opus-5"` permits Opus 5 but not `claude-opus-5-5`. A family alias such as `"opus"` still permits the whole family, and `best`, `opusplan`, and `default` entries are ignored
+  * `"exact"`: a model ID entry permits only the version it names, so `"claude-opus-5"` permits Opus 5 but not `claude-opus-5-5`. An entry such as `"claude-opus-4-5"` also permits its dated Anthropic model ID `claude-opus-4-5-20251101`. A family alias such as `"opus"` still permits the whole family, and `best`, `opusplan`, and `default` entries are ignored
 * **Default**: `"prefix"`
 
 This example permits Opus 5 and Sonnet 5 and no later release of either:
@@ -91916,12 +92431,40 @@ The `//path` prefix for absolute paths also works. If you use single-slash `/pat
 
 Claude Code strips a trailing slash from a directory path, so `~/.aws` and `~/.aws/` match the same directory. Before v2.1.224, Claude Code passed the trailing slash through to the sandbox, and Claude could still read or write paths under a `denyRead` or `denyWrite` entry written with one.
 
-Claude Code also removes a trailing `/**`, so `~/build/**` and `~/build` cover the same directory. Whether a wildcard such as `*` works depends on which list the entry is in and on the platform:
+##### Where wildcards work in sandbox paths
 
-* **`allowWrite` and `denyWrite`**: on macOS, wildcards work. On Linux and WSL2, the sandbox mounts concrete paths, so Claude Code skips an entry that contains `*`, `?`, or `[` once the trailing `/**` is removed, and that entry has no effect. Claude Code adds the paths from your `Edit` permission rules to these lists, so the same limit applies to them, and the **Config** tab of `/sandbox` warns about `Edit` and `Read` permission rules that contain wildcards.
-* **`denyRead` and `allowRead`**: wildcards work on every platform. On Linux and WSL2, Claude Code expands a read entry to the concrete paths it matches, which it doesn't do for the write lists.
+The wildcards `*`, `?`, and `**` work in all four `sandbox.filesystem` path lists on macOS and in fewer places on Linux and WSL2:
 
-Braces match as ordinary characters in a name, so `~/data/{keys,tokens}` covers a directory literally named `{keys,tokens}`, not two alternatives. To cover `~/data/keys` and `~/data/tokens`, add each as its own entry.
+| `sandbox.filesystem` list | What works on Linux and WSL2 | Example that doesn't work on Linux and WSL2 | What to write instead |
+| :- | :- | :- | :- |
+| `denyRead`, `allowRead` | A trailing `/**` works, so `~/build/**` covers the same directory as `~/build`. Any other wildcard works only after the first directory name of the entry's [full path](#sandbox-path-prefixes). | `/**/*.pem` in `denyRead` covers nothing, so it blocks no reads | `/srv/**/*.pem`, with one entry for each top-level directory |
+| `allowWrite`, `denyWrite` | Only a trailing `/**` works, so `~/build/**` covers the same directory as `~/build` | `./src/*` covers only a file or directory in `src` that is itself named `*`, and nothing when there is none | `./src`, which covers everything under `src`, or one entry for each path |
+
+In `~/keys/*.pem`, the wildcard comes after the first directory name, which is `home` for a home directory of `/home/alice`:
+
+```text theme={null}
+~/keys/*.pem              the entry
+/home/alice/keys/*.pem    its full path
+ ^^^^                     the first directory name, home
+```
+
+On Linux and WSL2, the **Config** tab of `/sandbox` in a session warns about `Edit` permission rules that contain a wildcard other than a trailing `/**`. Those wildcards don't work for sandboxed commands. Add each path the rule should cover, or the directory that holds them, to `allowWrite` for an allow rule or `denyWrite` for a deny rule.
+
+##### Directory names with brackets, braces, or parentheses
+
+To allow or block a directory whose name contains brackets, write the name as it is, such as `./app/[slug]`. In that entry, `[slug]` is the directory's real name, brackets included:
+
+```text theme={null}
+app/
+└── [slug]/
+    └── page.tsx
+```
+
+That entry covers everything under the directory, so leave off a trailing `/**`. On macOS and on Linux and WSL2, the `app/[slug]` directory has to exist when the sandboxed command starts.
+
+* **Brackets such as `[slug]`**: in every list on macOS, and in `denyRead` and `allowRead` on Linux and WSL2, the brackets in `./app/[slug]` are also a pattern. The entry then also matches any path under `app` named with one character from `slug`, such as `app/s` or `app/g`. With that entry in `allowRead`, or in `allowWrite` on macOS, sandboxed commands can reach those paths as well. Rename any they shouldn't reach.
+* **Brackets such as `[user-id]` or `[post-id]`, where the hyphen's left character sorts after its right**: `./app/[user-id]` covers only the directory with exactly that name, in every list on every platform. Before v2.1.304, sandboxed commands on Linux and WSL2 failed to start while `denyRead` or `allowRead` held such an entry.
+* **Braces and parentheses**: these are ordinary characters, so `~/data/{keys,tokens}` covers one directory named `{keys,tokens}`, not two alternatives. To cover `~/data/keys` and `~/data/tokens`, add each as its own entry.
 
 ### `sandbox.filesystem.allowWrite`
 
@@ -94015,7 +94558,7 @@ This example allows any URL under `https://hooks.example.com/` and any `http://l
 
 Hostname matching is case-insensitive and treats `hooks.example.com.`, with the trailing dot that marks a fully qualified domain name, the same as `hooks.example.com`, which is how DNS treats them. The allowlist applies to hooks from every source, including managed settings.
 
-In the Agent SDK's `managedSettings` option, Claude Code ignores this key when its list has entries, so pass the list in the SDK's `settings` option instead. See [what each value does in parent settings](/docs/en/claude-apps-gateway#how-hook-and-skill-keys-in-parent-settings-take-effect).
+In the Agent SDK's `managedSettings` option, Claude Code ignores a list with entries, so pass it in the SDK's [`settings` option](/docs/en/agent-sdk/typescript#options) instead. See [what an empty list does in parent settings](/docs/en/claude-apps-gateway#how-hook-and-skill-keys-in-parent-settings-take-effect).
 
 ### `allowManagedHooksOnly`
 
@@ -94065,7 +94608,7 @@ Turn off [hooks](/docs/en/hooks#disable-or-remove-hooks), any custom [status lin
 The reach depends on which file carries the key:
 
 * **In managed settings**: Claude Code disables every configured hook, including managed ones, and keeps running the hooks the [Agent SDK](/docs/en/agent-sdk/overview) registers in process
-* **In the Agent SDK's `managedSettings` option**: Claude Code treats the key as `allowManagedHooksOnly: true`, so see [what runs under `allowManagedHooksOnly`](#what-runs-under-allowmanagedhooksonly) for which hooks stop. On a machine where an administrator deploys managed settings, Claude Code ignores this key unless the administrator [lets an embedding host add policy](/docs/en/managed-settings#let-an-embedding-host-add-policy). Requires Claude Code v2.1.309 or later.
+* **In the Agent SDK's `managedSettings` option**: on a machine where an administrator deploys managed settings, Claude Code ignores this key unless the administrator [lets an embedding host add policy](/docs/en/managed-settings#let-an-embedding-host-add-policy). Where the key takes effect, user, project, local, and plugin hooks stop, as do any in the SDK's `settings` option. An administrator's managed hooks, [force-enabled](#enabledplugins) plugins' hooks, and your [SDK hook callbacks](/docs/en/agent-sdk/hooks) keep running. Requires Claude Code v2.1.309 or later.
 * **In any other settings file**: Claude Code disables user, project, local, and plugin hooks; managed hooks, Agent SDK hooks, and hooks from plugins force-enabled in managed [`enabledPlugins`](#enabledplugins) keep running
 
 The key also stops [mods](/docs/en/plugins/mods/overview), which are plugins whose code registers hooks:
@@ -94169,7 +94712,7 @@ This example limits header interpolation to `MY_TOKEN` and `HOOK_SECRET`:
 
 The allowlist applies to hooks from every source, including managed settings.
 
-In the Agent SDK's `managedSettings` option, Claude Code ignores this key when its list has entries, so pass the list in the SDK's `settings` option instead. See [what each value does in parent settings](/docs/en/claude-apps-gateway#how-hook-and-skill-keys-in-parent-settings-take-effect).
+In the Agent SDK's `managedSettings` option, Claude Code ignores a list with entries, so pass it in the SDK's [`settings` option](/docs/en/agent-sdk/typescript#options) instead. See [what an empty list does in parent settings](/docs/en/claude-apps-gateway#how-hook-and-skill-keys-in-parent-settings-take-effect).
 
 ### `workflowKeywordTriggerEnabled`
 
@@ -94386,7 +94929,7 @@ Block the [`command` plugin source](/docs/en/plugins/marketplace-reference#comma
 * **Type**: Boolean
   * `true`: Claude Code never runs the marketplace-declared command, doesn't install or update command-sourced plugins, and stops loading the ones already installed
   * `false`: Claude Code allows command-sourced plugins explicitly
-* **Default**: unset, so Claude Code follows [`allowManagedHooksOnly`](#allowmanagedhooksonly): an organization that restricts hook execution to managed settings gets command sources disabled too
+* **Default**: unset, so Claude Code follows [`allowManagedHooksOnly`](#allowmanagedhooksonly): an organization that restricts hook execution to managed settings gets command sources disabled too. An application that passes [`disableAllHooks: true`](#disableallhooks) in the Agent SDK's `managedSettings` option doesn't by itself disable command sources.
 
 ```json managed-settings.json theme={null}
 {
@@ -98511,11 +99054,14 @@ When Claude Code runs inside tmux, by default Shift+Enter submits instead of ins
 
 ```bash ~/.tmux.conf theme={null}
 set -g allow-passthrough on
+set -g focus-events on
 set -s extended-keys on
 set -as terminal-features 'xterm*:extkeys'
 ```
 
 The `allow-passthrough` line lets notifications and progress updates reach the outer terminal instead of being swallowed by tmux. The `extended-keys` lines let tmux distinguish Shift+Enter from plain Enter so the newline shortcut works.
+
+A [mod's `Image`](/docs/en/plugins/mods/reference#elements) needs the `allow-passthrough` and `focus-events` lines, along with the other [requirements for drawing inside tmux](/docs/en/plugins/mods/gallery#draw-an-image-inside-tmux). After you add the lines, also detach from tmux, attach again, and restart Claude Code.
 
 ## Fix Backspace deleting a whole word on Windows
 
