@@ -79739,7 +79739,7 @@ In `dontAsk` mode, Claude Code denies the read instead of prompting. In `bypassP
 
 To read files on a network share without this prompt, give the share a local path first:
 
-* **Windows**: map the share to a drive letter and pass the drive with `--add-dir` when you launch Claude Code, as [Working directories](#working-directories) describes. Reads under a drive you add later with `/add-dir`, or list in `additionalDirectories` in a settings file, still prompt. To stop those prompts for a share mapped to `Z:`, start a new session in PowerShell with `claude --add-dir Z:\`.
+* **Windows**: map the share to a drive letter and pass the drive with `--add-dir` when you launch Claude Code, as [Working directories](#working-directories) describes. For a share mapped to `Z:`, run `claude --add-dir Z:\` in PowerShell.
 * **macOS and Linux**: mount the share at a local path, such as a directory under `/mnt` or `/Volumes`, and read the files from there, as [Working directory is a network path](/docs/en/errors#working-directory-is-a-network-path) describes
 
 ### WebFetch
