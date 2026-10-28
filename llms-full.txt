@@ -23315,15 +23315,15 @@ While retrying, the spinner shows a `Retrying in Ns · attempt x/y` countdown af
 
 As of v2.1.198, the usual spinner tip is suppressed during retries. Once the error reason is revealed, if the failure is a 529 overload the line below the countdown also names where to check service status: `status.claude.com` on the Anthropic API, or the provider or gateway host named in the message on other configurations.
 
-If no data arrives on the response stream for 20 seconds while a request is still pending, the spinner shows `Waiting for API response · will retry in … · check your network` before any retry has started. The request hasn't failed yet: the countdown runs to the point where Claude Code aborts the stalled connection. After the abort, what you see depends on how far the response had got:
+#### Waiting for API response
+
+The `Waiting for API response · will retry in … · check your network` banner means that Claude Code has waited at least 20 seconds without receiving any data for a request. The request hasn't failed yet: the countdown runs to the point where Claude Code aborts the stalled connection. If the abort happens:
 
 * Before Claude has completed a block of text or a tool call, or started one after finishing its thinking, Claude Code retries the request or ends the turn with an error. [Automatic retries](#automatic-retries) says which stalls it retries and how many times.
 * After Claude has completed a block of text or a tool call, or started one after finishing its thinking, but before Claude has finished the response, Claude Code keeps what Claude completed, continues the turn from any tool calls Claude finished, and shows [The response above may be incomplete](#the-response-above-may-be-incomplete). In a non-interactive session, and for a subagent's response in any session, Claude Code may first prompt Claude to continue the response; that entry says when it does and when you still see the notice there.
 * After Claude finished the response, Claude Code ends the turn normally.
 
-The banner clears on its own once data resumes or a retry succeeds. If it reappears on every attempt, treat it as a [network issue](#unable-to-connect-to-api). Before v2.1.185, the banner appeared after 10 seconds with different wording.
-
-While Claude is consulting the [advisor](/docs/en/advisor), the banner appears after 90 seconds without data instead of 20, because a long advisor review can send nothing for well over 20 seconds. Before v2.1.214, the 20-second threshold applied during advisor calls too, so the banner appeared during advisor reviews even when nothing was wrong.
+The banner clears on its own once data resumes or a retry succeeds. If it reappears on every attempt, treat it as a [network issue](#unable-to-connect-to-api). If you connect through a gateway, see [The waiting banner comes and goes behind a gateway](#waiting-banner-behind-a-gateway). Before v2.1.185, the banner appeared after 10 seconds with different wording.
 
 #### The waiting banner comes and goes behind a gateway
 
@@ -33646,7 +33646,7 @@ claude mcp remove notion
 /mcp
 ```
 
-When you remove a remote server, Claude Code also deletes the OAuth tokens and client registration it stored for that server.
+When you remove a remote server, Claude Code also deletes the OAuth tokens and client registration it stored for that server. Claude Code doesn't revoke the tokens at the authorization server that issued them. To revoke the tokens where the authorization server supports revocation, run [`claude mcp logout <name>`](#authenticate-from-the-command-line) in your shell before `claude mcp remove <name>`.
 
 #### Server status
 
@@ -55796,7 +55796,8 @@ In practice, the profile stores an OAuth login while an API key is a static cred
 You don't get the choice on every machine. Claude Code creates an API key without asking in these cases:
 
 * You run against a cloud provider, such as [Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry](/docs/en/third-party-integrations) or [Claude Platform on AWS](/docs/en/claude-platform-on-aws)
-* Any settings file sets [`forceLoginOrgUUID`](#restrict-login-to-your-organization), or sets `forceLoginMethod` to `"claudeai"` or `"console"`
+* Any settings file sets [`forceLoginOrgUUID`](#restrict-login-to-your-organization), or sets `forceLoginMethod` to `"claudeai"`
+* `forceLoginMethod` is `"console"` and no settings file sets `forceLoginOrgUUID`, until you retry from the error screen after a failed sign-in
 * A managed settings source on your machine, such as the managed settings file, an MDM profile, or the cached server-managed settings, exists but Claude Code [can't read it](/docs/en/managed-settings#invalid-entries-in-managed-settings) and no other managed source supplies a policy
 
 Unset `ANTHROPIC_API_KEY` before you sign in without a key.
@@ -55808,6 +55809,16 @@ After you sign in without a key, you have a profile instead of a stored API key:
 * **How to undo it**: run `/logout`, which removes and revokes the credential this sign-in wrote
 
 Everything else about profiles applies to this sign-in, including where it ranks against your other credentials, the `Profile` row you get in `/status`, and the features that need a claude.ai login. See [Anthropic profiles and federation credentials](#anthropic-profiles-and-federation-credentials).
+
+#### Stop offering the keyless sign-in on managed machines
+
+To stop Claude Code offering the [keyless sign-in](#sign-in-without-an-api-key), use your device management tooling to deploy [`forceLoginOrgUUID`](/docs/en/settings-reference#forceloginorguuid) in [managed settings](/docs/en/managed-settings) to each developer's machine. Set it to your [Console organization ID](https://platform.claude.com/settings/organization). Before you deploy it, make sure each developer has a [role that can create API keys](#claude-console-authentication). Once you deploy it, a developer without that role can't sign in to Console at `/login`.
+
+With only `forceLoginMethod` set to `"console"`, developers can retry a failed sign-in and choose the keyless option. Once `forceLoginOrgUUID` is deployed, the login screen drops that option, but developers can still use an [Anthropic profile](#anthropic-profiles-and-federation-credentials) they have or create with [`ant auth login`](https://platform.claude.com/docs/en/cli-sdks-libraries/cli/authentication). After you deploy it, handle these credentials and logins on each machine:
+
+* **Keyless sign-ins**: to move a developer to an API key, have them log out and then log in to Console again, which creates the key. For a keyless sign-in, they run `claude auth logout` in their shell. For an `ant auth login` profile, they run `ant auth logout`. Claude Code refuses the session if a profile and an API key are both on the machine, so they log out first.
+* **Environment and helper credentials**: Claude Code refuses sessions that authenticate with `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, or `apiKeyHelper`, even when managed settings supply them. Remove those credentials, then have developers run `/login` to create a saved API key.
+* **claude.ai logins**: Claude Code [refuses a login](#restrict-login-to-your-organization) to an organization you haven't listed, including one already in use on the machine. To keep one, add it to a `forceLoginOrgUUID` array.
 
 ### Cloud provider authentication
 
@@ -58485,7 +58496,7 @@ This example gives one model a custom id that only the isolated upstream serves:
 
 ```yaml theme={null}
 models:
-  - id: claude-opus-restricted          # a custom id, not a built-in model name
+  - id: restricted-claude-opus-4-8      # a custom id, not a built-in model name
     upstream_model:
       bedrock-isolated: us.anthropic.claude-opus-4-8   # the only upstream that serves it
 ```
@@ -58939,9 +58950,11 @@ managed:
   policies:
     - match: { groups: [restricted-projects] }
       cli:
-        availableModels: [claude-opus-restricted]
+        availableModels: [restricted-claude-opus-4-8]
         enforceAvailableModels: true
-        model: claude-opus-restricted
+        model: restricted-claude-opus-4-8
+        env:
+          ANTHROPIC_DEFAULT_OPUS_MODEL: restricted-claude-opus-4-8   # opus and Default resolve to the ID too
 ```
 
 #### Matcher values that stop the gateway at boot
@@ -61818,10 +61831,9 @@ Network secrets are available on Pro, Max, Team, and Enterprise plans. To check 
 
 These requirements decide whether you can add a secret and whether the agent proxy can use it once added:
 
-* **Role**: on Pro, Max, and Team plans, you can add and delete secrets on your own environments whatever your role. On Team and Enterprise, Owners hold an organization admin role in your claude.ai organization and Admins don't, which changes what you see in these cases:
-  * **Your own environment on Enterprise**: with an organization admin role, you add and delete secrets. Without it, the **Network secrets** row opens the secrets list with the note "Only an organization admin can add or delete network secrets" and no **Add secret** or delete button. Ask an Owner to add the secret to a [shared environment](#organization-shared-environments), then run your sessions there
+* **Role**: on every plan, you can add and delete secrets on your own environments whatever your role. On Team and Enterprise, Owners hold an organization admin role in your claude.ai organization and Admins don't, which changes what you see in these cases:
+  * **Your own environment**: without an organization admin role, **Add secret** opens a [shorter form](#add-a-secret-without-the-role)
   * **A shared environment**: Owners [add and delete its secrets](#add-a-credential) from admin settings. Without an organization admin role, ask an Owner to add the secret, because the environment's dialog has no **Network secrets** section
-  * **Your own environment on Team**: without an organization admin role, **Add secret** opens a [shorter form](#add-a-secret-without-the-role) that takes one host
 * **Environment type**: an Anthropic-hosted cloud environment that already exists. A [self-hosted environment](/docs/en/self-hosted-environments) doesn't have network secrets
 * **API reachability**: the API accepts connections from the internet, because requests leave from Anthropic's network
 * **Encryption keys**: if your organization uses customer-managed encryption keys, you can't save network secrets
@@ -61830,7 +61842,7 @@ These requirements decide whether you can add a secret and whether the agent pro
 
 You add secrets one at a time. To change a secret's hosts or value, delete it and add it again.
 
-To add a secret to a [shared environment](#organization-shared-environments), open it for editing from the **Cloud environments** page in [admin settings](https://claude.ai/admin-settings), then continue from step 2 in its **Network secrets** section. If you're on a Team plan and don't hold an [organization admin role](#requirements), follow step 1 on your own environment, then [fill in the shorter form](#add-a-secret-without-the-role).
+To add a secret to a [shared environment](#organization-shared-environments), open it for editing from the **Cloud environments** page in [admin settings](https://claude.ai/admin-settings), then continue from step 2 in its **Network secrets** section. If you're on a Team or Enterprise plan and don't hold an [organization admin role](#requirements), follow step 1 on your own environment, then [fill in the shorter form](#add-a-secret-without-the-role).
 
 **1. Open the environment's network secrets**
 
@@ -61852,9 +61864,9 @@ Select **Add**. The secret appears in the list with its hosts, saved without the
 
 To confirm the secret works, start a session in the environment and ask Claude to call the API, for example with `curl`. The API answers as if the key were in the request, and the key doesn't appear in the session's environment variables or in any file. If the list marks a secret **Not sent** instead, the note under it says why and what to do. Two secrets whose hosts overlap without matching exactly get no marker, and the agent proxy sends only one of them.
 
-#### Add a secret on a Team plan without an organization admin role
+#### Add a secret without an organization admin role
 
-If you're on a Team plan and don't hold an [organization admin role](#requirements), the **Add secret** form takes one secret for one host. Select your environment's [**Network secrets** row](#add-a-credential) and then **Add secret**. Fill in these fields and select the form's **Add secret** button:
+If you're on a Team or Enterprise plan and don't hold an [organization admin role](#requirements), the **Add secret** form takes one secret for one host. Select your environment's [**Network secrets** row](#add-a-credential) and then **Add secret**. Fill in these fields and select the form's **Add secret** button:
 
 * **Host**: the one host that gets the secret, such as `api.example.com`. The form doesn't accept a `*.` wildcard
 * **Name**: an optional label for the secret
@@ -64767,7 +64779,7 @@ Get faster Opus responses in Claude Code by toggling fast mode.
 
 > [!NOTE]
 >
-> Fast mode is in [research preview](#research-preview). The feature, pricing, and availability may change based on feedback.
+> Fast mode for Claude Opus 5.5 is available, and fast mode for Claude Opus 5 and Claude Opus 4.8 is in [research preview](#research-preview).
 
 Fast mode is a high-speed configuration for Claude Opus, making the model up to 2.5x faster at a higher cost per token. Toggle it on with `/fast` when you need speed for interactive work like rapid iteration or live debugging, and toggle it off when cost matters more than latency.
 
@@ -64779,7 +64791,7 @@ What to know:
 
 * Use `/fast` to toggle on fast mode in the Claude Code CLI. The [VS Code extension](/docs/en/vs-code) offers a **Toggle fast mode** command when the selected model supports fast mode. Claude Code saves that toggle to your [`fastMode` setting](#toggle-fast-mode).
 * Fast mode pricing per MTok input/output is \$8/\$40 on Opus 5.5 and \$10/\$50 on Opus 5 and Opus 4.8.
-* Available to Claude Code users on subscription plans (Pro/Max/Team/Enterprise) and on Claude Console. Team and Enterprise organizations need an Owner to enable it first, and Console organizations need access provisioned first, both described under [Requirements](#requirements).
+* Available to Claude Code users on subscription plans (Pro/Max/Team/Enterprise) and on Claude Console. Team and Enterprise organizations need an Owner to enable it first, and Console organizations need access provisioned first to use it with Opus 5 or Opus 4.8. [Requirements](#requirements) describes both.
 * For Claude Code users on subscription plans (Pro/Max/Team/Enterprise), fast mode is available via usage credits only and not included in the subscription rate limits.
 
 ## Toggle fast mode
@@ -64878,7 +64890,7 @@ You can combine both: use fast mode with a lower [effort level](/docs/en/model-c
 
 Fast mode requires all of the following:
 
-* **Anthropic API or subscription only**: fast mode is available through the Anthropic Console API and for Claude subscription plans using usage credits. It is not available on Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, or Claude Platform on AWS. Console organizations must also have [fast mode access provisioned](#enable-fast-mode-for-your-organization).
+* **Anthropic API or subscription only**: fast mode is available through the Anthropic Console API and for Claude subscription plans using usage credits. It is not available on Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, or Claude Platform on AWS. Console organizations must also have [fast mode access provisioned](#enable-fast-mode-for-your-organization) to use it with Opus 5 or Opus 4.8.
 * **Usage credits turned on for subscription plans**: on a Pro, Max, Team, or Enterprise plan, your account must have [usage credits](/docs/en/costs#add-usage-credits-to-your-subscription) turned on, which allows billing beyond your plan's included usage. Until they're on, `/fast` reports "Fast mode requires usage credits". How you turn them on depends on your plan:
   * On Pro and Max, turn them on in the **Usage credits** section of [**Settings > Usage**](https://claude.ai/settings/usage) on claude.ai, or run `/usage-credits` to open that page.
   * On Team and Enterprise, a member with billing access turns them on for the organization at [**Organization settings > Usage**](https://claude.ai/admin-settings/usage), and a member without it runs `/usage-credits` to send the organization's admins a request.
@@ -64888,6 +64900,8 @@ Fast mode requires all of the following:
 > Fast mode usage draws directly from usage credits, even if you have remaining usage on your plan.
 
 * **Paid Console organization**: Claude Console accounts don't use usage credits, and your organization pays for fast mode per token with the rest of its API usage. On the Console's free Evaluation plan, `/fast` shows "Fast mode unavailable during evaluation. Please purchase credits." To clear it, purchase credits in your [Console billing settings](https://platform.claude.com/settings/billing).
+
+  Fast mode with Opus 5.5 also depends on your organization's [usage tier](https://platform.claude.com/docs/en/api/rate-limits).
 * **Owner enablement for Team and Enterprise**: fast mode is disabled by default for Team and Enterprise organizations. An Owner must explicitly [enable fast mode](#enable-fast-mode-for-your-organization) before users can access it.
 
 > [!NOTE]
@@ -64903,10 +64917,10 @@ Fast mode requires all of the following:
 
 Where you enable fast mode depends on which product your organization uses:
 
-* **Console** (API customers): an admin enables it in [Claude Code preferences](https://platform.claude.com/claude-code/preferences). Fast mode is in [research preview](#research-preview), so your organization must also have fast mode access provisioned before fast mode requests succeed. To get access, contact your account manager or join the waitlist, as described in [fast mode on the Claude API](https://platform.claude.com/docs/en/build-with-claude/fast-mode).
-
-  Without provisioned access, the API rejects each fast mode request with a 429, and Claude Code treats each rejection as a [fast mode rate limit](#handle-rate-limits). Unlike a rate limit's cooldown, the rejections continue until access is provisioned.
+* **Console** (API customers): an admin enables it in [Claude Code preferences](https://platform.claude.com/claude-code/preferences)
 * **Claude AI** (Team and Enterprise): an Owner enables it at [**Organization settings > Claude Code**](https://claude.ai/admin-settings/claude-code)
+
+Console organizations that use Claude Opus 5 or Claude Opus 4.8 also need provisioned access, as described in [fast mode on the Claude API](https://platform.claude.com/docs/en/build-with-claude/fast-mode). Without that access, fast mode requests on those models hit the [fast mode rate limit](#handle-rate-limits) and fall back to standard speed until access is provisioned.
 
 Another option to disable fast mode entirely is to set `CLAUDE_CODE_DISABLE_FAST_MODE=1`. See [Environment variables](/docs/en/env-vars).
 
@@ -64960,7 +64974,7 @@ When managed settings set the key, `/fast on` works only in an interactive termi
 
 ## Handle rate limits
 
-Fast mode has separate rate limits from standard Opus. All supported Opus models share one fast mode rate limit pool: usage on any of them draws from the same limits. When you hit the fast mode rate limit:
+Fast mode has separate rate limits from standard Opus; for Console organizations, the Claude Platform's [rate limits](https://platform.claude.com/docs/en/api/rate-limits) page describes them. When you hit the fast mode rate limit:
 
 1. Fast mode automatically falls back to standard speed
 2. The `↯` icon turns gray to indicate cooldown
@@ -64976,7 +64990,7 @@ If you run out of usage credits mid-session, Claude Code retries each rejected f
 
 ## Research preview
 
-Fast mode is a research preview feature. This means:
+Fast mode for Claude Opus 5 and Claude Opus 4.8 is a research preview feature, which means:
 
 * The feature may change based on feedback
 * Availability and pricing are subject to change
@@ -65080,7 +65094,7 @@ These features work in the local CLI but depend on a server-side capability that
     <tr>
       <td>[Fast mode](/docs/en/fast-mode)</td>
       <td>✓ ([Owner-enabled](/docs/en/fast-mode#enable-fast-mode-for-your-organization) on Team and Enterprise)</td>
-      <td>✓ (provisioned organizations)</td>
+      <td>✓ (Opus 5 and 4.8 need provisioning)</td>
       <td>✗</td>
       <td>✗</td>
       <td>✗</td>
@@ -65275,7 +65289,7 @@ Each tab lists what is unavailable or partially supported on that provider, with
 
 **Not available:** all [features that require a Claude subscription](#features-that-require-a-claude-subscription).
 
-Everything in [CLI capabilities that vary by provider](#cli-capabilities-that-vary-by-provider) is available, except that [fast mode](/docs/en/fast-mode) requires [provisioned access](/docs/en/fast-mode#enable-fast-mode-for-your-organization). [Server-managed settings](/docs/en/server-managed-settings) that you configure in a claude.ai Team or Enterprise organization don't reach a session that authenticates with a Console API key. See [Platform availability](/docs/en/server-managed-settings#platform-availability) for how to cover those sessions.
+Everything in [CLI capabilities that vary by provider](#cli-capabilities-that-vary-by-provider) is available, except that [fast mode](/docs/en/fast-mode) with Claude Opus 5 or Claude Opus 4.8 requires [provisioned access](/docs/en/fast-mode#enable-fast-mode-for-your-organization). [Server-managed settings](/docs/en/server-managed-settings) that you configure in a claude.ai Team or Enterprise organization don't reach a session that authenticates with a Console API key. See [Platform availability](/docs/en/server-managed-settings#platform-availability) for how to cover those sessions.
 
 **Partial support:**
 
@@ -97443,7 +97457,9 @@ Unlike [`awsAuthRefresh`](#awsauthrefresh), Claude Code always runs this command
 
 ### `forceLoginMethod`
 
-Restrict which kind of account people can log in with. Set `"claudeai"` to allow only claude.ai accounts, `"console"` to allow only Claude Console accounts, or `"gateway"` to send people to a [cloud gateway](/docs/en/claude-apps-gateway) instead of a first-party login. Administrators set it in managed settings and pair it with [`forceLoginOrgUUID`](#forceloginorguuid) to keep developers' claude.ai logins inside one organization. If you set it to `"claudeai"` or `"console"` in any settings file, Claude Code also stops offering the [keyless Console sign-in](/docs/en/authentication#sign-in-without-an-api-key) in the sessions that file applies to.
+Restrict which kind of account people can log in with. Set `"claudeai"` to allow only claude.ai accounts, `"console"` to allow only Claude Console accounts, or `"gateway"` to send people to a [cloud gateway](/docs/en/claude-apps-gateway) instead of a first-party login. Administrators set it in managed settings and pair it with [`forceLoginOrgUUID`](#forceloginorguuid) to keep developers' claude.ai logins inside one organization.
+
+If you set it to `"claudeai"` in any settings file, Claude Code also stops offering the [keyless Console sign-in](/docs/en/authentication#sign-in-without-an-api-key) in the sessions that file applies to. With `"console"` alone, people can still reach the keyless sign-in after a failed login. To stop Claude Code offering it, see [Stop offering the keyless sign-in on managed machines](/docs/en/authentication#stop-offering-the-keyless-sign-in-on-managed-machines), which also lists what else `forceLoginOrgUUID` changes.
 
 * **Scope**: [`Any file`](#scopes). Claude Code honors `"gateway"` from the same sources as [`forceLoginGatewayUrl`](#forcelogingatewayurl) and treats it as unset everywhere else.
 * **Type**: string, one of:

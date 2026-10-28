@@ -242,7 +242,7 @@ claude mcp remove notion
 /mcp
 ```
 
-When you remove a remote server, Claude Code also deletes the OAuth tokens and client registration it stored for that server.
+When you remove a remote server, Claude Code also deletes the OAuth tokens and client registration it stored for that server. Claude Code doesn't revoke the tokens at the authorization server that issued them. To revoke the tokens where the authorization server supports revocation, run [`claude mcp logout <name>`](#authenticate-from-the-command-line) in your shell before `claude mcp remove <name>`.
 
 #### Server status
 
@@ -828,22 +828,14 @@ If you open a local session in the [Desktop app's Code tab](https://code.claude.
 
 Claude Code supports environment variable expansion in `.mcp.json` files, allowing teams to share configurations while maintaining flexibility for machine-specific paths and sensitive values like API keys.
 
-#### Supported syntax
+You can reference an environment variable in a server's `command`, `args`, `env`, `url`, or `headers` value, in either of two forms:
 
 * `${VAR}`: expands to the value of environment variable `VAR`
-* `${VAR:-default}`: expands to `VAR` if set, otherwise uses `default`
-
-#### Expansion locations
-
-Environment variables can be expanded in:
-
-* `command`: the server executable path
-* `args`: command-line arguments
-* `env`: environment variables passed to the server
-* `url`: for HTTP server types
-* `headers`: for HTTP server authentication
+* `${VAR:-default}`: expands to the value of `VAR` if `VAR` is set, or to `default` if it is unset
 
 #### Example with variable expansion
+
+In this server entry, the URL is the value of `API_BASE_URL` followed by `/mcp`, with `https://api.example.com` as the default, and the API key comes from `API_KEY`:
 
 ```json theme={null}
 {
@@ -862,6 +854,10 @@ Environment variables can be expanded in:
 #### Unset variables without a default
 
 If a referenced environment variable isn't set and has no default value, the config still loads: Claude Code reports a missing-variable warning for that server in `claude mcp list` output and uses the unexpanded `${VAR}` text as-is. Set the variable or add a `:-default` fallback so the server starts with the value you intend. In a remote server's `url` and `headers`, some credential variables [read as empty](#credential-variables-that-read-as-empty) instead, with no warning.
+
+#### Variables set to an empty string
+
+If you set a variable to an empty string, it counts as set, so a `${VAR:-default}` reference expands to the empty string rather than to `default`. With the [example server](#example-with-variable-expansion), if you set `API_BASE_URL` to an empty string, its `url` becomes `/mcp` and `claude mcp list` reports `'url' is not a valid URL`. To use the default, unset the variable rather than setting it to an empty string.
 
 #### Credential variables that read as empty
 
