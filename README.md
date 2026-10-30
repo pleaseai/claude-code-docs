@@ -54,11 +54,13 @@ csp is optional: without it on `PATH`, `ask search` prints the resolved checkout
 
 ## Claude Code plugin: fetch docs as markdown
 
-This repo is also a Claude Code plugin. A `PreToolUse` hook rewrites `code.claude.com/docs` page URLs to their `.md` source before WebFetch runs, so Claude reads the clean markdown twin instead of the HTML app shell:
+The `claude-code-docs` Claude Code plugin now lives in [`pleaseai/claude-code-plugins`](https://github.com/pleaseai/claude-code-plugins/tree/main/plugins/claude-code-docs) (`plugins/claude-code-docs`). This repo is the docs mirror only. Moving the plugin out means installing it no longer clones this repo, which is large because of `docs/` and `llms-full.txt`. The install command is unchanged:
 
 ```bash
 /plugin install claude-code-docs@pleaseai
 ```
+
+A `PreToolUse` hook rewrites `code.claude.com/docs` page URLs to their `.md` source before WebFetch runs, so Claude reads the clean markdown twin instead of the HTML app shell:
 
 | WebFetch input | Rewritten to |
 |---|---|
@@ -67,7 +69,7 @@ This repo is also a Claude Code plugin. A `PreToolUse` hook rewrites `code.claud
 
 Left untouched: URLs already ending in a file extension (`.md`, `llms.txt`, images), the docs root, and everything outside `code.claude.com/docs`. The hook returns [`updatedInput` with `permissionDecision: "allow"`](https://code.claude.com/docs/en/hooks#pretooluse-decision-control), so the rewritten fetch runs without an extra prompt.
 
-Hook tests: `bash hooks/rewrite-docs-url.test.sh`
+Source and hook tests: [`plugins/claude-code-docs`](https://github.com/pleaseai/claude-code-plugins/tree/main/plugins/claude-code-docs) in `pleaseai/claude-code-plugins`.
 
 ### Skill: `/claude-code-docs:claude-code-docs [question]`
 
