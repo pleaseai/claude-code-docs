@@ -1655,7 +1655,7 @@ Claude Code has five ways to work on several tasks at once: [subagents](/docs/en
 | [Subagents](/docs/en/sub-agents) | Delegated workers inside one session that do a side task in their own context and return a summary | A side task would flood your main conversation with search results, logs, or file contents you won't reference again |
 | [Agent view](/docs/en/agent-view) | One screen to dispatch and monitor sessions running in the background, opened with `claude agents`. Research preview | You have several independent tasks and want to hand them off, check status at a glance, and step in only when one needs you |
 | [Agent teams](/docs/en/agent-teams) | Multiple coordinated sessions with a shared task list and inter-agent messaging, managed by a lead. Experimental and disabled by default | You want Claude to split a project into pieces, assign them, and keep the workers in sync |
-| [Projects](/docs/en/claude-projects) | One ongoing conversation at claude.ai/code or in the desktop app. Claude starts parallel sessions called threads, in the cloud or, when you ask, on your computer through Remote Control, gives each one the project's instructions, and shows you which ones need you. Public beta on Pro and Max | The work spans many tasks over days or weeks, should keep running when your machine is off, and you'd rather describe it once than dispatch and track each session |
+| [Projects](/docs/en/claude-projects) | One ongoing conversation at claude.ai/code or in the desktop app. Claude starts parallel sessions called threads, in the cloud or, when you ask, on your computer through Remote Control. It gives each one the project's instructions and shows you which ones need you. Public beta on Pro, Max, and Ultra | The work spans many tasks over days or weeks, should keep running when your machine is off, and you'd rather describe it once than dispatch and track each session |
 | [Dynamic workflows](/docs/en/workflows) | A script that runs many subagents and cross-checks their results, for work too big to coordinate one turn at a time or that needs more than a single pass | A job outgrows a handful of subagents, or you want findings verified against each other: a codebase-wide audit, a 500-file migration, cross-checked research, or a plan drafted from several angles |
 
 In every approach the workers are Claude sessions. To involve a different tool, expose it to Claude as an [MCP server](/docs/en/mcp).
@@ -1717,7 +1717,7 @@ Artifacts turn Claude Code's work into live, interactive pages on claude.ai that
 
 > [!NOTE]
 >
-> Artifacts are available on Pro, Max, Team, and Enterprise plans and require a session signed in with [`/login`](/docs/en/setup#authenticate). See [Availability](#availability) for the full set of requirements.
+> Artifacts are available on Pro, Max, Ultra, Team, and Enterprise plans and require a session signed in with [`/login`](/docs/en/setup#authenticate). See [Availability](#availability) for the full set of requirements.
 
 An [artifact](https://claude.com/features/artifacts) is a live, interactive web page that Claude Code publishes from your session to a private URL on claude.ai. You open it in a browser, and it updates in place as the session continues. Share it from the page header when you want someone else to see it too.
 
@@ -1906,7 +1906,7 @@ If the service that delivers comments becomes unavailable or stops answering, Cl
 
 ## Pull live data with MCP connectors
 
-An artifact can call [MCP connectors](/docs/en/mcp#use-mcp-servers-from-claude-ai) each time someone views it, so the page shows current data rather than a snapshot from the session that built it. Connector calls from artifacts are available on Pro, Max, Team, and Enterprise plans and require Claude Code v2.1.209 or later. On earlier versions, Claude publishes the page with whatever data the session gathered while building it.
+An artifact can call [MCP connectors](/docs/en/mcp#use-mcp-servers-from-claude-ai) each time someone views it, so the page shows current data rather than a snapshot from the session that built it. Connector calls from artifacts are available on Pro, Max, Ultra, Team, and Enterprise plans and require Claude Code v2.1.209 or later. On earlier versions, Claude publishes the page with whatever data the session gathered while building it.
 
 To create a connector-backed page, name the connector and the data you want in your prompt:
 
@@ -2023,7 +2023,7 @@ To start from a template, describe what you want, such as "turn the migration no
 
 > [!NOTE]
 >
-> Templates are in beta. They're on by default on Pro, Max, and Team plans. On Enterprise plans, an Owner [turns each template on](https://support.claude.com/en/articles/16994751-artifacts-admin-guide-for-team-and-enterprise-plans) under **Organization settings > Artifacts**. If your organization has the Slides template turned off, `/slides` doesn't appear; if it has the Design template turned off, `/design` doesn't draft designs. Both commands require Claude Code v2.1.265 or later and a session where [artifacts are available](#availability).
+> Templates are in beta. They're on by default on Pro, Max, Ultra, and Team plans. On Enterprise plans, an Owner [turns each template on](https://support.claude.com/en/articles/16994751-artifacts-admin-guide-for-team-and-enterprise-plans) under **Organization settings > Artifacts**. If your organization has the Slides template turned off, `/slides` doesn't appear; if it has the Design template turned off, `/design` doesn't draft designs. Both commands require Claude Code v2.1.265 or later and a session where [artifacts are available](#availability).
 
 ### Make a slide deck
 
@@ -2077,7 +2077,7 @@ Artifacts require every condition below. When one is not met, Claude writes a lo
 
 | Requirement | Available when |
 | :- | :- |
-| Plan | Pro, Max, Team, or Enterprise. On Pro and Max plans, artifacts are private to you until you share them, and no admin management applies. On Team and Enterprise plans, artifacts are on by default, and an Owner can [turn them off for the organization](#manage-artifacts-for-your-organization) in claude.ai admin settings. |
+| Plan | Pro, Max, Ultra, Team, or Enterprise. On Pro, Max, and Ultra plans, artifacts are private to you until you share them, and no admin management applies. On Team and Enterprise plans, artifacts are on by default, and an Owner can [turn them off for the organization](#manage-artifacts-for-your-organization) in claude.ai admin settings. |
 | Authentication | The session is backed by a claude.ai account: sign in with `/login` in the CLI or desktop app. Claude Tag sessions need no sign-in step. Sessions using an API key, [gateway token](/docs/en/llm-gateway), or cloud-provider credential cannot publish. |
 | Model provider | Anthropic API. Not available on [Amazon Bedrock](/docs/en/amazon-bedrock), [Google Cloud's Agent Platform](/docs/en/google-vertex-ai), or [Microsoft Foundry](/docs/en/microsoft-foundry). |
 | Organization policy | Customer-managed encryption keys (CMEK), HIPAA, and [Zero Data Retention](/docs/en/zero-data-retention) are not enabled for the organization. |
@@ -2643,7 +2643,7 @@ Ask Claude to `have the reviewer compare the rate limiter against SPEC.md` and t
 
 With a 1M-token window on most current models and compaction near the top of it, you'll rarely run out of context. You can still *pay* for context you don't need, though. Every request sends the whole conversation, so a session that's collected three unrelated tasks re-reads all three on every turn of the fourth. That's [discounted while the cache is warm](/docs/en/costs#why-usage-climbs-in-a-long-session) and full price once it expires.
 
-[`/usage`](/docs/en/costs) is the first place to look. On Pro, Max, Team, and Enterprise it breaks your usage down by skill, subagent, plugin, and MCP server. It also flags patterns like long context or frequent cache misses once one of them passes 10% of your usage. From there, the usual fixes:
+[`/usage`](/docs/en/costs) is the first place to look. On Pro, Max, Ultra, Team, and Enterprise it breaks your usage down by skill, subagent, plugin, and MCP server. It also flags patterns like long context or frequent cache misses once one of them passes 10% of your usage. From there, the usual fixes:
 
 * `/clear` between unrelated tasks. It costs nothing, and it means the next task doesn't keep paying for the previous one's history. `/clear oauth-migration` names the session you're leaving, so you can come back to it later.
 * `/compact` with a focus, like `/compact keep the API changes and the test commands`. On a long session `/compact` is itself a big request, since it reads the whole conversation to summarize it, and even more so once the cache has expired.
@@ -15542,7 +15542,7 @@ In all cases, no channel runs until a user opts it in for the session with `--ch
 | `channelsEnabled` | Master switch. Must be `true` for any channel to deliver messages. Blocks all channels including the development flag when off. See [Enable channels for your organization](#enable-channels-for-your-organization). | claude.ai Team and Enterprise: channels blocked. Console: channels allowed unless your organization deploys managed settings, in which case channels are blocked until this key is set |
 | `allowedChannelPlugins` | Which plugins can register once channels are enabled. Replaces the Anthropic-maintained list when set. | Anthropic default list applies |
 
-Pro and Max users without an organization skip these checks entirely: channels are available and users opt in per session with `--channels`.
+Pro, Max, and Ultra users without an organization skip these checks entirely: channels are available and users opt in per session with `--channels`.
 
 ### Enable channels for your organization
 
@@ -15644,7 +15644,7 @@ Before using Claude Code with Chrome, you need:
 * [Google Chrome](https://www.google.com/chrome/), [Microsoft Edge](https://www.microsoft.com/edge), or another Chromium-based browser such as Brave, Arc, Vivaldi, or Opera
 * [Claude in Chrome extension](https://chromewebstore.google.com/detail/claude/fcoeoabgfenejglbffodgkkbkcdhcgfn) version 1.0.36 or later, available in the Chrome Web Store
 * [Claude Code](/docs/en/quickstart#step-1-install-claude-code)
-* A direct Anthropic plan (Pro, Max, Team, or Enterprise)
+* A direct Anthropic plan (Pro, Max, Ultra, Team, or Enterprise)
 
 In Enterprise organizations that have HIPAA enabled, Claude in Chrome is off by default, and an [Owner](/docs/en/server-managed-settings#access-control) can turn it on in [**Organization settings > Claude in Chrome**](https://claude.ai/admin-settings/browser-extension). Your Business Associate Agreement (BAA) with Anthropic doesn't cover data sent to third-party sites through Claude in Chrome. See the [Implementation Guide](https://trust.anthropic.com/resources?s=l1wrssd9hsbi4gak0tp5a6\&name=%5Banthropic%5D-hipaa-ready-offering-implementation-guide) for a list of Eligible Services.
 
@@ -15962,7 +15962,7 @@ Run Claude Code sessions in the cloud from your browser, phone, Desktop app, or 
 
 > [!NOTE]
 >
-> Cloud sessions are available on Pro, Max, and Team plans, and for Enterprise users with premium seats or Chat + Claude Code seats. If [custom roles](https://support.claude.com/en/articles/13930452) govern your access, you also need a role with the cloud sessions permission to start sessions on Anthropic's infrastructure from the browser, apps, or terminal. Ask an Owner to add it to one of your roles at [**Organization settings > Roles**](https://claude.ai/admin-settings/roles).
+> Cloud sessions are available on Pro, Max, Ultra, and Team plans, and for Enterprise users with premium seats or Chat + Claude Code seats. If [custom roles](https://support.claude.com/en/articles/13930452) govern your access, you also need a role with the cloud sessions permission to start sessions on Anthropic's infrastructure from the browser, apps, or terminal. Ask an Owner to add it to one of your roles at [**Organization settings > Roles**](https://claude.ai/admin-settings/roles).
 
 A cloud session is a Claude Code session that runs on cloud infrastructure instead of on your machine. By default it runs on infrastructure Anthropic manages, or on your organization's [self-hosted environment](/docs/en/self-hosted-environments) when routed there. The session keeps running after you close your laptop, and you can check on it or steer it from any device. It counts toward your plan's usage limits alongside the rest of your Claude and Claude Code usage, and there's no separate charge for the cloud VM.
 
@@ -16296,9 +16296,7 @@ Sharing works as follows for Enterprise and Team accounts:
 * **Your name**: your account's display name is visible to all recipients with access
 * **Slack sessions**: [Claude in Slack](/docs/en/slack) sessions are automatically shared with Team visibility
 
-#### Share from a Max or Pro account
-
-Sharing works as follows for Max and Pro accounts:
+#### Share from a Max, Ultra, or Pro account
 
 * **Visibility options**: **Private** and **Public**. Public visibility makes the session visible to any user logged into claude.ai
 * **Repository access**: verification isn't enabled by default
@@ -16779,7 +16777,7 @@ Hand Claude a stream of related tasks in one conversation and let it run them as
 
 > [!NOTE]
 >
-> Projects are in public beta on Pro and Max plans and rolling out gradually. The rollout started with accounts that have used [cloud sessions](/docs/en/claude-code-on-the-web) and don't have existing projects in claude.ai chat or Cowork. Projects aren't offered on Team or Enterprise plans yet.
+> Projects are in public beta on Pro, Max, and Ultra plans and rolling out gradually. The rollout started with accounts that have used [cloud sessions](/docs/en/claude-code-on-the-web) and don't have existing projects in claude.ai chat or Cowork. Projects aren't offered on Team or Enterprise plans yet.
 >
 > If you don't see **Projects** in the sidebar at [claude.ai/code](https://claude.ai/code) or in the Code tab of the [desktop app](/docs/en/desktop), check under **More** there. If it's missing there too, the rollout hasn't reached your account yet. You can [join the waitlist](https://claude.com/form/projects), and see [Run agents in parallel](/docs/en/agents) for what you can use in the meantime.
 
@@ -16849,7 +16847,7 @@ Either way, [check the prerequisites](#check-the-prerequisites) first.
 
 Before you create a project, check your plan, your GitHub setup, and what the work needs to reach:
 
-* **Plan**: you're on Pro or Max, and **Projects** shows in your sidebar, directly or under **More**. Select **Projects** and check that it offers **New project** or **Get started**.
+* **Plan**: you're on Pro, Max, or Ultra, and **Projects** shows in your sidebar, directly or under **More**. Select **Projects** and check that it offers **New project** or **Get started**.
 * **GitHub, if the project will work on code**: your code is on github.com rather than GitHub Enterprise Server, GitLab, or Bitbucket, your connected GitHub account has push access to it, and the Claude GitHub App is installed on it. If you connected GitHub with [`/web-setup`](/docs/en/web-quickstart#connect-from-your-terminal), that token lets your other cloud sessions reach a repository but isn't enough for a project's cloud threads, which need the Claude GitHub App. [Set up GitHub access](#set-up-github-access) has the steps.
 * **Network access, secrets, and tools**: for cloud threads, these come from the project's [cloud environment](#choose-an-environment-for-threads). The default environment already reaches [common package registries](/docs/en/cloud-environments#default-allowed-domains), so check this only if the work needs other domains, a secret, or a tool that isn't preinstalled. If the work needs an MCP server, check that it shows as connected in your [claude.ai connectors](https://claude.ai/customize/connectors).
 
@@ -17192,7 +17190,7 @@ A project with no running threads, no watched pull requests, and no new messages
 
 Open **Usage** in **Project settings** to see token use by thread and by model, and how much went to the project conversation. To bring it down:
 
-* A follow-up routed to a thread that has been idle longer than the [cache lifetime](/docs/en/prompt-caching#cache-lifetime), an hour on Pro and Max within your plan's limits, re-reads that thread's whole conversation before doing anything. For new work, asking Claude to start a fresh thread can use less than reviving a large old one.
+* On Pro, Max, and Ultra within your plan's limits, the [cache lifetime](/docs/en/prompt-caching#cache-lifetime) is an hour. A thread that has been idle longer than that re-reads its whole conversation before doing anything when a follow-up reaches it. For new work, ask Claude to start a fresh thread, which can use less than reviving a large old one.
 * For work that doesn't need the largest model, [choose a smaller model or a lower effort level](#choose-models-and-let-claude-manage-context) for threads, the conversation, or both.
 * Ask Claude in the project conversation to run fewer threads at a time, or to answer small questions itself instead of starting a thread.
 
@@ -17200,7 +17198,9 @@ Open **Usage** in **Project settings** to see token use by thread and by model, 
 
 Several Claude Code features let more than one session work at the same time, so running work in parallel is not by itself what a project is for. In a project, Claude starts and tracks the sessions instead of you, and each one starts from the same instructions. This is how each neighboring feature connects to a project:
 
-* **Claude Tag**: [Claude Tag](https://claude.com/docs/claude-tag/overview) is Claude in your team's Slack channels, on Team and Enterprise plans. Anyone in a channel can give it work, everyone in the channel sees and steers it, and it uses connections an admin set up for that channel. A project is yours alone: you're the only one who sends it work or sees its threads, it uses your own GitHub access and connectors, and it's on Pro and Max. [How Claude Tag differs from Cowork and Claude Code](https://claude.com/docs/claude-tag/concepts/how-it-works#how-claude-tag-differs-from-cowork-and-claude-code) has the side-by-side.
+* **Claude Tag**: [Claude Tag](https://claude.com/docs/claude-tag/overview) is Claude in your team's Slack channels, on Team and Enterprise plans. Anyone in a channel can give it work, everyone in the channel sees and steers it, and it uses connections an admin set up for that channel.
+
+  Projects are on Pro, Max, and Ultra. A project is yours alone: you're the only one who sends it work or sees its threads, and it uses your own GitHub access and connectors. [How Claude Tag differs from Cowork and Claude Code](https://claude.com/docs/claude-tag/concepts/how-it-works#how-claude-tag-differs-from-cowork-and-claude-code) has the side-by-side.
 * **Cloud sessions**: every thread is a [cloud session](/docs/en/claude-code-on-the-web) unless you ask Claude to run it on your machine. Either way, Claude starts and tracks it instead of you. You can also bring the work of a cloud session you started yourself into a project: choose [**Continue in project**](#start-from-an-existing-cloud-session) in that session's sidebar menu.
 * **Scheduled tasks**: when you ask for scheduled work in a project, Claude creates a [cloud scheduled task](/docs/en/routines) that runs as threads in that project and appears on its **Scheduled tasks** tab. Scheduled tasks you create outside a project keep working on their own.
 * **Remote Control**: [Remote Control](/docs/en/remote-control) connects claude.ai to a Claude Code session running on your machine. When you ask Claude in a project to run a thread on your computer, the project [uses Remote Control to do it](#run-a-thread-on-your-own-computer).
@@ -17473,7 +17473,7 @@ Bring Claude into your team's Slack channels with Claude Tag and find its setup 
 
 [Claude Tag](https://claude.com/product/tag) is a Slack integration that runs `@Claude` in your team's channels as your organization's shared identity with admin-configured access. Anyone in a channel can tag `@Claude` into a thread and assign it a task. Read the [Claude Tag documentation](https://claude.com/docs/claude-tag/overview) on claude.com to set it up and start using it.
 
-Claude Tag is available on Team and Enterprise plans, and is distinct from the earlier [Claude Code in Slack](/docs/en/slack), which runs each session under an individual user's account. On Pro and Max plans, where Claude Tag isn't available, Claude Code in Slack remains the setup path for Slack workspaces that no organization has connected to Claude Tag.
+Claude Tag is available on Team and Enterprise plans, and is distinct from the earlier [Claude Code in Slack](/docs/en/slack), which runs each session under an individual user's account. On Pro, Max, and Ultra plans, where Claude Tag isn't available, set up Claude Code in Slack for Slack workspaces that no organization has connected to Claude Tag.
 
 
 # Code Review
@@ -19030,7 +19030,7 @@ Enable computer use in the Claude Code CLI so Claude can open apps, click, type,
 
 > [!NOTE]
 >
-> Computer use is a research preview on macOS that requires a Pro or Max plan. It is not available on Team or Enterprise plans. It requires an interactive session, so it is not available in non-interactive mode with the `-p` flag.
+> Computer use is a research preview on macOS that requires a Pro, Max, or Ultra plan. It is not available on Team or Enterprise plans. It requires an interactive session, so it is not available in non-interactive mode with the `-p` flag.
 
 Computer use lets Claude open apps, control your screen, and work on your machine the way you would. From the CLI, Claude can compile a Swift app, launch it, click through every button, and screenshot the result, all in the same conversation where it wrote the code.
 
@@ -19220,7 +19220,7 @@ macOS sometimes requires a restart of the requesting process after you grant Scr
 The server only appears on eligible setups. Check that:
 
 * You're on macOS. Computer use in the CLI is not available on Linux or Windows. On Windows, use [computer use in Desktop](/docs/en/desktop#let-claude-use-your-computer) instead.
-* You're on a Pro or Max plan. Run `/status` to confirm your subscription.
+* You're on a Pro, Max, or Ultra plan. Run `/status` to confirm your subscription.
 * You're authenticated through claude.ai. Computer use is not available with third-party providers like Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry. If you access Claude exclusively through a third-party provider, you need a separate claude.ai account to use this feature.
 * You're in an interactive session. Computer use is not available in non-interactive mode with the `-p` flag.
 
@@ -20122,7 +20122,7 @@ To set a default mode for new local sessions, add `permissions.defaultMode` to y
 | **Accept edits** | `acceptEdits` | Claude auto-accepts file edits and common filesystem commands like `mkdir`, `touch`, and `mv`, but still asks before running other terminal commands. Use this when you trust file changes and want faster iteration. |
 | **Plan** | `plan` | Claude reads files and runs commands to explore, then proposes a plan without editing your source code. Good for complex tasks where you want to review the approach first. |
 | **Auto** | `auto` | Claude runs without routine prompts; before actions such as shell commands and network requests run, a background classifier checks that they align with your request. Appears when [auto mode is available](#auto-mode-availability); there is no separate Settings toggle for it. |
-| **Bypass permissions** | `bypassPermissions` | Claude runs without permission prompts, except for the [actions no mode auto-approves](/docs/en/permission-modes#actions-no-mode-auto-approves), safety classifiers when Claude [acts on external sites](#browse-external-sites), or desktop actions such as deleting a session, though not [archiving one](#work-across-sessions). Equivalent to `--dangerously-skip-permissions` in the CLI. On Pro and Max plans, enable "Allow bypass permissions mode" in **Settings > Code** or **Settings > Claude Code**. On Team and Enterprise plans there is no Settings toggle, and organization policy controls it instead. Only use this in sandboxed containers or VMs. |
+| **Bypass permissions** | `bypassPermissions` | Claude runs without permission prompts, except for the [actions no mode auto-approves](/docs/en/permission-modes#actions-no-mode-auto-approves), safety classifiers when Claude [acts on external sites](#browse-external-sites), or desktop actions such as deleting a session, though not [archiving one](#work-across-sessions). Equivalent to `--dangerously-skip-permissions` in the CLI. On Pro, Max, and Ultra plans, enable "Allow bypass permissions mode" in **Settings > Code** or **Settings > Claude Code**. On Team and Enterprise plans there is no Settings toggle, and organization policy controls it instead. Only use this in sandboxed containers or VMs. |
 
 Earlier versions of the Code tab labeled these modes Ask permissions, Auto accept edits, and Plan mode.
 
@@ -20350,7 +20350,7 @@ Computer use lets Claude open your apps, control your screen, and work directly 
 
 > [!NOTE]
 >
-> Computer use is a research preview on macOS and Windows that requires a Pro or Max plan. It is not available on Team or Enterprise plans. The Claude Desktop app must be running. On macOS, computer use requires macOS 14 or later.
+> Computer use is a research preview on macOS and Windows that requires a Pro, Max, or Ultra plan. It is not available on Team or Enterprise plans. The Claude Desktop app must be running. On macOS, computer use requires macOS 14 or later.
 
 Computer use is off by default. [Enable it in Settings](#enable-computer-use) before Claude can control your screen. On macOS, you also need to grant Accessibility and Screen Recording permissions.
 
@@ -20392,7 +20392,7 @@ Under **Computer use**, turn on **Enable computer use**:
 * **Windows**: the toggle takes effect immediately and setup is complete
 * **macOS**: continue to the next step
 
-If you don't see the toggle, confirm you're on macOS or Windows with a Pro or Max plan, then update and restart the app.
+If you don't see the toggle, confirm you're on macOS or Windows with a Pro, Max, or Ultra plan, then update and restart the app.
 
 **3. Grant macOS permissions**
 
@@ -20592,7 +20592,8 @@ If you have [computer use](#let-claude-use-your-computer) enabled, Dispatch-spaw
 
 #### Set up Dispatch
 
-For setup, pairing, and Dispatch settings, see the [Dispatch help article](https://support.claude.com/en/articles/13947068). Dispatch requires a Pro or Max plan and is not available on Team or Enterprise plans.
+* **Plans**: Dispatch requires a Pro, Max, or Ultra plan and is not available on Team or Enterprise plans
+* **Setup, pairing, and Dispatch settings**: see the [Dispatch help article](https://support.claude.com/en/articles/13947068)
 
 Dispatch is one of several ways to work with Claude when you're away from your terminal. For a comparison with the other options, see [Platforms and integrations](/docs/en/platforms#work-when-you-are-away-from-your-terminal).
 
@@ -22085,7 +22086,7 @@ This table shows the desktop app equivalent for common CLI flags. Flags not list
 | `--model sonnet` | Model picker in the row under the prompt box |
 | `--resume`, `--continue` | Click a session in the sidebar, or type `/resume` in the prompt box to pick up a session you started from the CLI |
 | `--permission-mode` | Mode selector in the row under the prompt box |
-| `--dangerously-skip-permissions` | Bypass permissions mode. On Pro and Max plans, enable "Allow bypass permissions mode" in **Settings > Code** or **Settings > Claude Code**; on Team and Enterprise plans, organization policy controls it |
+| `--dangerously-skip-permissions` | Bypass permissions mode. On Pro, Max, and Ultra plans, enable "Allow bypass permissions mode" in **Settings > Code** or **Settings > Claude Code**; on Team and Enterprise plans, organization policy controls it |
 | `--add-dir` | [Add folders to a session](#add-folders-to-a-session) in local and SSH sessions, or select [several repositories](#run-long-running-tasks-in-the-cloud) in a cloud session |
 | `--allowedTools`, `--disallowedTools` | No per-session equivalent. Permission rules in [settings files](/docs/en/settings) still apply. |
 | `--verbose` | [Verbose view mode](#switch-view-modes) |
@@ -22121,7 +22122,7 @@ This table compares core capabilities between the CLI and Desktop. For a full li
 
 | Feature | CLI | Desktop |
 | - | - | - |
-| Permission modes | All modes including `dontAsk` | Manual, Accept edits, Plan, and Auto. Bypass permissions appears in the mode selector once enabled: through the Settings toggle on Pro and Max plans, or through organization policy on Team and Enterprise plans |
+| Permission modes | All modes including `dontAsk` | Manual, Accept edits, Plan, and Auto. Bypass permissions appears in the mode selector once enabled: through the Settings toggle on Pro, Max, and Ultra plans, or through organization policy on Team and Enterprise plans |
 | [Third-party providers](/docs/en/third-party-integrations) | Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry | Anthropic's API by default. For gateway routing, see [connect the desktop app to a gateway](/docs/en/llm-gateway-connect#desktop-app). To run the Code tab on Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, or a self-hosted LLM gateway, see [Claude Desktop on 3P](https://claude.com/docs/third-party/claude-desktop/overview). |
 | [MCP servers](/docs/en/mcp) | Configure in settings files | Connectors UI for local and SSH sessions, or settings files |
 | [Plugins](/docs/en/plugins/overview) | `/plugin` command | Plugin manager UI |
@@ -22183,7 +22184,7 @@ In the earlier layout, choose the environment and any project folder or reposito
 If you see `Error 403: Forbidden` or other authentication failures when using the Code tab:
 
 1. Sign out and back in from the app menu. This is the most common fix.
-2. Verify you have an active paid subscription: Pro, Max, Team, or Enterprise.
+2. Verify you have an active paid subscription: Pro, Max, Ultra, Team, or Enterprise.
 3. If the CLI works but Desktop does not, quit the desktop app completely, not just close the window, then reopen and sign in again.
 4. Check your internet connection and proxy settings.
 
@@ -22317,7 +22318,7 @@ Claude Code Desktop opens your app in the iOS Simulator pane when Claude builds,
 
 > [!NOTE]
 >
-> The iOS Simulator pane is in public beta in Claude Code Desktop on macOS. It's available on Pro, Max, Team, and Enterprise plans, except in Enterprise organizations that have a HIPAA configuration enabled.
+> The iOS Simulator pane is in public beta in Claude Code Desktop on macOS. It's available on Pro, Max, Ultra, Team, and Enterprise plans, except in Enterprise organizations that have a HIPAA configuration enabled.
 
 The iOS Simulator pane shows your app running in Apple's iOS Simulator next to your conversation in Claude Code Desktop. When Claude builds, installs, launches, or checks your app in a simulator, the pane opens automatically and streams the device screen live. Use it to watch Claude run and test your app, or to tap through the app yourself while Claude keeps working.
 
@@ -22631,9 +22632,9 @@ Source: https://code.claude.com/docs/en/desktop-quickstart
 
 Install the Claude desktop app, open the Code tab, and start your first Claude Code session on a project folder on your computer.
 
-The desktop app gives you Claude Code with a graphical interface. You can ask Claude to work on the code in a folder on your computer and review its changes without using a terminal.
+The desktop app gives you Claude Code with a graphical interface. You can ask Claude to work on the code in a folder on your computer, then review the changes yourself, without using a terminal.
 
-Claude Code is in the **Code** tab at the top of the app's sidebar. This page walks through installing the app and starting your first session there. Claude Code requires a [Pro, Max, Team, or Enterprise subscription](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=desktop_quickstart_pricing).
+Claude Code is in the **Code** tab at the top of the app's sidebar. This page walks through installing the app and starting your first session there. Claude Code requires a [Pro, Max, Ultra, Team, or Enterprise subscription](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=desktop_quickstart_pricing).
 
 > **[Download for macOS](https://claude.ai/api/desktop/darwin/universal/dmg/latest/redirect?utm_source=claude_code\&utm_medium=docs)**
 >
@@ -23834,7 +23835,7 @@ Usage counts against the session and weekly allowances at the same time. A singl
 * In the Code tab of the [Desktop app](/docs/en/desktop), the session-limit card offers an **Auto-continue when limits reset** checkbox. The weekly-limit card doesn't. When it's checked, the Desktop app retries the interrupted turn after the reset and shows the retry time on the card. The Desktop checkbox and the CLI's **Continue automatically at usage limit** setting in `/config` are separate, so turn each off on its own.
 * For the Opus or Sonnet limit, run `/model` and switch to a model outside that family to keep working. Each model has its own prompt cache, so the next request re-reads the whole conversation with no cache hits; see [Switching models](/docs/en/prompt-caching#switching-models)
 * Run `/usage` to see your plan limits and when they reset
-* Run `/usage-credits` to buy additional usage on Pro and Max, or to request it from your admin on Team and Enterprise. See [usage credits for paid plans](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) for how this is billed.
+* Run `/usage-credits` to buy additional usage on Pro, Max, and Ultra, or to request it from your admin on Team and Enterprise. See [usage credits for paid plans](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) for how this is billed.
 * To upgrade your plan for higher base limits, see [claude.com/pricing](https://claude.com/pricing)
 
 Before a window runs out, Claude Code can warn you that you've used most of it, with a message such as `You've used 85% of your session limit · resets 3:45pm`. To watch your remaining allowance continuously, add the `rate_limits` fields to a [custom status line](/docs/en/statusline#rate-limit-usage), or in the Desktop app click the [usage ring](/docs/en/desktop#check-usage) next to the model picker.
@@ -23856,7 +23857,7 @@ When this error appears mid-conversation because the context grew past 200K toke
 **What to do:**
 
 * Run `/model` and select the variant without the `[1m]` suffix to fall back to the standard context window
-* Where the message names `/usage-credits`, run it to turn on metered billing for the 1M variant on Pro and Max, or to request usage credits from your admin on Team and Enterprise. Once usage credits are on, restart Claude Code or start a new session, whichever the message says. Until then, the session stays at the standard context limit.
+* Where the message names `/usage-credits`, run it to turn on metered billing for the 1M variant on Pro, Max, and Ultra, or to request usage credits from your admin on Team and Enterprise. Once usage credits are on, restart Claude Code or start a new session, whichever the message says. Until then, the session stays at the standard context limit.
 * If the error persists after `/model`, a 1M model ID may be set elsewhere. See [Setting your model](/docs/en/model-config#setting-your-model) for the configuration locations to check in priority order.
 * To remove 1M variants from the model picker entirely, set [`CLAUDE_CODE_DISABLE_1M_CONTEXT=1`](/docs/en/env-vars)
 
@@ -23937,7 +23938,7 @@ If you connect through a Claude apps gateway and see lowercase `spend limit reac
 
 **What to do:**
 
-* On Pro and Max, increase your monthly spend limit in [**Settings > Usage**](https://claude.ai/settings/usage) on claude.ai, or run `/usage-credits`
+* On Pro, Max, and Ultra, increase your monthly spend limit in [**Settings > Usage**](https://claude.ai/settings/usage) on claude.ai, or run `/usage-credits`
 * On Team and Enterprise, increase the limit in [**Organization settings > Usage**](https://claude.ai/admin-settings/usage) if you manage billing, or ask an admin to. `/usage-credits` sends that request to your admin for you
 * For a channel's limit, ask an org owner or the channel's manager to raise it on claude.ai. See [Per-channel limits](https://claude.com/docs/claude-tag/admins/set-spend-limit#per-channel-limits) in the Claude Tag documentation
 * If the message names a reset time for your plan's window, you can wait for it instead
@@ -23970,7 +23971,7 @@ Credit balance is too low
 
 **What to do:**
 
-* If you have a Pro, Max, Team, or Enterprise plan and see this, run `/status` and check the `API key` row. An approved `ANTHROPIC_API_KEY` in your environment routes requests through that key instead of your subscription. Unset it in the current shell and remove it from your shell profile, then relaunch `claude`. Run `/login` if you haven't signed in with your subscription yet.
+* If you have a Pro, Max, Ultra, Team, or Enterprise plan and see this, run `/status` and check the `API key` row. An approved `ANTHROPIC_API_KEY` in your environment routes requests through that key instead of your subscription. Unset it in the current shell and remove it from your shell profile, then relaunch `claude`. Run `/login` if you haven't signed in with your subscription yet.
 * Add credits at [platform.claude.com/settings/billing](https://platform.claude.com/settings/billing), and consider enabling auto-reload there so the balance refills before it hits zero
 * Set per-workspace spend caps in the Console to prevent a single project from draining the org balance. See [Manage costs effectively](/docs/en/costs).
 
@@ -24124,7 +24125,7 @@ API Error: 400 ... This organization has been disabled.
 
 The hint after the `·` depends on your saved credentials: the first form appears when a stored `/login` can take over after you unset the key, and the second when the key is your only credential.
 
-Environment variables take precedence over `/login`, so a key exported in your shell profile or loaded from a `.env` file is used even when you have a working Pro or Max subscription. In non-interactive mode (`-p`), the key is always used when present.
+If you export a key in your shell profile or load one from `.env`, Claude Code uses it instead of `/login`, even with a working Pro, Max, or Ultra subscription. In non-interactive mode (`-p`), the key is always used when present.
 
 **What to do:**
 
@@ -29700,7 +29701,7 @@ During installation, you also grant permissions that other Claude features use. 
 Add one of the following secrets to your repository, depending on how you authenticate. See GitHub's guide to [using secrets in GitHub Actions](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions).
 
 * `ANTHROPIC_API_KEY`: a Claude API key from the [Claude Console](https://platform.claude.com)
-* `CLAUDE_CODE_OAUTH_TOKEN`: an OAuth token that authenticates with your Claude subscription, available on Pro, Max, Team, and Enterprise plans. Generate one by running `claude setup-token` locally. See [Generate a long-lived token](/docs/en/authentication#generate-a-long-lived-token)
+* `CLAUDE_CODE_OAUTH_TOKEN`: an OAuth token that authenticates with your Claude subscription, available on Pro, Max, Ultra, Team, and Enterprise plans. Generate one by running `claude setup-token` locally. See [Generate a long-lived token](/docs/en/authentication#generate-a-long-lived-token)
 
 In workflow files, pass the secret to the matching input: `anthropic_api_key` for an API key, or `claude_code_oauth_token` for an OAuth token.
 
@@ -32859,7 +32860,7 @@ Checkpoints are separate from git and remain available when you resume a convers
 
 Choose a permission mode to set what Claude can do without asking you. Press `Shift+Tab` to cycle through the permission modes:
 
-* **Auto**: a classifier reviews most actions in the background and blocks the risky ones instead of asking you. With Claude Code v2.1.283 or later, it's the [built-in starting permission mode](/docs/en/permission-modes#which-mode-a-session-starts-in) for interactive terminal and VS Code sessions, and on earlier versions only on Pro, Max, and Team plans
+* **Auto**: a classifier reviews most actions in the background and blocks the risky ones instead of asking you. With Claude Code v2.1.283 or later, it's the [built-in starting permission mode](/docs/en/permission-modes#which-mode-a-session-starts-in) for interactive terminal and VS Code sessions. On earlier versions, it's the built-in starting permission mode only on Pro, Max, Ultra, and Team plans.
 * **Manual**: Claude asks before file edits and shell commands
 * **Accept edits**: Claude edits files and runs common filesystem commands like `mkdir` and `mv` without asking, still asks for other commands
 * **Plan**: Claude explores and proposes a plan without editing your source files
@@ -32968,7 +32969,7 @@ Install the [Claude Code plugin](https://plugins.jetbrains.com/plugin/27310-clau
 
 If `claude` is installed somewhere your IDE can't find, set the full path in the plugin's [Claude command setting](#general-settings).
 
-Claude Code works with any paid Claude subscription (Pro, Max, Team, or Enterprise) or a Claude Console account, and no API key is required. You'll be prompted to [log in](/docs/en/authentication#log-in-to-claude-code) the first time you run `claude`.
+Claude Code works with any paid Claude subscription (Pro, Max, Ultra, Team, or Enterprise) or a Claude Console account, and no API key is required. You'll be prompted to [log in](/docs/en/authentication#log-in-to-claude-code) the first time you run `claude`.
 
 ## Usage
 
@@ -36616,7 +36617,7 @@ From the app you can start cloud sessions, open a project, drive a Claude Code s
 | [Cloud sessions](/docs/en/claude-code-on-the-web) | A session on cloud infrastructure, Anthropic-managed by default | Your repository is on GitHub and the task should keep running after you put your phone away. See the [cloud quickstart](/docs/en/web-quickstart) to set up. |
 | [Projects](/docs/en/claude-projects) | A conversation where Claude coordinates parallel threads of work and reports back | You have a stream of related work rather than one task and want to see which threads finished or need you. |
 | [Remote Control](/docs/en/remote-control) | A Claude Code session running on your computer | The work needs your local filesystem, tools, or MCP servers. |
-| [Dispatch](/docs/en/desktop#sessions-from-dispatch) | The Desktop app on your computer | You want to message a task and let Dispatch decide how to run it. Requires a Pro or Max plan. |
+| [Dispatch](/docs/en/desktop#sessions-from-dispatch) | The Desktop app on your computer | You want to message a task and let Dispatch decide how to run it. Requires a Pro, Max, or Ultra plan. |
 
 If your computer will be off, use cloud sessions or a project, which run in the cloud and continue with your laptop closed. Remote Control and Dispatch drive your own machine, so it needs to stay on with Claude Code or the Desktop app running. If your machine sleeps during a Remote Control session, Claude Code reconnects when the machine comes back online.
 
@@ -36653,7 +36654,7 @@ The mobile client covers most of what a session needs, with a few limitations:
 
 * **Local-only commands**: commands that only run in the terminal interface, such as `/plugin` and `/resume`, don't work from the app. The [Remote Control limitations](/docs/en/remote-control#limitations) list the commands that do work from mobile and how their behavior differs.
 * **Permission modes**: cloud sessions offer Accept edits, Plan, and Auto, and Remote Control sessions offer Manual, Accept edits, Plan, and Auto. You can't select Bypass permissions from the app in either case. See [switch permission modes](/docs/en/permission-modes#switch-permission-modes) for when Auto is available.
-* **Dispatch plans**: Dispatch requires a Pro or Max plan and isn't available on Team or Enterprise.
+* **Dispatch plans**: Dispatch requires a Pro, Max, or Ultra plan and isn't available on Team or Enterprise.
 
 ## Related resources
 
@@ -36922,12 +36923,12 @@ Choose a platform based on how you like to work and where your project lives.
 
 | Platform | Best for | What you get |
 | :- | :- | :- |
-| [CLI](/docs/en/quickstart) | Terminal workflows, scripting, remote servers | Full feature set, [Agent SDK](/docs/en/headless), [computer use](/docs/en/computer-use) on macOS (Pro and Max), third-party providers |
-| [Desktop](/docs/en/desktop) | Visual review, parallel sessions, managed setup | Diff viewer, app preview, [computer use](/docs/en/desktop#let-claude-use-your-computer) and [Dispatch](/docs/en/desktop#sessions-from-dispatch) on Pro and Max |
+| [CLI](/docs/en/quickstart) | Terminal workflows, scripting, remote servers | Full feature set, [Agent SDK](/docs/en/headless), [computer use](/docs/en/computer-use) on macOS (Pro, Max, and Ultra), third-party providers |
+| [Desktop](/docs/en/desktop) | Visual review, parallel sessions, managed setup | Diff viewer, app preview, [computer use](/docs/en/desktop#let-claude-use-your-computer) and [Dispatch](/docs/en/desktop#sessions-from-dispatch) on Pro, Max, and Ultra |
 | [VS Code](/docs/en/vs-code) | Working inside VS Code without switching to a terminal | Inline diffs, integrated terminal, file context |
 | [JetBrains](/docs/en/jetbrains) | Working inside IntelliJ, PyCharm, WebStorm, or other JetBrains IDEs | Diff viewer, selection sharing, terminal session |
 | [Web](/docs/en/claude-code-on-the-web) | Long-running tasks that don't need much steering, or work that should continue when you're offline | Cloud, Anthropic-managed by default; continues after you disconnect |
-| [Mobile](/docs/en/mobile) | Starting and monitoring tasks while away from your computer | Cloud sessions from the Claude app for iOS and Android, [Remote Control](/docs/en/remote-control) for local sessions, [Dispatch](/docs/en/desktop#sessions-from-dispatch) to Desktop on Pro and Max |
+| [Mobile](/docs/en/mobile) | Starting and monitoring tasks while away from your computer | Cloud sessions from the Claude app for iOS and Android, [Remote Control](/docs/en/remote-control) for local sessions, [Dispatch](/docs/en/desktop#sessions-from-dispatch) to Desktop on Pro, Max, and Ultra |
 
 The CLI is the most complete surface for terminal-native work: scripting and the Agent SDK are CLI-only. Third-party providers also work in [VS Code](/docs/en/vs-code#use-third-party-providers) and in [JetBrains](/docs/en/feature-availability#features-available-on-every-provider), which runs the CLI in your IDE's terminal. Enterprise [Desktop](/docs/en/desktop) deployments support Google Cloud's Agent Platform, and Desktop supports [gateway providers](/docs/en/llm-gateway-connect#desktop-app); for Amazon Bedrock or Microsoft Foundry, use the CLI or an IDE extension, or [Claude Desktop on 3P](https://claude.com/docs/third-party/claude-desktop/overview), which runs the Code tab on those providers. Desktop and the IDE extensions trade some CLI-only features for visual review and tighter editor integration. The web runs in the cloud, so tasks keep going after you disconnect. Mobile is a thin client into those same cloud sessions or into a local session via Remote Control, and can send tasks to Desktop with Dispatch.
 
@@ -36943,7 +36944,7 @@ Integrations let Claude work with services outside your codebase.
 | [GitHub Actions](/docs/en/github-actions) | Runs Claude in your CI pipeline | Automated PR reviews, issue triage, scheduled maintenance |
 | [GitLab CI/CD](/docs/en/gitlab-ci-cd) | Same as GitHub Actions for GitLab | CI-driven automation on GitLab |
 | [Code Review](/docs/en/code-review) | Reviews every PR automatically | Catching bugs before human review |
-| [Slack](/docs/en/slack) | Responds to `@Claude` mentions in your channels, under your own account | Turning bug reports into pull requests from team chat on Pro and Max plans |
+| [Slack](/docs/en/slack) | Responds to `@Claude` mentions in your channels, under your own account | Turning bug reports into pull requests from team chat on Pro, Max, and Ultra plans |
 | [Claude Tag](https://claude.com/docs/claude-tag) | Runs `@Claude` as your organization's shared identity with admin-configured access | Shared team access on Team and Enterprise plans, instead of per-user Slack sessions |
 
 For integrations not listed here, [MCP servers](/docs/en/mcp) and [connectors](/docs/en/desktop#connect-external-tools) let you connect almost anything: Linear, Notion, Google Drive, or your own internal APIs.
@@ -36957,7 +36958,7 @@ Claude Code offers several ways to work when you're not at your terminal. They d
 | [Dispatch](/docs/en/desktop#sessions-from-dispatch) | Message a task from the Claude mobile app | Your machine (Desktop) | [Pair the mobile app with Desktop](https://support.claude.com/en/articles/13947068) | Delegating work while you're away, minimal setup |
 | [Remote Control](/docs/en/remote-control) | Drive a running session from [claude.ai/code](https://claude.ai/code) or the Claude mobile app | Your machine (CLI, Desktop, or VS Code) | Run [`claude remote-control` or `/remote-control`](/docs/en/remote-control#start-a-remote-control-session) | Steering in-progress work from another device |
 | [Channels](/docs/en/channels) | Push events from a chat app like Telegram or Discord, or your own server | Your machine (CLI) | [Install a channel plugin](/docs/en/channels#quickstart) or [build your own](/docs/en/channels-reference) | Reacting to external events like CI failures or chat messages |
-| [Slack](/docs/en/slack) | Mention `@Claude` in a team channel | Anthropic cloud | [Install the Slack app](/docs/en/slack#setting-up-claude-code-in-slack) with [Claude Code on the web](/docs/en/claude-code-on-the-web) enabled, on Pro and Max plans | PRs and reviews from team chat |
+| [Slack](/docs/en/slack) | Mention `@Claude` in a team channel | Anthropic cloud | [Install the Slack app](/docs/en/slack#setting-up-claude-code-in-slack) with [Claude Code on the web](/docs/en/claude-code-on-the-web) enabled, on Pro, Max, and Ultra plans | PRs and reviews from team chat |
 | [Self-hosted environments](/docs/en/self-hosted-environments) | Start a [cloud session](/docs/en/claude-code-on-the-web) and pick your organization's environment | Your organization's infrastructure | [Deploy runners](/docs/en/self-hosted-environments-quickstart), on Team and Enterprise plans | Cloud sessions that must run inside your network |
 | [Scheduled tasks](/docs/en/scheduled-tasks) | Set a schedule | [CLI](/docs/en/scheduled-tasks), [Desktop](/docs/en/desktop-scheduled-tasks), or [cloud](/docs/en/routines) | Pick a frequency | Recurring automation like daily reviews |
 
@@ -36982,7 +36983,7 @@ If you're not sure where to start, [install the CLI](/docs/en/quickstart) and ru
 * [GitHub Actions](/docs/en/github-actions): run Claude in your CI pipeline
 * [GitLab CI/CD](/docs/en/gitlab-ci-cd): the same for GitLab
 * [Code Review](/docs/en/code-review): automatic review on every pull request
-* [Slack](/docs/en/slack): send tasks from team chat and get PRs back, on Pro and Max plans
+* [Slack](/docs/en/slack): send tasks from team chat and get PRs back, on Pro, Max, and Ultra plans
 * [Claude Tag](https://claude.com/docs/claude-tag): run `@Claude` as your organization's shared identity on Team and Enterprise plans
 
 ### Remote access
@@ -39868,7 +39869,7 @@ The `/doctor` checkup lists each user-installed skill, MCP server, and plugin, a
 
 ### Usage share in `/usage`
 
-On a Pro, Max, Team, or Enterprise plan, the `/usage` breakdown attributes recent usage to skills, subagents, plugins, and MCP servers as a share of the total. See [Using the `/usage` command](/docs/en/costs#using-the-/usage-command).
+On a Pro, Max, Ultra, Team, or Enterprise plan, the `/usage` breakdown attributes recent usage to skills, subagents, plugins, and MCP servers as a share of the total. See [Using the `/usage` command](/docs/en/costs#using-the-/usage-command).
 
 ## Measure across a fleet
 
@@ -44301,7 +44302,7 @@ To submit a plugin:
 
 **1. Confirm you can submit**
 
-Submitting requires a paid claude.ai plan. On Pro and Max you submit from your own account. On Team and Enterprise, an Owner can submit, and on Enterprise an Owner can also grant the **Directory** permission to other members through a custom role under **Organization settings > Roles**. See [Confirm you can submit to the directory](https://claude.com/docs/directory/publish#confirm-you-can-submit-to-the-directory).
+Submitting requires a paid claude.ai plan. On Pro, Max, and Ultra you submit from your own account. On Team and Enterprise, an Owner can submit, and on Enterprise an Owner can also grant the **Directory** permission to other members through a custom role under **Organization settings > Roles**. See [Confirm you can submit to the directory](https://claude.com/docs/directory/publish#confirm-you-can-submit-to-the-directory).
 
 **2. Validate the plugin locally**
 
@@ -44986,7 +44987,7 @@ Make sure you have:
 
 * A terminal or command prompt open
 * A code project to work with
-* A [Claude subscription](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=quickstart_prereq) (Pro, Max, Team, or Enterprise), [Claude Console](https://platform.claude.com/) account, or access through a [supported cloud provider](/docs/en/third-party-integrations)
+* A [Claude subscription](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=quickstart_prereq) (Pro, Max, Ultra, Team, or Enterprise), [Claude Console](https://platform.claude.com/) account, or access through a [supported cloud provider](/docs/en/third-party-integrations)
 
 > [!NOTE]
 >
@@ -45080,7 +45081,7 @@ Claude Code prompts you to log in on first use. For Claude subscription or Conso
 
 You can log in using any of these account types:
 
-* [Claude Pro, Max, Team, or Enterprise](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=quickstart_login) (recommended)
+* [Claude Pro, Max, Ultra, Team, or Enterprise](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=quickstart_login) (recommended)
 * [Claude Console](https://platform.claude.com/) (API access with pre-paid credits). On first login, a "Claude Code" workspace is automatically created in the Console for centralized cost tracking.
 * [Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry](/docs/en/third-party-integrations) (enterprise cloud providers)
 * A self-hosted [Claude apps gateway](/docs/en/claude-apps-gateway), if your organization runs one: your admin pre-configures the gateway URL, and `/login` opens directly on the **Cloud gateway** screen for you to sign in with corporate SSO
@@ -45317,7 +45318,7 @@ Unlike [cloud sessions](/docs/en/claude-code-on-the-web), which run on cloud inf
 
 Before using Remote Control, confirm that your environment meets these conditions:
 
-* **Subscription**: available on Pro, Max, Team, and Enterprise plans. API keys are not supported. On Team and Enterprise, an Owner must first enable the Remote Control toggle in [Claude Code admin settings](https://claude.ai/admin-settings/claude-code).
+* **Subscription**: available on Pro, Max, Ultra, Team, and Enterprise plans. API keys are not supported. On Team and Enterprise, an Owner must first enable the Remote Control toggle in [Claude Code admin settings](https://claude.ai/admin-settings/claude-code).
 * **Custom roles**: if your Enterprise organization manages your access with [custom roles](https://support.claude.com/en/articles/13930452), your roles must give you both the cloud sessions permission and the **Claude Code remote control** permission. If either is missing, starting Remote Control shows [`Remote Control is disabled by your organization's policy`](#remote-control-is-disabled-by-your-organizations-policy). Ask an Owner to check your roles and add what's missing at [**Organization settings > Roles**](https://claude.ai/admin-settings/roles).
 * **Authentication**: run `claude` and use `/login` to sign in through claude.ai if you haven't already. Without an eligible login, `claude remote-control` exits with an error, while `claude --remote-control` still starts an interactive session and shows a Remote Control failure notification shortly after launch.
 * **API endpoint**: not available in any of these configurations:
@@ -45542,9 +45543,9 @@ To turn Remote Control off entirely, use the [`disableRemoteControl`](/docs/en/s
 >
 > Trusted Devices is currently in beta. Features and functionality may evolve as the experience is refined.
 >
-> Trusted Devices is available on Pro, Max, Team, and Enterprise plans and is off by default. On Team and Enterprise plans, an Owner turns it on for the organization. On Pro and Max plans, you turn on **Require trusted devices** yourself in your settings, on the Cowork or Account page.
+> Trusted Devices is available on Pro, Max, Ultra, Team, and Enterprise plans and is off by default. On Team and Enterprise plans, an Owner turns it on for the organization. On Pro, Max, and Ultra plans, you turn on **Require trusted devices** yourself in your settings, on the Cowork or Account page.
 
-Trusted Devices requires each member of your organization, or you alone on a Pro or Max plan, to verify their device before they can view or steer Remote Control sessions from claude.ai, the Claude mobile apps, or Claude Desktop. It ties Remote Control access to a known device and a recent authentication, not just a signed-in account.
+Trusted Devices requires a verified device before you can view or steer Remote Control sessions from claude.ai, the Claude mobile apps, or Claude Desktop. The requirement applies to each member of your organization, or you alone on a Pro, Max, or Ultra plan. It ties Remote Control access to a known device and a recent authentication, not just a signed-in account.
 
 When the setting is on, interacting with a Remote Control session requires both of the following:
 
@@ -45602,7 +45603,7 @@ Claude Code offers several ways to work when you're not at your terminal. They d
 | [Dispatch](/docs/en/desktop#sessions-from-dispatch) | Message a task from the Claude mobile app | Your machine (Desktop) | [Pair the mobile app with Desktop](https://support.claude.com/en/articles/13947068) | Delegating work while you're away, minimal setup |
 | [Remote Control](/docs/en/remote-control) | Drive a running session from [claude.ai/code](https://claude.ai/code) or the Claude mobile app | Your machine (CLI, Desktop, or VS Code) | Run [`claude remote-control` or `/remote-control`](/docs/en/remote-control#start-a-remote-control-session) | Steering in-progress work from another device |
 | [Channels](/docs/en/channels) | Push events from a chat app like Telegram or Discord, or your own server | Your machine (CLI) | [Install a channel plugin](/docs/en/channels#quickstart) or [build your own](/docs/en/channels-reference) | Reacting to external events like CI failures or chat messages |
-| [Slack](/docs/en/slack) | Mention `@Claude` in a team channel | Anthropic cloud | [Install the Slack app](/docs/en/slack#setting-up-claude-code-in-slack) with [Claude Code on the web](/docs/en/claude-code-on-the-web) enabled, on Pro and Max plans | PRs and reviews from team chat |
+| [Slack](/docs/en/slack) | Mention `@Claude` in a team channel | Anthropic cloud | [Install the Slack app](/docs/en/slack#setting-up-claude-code-in-slack) with [Claude Code on the web](/docs/en/claude-code-on-the-web) enabled, on Pro, Max, and Ultra plans | PRs and reviews from team chat |
 | [Self-hosted environments](/docs/en/self-hosted-environments) | Start a [cloud session](/docs/en/claude-code-on-the-web) and pick your organization's environment | Your organization's infrastructure | [Deploy runners](/docs/en/self-hosted-environments-quickstart), on Team and Enterprise plans | Cloud sessions that must run inside your network |
 | [Scheduled tasks](/docs/en/scheduled-tasks) | Set a schedule | [CLI](/docs/en/scheduled-tasks), [Desktop](/docs/en/desktop-scheduled-tasks), or [cloud](/docs/en/routines) | Pick a frequency | Recurring automation like daily reviews |
 
@@ -45736,7 +45737,7 @@ Claude Code could not reach the feature-flag service to check whether Remote Con
 An [environment variable](/docs/en/env-vars#features-that-need-feature-flag-fetching) that turns off feature-flag evaluation is set, and the full message names the variable Claude Code found. On versions before 2.1.154, the same configuration produces "Remote Control is not yet enabled for your account" instead. What to do depends on the variable the message names:
 
 * **`CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` or `DISABLE_GROWTHBOOK`**: unset the variable wherever it's set, in your shell environment or in the `env` block of a [`settings.json` file](/docs/en/settings-reference#all-settings).
-* **`DISABLE_TELEMETRY` or `DO_NOT_TRACK`**: on a Pro, Max, Team, or Enterprise plan with `DISABLE_GROWTHBOOK` unset, these variables leave Remote Control available unless your organization requires [Trusted Devices](#trusted-devices). If it does, unset the variable wherever it's set to use Remote Control. On v2.1.154 through v2.1.282, you see this message with either variable set, so update Claude Code to a version that meets the [requirement for these variables](#requirements).
+* **`DISABLE_TELEMETRY` or `DO_NOT_TRACK`**: on a Pro, Max, Ultra, Team, or Enterprise plan with `DISABLE_GROWTHBOOK` unset, Remote Control stays available with these variables set, unless your organization requires [Trusted Devices](#trusted-devices). If it does, unset the variable wherever it's set to use Remote Control. On v2.1.154 through v2.1.282, you see this message with either variable set, so update Claude Code to a version that meets the [requirement for these variables](#requirements).
 
 ### "Remote Control is only available when using Claude via api.anthropic.com"
 
@@ -45749,7 +45750,7 @@ The message names what routed the session away from the Anthropic API, such as `
 A policy blocks Remote Control. Check these causes in order:
 
 * **The error mentions `disableRemoteControl`**: your IT administrator has disabled Remote Control on this device through [managed settings](/docs/en/managed-settings), independent of the organization-wide toggle and of how you're signed in.
-* **Your claude.ai plan is Pro or Max**: Claude Code is still signed in under a Team or Enterprise organization from an earlier login, so it checks that organization's Remote Control policy. Run `/status` to see which plan and organization your sign-in uses. Run `claude auth logout` then `claude auth login` to sign in again under your current plan.
+* **Your claude.ai plan is Pro, Max, or Ultra**: Claude Code is still signed in under a Team or Enterprise organization from an earlier login, so it checks that organization's Remote Control policy. Run `/status` to see which plan and organization your sign-in uses. Run `claude auth logout` then `claude auth login` to sign in again under your current plan.
 * **The message doesn't say to contact your organization admin**: your organization has the [HIPAA configuration](/docs/en/hipaa-setup) applied, which turns Remote Control off. To confirm, run `/status` and look for `HIPAA` on the `Organization configuration` line. An Owner sees the **Remote Control** toggle grayed out in [admin settings](https://claude.ai/admin-settings/claude-code) and can't turn it on. If you have questions about the configuration, ask an Owner, who can contact your organization's Anthropic account team. Before v2.1.267, this case showed "Remote Control isn't available for your organization due to its compliance policy" instead.
 * **Remote Control works for others in your organization but not for you**: if your Enterprise organization manages your access with [custom roles](https://support.claude.com/en/articles/13930452), your roles can be the cause. Remote Control needs both the cloud sessions permission and the **Claude Code remote control** permission. Ask an Owner to check whether your roles include both and add what's missing at [**Organization settings > Roles**](https://claude.ai/admin-settings/roles).
 * **Otherwise, an Owner hasn't enabled it for your organization**: Remote Control is off by default on Team and Enterprise plans. An Owner can enable it at [claude.ai/admin-settings/claude-code](https://claude.ai/admin-settings/claude-code) by turning on the **Remote Control** toggle. This toggle is a server-side organization setting.
@@ -45854,7 +45855,7 @@ A scheduled task doesn't need a schedule:
 * A task with only an API trigger runs when you call its endpoint.
 * A task with only a GitHub trigger runs when a matching repository event occurs.
 
-Scheduled tasks are available on Pro, Max, Team, and Enterprise plans. Create and manage them at [claude.ai/code/routines](https://claude.ai/code/routines), or from the CLI with `/schedule`. The earlier name, routines, [still appears](#where-the-name-routines-still-appears).
+Scheduled tasks are available on Pro, Max, Ultra, Team, and Enterprise plans. Create and manage them at [claude.ai/code/routines](https://claude.ai/code/routines), or from the CLI with `/schedule`. The earlier name, routines, [still appears](#where-the-name-routines-still-appears).
 
 > [!NOTE]
 >
@@ -46331,7 +46332,7 @@ The cause is usually one of the following:
 * An Owner [turned off scheduled tasks](#routines-are-disabled-by-your-organizations-policy) for your Team or Enterprise organization. Before v2.1.227, the command still appeared in this case, and claude.ai rejected the task when Claude tried to create or run it
 * Your Enterprise organization manages your access with [custom roles](https://support.claude.com/en/articles/13930452), and none of your roles includes the scheduled tasks permission under **Remote sessions**. Ask an Owner to add it to one of your roles
 
-If the cause is your CLI sign-in or being inside a cloud session, you can still create and manage scheduled tasks at [claude.ai/code/routines](https://claude.ai/code/routines). You need a Pro, Max, Team, or Enterprise account there. If scheduled tasks or cloud sessions are off for your organization or missing from your roles, you can't create them on the web either.
+If the cause is your CLI sign-in or being inside a cloud session, you can still create and manage scheduled tasks at [claude.ai/code/routines](https://claude.ai/code/routines). You need a Pro, Max, Ultra, Team, or Enterprise account there. If scheduled tasks or cloud sessions are off for your organization or missing from your roles, you can't create them on the web either.
 
 ### "Routines are disabled by your organization's policy"
 
@@ -46948,7 +46949,7 @@ A `claude -p --resume` or `claude -p --continue` run resumes in plan mode only w
 
 If you see the "Resume this conversation?" dialog when resuming a session, its estimate is the share of your 5-hour usage limit that the saved conversation alone would use. The estimate doesn't count what you've already used.
 
-On Pro and Max plans, the dialog can appear when you resume a long conversation [after a long break](/docs/en/prompt-caching#resuming-a-session) or on a different model. The estimated use comes when you send your first message after **Resume**, not when you select it. Choose by whether your next task still needs the saved conversation:
+On Pro, Max, and Ultra plans, the dialog can appear when you resume a long conversation [after a long break](/docs/en/prompt-caching#resuming-a-session) or on a different model. The estimated use comes when you send your first message after **Resume**, not when you select it. Choose by whether your next task still needs the saved conversation:
 
 * **Resume**: keep working in the saved conversation.
 * **Start a new conversation**: switch to work that doesn't need the saved conversation. To reopen it later, run [`/resume`](#use-the-session-picker) at the prompt. The estimate doesn't apply to your first message in the new conversation. If the option says that Claude can look up this conversation, you can still refer to earlier work in the new conversation.
@@ -47191,7 +47192,7 @@ Run `/doctor` at the Claude Code prompt for a setup checkup that diagnoses issue
 * **Extensions**: unused skills, MCP servers, and plugins compared with their context cost, and slow [hooks](/docs/en/hooks)
 * **`CLAUDE.md` files**: local `CLAUDE.md` files that duplicate checked-in ones, checked-in [`CLAUDE.md` content Claude could derive from the codebase](/docs/en/memory#my-claude-md-is-too-large), and the always-loaded guidance that remains, which Claude offers to migrate into skills and nested `CLAUDE.md` files that load on demand
 * **Permissions**: an offer to make [auto mode](/docs/en/permissions#permission-modes) your default permission mode and to [pre-approve](/docs/en/permissions) read-only commands that you frequently deny
-* **Usage**: on a Pro, Max, Team, or Enterprise plan, the [changes `/usage` recommends](/docs/en/costs#plan-usage-breakdown) to lower your plan usage, measured over the last 7 days. Claude proposes the changes it can make itself and reports the rest as advice, such as a command for you to run. The usage check requires Claude Code v2.1.305 or later, and `/doctor` leaves it out while [Remote Control](/docs/en/remote-control) is connected.
+* **Usage**: on a Pro, Max, Ultra, Team, or Enterprise plan, the [changes `/usage` recommends](/docs/en/costs#plan-usage-breakdown) to lower your plan usage, measured over the last 7 days. Claude proposes the changes it can make itself and reports the rest as advice, such as a command for you to run. The usage check requires Claude Code v2.1.305 or later, and `/doctor` leaves it out while [Remote Control](/docs/en/remote-control) is connected.
 
 For read-only installation diagnostics without starting a session, run `claude doctor` in your terminal instead.
 
@@ -48410,13 +48411,13 @@ To restore a skill, move its folder from the timestamped folder back into `~/.cl
 # Claude Code in Slack
 Source: https://code.claude.com/docs/en/slack
 
-Delegate coding tasks from Slack. This earlier version answers channel mentions only from Pro and Max accounts in workspaces not connected to Claude Tag.
+Delegate coding tasks from Slack. This earlier version answers mentions only from Pro, Max, and Ultra accounts in workspaces not connected to Claude Tag.
 
 > [!WARNING]
 >
-> This page documents the earlier Claude Code in Slack, which runs each session under an individual user's account. It answers channel @mentions only from Pro and Max accounts, and only in a Slack workspace that no organization has connected to [Claude Tag](https://claude.com/product/tag). Claude Tag runs @Claude as your organization's shared identity with admin-configured access.
+> This earlier Claude Code in Slack answers channel @mentions only from Pro, Max, and Ultra accounts, and only in a Slack workspace that no organization has connected to [Claude Tag](https://claude.com/product/tag). Each session runs under an individual user's account. Claude Tag runs @Claude as your organization's shared identity with admin-configured access.
 >
-> * **Pro and Max plans:** Claude Tag isn't available on individual plans, so this page remains the setup path in a workspace that isn't connected to Claude Tag.
+> * **Pro, Max, and Ultra plans:** Claude Tag isn't available on individual plans, so [set up this version](#setting-up-claude-code-in-slack) in a workspace that isn't connected to Claude Tag.
 > * **Team and Enterprise plans:** your existing Slack app and @Claude handle stay. [Set up Claude Tag](https://claude.com/docs/claude-tag/overview) for a new workspace; to move one that already uses this version, see [Migrate from the earlier Claude in Slack](https://claude.com/docs/claude-tag/admins/migrate-from-earlier).
 > * **Notice instead of an answer:** look up the [setup notice](#this-workspace-isnt-set-up-for-claude-tag-yet) or the [retirement notice](#the-legacy-claude-in-slack-bot-is-retired) that @Claude replied with.
 
@@ -48437,7 +48438,7 @@ Before using Claude Code in Slack, ensure you have the following:
 
 | Requirement | Details |
 | :- | :- |
-| Claude Plan | Pro or Max |
+| Claude Plan | Pro, Max, or Ultra |
 | Slack workspace | Not connected to [Claude Tag](https://claude.com/docs/claude-tag/overview) by any organization. If @Claude replies with the [retirement notice](#the-legacy-claude-in-slack-bot-is-retired), the workspace is connected |
 | Cloud sessions | [Cloud sessions](/docs/en/claude-code-on-the-web) are enabled for your account |
 | GitHub Account | Connected at [claude.ai/code](https://claude.ai/code) with at least one repository authenticated |
@@ -48586,13 +48587,13 @@ for more details.
 @Claude replies in the thread with this notice instead of an answer when both of these are true:
 
 * No organization has connected your Slack workspace to [Claude Tag](https://claude.com/docs/claude-tag/overview).
-* The Claude account you linked in Slack isn't on a Pro or Max plan.
+* The Claude account you linked in Slack isn't on a Pro, Max, or Ultra plan.
 
 Claude Tag is available on Team and Enterprise plans. To connect the workspace, start with the `@Claude connect` command the notice names, then follow [Set up Claude Tag](https://claude.com/docs/claude-tag/overview).
 
 ### "The legacy Claude in Slack bot is retired"
 
-The notice opens with `The legacy Claude in Slack bot is retired effective October 5, 2026 and no longer responds in channels.` Your Slack workspace is connected to a Claude organization, and the earlier version is still selected for the channel, the workspace, or the organization default in that organization's Claude Tag settings. The notice doesn't depend on your own plan, so Pro and Max accounts get it too.
+The notice opens with `The legacy Claude in Slack bot is retired effective October 5, 2026 and no longer responds in channels.` Your Slack workspace is connected to a Claude organization. The earlier version is still selected for the channel, the workspace, or the organization default in that organization's Claude Tag settings. The notice doesn't depend on your own plan, so Pro, Max, and Ultra accounts get it too.
 
 If you're an Owner of that organization, open [Claude admin settings](https://claude.ai/admin-settings/claude-tag) and turn on Claude Tag for the channel. To fix every channel that inherits the setting, change it on the workspace or the organization default instead. For the full move, see [Migrate from the earlier Claude in Slack](https://claude.com/docs/claude-tag/admins/migrate-from-earlier). If you're not an Owner, send this entry to one.
 
@@ -51296,7 +51297,7 @@ If you see `OAuth error: Invalid code. Please make sure the full code was copied
 
 If you see `API Error: 403 Request not allowed` after logging in:
 
-* **Claude Pro/Max users**: verify your subscription is active at [claude.ai/settings](https://claude.ai/settings)
+* **Claude Pro/Max/Ultra users**: verify your subscription is active at [claude.ai/settings](https://claude.ai/settings)
 * **Anthropic Console users**: confirm your account has the "Claude Code" or "Developer" role. Admins assign this on the Console's Members page at [platform.claude.com/settings/members](https://platform.claude.com/settings/members).
 * **Behind a proxy**: corporate proxies can interfere with API requests. See [network configuration](/docs/en/network-config) for proxy setup.
 
@@ -51758,8 +51759,9 @@ Ultrareview is a premium feature that bills against usage credits rather than yo
 | - | - | - |
 | Pro | 3 free runs | billed as [usage credits](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) |
 | Max | 3 free runs | billed as [usage credits](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) |
+| Ultra | 3 free runs | billed as [usage credits](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) |
 
-* **Free runs**: the three Pro and Max runs are a one-time allotment per account and don't refresh.
+* **Free runs**: the three Pro, Max, and Ultra runs are a one-time allotment per account and don't refresh.
 * **Cost per review**: after you use the free runs, typically \$5 to \$25 in usage credits depending on the size of the change, matching the estimate the launch dialog shows before each run.
 * **When a run counts**: once the cloud session starts. A review you stop early or that fails to complete still uses a free run; a paid review bills only for the portion that ran.
 
@@ -51883,7 +51885,7 @@ With the extension, you can:
 Before installing, make sure you have:
 
 * VS Code 1.94.0 or later
-* An Anthropic account: any paid Claude subscription (Pro, Max, Team, or Enterprise) or a Claude Console account works, and no API key is required. You'll [sign in](/docs/en/authentication#log-in-to-claude-code) with this account when you first open the extension. If you access Claude through a third-party provider like Amazon Bedrock or Google Cloud's Agent Platform, see [Use third-party providers](#use-third-party-providers) for setup instructions.
+* An Anthropic account: any paid Claude subscription (Pro, Max, Ultra, Team, or Enterprise) or a Claude Console account works, and no API key is required. You'll [sign in](/docs/en/authentication#log-in-to-claude-code) with this account when you first open the extension. If you access Claude through a third-party provider like Amazon Bedrock or Google Cloud's Agent Platform, see [Use third-party providers](#use-third-party-providers) for setup instructions.
 
 > [!TIP]
 >
@@ -51977,7 +51979,7 @@ For more ideas on what you can do with Claude Code, see [Common workflows](/docs
 
 The prompt box supports several features:
 
-* **Permission modes**: click the mode indicator at the bottom of the prompt box to switch permission modes. With Claude Code v2.1.283 or later, Auto is the built-in starting permission mode, and on earlier versions only on Pro, Max, and Team plans. See [how the extension chooses the starting permission mode](/docs/en/permission-modes#switch-permission-modes) for what changes that, and every permission mode the indicator offers.
+* **Permission modes**: click the mode indicator at the bottom of the prompt box to switch permission modes. With Claude Code v2.1.283 or later, Auto is the built-in starting permission mode, and on earlier versions only on Pro, Max, Ultra, and Team plans. See [how the extension chooses the starting permission mode](/docs/en/permission-modes#switch-permission-modes) for what changes that, and every permission mode the indicator offers.
   * **Auto**: a classifier reviews most actions instead of asking you. See [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) for what it reviews and blocks.
   * **Manual**: Claude asks permission before file edits and most shell commands.
   * **Plan**: Claude describes what it will do and waits for approval before making changes. VS Code automatically opens the plan as a full Markdown document where you can add inline comments to give feedback before Claude begins.
@@ -52564,7 +52566,7 @@ The extension also handles `vscode://anthropic.claude-code/install-plugin`, whic
 You configure the extension in two places, VS Code's extension settings and the Claude Code settings file:
 
 * **Extension settings** in VS Code: control the extension's behavior within VS Code. Open with `Cmd+,` (Mac) or `Ctrl+,` (Windows/Linux), then go to **Extensions > Claude Code**. You can also type `/` and select **General config…** to open settings.
-* **Claude Code settings** in `~/.claude/settings.json`: shared between the extension and CLI. Use it for allowed commands, environment variables, hooks, and MCP servers. With Claude Code v2.1.283 or later, it's also one input to the permission mode conversations start in, and on earlier versions only on Pro, Max, and Team plans. [Switch permission modes](/docs/en/permission-modes#switch-permission-modes) lists the order. See [Settings](/docs/en/settings) for details.
+* **Claude Code settings** in `~/.claude/settings.json`: shared between the extension and CLI. Use it for allowed commands, environment variables, hooks, and MCP servers. With Claude Code v2.1.283 or later, you can also use it as one input to the permission mode conversations start in. On earlier versions, you can do this only on Pro, Max, Ultra, and Team plans. [Switch permission modes](/docs/en/permission-modes#switch-permission-modes) lists the order. See [Settings](/docs/en/settings) for details.
 
 > [!TIP]
 >
@@ -52983,7 +52985,7 @@ Run Claude Code in the cloud from your browser or phone. Connect a GitHub reposi
 
 > [!NOTE]
 >
-> Cloud sessions are available on Pro, Max, and Team plans, and for Enterprise users with premium seats or Chat + Claude Code seats.
+> Cloud sessions are available on Pro, Max, Ultra, and Team plans, and for Enterprise users with premium seats or Chat + Claude Code seats.
 
 A cloud session runs Claude Code on cloud infrastructure instead of your machine, Anthropic-managed by default. This quickstart starts one from [claude.ai/code](https://claude.ai/code) in your browser. You can also start one from the Claude mobile app, the Desktop app, or your terminal with `claude --cloud`.
 
@@ -53052,7 +53054,7 @@ If onboarding prompts you to install the Claude GitHub App at this point and you
 
 A [cloud environment](/docs/en/cloud-environments) is the saved configuration that controls what network access Claude has during sessions and what runs when a session starts. What happens after you connect GitHub depends on your plan:
 
-* **Pro and Max**: onboarding creates an environment named **Default** for you.
+* **Pro, Max, and Ultra**: you get an environment named **Default** automatically.
 * **Team and Enterprise**: onboarding shows a **Create your first cloud environment** form. Leave the prefilled name and network access unchanged and click **Create & finish** to create the **Default** environment. If an Owner has turned on [Quick setup](/docs/en/claude-code-on-the-web#quick-setup-for-team-and-enterprise), onboarding creates **Default** for you instead.
 
 **Default** uses [`Trusted` network access](/docs/en/cloud-environments#access-levels): sessions reach [common package registries](/docs/en/cloud-environments#default-allowed-domains) and other allowlisted domains, and nothing else through the session's network. See [Installed tools](/docs/en/cloud-environments#installed-tools) for what's available without any configuration.
@@ -56022,7 +56024,7 @@ When login completes, the terminal shows `Login successful` and prompts you to p
 
 You can authenticate with any of these account types:
 
-* **Claude Pro or Max subscription**: log in with your claude.ai account. Subscribe at [claude.com/pricing](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=authentication_pro_max).
+* **Claude Pro, Max, or Ultra subscription**: log in with your claude.ai account. Subscribe at [claude.com/pricing](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=authentication_pro_max).
 * **Claude for Teams or Enterprise**: log in with the claude.ai account your team admin invited you to.
 * **Claude Console**: log in with your Console credentials. Your admin must have [invited you](#claude-console-authentication) first. You can sign in with or without [creating an API key](#sign-in-without-an-api-key).
 * **Cloud providers**: if your organization uses [Amazon Bedrock](/docs/en/amazon-bedrock), [Google Cloud's Agent Platform](/docs/en/google-vertex-ai), or [Microsoft Foundry](/docs/en/microsoft-foundry), set the required environment variables before running `claude`, or select **3rd-party platform** at the login prompt, which launches an interactive setup wizard for Bedrock and Vertex AI. No browser login is needed.
@@ -56252,7 +56254,7 @@ When multiple credentials are present, Claude Code chooses one in this order:
 4. [`apiKeyHelper`](/docs/en/settings-reference#apikeyhelper) script output. Use this for dynamic or rotating credentials, such as short-lived tokens fetched from a vault.
 5. `CLAUDE_CODE_OAUTH_TOKEN` environment variable. A long-lived OAuth token generated by [`claude setup-token`](#generate-a-long-lived-token). Use this for CI pipelines and scripts where browser login isn't available. If you run `/login` while the variable is set, Claude Code switches the current session to the new login, but reads the variable again in every new session until you remove it from your shell profile or the `env` block of a [settings file](/docs/en/settings).
 6. Anthropic profile and federation credentials, the credentials that the `ant` CLI and Workload Identity Federation use. A profile that `ant auth login` wrote ranks here only when you name it in `ANTHROPIC_PROFILE`; otherwise it ranks below `/login`. See [Anthropic profiles and federation credentials](#anthropic-profiles-and-federation-credentials).
-7. Subscription OAuth credentials from `/login`. This is the default for Claude Pro, Max, Team, and Enterprise users.
+7. Subscription OAuth credentials from `/login`. This is the default for Claude Pro, Max, Ultra, Team, and Enterprise users.
 
 A signed-in [Claude apps gateway](/docs/en/claude-apps-gateway) session sits outside this list: it is a provider selection like Amazon Bedrock or Google Cloud's Agent Platform, and it outranks them. When a gateway session exists, the CLI authenticates with the gateway token even if `CLAUDE_CODE_USE_BEDROCK`, `CLAUDE_CODE_USE_VERTEX`, or `CLAUDE_CODE_USE_FOUNDRY` is set, and credential sources above such as the bearer token, API key, `apiKeyHelper`, and profiles are not used.
 
@@ -56317,7 +56319,7 @@ $env:CLAUDE_CODE_OAUTH_TOKEN = "your-token"
 set CLAUDE_CODE_OAUTH_TOKEN=your-token
 ```
 
-This token authenticates with your Claude subscription and requires a Pro, Max, Team, or Enterprise plan. It can only make model requests, so it can't establish [Remote Control](/docs/en/remote-control) sessions or fetch [claude.ai connectors](/docs/en/mcp#use-mcp-servers-from-claude-ai). MCP servers you configure locally still work.
+This token authenticates with your Claude subscription and requires a Pro, Max, Ultra, Team, or Enterprise plan. It can only make model requests, so it can't establish [Remote Control](/docs/en/remote-control) sessions or fetch [claude.ai connectors](/docs/en/mcp#use-mcp-servers-from-claude-ai). MCP servers you configure locally still work.
 
 [Bare mode](/docs/en/headless#start-faster-with-bare-mode) does not read `CLAUDE_CODE_OAUTH_TOKEN`. If your script passes `--bare`, authenticate with `ANTHROPIC_API_KEY` or an `apiKeyHelper` instead.
 
@@ -56364,7 +56366,7 @@ Classifier requests are then always Claude Code's own, billed the same way, and 
 
 ## Why the notice appears
 
-[Server-side classifier review](/docs/en/permission-modes#server-side-classifier-review) lists which sessions ask the server for the classifier checks. Pro, Max, and Team plans never show the notice. When it appears, the usual causes are:
+On a Pro, Max, Ultra, or Team plan, you never see the notice. To find out which sessions ask the server for the classifier checks, see [Server-side classifier review](/docs/en/permission-modes#server-side-classifier-review). If you see the notice, check for these usual causes:
 
 * **An LLM gateway or proxy is in the path**: one that strips or rewrites request headers, drops request fields it doesn't recognize, or edits responses. The server then never receives the request for checks, or Claude Code never receives the results. When your configuration or the responses identify the gateway, the notice names it.
 * **Server-side checks haven't reached your platform, region, or credential yet**: whether a platform or region performs them depends on that platform's rollout. If you see the notice with no gateway or proxy in the path and it keeps appearing, this is the likely cause. To confirm, contact support or your company's admin, or report it with `/feedback`.
@@ -56542,7 +56544,7 @@ Run `/auto-mode-setup` to have Claude Code draft `autoMode.environment` entries,
 
 > [!NOTE]
 >
-> `/auto-mode-setup` is available on Pro, Max, Team, and Enterprise plans and with a Claude Console API key. On a Pro, Max, or Team plan, you need v2.1.228 or later, or v2.1.233 or later on native Windows. On an Enterprise plan or with a Claude Console API key, you need v2.1.283 or later. If the command is missing from your session, see [`/auto-mode-setup` returns "Unknown command"](#auto-mode-setup-returns-unknown-command).
+> `/auto-mode-setup` is available on Pro, Max, Ultra, Team, and Enterprise plans and with a Claude Console API key. On a Pro, Max, Ultra, or Team plan, you need v2.1.228 or later, or v2.1.233 or later on native Windows. On an Enterprise plan or with a Claude Console API key, you need v2.1.283 or later. If the command is missing from your session, see [`/auto-mode-setup` returns "Unknown command"](#auto-mode-setup-returns-unknown-command).
 
 ### What `/auto-mode-setup` reads
 
@@ -62077,7 +62079,7 @@ Configure cloud environments for Claude Code cloud sessions: network access leve
 
 > [!NOTE]
 >
-> Cloud environments apply to [cloud sessions](/docs/en/claude-code-on-the-web), which are available on Pro, Max, and Team plans, and for Enterprise users with [premium seats or Chat + Claude Code seats](https://support.claude.com/en/articles/11845131-use-claude-code-with-your-team-or-enterprise-plan).
+> Cloud environments apply to [cloud sessions](/docs/en/claude-code-on-the-web), which are available on Pro, Max, Ultra, and Team plans, and for Enterprise users with [premium seats or Chat + Claude Code seats](https://support.claude.com/en/articles/11845131-use-claude-code-with-your-team-or-enterprise-plan).
 
 Each [cloud session](/docs/en/claude-code-on-the-web) runs in a cloud environment. You can configure an environment to allow or deny [network access](#access-levels), [set environment variables](#set-environment-variables) for the session, store [network secrets](#add-network-secrets) that sessions use without seeing them, and run a [setup script](#setup-scripts) before Claude starts working.
 
@@ -62101,7 +62103,7 @@ Each of these surfaces can also route to a [self-hosted environment](/docs/en/se
 If you don't have an environment yet, onboarding sets up the **Default** environment. How depends on where you onboard:
 
 * **CLI flows such as `/web-setup`**: create **Default** for you
-* **Web onboarding on Pro and Max**: creates **Default** for you
+* **Web onboarding on Pro, Max, and Ultra**: you get **Default** automatically
 * **Web onboarding on Team and Enterprise**: shows a **Create your first cloud environment** form unless an Owner has turned on [Quick setup](/docs/en/claude-code-on-the-web#quick-setup-for-team-and-enterprise); keep the form's defaults and click **Create & finish** to get the same **Default** environment
 
 **Default** carries no configuration of its own:
@@ -62162,7 +62164,7 @@ Anyone who uses the environment can read the values. In an Anthropic-hosted envi
 
 A network secret is an API key or token you store on a cloud environment so Claude can call that API from any session in the environment without seeing the key. Anthropic's agent proxy adds the key to requests for the hosts you list, after each request leaves the session's VM, so the key itself stays outside the VM.
 
-Network secrets are available on Pro, Max, Team, and Enterprise plans. To check whether you can add one yourself, see [Requirements](#requirements).
+Network secrets are available on Pro, Max, Ultra, Team, and Enterprise plans. To check whether you can add one yourself, see [Requirements](#requirements).
 
 #### Requirements
 
@@ -62942,7 +62944,7 @@ In the table below, `<arg>` indicates a required argument and `[arg]` indicates 
 | `/artifact-capabilities` | **[Skill](/docs/en/skills#bundled-skills).** Load the reference for the runtime capabilities a published [artifact](/docs/en/artifacts) can use, such as [calling your connectors](/docs/en/artifacts#pull-live-data-with-mcp-connectors) or [offering a file download](/docs/en/artifacts#offer-a-file-download), including which ones your account has. Claude normally loads it on its own before building a page that uses one. Available where [artifacts](/docs/en/artifacts#availability) are |
 | `/artifact-diagramming` | **[Skill](/docs/en/skills#bundled-skills).** Load diagramming guidance for Claude to follow in [artifacts](/docs/en/artifacts): when a diagram helps, what to draw, and how to write inline SVG that stays legible in light and dark themes. Requires Claude Code v2.1.221 or later |
 | `/artifacts` | List the [artifacts](/docs/en/artifacts#find-an-artifact-again) you own or that are shared with you, then attach one to the session, open it in your browser, or copy its link. Available where [artifacts](/docs/en/artifacts#availability) are |
-| `/auto-mode-setup` | [Draft `autoMode.environment` entries](/docs/en/auto-mode-config#generate-environment-entries) from your project and recent sessions, then review the draft and save it to your user settings. On a Pro, Max, or Team plan, requires Claude Code v2.1.228 or later, or v2.1.233 or later on native Windows. On an Enterprise plan or with a Claude Console API key, requires v2.1.283 or later. If the command is missing, see [`/auto-mode-setup` returns "Unknown command"](/docs/en/auto-mode-config#auto-mode-setup-returns-unknown-command) |
+| `/auto-mode-setup` | [Draft `autoMode.environment` entries](/docs/en/auto-mode-config#generate-environment-entries) from your project and recent sessions, then review the draft and save it to your user settings. On a Pro, Max, Ultra, or Team plan, requires Claude Code v2.1.228 or later, or v2.1.233 or later on native Windows. On an Enterprise plan or with a Claude Console API key, requires v2.1.283 or later. If the command is missing, see [`/auto-mode-setup` returns "Unknown command"](/docs/en/auto-mode-config#auto-mode-setup-returns-unknown-command) |
 | `/autocompact [auto\|<tokens>]` | Set the auto-compact window: how full the context window gets before Claude Code compacts automatically. Pass a size such as `500k`, or `auto` to return to the window tuned for your model. Claude Code saves the value to user settings and applies it to the current session. See [Set the auto-compact window](/docs/en/model-config#set-the-auto-compact-window) for accepted values and what overrides it. Without an argument, opens a dialog that shows the current window. Requires Claude Code v2.1.221 or later |
 | `/autofix-pr [prompt]` | Spawn a [cloud session](/docs/en/claude-code-on-the-web#auto-fix-pull-requests) that watches the current branch's PR and pushes fixes when CI fails or reviewers leave comments. Detects the open PR from your checked-out branch with `gh pr view`; to watch a different PR, check out its branch first. By default the cloud session is told to fix every CI failure and review comment; pass a prompt to give it different instructions, for example `/autofix-pr only fix lint and type errors`. Requires the `gh` CLI and access to [cloud sessions](/docs/en/claude-code-on-the-web) |
 | `/background [prompt]` | Detach the current session to run as a [background agent](/docs/en/agent-view) and free this terminal. Pass a prompt to send one more instruction before detaching. Monitor the session with `claude agents`. To copy the conversation into a new background session while this one keeps running, use `/fork`. Alias: `/bg` |
@@ -63007,7 +63009,7 @@ In the table below, `<arg>` indicates a required argument and `[arg]` indicates 
 | `/plugin-authoring` | Load the reference Claude works from to [write a mod](/docs/en/plugins/mods/create#ask-claude-for-a-mod). Claude can load it on its own when you ask for a mod. This is a skill from a [built-in plugin](/docs/en/plugins/mods/overview#mods-built-into-claude-code), which you can turn off in `/plugin`. Requires Claude Code v2.1.287 or later |
 | `/powerup` | Discover Claude Code features through quick interactive lessons with animated demos |
 | `/pr-comments [PR]` | Removed in v2.1.91. Ask Claude directly to view pull request comments instead. On earlier versions, fetches and displays comments from a GitHub pull request; automatically detects the PR for the current branch, or pass a PR URL or number. Requires the `gh` CLI |
-| `/privacy-settings` | View and update your privacy settings. Only available for Pro and Max plan subscribers |
+| `/privacy-settings` | View and update your privacy settings. Only available for Pro, Max, and Ultra plan subscribers |
 | `/radio` | Open Claude FM lo-fi radio in your browser. Prints the stream URL when no browser is available |
 | `/rate-limit-options` | Show ways to keep working when a claude.ai usage limit blocks a request: wait and [continue automatically when the limit resets](/docs/en/interactive-mode#wait-for-a-usage-limit-to-reset), add [usage credits](/docs/en/costs#add-usage-credits-to-your-subscription), or upgrade your plan. Claude Code can also open this menu on its own when you hit a limit at your own terminal. See [Turn automatic continue off](/docs/en/interactive-mode#turn-automatic-continue-off). Requires a claude.ai subscription. The wait-and-continue rows require Claude Code v2.1.234 or later |
 | `/recap` | Generate a one-line summary of the current session on demand. See [Session recap](/docs/en/interactive-mode#session-recap) for the automatic recap that appears after you've been away |
@@ -63017,7 +63019,7 @@ In the table below, `<arg>` indicates a required argument and `[arg]` indicates 
 | `/remote-control` | Make this session available for [Remote Control](/docs/en/remote-control) from claude.ai. Running it while signed out prints that Remote Control requires a claude.ai subscription and tells you how to sign in. Alias: `/rc` |
 | `/remote-env` | Choose the default [cloud environment](/docs/en/cloud-environments#select-an-environment-from-the-cli) for cloud sessions you start from the CLI |
 | `/rename [name]` | Rename the current session and show the name on the prompt bar. Without a name, auto-generates one from conversation history. Also available in non-interactive mode (`-p`). From every rename surface, including claude.ai and the desktop app, Claude Code replaces control and invisible characters in the new name with spaces and caps the name at 200 characters. If the name is empty once invisible characters are removed, Claude Code rejects it and shows `That name is empty once invisible characters are removed. Usage: /rename <name>`. The character replacement and length cap require Claude Code v2.1.221 or later |
-| `/restart` | Restart Claude Code and resume this session, which applies an installed update. Run it when the footer offers it after an update installs. Requires a Pro or Max plan and a native install on macOS or Linux, not WSL. Requires Claude Code v2.1.288 or later. Alias: `/update` |
+| `/restart` | Restart Claude Code and resume this session, which applies an installed update. Run it when the footer offers it after an update installs. Requires a Pro, Max, or Ultra plan and a native install on macOS or Linux, not WSL. Requires Claude Code v2.1.288 or later. Alias: `/update` |
 | `/resume [session]` | Resume a conversation by ID or name, or open the session picker. [Background sessions](/docs/en/agent-view) appear in the picker marked with `bg`. Resuming one that is still running, from the picker or by ID or name, [opens that session](/docs/en/sessions#resume-a-running-background-session): your current conversation moves to the background and this terminal attaches to the running one. Press `←` on an empty prompt to return to agent view, which also lists the conversation you left. Before v2.1.285, Claude Code refused and told you to open the session with `claude attach` or stop it first. Alias: `/continue` |
 | `/review [low\|medium\|high\|xhigh\|max\|ultra] [--fix] [--comment] [--max-findings n\|all\|default] [pr#\|branch\|path]` | Alias of [`/code-review`](/docs/en/code-review-local): reviews the current diff, or a PR number, branch, or path you pass, such as `/review 1234`, and takes the same effort levels and flags. With no level given, the review reuses the last `low` through `max` level you typed; see [Review locally with `/code-review`](/docs/en/code-review-local) for the exact rules. For a deep cloud review, use [`/code-review ultra`](/docs/en/ultrareview). Before v2.1.223, `/review` was a separate command that ran a single-pass, read-only review of a GitHub pull request by number, listing open PRs to pick from when run with no argument; from v2.1.186 through v2.1.201, it ran the same multi-agent engine as `/code-review medium` |
 | `/rewind` | Rewind the conversation and/or code to a previous point, or summarize from a selected message. See [checkpointing](/docs/en/checkpointing). Aliases: `/checkpoint`, `/undo` |
@@ -63046,10 +63048,10 @@ In the table below, `<arg>` indicates a required argument and `[arg]` indicates 
 | `/theme` | Change the color theme. Includes an `auto` option that matches your terminal's light or dark background, light and dark variants, colorblind-accessible (daltonized) themes, ANSI themes that use your terminal's color palette, and any [custom themes](/docs/en/terminal-config#create-a-custom-theme) from `~/.claude/themes/` or plugins. Select **New custom theme…** to create one |
 | `/tui [default\|fullscreen]` | Set the terminal UI renderer and relaunch into it with your conversation intact. `fullscreen` enables the [flicker-free alt-screen renderer](/docs/en/fullscreen). With no argument, prints the active renderer |
 | `/ultraplan <prompt>` | Removed. Use [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode) instead. Previously sent a planning task to a [cloud session](/docs/en/claude-code-on-the-web) for review in your browser |
-| `/ultrareview [PR or branch]` | Run a deep, multi-agent code review in a cloud sandbox with [ultrareview](/docs/en/ultrareview). Pass a PR reference to review that pull request, or a base branch or commit to change the comparison base. The preferred invocation is `/code-review ultra`, and `/ultrareview` is an alias. Includes 3 free runs on Pro and Max, then requires [usage credits](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) |
+| `/ultrareview [PR or branch]` | Run a deep, multi-agent code review in a cloud sandbox with [ultrareview](/docs/en/ultrareview). Pass a PR reference to review that pull request, or a base branch or commit to change the comparison base. The preferred invocation is `/code-review ultra`, and `/ultrareview` is an alias. Includes 3 free runs on Pro, Max, and Ultra, then requires [usage credits](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) |
 | `/update-config [request]` | **[Skill](/docs/en/skills#bundled-skills).** Describe a settings change, such as allowing a command, setting an environment variable, or adding a [hook](/docs/en/hooks), and Claude edits the matching [`settings.json`](/docs/en/settings) file. For options such as theme and model, use `/config` instead |
 | `/upgrade` | Open the upgrade page in your browser to switch to a higher plan tier. When the browser fails to open, the command shows a sign-in prompt without printing the URL |
-| `/usage` | Show session cost, plan usage limits, and activity stats. On a Pro, Max, Team, or Enterprise plan, includes a [breakdown of what counts against your plan limits](/docs/en/costs#plan-usage-breakdown). `/cost` and `/stats` are aliases |
+| `/usage` | Show session cost, plan usage limits, and activity stats. On a Pro, Max, Ultra, Team, or Enterprise plan, includes a [breakdown of what counts against your plan limits](/docs/en/costs#plan-usage-breakdown). `/cost` and `/stats` are aliases |
 | `/usage-credits` | Configure usage credits, or request them from your admin, when you hit a limit. Opens your [usage-credits billing settings](/docs/en/costs#add-usage-credits-to-your-subscription) in the browser, except that Team and Enterprise members without billing access instead send a usage-credits request to their admin from the CLI, after confirming in a dialog that the request notifies their admins. When no browser can open the billing page, for example over SSH, the command prints the URL to visit instead; this requires Claude Code v2.1.205 or later, and earlier versions showed nothing in that case. Previously `/extra-usage` |
 | `/verify` | **[Skill](/docs/en/skills#bundled-skills).** Confirm a code change does what it should by building your project's app, running it, and observing the result, rather than relying on tests or type checks. See [Run and verify your app](/docs/en/skills#run-and-verify-your-app) |
 | `/vim` | Removed in v2.1.92. To toggle between Vim and Normal editing modes, use `/config` → Editor mode |
@@ -63768,7 +63770,7 @@ Source: https://code.claude.com/docs/en/costs
 
 Track token usage, set team spend limits, and reduce Claude Code costs with context management, model selection, extended thinking settings, and preprocessing hooks.
 
-Claude Code charges by API token consumption. For subscription plan pricing (Pro, Max, Team, Enterprise), see [claude.com/pricing](https://claude.com/pricing). Per-developer costs vary widely based on model selection, codebase size, and usage patterns such as running multiple instances or automation.
+Claude Code charges by API token consumption. For subscription plan pricing (Pro, Max, Ultra, Team, Enterprise), see [claude.com/pricing](https://claude.com/pricing). Per-developer costs vary widely based on model selection, codebase size, and usage patterns such as running multiple instances or automation.
 
 Across enterprise deployments, the average cost is around \$13 per developer per active day and \$150-250 per developer per month, with costs remaining below \$30 per active day for 90% of users. To estimate spend for your own team, start with a small pilot group and use the tracking tools below to establish a baseline before wider rollout.
 
@@ -63780,7 +63782,7 @@ This page covers Claude Code usage only: how to [track your costs](#track-your-c
 
 > [!NOTE]
 >
-> The Session block in `/usage` shows API token usage and is intended for API users. Claude Max and Pro subscribers have usage included in their subscription, so the session cost figure isn't relevant for billing purposes. Subscribers see plan usage bars, activity stats, and a usage breakdown on the same screen.
+> The Session block in `/usage` shows API token usage and is intended for API users. Claude Pro, Max, and Ultra subscribers have usage included in their subscription, so the session cost figure isn't relevant for billing purposes. Subscribers see plan usage bars, activity stats, and a usage breakdown on the same screen.
 
 The Session block at the top of `/usage` shows detailed token usage statistics for your current session. Claude Code computes the dollar figure locally from token counts at list price, unless a [`modelPricing`](/docs/en/settings-reference#modelpricing) table is in effect. An administrator sets one in your organization's managed settings so the figure uses your contracted rates, and while a table is in effect the `Total cost` line carries the note `at your organization's configured rates`. The figure is an estimate, so for authoritative billing see the Usage page in the [Claude Console](https://platform.claude.com/usage).
 
@@ -63817,7 +63819,7 @@ Status line scripts can read the same numbers from the [`prompt_cache` object](/
 
 #### Plan usage breakdown
 
-On a Pro, Max, Team, or Enterprise plan, `/usage` also shows a breakdown of what counts against your plan limits, with recommendations:
+On a Pro, Max, Ultra, Team, or Enterprise plan, `/usage` also shows a breakdown of what counts against your plan limits, with recommendations:
 
 * **Attribution**: recent usage attributed to skills, subagents, plugins, and individual MCP servers, each shown as a percentage of the total. An MCP server's share counts only the requests that consumed one of its tool results. Before v2.1.222, after one call to an MCP server, Claude Code attributed every subsequent request to that server, overstating its share.
 * **Recommendations**: suggested changes, one per row. Each row starts with a share of your recent usage, at least 10%, as in `25%  Trim ~/code/api/CLAUDE.md · 49k tokens per request`.
@@ -63854,10 +63856,10 @@ While [Remote Control](/docs/en/remote-control) is connected, the footer shows n
 
 `/usage` also shows a usage-credits row while [usage credits](#add-usage-credits-to-your-subscription) are on. What the row shows depends on your plan:
 
-* **Pro and Max**: your spend for the current month, measured against your monthly spend limit when you have set one. When you haven't set a limit, the row shows `Unlimited` and no spend figure.
+* **Pro, Max, and Ultra**: your spend for the current month, measured against your monthly spend limit when you have set one. When you haven't set a limit, the row shows `Unlimited` and no spend figure.
 * **Team and Enterprise**: your own spend for the current month, measured against any [limit your organization set](#claude-for-teams-and-enterprise) that applies to you. A limit that covers the whole organization doesn't appear in the row. When you have no limit of your own, the row shows your spend with no limit beside it. While usage credits are off for you, `/usage` shows no usage-credits row.
 
-When you have a spend limit, the row appears as soon as usage credits are on and shows 0% until you first spend usage credits. Before v2.1.236, `/usage` showed the row only on Pro and Max plans, and a row with a spend limit stayed hidden until you had spent something.
+When you have a spend limit, the row appears as soon as usage credits are on and shows 0% until you first spend usage credits. Before v2.1.236, `/usage` showed the row only on Pro, Max, and Ultra plans, and a row with a spend limit stayed hidden until you had spent something.
 
 #### When the usage request fails
 
@@ -63892,7 +63894,7 @@ You can run `/insights` on any plan and with any provider. The analysis runs thr
 
 | Your role | What `/usage-credits` does |
 | :- | :- |
-| Pro or Max subscriber | Opens [**Settings > Usage**](https://claude.ai/settings/usage) on claude.ai in the browser. In its **Usage credits** section you can turn usage credits on or off and check your credit balance, this month's spend, and your monthly spend limit |
+| Pro, Max, or Ultra subscriber | Opens [**Settings > Usage**](https://claude.ai/settings/usage) on claude.ai in the browser. In its **Usage credits** section you can turn usage credits on or off and check your credit balance, this month's spend, and your monthly spend limit |
 | Team or Enterprise member with billing access | Opens your organization's usage settings, [**Organization settings > Usage**](https://claude.ai/admin-settings/usage), in the browser |
 | Team or Enterprise member without billing access | Asks you to confirm, then sends a request to your organization's admins. Before v2.1.211, Claude Code sent the request without a confirmation step |
 
@@ -63906,7 +63908,7 @@ On Pro and Max plans, when you reach your spend limit with usage credits still a
 
 Which controls you have depends on how your organization accesses Claude Code: a Claude for Teams or Enterprise plan, the Claude Console, or a cloud provider. On Teams and Enterprise plans, usage draws from each member's seat allowance. On the Console and on cloud providers, usage is billed per token to your organization. If your organization mixes sign-in methods, each developer is metered according to the one they authenticated with.
 
-The table maps each setup to where you see spend, where you cap it, and how you pull per-user numbers. On an individual Pro or Max plan you have no organization to manage, so track your own usage-credit spend, including [fast mode](/docs/en/fast-mode#see-where-fast-mode-spend-appears), under [Add usage credits to your subscription](#add-usage-credits-to-your-subscription).
+The table maps each setup to where you see spend, where you cap it, and how you pull per-user numbers. On an individual Pro, Max, or Ultra plan you have no organization to manage, so track your own usage-credit spend, including [fast mode](/docs/en/fast-mode#see-where-fast-mode-spend-appears), under [Add usage credits to your subscription](#add-usage-credits-to-your-subscription).
 
 | Your setup | See spend | Cap spend | Per-user reporting |
 | :- | :- | :- | :- |
@@ -64154,7 +64156,7 @@ A session that has been open for hours can use far more of your plan limits than
 * **Agent teammates**: each active [teammate](#agent-team-token-costs) keeps consuming tokens until it exits
 * **Compaction**: `/compact` reads the conversation it summarizes, so [compacting a large context](/docs/en/prompt-caching#compacting-the-conversation) is itself a large request. When you want a fresh start instead of continuity, `/clear` costs nothing
 
-On a Pro, Max, Team, or Enterprise plan, the [`/usage` breakdown](#plan-usage-breakdown) recommends a change for behaviors behind 10% or more of your recent usage, such as long context or cache misses.
+To see what to change on a Pro, Max, Ultra, Team, or Enterprise plan, run [`/usage`](#plan-usage-breakdown) at the Claude Code prompt. Its breakdown recommends a change for behaviors behind 10% or more of your recent usage. Those behaviors include long context and cache misses.
 
 ## Understanding changes in Claude Code behavior
 
@@ -64162,7 +64164,7 @@ Claude Code regularly receives updates that may change how features work, includ
 
 For billing questions about your specific account, contact Anthropic support through the in-product messenger:
 
-* **Subscription plans** (Pro, Max, Team, Enterprise): sign in at [claude.ai](https://claude.ai), click your initials in the lower left, and select **Get help**
+* **Subscription plans** (Pro, Max, Ultra, Team, Enterprise): sign in at [claude.ai](https://claude.ai), click your initials in the lower left, and select **Get help**
 * **Console (API) billing**: sign in at [platform.claude.com](https://platform.claude.com), click your initials, and select **Get help**
 
 See [How to get support](https://support.claude.com/en/articles/9015913-how-to-get-support) for the full flow, including who can reach a human agent on each plan.
@@ -64177,8 +64179,8 @@ Learn about Anthropic's data usage policies for Claude
 
 ### Data training policy
 
-**Consumer users (Free, Pro, and Max plans)**:
-We give you the choice to allow your data to be used to improve future Claude models. We will train new models using data from Free, Pro, and Max accounts when this setting is on (including when you use Claude Code from these accounts).
+**Consumer users (Free, Pro, Max, and Ultra plans)**:
+We give you the choice to allow your data to be used to improve future Claude models. We will train new models using data from Free, Pro, Max, and Ultra accounts when this setting is on (including when you use Claude Code from these accounts).
 
 **Commercial users**: (Team and Enterprise plans, API, 3rd-party platforms, and Claude Gov) maintain existing policies: Anthropic does not train generative models using code or prompts sent to Claude Code under commercial terms, unless the customer has chosen to provide their data to us for model improvement (for example, the [Developer Partner Program](https://support.claude.com/en/articles/11174108-about-the-development-partner-program)).
 
@@ -64210,7 +64212,7 @@ To disable these surveys, set `CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY=1`. The surve
 
 Anthropic retains Claude Code data based on your account type and preferences.
 
-**Consumer users (Free, Pro, and Max plans)**:
+**Consumer users (Free, Pro, Max, and Ultra plans)**:
 
 * Users who allow data use for model improvement: 5-year retention period to support model development and safety improvements
 * Users who don't allow data use for model improvement: 30-day retention period
@@ -64228,7 +64230,7 @@ You can delete individual cloud sessions at any time. Deleting a session permane
 
 Learn more about data retention practices in our [Privacy Center](https://privacy.anthropic.com/).
 
-For full details, please review our [Commercial Terms of Service](https://www.anthropic.com/legal/commercial-terms) (for Team, Enterprise, and API users) or [Consumer Terms](https://www.anthropic.com/legal/consumer-terms) (for Free, Pro, and Max users) and [Privacy Policy](https://www.anthropic.com/legal/privacy).
+For full details, please review our [Commercial Terms of Service](https://www.anthropic.com/legal/commercial-terms) (for Team, Enterprise, and API users) or [Consumer Terms](https://www.anthropic.com/legal/consumer-terms) (for Free, Pro, Max, and Ultra users) and [Privacy Policy](https://www.anthropic.com/legal/privacy).
 
 ## Data access
 
@@ -64274,7 +64276,7 @@ Claude Code sends two kinds of operational telemetry: usage metrics and error re
 
 Error reporting is on only when all of these apply:
 
-* you sign in with a Claude Pro or Max subscription
+* you sign in with a Claude Pro, Max, or Ultra subscription
 * you're running Claude Code v2.1.198 or later
 * you're connecting directly to the Claude API
 * your organization doesn't have a zero data retention or HIPAA agreement
@@ -64290,7 +64292,7 @@ By default, error reporting, telemetry, and bug reporting are disabled when usin
 | Service | Claude API | Google Cloud's Agent Platform API | Amazon Bedrock API | Microsoft Foundry API | Claude Platform on AWS |
 | - | - | - | - | - | - |
 | **Metrics** | Default on. `DISABLE_TELEMETRY=1` to disable. | Default off. `CLAUDE_CODE_USE_VERTEX` must be 1. | Default off. `CLAUDE_CODE_USE_BEDROCK` must be 1. | Default off. `CLAUDE_CODE_USE_FOUNDRY` must be 1. | Default off. `CLAUDE_CODE_USE_ANTHROPIC_AWS` must be 1. |
-| **Error reports** | On for Pro and Max sign-ins on v2.1.198+, otherwise off. `DISABLE_ERROR_REPORTING=1` to disable. | Default off. `CLAUDE_CODE_USE_VERTEX` must be 1. | Default off. `CLAUDE_CODE_USE_BEDROCK` must be 1. | Default off. `CLAUDE_CODE_USE_FOUNDRY` must be 1. | Default off. `CLAUDE_CODE_USE_ANTHROPIC_AWS` must be 1. |
+| **Error reports** | On for Pro, Max, and Ultra sign-ins on v2.1.198+, otherwise off. `DISABLE_ERROR_REPORTING=1` to disable. | Default off. `CLAUDE_CODE_USE_VERTEX` must be 1. | Default off. `CLAUDE_CODE_USE_BEDROCK` must be 1. | Default off. `CLAUDE_CODE_USE_FOUNDRY` must be 1. | Default off. `CLAUDE_CODE_USE_ANTHROPIC_AWS` must be 1. |
 | **Claude API (`/feedback` reports)** | Default on. `DISABLE_FEEDBACK_COMMAND=1` to disable. | Default off. `CLAUDE_CODE_USE_VERTEX` must be 1. | Default off. `CLAUDE_CODE_USE_BEDROCK` must be 1. | Default off. `CLAUDE_CODE_USE_FOUNDRY` must be 1. | Default off. `CLAUDE_CODE_USE_ANTHROPIC_AWS` must be 1. |
 | **Session quality surveys** | Default on. `CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY=1` to disable. | Default on. `CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY=1` to disable. | Default on. `CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY=1` to disable. | Default on. `CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY=1` to disable. | Default on. `CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY=1` to disable. |
 | **WebFetch domain safety check** | Default on. `skipWebFetchPreflight: true` in [settings](/docs/en/settings) to disable. | Default on. `skipWebFetchPreflight: true` in [settings](/docs/en/settings) to disable. | Default on. `skipWebFetchPreflight: true` in [settings](/docs/en/settings) to disable. | Default on. `skipWebFetchPreflight: true` in [settings](/docs/en/settings) to disable. | Default on. `skipWebFetchPreflight: true` in [settings](/docs/en/settings) to disable. |
@@ -64631,7 +64633,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 
 | Variable | Purpose |
 | :- | :- |
-| `ANTHROPIC_API_KEY` | API key sent as `X-Api-Key` header. When set, this key is used instead of your Claude Pro, Max, Team, or Enterprise subscription even if you are logged in. In non-interactive mode (`-p`), the key is always used when present. In interactive mode, you are prompted to approve the key once before it overrides your subscription. To use your subscription instead, run `unset ANTHROPIC_API_KEY` |
+| `ANTHROPIC_API_KEY` | API key sent as `X-Api-Key` header. When set, this key is used instead of your Claude Pro, Max, Ultra, Team, or Enterprise subscription even if you are logged in. In non-interactive mode (`-p`), the key is always used when present. In interactive mode, you are prompted to approve the key once before it overrides your subscription. To use your subscription instead, run `unset ANTHROPIC_API_KEY` |
 | `ANTHROPIC_AUTH_TOKEN` | Custom value for the `Authorization` header (the value you set here will be prefixed with `Bearer `) |
 | `ANTHROPIC_AWS_API_KEY` | Workspace API key for [Claude Platform on AWS](/docs/en/claude-platform-on-aws), generated in the AWS Console. Sent as `x-api-key` and takes precedence over AWS SigV4 |
 | `ANTHROPIC_AWS_BASE_URL` | Override the [Claude Platform on AWS](/docs/en/claude-platform-on-aws) endpoint URL. Use for custom regions or when routing through an [LLM gateway](/docs/en/llm-gateway). Defaults to `https://aws-external-anthropic.{region}.api.aws`. Claude Code resolves the region with the [same precedence as on Amazon Bedrock](/docs/en/amazon-bedrock#3-configure-claude-code) |
@@ -65076,7 +65078,7 @@ With fetching off, you can't:
 * [Message sessions beyond this machine](/docs/en/cross-session-messaging#message-sessions-on-other-machines) when [Remote Control](/docs/en/remote-control#requirements) is unavailable. Messaging between sessions on this machine works with fetching off
 * Run [`claude import` or the `/import` command](/docs/en/cli-reference#cli-commands)
 * Run [`/skill-doctor`](/docs/en/skills#find-unused-skills) or open its report in the `/plugin` **Stats** tab
-* Run [`/restart`](/docs/en/commands) on Pro and Max plans
+* Run [`/restart`](/docs/en/commands) on Pro, Max, and Ultra plans
 * Sync the [skills](/docs/en/skills#where-synced-skills-load) and [plugins](/docs/en/plugins/loading#synced-plugins) enabled for your claude.ai account into your terminal sessions
 * Turn on the [You should know mod](/docs/en/interactive-mode#you-should-know-suggestions)
 * Use [the advisor tool](/docs/en/advisor#requirements)
@@ -65125,8 +65127,8 @@ What to know:
 
 * Use `/fast` to toggle on fast mode in the Claude Code CLI. The [VS Code extension](/docs/en/vs-code) offers a **Toggle fast mode** command when the selected model supports fast mode. Claude Code saves that toggle to your [`fastMode` setting](#toggle-fast-mode).
 * Fast mode pricing per MTok input/output is \$8/\$40 on Opus 5.5 and \$10/\$50 on Opus 5 and Opus 4.8.
-* Available to Claude Code users on subscription plans (Pro/Max/Team/Enterprise) and on Claude Console. Team and Enterprise organizations need an Owner to enable it first, and Console organizations need access provisioned first to use it with Opus 5 or Opus 4.8. [Requirements](#requirements) describes both.
-* For Claude Code users on subscription plans (Pro/Max/Team/Enterprise), fast mode is available via usage credits only and not included in the subscription rate limits.
+* Available to Claude Code users on subscription plans (Pro/Max/Ultra/Team/Enterprise) and on Claude Console. Team and Enterprise organizations need an Owner to enable it first, and Console organizations need access provisioned first to use it with Opus 5 or Opus 4.8. [Requirements](#requirements) describes both.
+* For Claude Code users on subscription plans (Pro/Max/Ultra/Team/Enterprise), fast mode is available via usage credits only and not included in the subscription rate limits.
 
 ## Toggle fast mode
 
@@ -65191,7 +65193,7 @@ The first time you enable fast mode in a conversation, you pay the full fast mod
 
 You see fast mode spend in a different place depending on how you signed in, so first run [`/status`](/docs/en/commands) to check. If it shows a `Login method` row such as `Claude Max account`, you signed in with a Claude subscription. If it shows an `API key` row instead, your requests bill to a Claude Console organization.
 
-* **Pro and Max**: you pay for fast mode from your usage credits. Go to [**Settings > Usage**](https://claude.ai/settings/usage) on claude.ai, where the **Usage credits** section shows how much you've spent in usage credits this month. That figure includes fast mode but doesn't break it out separately.
+* **Pro, Max, and Ultra**: you pay for fast mode from your usage credits. Go to [**Settings > Usage**](https://claude.ai/settings/usage) on claude.ai, where the **Usage credits** section shows how much you've spent in usage credits this month. That figure includes fast mode but doesn't break it out separately.
 * **Team and Enterprise**: your organization pays for your fast mode usage from its usage credits. To see your own usage-credits spend, run [`/usage`](/docs/en/costs#check-your-usage-credits-spend). For where your organization sees that spend, see [Claude for Teams and Enterprise](/docs/en/costs#claude-for-teams-and-enterprise).
 * **Claude Console**: your organization pays for fast mode with the rest of its API usage. On the Console [Usage](https://platform.claude.com/usage) and [Cost](https://platform.claude.com/cost) pages, select **Speed (Research Preview)** in the **Group by** menu to separate fast mode from standard-speed usage. You see that option only when the selected date range includes fast mode usage.
 
@@ -65225,8 +65227,8 @@ You can combine both: use fast mode with a lower [effort level](/docs/en/model-c
 Fast mode requires all of the following:
 
 * **Anthropic API or subscription only**: fast mode is available through the Anthropic Console API and for Claude subscription plans using usage credits. It is not available on Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, or Claude Platform on AWS. Console organizations must also have [fast mode access provisioned](#enable-fast-mode-for-your-organization) to use it with Opus 5 or Opus 4.8.
-* **Usage credits turned on for subscription plans**: on a Pro, Max, Team, or Enterprise plan, your account must have [usage credits](/docs/en/costs#add-usage-credits-to-your-subscription) turned on, which allows billing beyond your plan's included usage. Until they're on, `/fast` reports "Fast mode requires usage credits". How you turn them on depends on your plan:
-  * On Pro and Max, turn them on in the **Usage credits** section of [**Settings > Usage**](https://claude.ai/settings/usage) on claude.ai, or run `/usage-credits` to open that page.
+* **Usage credits turned on for subscription plans**: on a Pro, Max, Ultra, Team, or Enterprise plan, your account must have [usage credits](/docs/en/costs#add-usage-credits-to-your-subscription) turned on, which allows billing beyond your plan's included usage. Until they're on, `/fast` reports "Fast mode requires usage credits". To turn them on, follow the step for your plan:
+  * On Pro, Max, and Ultra, turn them on in the **Usage credits** section of [**Settings > Usage**](https://claude.ai/settings/usage) on claude.ai, or run `/usage-credits` to open that page.
   * On Team and Enterprise, a member with billing access turns them on for the organization at [**Organization settings > Usage**](https://claude.ai/admin-settings/usage), and a member without it runs `/usage-credits` to send the organization's admins a request.
 
 > [!NOTE]
@@ -65352,7 +65354,7 @@ In the tables below, ✓ means available, ✗ means not available, and "See note
 
 How you authenticate determines which features Claude Code can reach. For a single list of what is missing on your provider, see the [summary by provider](#summary-by-provider) tabs. To find your column in the tables:
 
-* **Claude subscription**: you sign in with a claude.ai account on the Pro, Max, Team, or Enterprise plan
+* **Claude subscription**: you sign in with a claude.ai account on the Pro, Max, Ultra, Team, or Enterprise plan
 * **Anthropic Console**: you authenticate with an Anthropic API key or by [signing in to a Console account without one](/docs/en/authentication#sign-in-without-an-api-key)
 * **Amazon Bedrock**: you use Claude models from the Amazon Bedrock model catalog and set `CLAUDE_CODE_USE_BEDROCK`. The [Mantle endpoint](/docs/en/amazon-bedrock#use-the-mantle-endpoint) (`CLAUDE_CODE_USE_MANTLE`) is covered by this column
 * **Claude Platform on AWS**: you bought Claude through AWS Marketplace but call the Anthropic API, and set `CLAUDE_CODE_USE_ANTHROPIC_AWS`
@@ -65384,15 +65386,15 @@ These have provider-specific differences:
 These require signing in with a claude.ai account and are not reachable with an Anthropic Console API key or from a third-party provider:
 
 * [Cloud sessions](/docs/en/claude-code-on-the-web) and Claude Code on mobile
-* [Claude Code in Slack](/docs/en/slack): Pro and Max plans
+* [Claude Code in Slack](/docs/en/slack): Pro, Max, and Ultra plans
 * [Claude Code Desktop](/docs/en/desktop)
 * [Cloud scheduled tasks](/docs/en/routines) (`/schedule`)
 * [Ultrareview](/docs/en/ultrareview)
 * [Code Review](/docs/en/code-review): Team and Enterprise plans
 * [Remote Control](/docs/en/remote-control)
 * [Chrome extension](/docs/en/chrome)
-* [Computer use](/docs/en/computer-use): Pro and Max plans
-* [Artifacts](/docs/en/artifacts): Pro, Max, Team, and Enterprise plans
+* [Computer use](/docs/en/computer-use): Pro, Max, and Ultra plans
+* [Artifacts](/docs/en/artifacts): Pro, Max, Ultra, Team, and Enterprise plans
 * [Voice dictation](/docs/en/voice-dictation)
 
 Desktop is the partial exception: [gateway routing can be configured in the app or by an administrator](/docs/en/llm-gateway-connect#desktop-app). [Claude Desktop on 3P](https://claude.com/docs/third-party/claude-desktop/overview) also runs the Code tab on Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, or a self-hosted LLM gateway. It also runs the Code tab on the [Claude API](https://claude.com/docs/third-party/claude-desktop/claude-api) with an Anthropic Console API key. For per-plan availability of these features, see [Availability by subscription plan](#availability-by-subscription-plan).
@@ -65635,29 +65637,35 @@ If you authenticate through Amazon Bedrock, Google Cloud's Agent Platform, Micro
 
 In Enterprise organizations with the [HIPAA configuration](/docs/en/hipaa-setup) applied, some features in this table are turned off.
 
-| Feature | Pro | Max | Team | Enterprise |
-| :- | :- | :- | :- | :- |
-| [Cloud sessions](/docs/en/claude-code-on-the-web) | ✓ | ✓ | ✓ | ✓ <sup>[6](#fn6)</sup> |
-| [Cloud scheduled tasks](/docs/en/routines) | ✓ | ✓ | ✓ | ✓ |
-| [Remote Control](/docs/en/remote-control) | ✓ | ✓ | Admin-enabled | Admin-enabled |
-| [Channels](/docs/en/channels) | ✓ | ✓ | Admin-enabled | Admin-enabled |
-| [Computer use](/docs/en/computer-use) | ✓ | ✓ | ✗ | ✗ |
-| Dispatch ([Desktop](/docs/en/desktop#sessions-from-dispatch)) | ✓ | ✓ | ✗ | ✗ |
-| [Code Review](/docs/en/code-review) | ✗ | ✗ | ✓ | ✓ |
-| [Artifacts](/docs/en/artifacts) | ✓ | ✓ | ✓ | ✓ |
-| [Analytics dashboard and contribution metrics](/docs/en/analytics) | ✗ | ✗ | ✓ | ✓ |
-| [Enterprise Analytics API](/docs/en/analytics#access-data-programmatically) | ✗ | ✗ | ✗ | ✓ |
-| [Server-managed settings](/docs/en/server-managed-settings) | ✗ | ✗ | ✓ | ✓ |
-| [SSO](https://support.claude.com/en/articles/9266767-what-is-the-team-plan) | ✗ | ✗ | ✓ | ✓ |
-| SCIM | ✗ | ✗ | ✗ | ✓ |
-| [Compliance API](https://platform.claude.com/docs/en/api/compliance) | ✗ | ✗ | ✗ | ✓ |
-| [Zero Data Retention](/docs/en/zero-data-retention) | ✗ | ✗ | ✗ | ✓ <sup>[7](#fn7)</sup> |
+| Feature | Pro | Max | Ultra | Team | Enterprise |
+| :- | :- | :- | :- | :- | :- |
+| [Cloud sessions](/docs/en/claude-code-on-the-web) | ✓ | ✓ | ✓ | ✓ | ✓ <sup>[6](#fn6)</sup> |
+| [Cloud scheduled tasks](/docs/en/routines) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| [Remote Control](/docs/en/remote-control) | ✓ | ✓ | ✓ | Admin-enabled | Admin-enabled |
+| [Channels](/docs/en/channels) | ✓ | ✓ | ✓ | Admin-enabled | Admin-enabled |
+| [Computer use](/docs/en/computer-use) | ✓ | ✓ | ✓ | ✗ | ✗ |
+| Dispatch ([Desktop](/docs/en/desktop#sessions-from-dispatch)) | ✓ | ✓ | ✓ | ✗ | ✗ |
+| [Code Review](/docs/en/code-review) | ✗ | ✗ | ✗ | ✓ | ✓ |
+| [Artifacts](/docs/en/artifacts) | ✓ | ✓ | ✓ | ✓ | ✓ |
+| [Analytics dashboard and contribution metrics](/docs/en/analytics) | ✗ | ✗ | ✗ | ✓ | ✓ |
+| [Enterprise Analytics API](/docs/en/analytics#access-data-programmatically) | ✗ | ✗ | ✗ | ✗ | ✓ |
+| [Server-managed settings](/docs/en/server-managed-settings) | ✗ | ✗ | ✗ | ✓ | ✓ |
+| [SSO](https://support.claude.com/en/articles/9266767-what-is-the-team-plan) | ✗ | ✗ | ✗ | ✓ | ✓ |
+| SCIM | ✗ | ✗ | ✗ | ✗ | ✓ |
+| [Compliance API](https://platform.claude.com/docs/en/api/compliance) | ✗ | ✗ | ✗ | ✗ | ✓ |
+| [Zero Data Retention](/docs/en/zero-data-retention) | ✗ | ✗ | ✗ | ✗ | ✓ <sup>[7](#fn7)</sup> |
 
 <sup>6</sup> On Enterprise, requires a premium seat or a Chat + Claude Code seat. See [Use Claude Code in the cloud](/docs/en/claude-code-on-the-web).\
 
 <sup>7</sup> Not included in the standard Enterprise plan. Requires separate enablement by Anthropic for qualified accounts. See [Zero Data Retention](/docs/en/zero-data-retention).
 
 For pricing and the full plan comparison, see [Team plans](https://support.claude.com/en/articles/9266767-what-is-the-team-plan) and [Enterprise plans](https://support.claude.com/en/articles/9797531-what-is-the-enterprise-plan).
+
+### Ultra plan
+
+Ultra is the new name for the Max 20x plan, and Max is the new name for Max 5x. To check which plan you're on, see your subscription on claude.ai.
+
+In Claude Code, Max and Ultra have the same features, listed in the Max and Ultra columns of the [availability table](#availability-by-subscription-plan). For usage limits and pricing, see the [Claude pricing page](https://claude.com/pricing).
 
 ## Model availability
 
@@ -66125,7 +66133,10 @@ Learn more: [Auto memory](/docs/en/memory#auto-memory)
 
 ### Auto mode
 
-A [permission mode](#permission-mode) where a separate classifier model reviews actions instead of you, so Claude Code runs most of them without asking you. Claude Code still asks you before actions your explicit ask rules match. With Claude Code v2.1.283 or later, auto mode is the [built-in starting permission mode](/docs/en/permission-modes#which-mode-a-session-starts-in) for interactive terminal and VS Code sessions, and on earlier versions only on Pro, Max, and Team plans. The classifier blocks scope escalation, untrusted infrastructure, and [prompt injection](#prompt-injection). Tool results are stripped from what it sees, so hostile content in a file or web page can't manipulate it directly.
+A [permission mode](#permission-mode) where a separate classifier model reviews actions instead of you, so Claude Code runs most of them without asking you. Claude Code still asks you before actions your explicit ask rules match. The classifier blocks scope escalation, untrusted infrastructure, and [prompt injection](#prompt-injection). Tool results are stripped from what it sees, so hostile content in a file or web page can't manipulate it directly.
+
+* **Claude Code v2.1.283 or later**: auto mode is the [built-in starting permission mode](/docs/en/permission-modes#which-mode-a-session-starts-in) for interactive terminal and VS Code sessions
+* **Earlier versions**: auto mode is the built-in starting permission mode only on Pro, Max, Ultra, and Team plans
 
 Learn more: [Eliminate prompts with auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode)
 
@@ -66211,7 +66222,7 @@ Learn more: [Explore the context window](/docs/en/context-window)
 
 ### Dispatch
 
-A phone-initiated task router that spawns a Claude Code session in the Desktop app when you send a coding task from the Claude mobile app. Your prompt routes to the right tool automatically. Available on Pro and Max plans.
+A phone-initiated task router that spawns a Claude Code session in the Desktop app when you send a coding task from the Claude mobile app. Your prompt routes to the right tool automatically. Available on Pro, Max, and Ultra plans.
 
 Learn more: [Sessions from Dispatch](/docs/en/desktop#sessions-from-dispatch)
 
@@ -75760,11 +75771,11 @@ Effort limits are delivered together with [organization model restrictions](#org
 
 The behavior of `default` depends on your account type:
 
-* **Pro, Max, Team, Enterprise, and Anthropic API**: defaults to Opus 5.5
+* **Pro, Max, Ultra, Team, Enterprise, and Anthropic API**: defaults to Opus 5.5
 * **Claude Platform on AWS, Amazon Bedrock, and Google Cloud's Agent Platform**: defaults to Opus 5.5
 * **Microsoft Foundry**: defaults to Sonnet 4.5
 
-Before v2.1.280, `default` resolved to Sonnet 5 on Pro and Team Standard, and to Opus 5 on Max, Team Premium, Enterprise, the Anthropic API, Claude Platform on AWS, Amazon Bedrock, and Google Cloud's Agent Platform from v2.1.219. Before v2.1.219, `default` resolved to Opus 4.8 on the Anthropic API, Max, Team Premium, and Enterprise pay-as-you-go from v2.1.154, and on Claude Platform on AWS, Amazon Bedrock, and Google Cloud's Agent Platform from v2.1.207. Before v2.1.207, `default` resolved to Opus 4.7 on Claude Platform on AWS and to Sonnet 4.5 on Amazon Bedrock and Google Cloud's Agent Platform.
+Before v2.1.280, `default` resolved to Sonnet 5 on Pro and Team Standard, and to Opus 5 on Max, Ultra, Team Premium, Enterprise, the Anthropic API, Claude Platform on AWS, Amazon Bedrock, and Google Cloud's Agent Platform from v2.1.219. Before v2.1.219, `default` resolved to Opus 4.8 on the Anthropic API, Max, Ultra, Team Premium, and Enterprise pay-as-you-go from v2.1.154, and on Claude Platform on AWS, Amazon Bedrock, and Google Cloud's Agent Platform from v2.1.207. Before v2.1.207, `default` resolved to Opus 4.7 on Claude Platform on AWS and to Sonnet 4.5 on Amazon Bedrock and Google Cloud's Agent Platform.
 
 When an admin has set an [organization default model](#organization-default-model), `default` resolves to that model instead of the account-type default above. Requires Claude Code v2.1.196 or later. `default` can also resolve to the model you set with [`ANTHROPIC_DEFAULT_MODEL`](#set-a-default-model-for-new-sessions), under the conditions listed in its section, or to the model [recorded on your account](#setting-your-model).
 
@@ -76063,11 +76074,11 @@ Fable 5.1, Fable 5, Sonnet 5 and later, Haiku 5.5, Opus 4.6 and later, and Sonne
 
 Fable 5.1, Fable 5, Sonnet 5 and later, Haiku 5.5, and Opus 4.7 and later run with the 1M window by default, with no `[1m]` suffix needed. That includes sessions on Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry, and [Claude apps gateway](/docs/en/claude-apps-gateway) sessions. To run them with a 200K window instead, see [Turn off 1M context](#turn-off-1m-context).
 
-Opus 4.6 and Sonnet 4.6 reach 1M only through their `[1m]` variant, and access to that variant depends on your plan. On Max, Team, and Enterprise plans, including both Team Standard and Team Premium seats, Opus 4.6 with 1M context is included with your subscription. Sonnet 4.6 with 1M context requires [usage credits](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) on every subscription plan, including Max.
+Opus 4.6 and Sonnet 4.6 reach 1M only through their `[1m]` variant, and access to that variant depends on your plan. On Max, Ultra, Team, and Enterprise plans, including both Team Standard and Team Premium seats, Opus 4.6 with 1M context is included with your subscription. Sonnet 4.6 with 1M context requires [usage credits](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) on every subscription plan, including Max and Ultra.
 
 | Plan | Opus 4.6 with 1M context | Sonnet 4.6 with 1M context |
 | - | - | - |
-| Max, Team, and Enterprise | Included with subscription | Requires [usage credits](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) |
+| Max, Ultra, Team, and Enterprise | Included with subscription | Requires [usage credits](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) |
 | Pro | Requires [usage credits](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) | Requires [usage credits](https://support.claude.com/en/articles/12429409-extra-usage-for-paid-claude-plans) |
 | API and pay-as-you-go | Full access | Full access |
 
@@ -78708,7 +78719,7 @@ Control whether Claude asks before acting. Switch permission modes with Shift+Ta
 
 A permission mode sets which actions Claude can take in a session without asking you first. In Manual mode, Claude Code stops and asks you before most actions that edit files, run shell commands, or reach the network. In [auto mode](#eliminate-prompts-with-auto-mode), a second model, the classifier, reviews actions instead of you; [how the classifier evaluates actions](#how-the-classifier-evaluates-actions) lists which actions it reviews and which skip it.
 
-With Claude Code v2.1.283 or later, auto mode is the built-in starting permission mode for interactive terminal and VS Code sessions. On earlier versions, it's the built-in starting permission mode only on Pro, Max, and Team plans. [Which mode a session starts in](#which-mode-a-session-starts-in) covers the surfaces and settings that change the starting permission mode. You can also change a running session's permission mode at any time.
+With Claude Code v2.1.283 or later, auto mode is the built-in starting permission mode for interactive terminal and VS Code sessions. On earlier versions, it's the built-in starting permission mode only on Pro, Max, Ultra, and Team plans. [Which mode a session starts in](#which-mode-a-session-starts-in) covers the surfaces and settings that change the starting permission mode. You can also change a running session's permission mode at any time.
 
 ## Available modes
 
@@ -78780,7 +78791,7 @@ The built-in default depends on how you run Claude Code. The first row that matc
 | Any settings file sets `disableAutoMode` to `"disable"` | `default` |
 | `claude -p` or the [Agent SDK](/docs/en/agent-sdk/permissions#permission-modes) | `default` |
 | Your organization has the [HIPAA configuration](#hipaa-configuration) applied and the session is [eligible for it](/docs/en/hipaa-setup#check-how-developers-sign-in-and-connect) | `default` with Claude Code v2.1.285 or later; auto mode stays available to switch to |
-| In a terminal or through the [VS Code extension](/docs/en/vs-code) | `auto` with Claude Code v2.1.283 or later; on earlier versions, `auto` on Pro, Max, or Team plans in sessions that [fetch feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching), and `default` otherwise |
+| In a terminal or through the [VS Code extension](/docs/en/vs-code) | `auto` with Claude Code v2.1.283 or later; on earlier versions, `auto` on Pro, Max, Ultra, or Team plans in sessions that [fetch feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching), and `default` otherwise |
 
 When the flag, a settings file, or the built-in default selects `auto` but auto mode isn't available to the session, Claude Code starts the session in Manual instead. Auto mode is unavailable when the session doesn't meet the [availability requirements](#eliminate-prompts-with-auto-mode), such as a settings file turning it off or a model that doesn't support it, or when Anthropic has temporarily turned it off server-side.
 
@@ -78789,7 +78800,9 @@ The first time the built-in default starts one of your sessions in auto mode, Cl
 * In a terminal, once, at the top of the session
 * In the VS Code extension, as a card on the new-conversation screen that stays until you dismiss it
 
-If your `~/.claude/settings.json` sets a `defaultMode` other than `auto` and no other settings file sets one, your sessions keep starting in that mode. On Pro, Max, and Team plans, and in sessions that [don't fetch feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching), Claude Code asks once, in the terminal or in the VS Code extension, whether to change the setting to auto mode. If you decline, your setting stays as it is.
+If your `~/.claude/settings.json` sets a `defaultMode` other than `auto` and no other settings file sets one, your sessions keep starting in that mode.
+
+On Pro, Max, Ultra, and Team plans, and in sessions that [don't fetch feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching), Claude Code asks once whether to change the setting to auto mode. The question appears in the terminal or in the VS Code extension, and if you decline, your setting stays as it is.
 
 ### Tool calls denied in `claude -p` and Agent SDK runs
 
@@ -78917,7 +78930,7 @@ The same `--permission-mode` flag works with `-p` for [non-interactive runs](/do
 
 The extension never reads a project's `.claude/settings.json` or `.claude/settings.local.json` for the starting permission mode. When `claudeCode.claudeProcessWrapper` is set, items 3 and 4 don't apply: those conversations start in Manual unless item 1 or item 2 sets a permission mode.
 
-Before v2.1.283, item 3 applied only on Pro, Max, and Team plans in sessions that [fetch feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching).
+Before v2.1.283, item 3 applied only on Pro, Max, Ultra, and Team plans in sessions that [fetch feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching).
 
 Auto appears in the mode indicator when [auto mode is available](#eliminate-prompts-with-auto-mode).
 
@@ -78934,7 +78947,7 @@ The JetBrains plugin runs Claude Code in the IDE terminal, so switching permissi
 **During a session**: in the Code tab, use the mode selector in the row under the prompt box. Not every mode appears in the selector:
 
 * **Auto**: appears when [auto mode is available](#eliminate-prompts-with-auto-mode)
-* **Bypass permissions**: requires the **Allow bypass permissions mode** toggle in Desktop settings on Pro and Max plans; on Team and Enterprise plans, organization policy controls it instead
+* **Bypass permissions**: requires the **Allow bypass permissions mode** toggle in Desktop settings on Pro, Max, and Ultra plans; on Team and Enterprise plans, organization policy controls it instead
 
 Cowork doesn't use these modes. It has its own permission modes, enabled separately, and shows no mode selector at all until a mode beyond its default is enabled for your account. See the [Cowork docs](https://claude.com/docs/cowork/overview).
 
@@ -79027,7 +79040,7 @@ To make plan mode the default for a project's terminal sessions, set `defaultMod
 
 Auto mode lets Claude execute without routine permission prompts. A separate classifier model reviews actions before they run, blocking anything that escalates beyond your request, targets unrecognized infrastructure, or appears driven by hostile content Claude read. Explicit [ask rules](/docs/en/permissions#manage-permissions) still force a prompt.
 
-With Claude Code v2.1.283 or later, auto mode is the [built-in starting permission mode](#which-mode-a-session-starts-in) for interactive terminal and VS Code sessions on every plan and provider. On earlier versions, it's the built-in starting permission mode only on Pro, Max, and Team plans.
+With Claude Code v2.1.283 or later, auto mode is the [built-in starting permission mode](#which-mode-a-session-starts-in) for interactive terminal and VS Code sessions on every plan and provider. On earlier versions, it's the built-in starting permission mode only on Pro, Max, Ultra, and Team plans.
 
 The classifier also reviews each message Claude sends to another agent with [`SendMessage`](/docs/en/tools-reference), whether plain text or a structured [agent team](/docs/en/agent-teams) message, before Claude Code delivers it, both in auto mode and in [plan mode while the classifier reviews commands](#analyze-before-you-edit-with-plan-mode); the send review requires Claude Code v2.1.222 or later.
 
@@ -79067,7 +79080,10 @@ To prevent developers from using auto mode, set `disableAutoMode` to `"disable"`
 
 In auto mode, Claude Code can ask the server to check the actions that [the decision order](#how-the-classifier-evaluates-actions) sends for review, as part of the session's model requests, in place of sending its own classifier requests. These sessions ask:
 
-* **A direct connection to the Anthropic API**: in interactive terminal sessions and in `-p`, Agent SDK, [VS Code extension](/docs/en/vs-code), and [desktop app](/docs/en/desktop) sessions, whatever your plan or account type, as Anthropic rolls it out. In interactive terminal sessions, this requires Claude Code v2.1.271 or later on Pro, Max, and Team plans, and v2.1.278 or later on Enterprise plans and Claude API accounts. In `-p`, Agent SDK, VS Code extension, and desktop app sessions, this requires Claude Code v2.1.281 or later. From v2.1.282, a session that [doesn't fetch feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching), for example because you turned telemetry off, asks the server by default in any kind of session.
+* **A direct connection to the Anthropic API**: in interactive terminal sessions and in `-p`, Agent SDK, [VS Code extension](/docs/en/vs-code), and [desktop app](/docs/en/desktop) sessions, whatever your plan or account type, as Anthropic rolls it out. Check your session type against these minimum Claude Code versions:
+  * In interactive terminal sessions, asking the server requires Claude Code v2.1.271 or later on Pro, Max, Ultra, and Team plans. On Enterprise plans and Claude API accounts, those sessions require v2.1.278 or later.
+  * In `-p`, Agent SDK, VS Code extension, and desktop app sessions, asking the server requires Claude Code v2.1.281 or later
+  * From v2.1.282, a session that [doesn't fetch feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching), for example because you turned telemetry off, asks the server by default in any kind of session
 * **A cloud provider, or an LLM gateway or proxy**: on [Claude Platform on AWS](/docs/en/claude-platform-on-aws), Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry, and whenever you point `ANTHROPIC_BASE_URL` at an [LLM gateway or proxy](/docs/en/llm-gateway), whatever your plan. Asking by default requires Claude Code v2.1.278 or later.
 * **A signed-in [Claude apps gateway](/docs/en/claude-apps-gateway) session**: requires Claude Code v2.1.280 or later
 * **A [cloud session](/docs/en/claude-code-on-the-web) in an Anthropic-hosted environment**: whatever your plan, when you start it from the web, the mobile app, or the desktop app with **Cloud** selected. Sessions started by a [cloud scheduled task](/docs/en/routines) ask the server as Anthropic rolls it out.
@@ -88403,7 +88419,7 @@ We have implemented several safeguards to protect your data, including:
 * Restricted access to user session data
 * User control over data training preferences. Consumer users can change their [privacy settings](https://claude.ai/settings/privacy) at any time.
 
-For full details, please review our [Commercial Terms of Service](https://www.anthropic.com/legal/commercial-terms) (for Team, Enterprise, and API users) or [Consumer Terms](https://www.anthropic.com/legal/consumer-terms) (for Free, Pro, and Max users) and [Privacy Policy](https://www.anthropic.com/legal/privacy).
+For full details, please review our [Commercial Terms of Service](https://www.anthropic.com/legal/commercial-terms) (for Team, Enterprise, and API users) or [Consumer Terms](https://www.anthropic.com/legal/consumer-terms) (for Free, Pro, Max, and Ultra users) and [Privacy Policy](https://www.anthropic.com/legal/privacy).
 
 ### Additional safeguards
 
@@ -88512,7 +88528,11 @@ A self-hosted environment executes Claude Code cloud sessions on infrastructure 
 
 In a self-hosted environment, those same sessions execute inside your network. The developer experience is otherwise the same apart from the differences in [Availability and limitations](#availability-and-limitations) and the deploy page's [known issues](/docs/en/self-hosted-environments-deploy#known-issues-and-limitations).
 
-If your team doesn't use cloud sessions, there's nothing here to configure: sessions in a terminal or IDE always run on the developer's own machine. If you want to run Claude Code on your own always-on machine and drive it from other devices, use [Remote Control](/docs/en/remote-control), which is also available on Pro and Max plans. When you're ready to set up, go straight to the [quickstart](/docs/en/self-hosted-environments-quickstart); to review the security posture first, start with [Deploy to production](/docs/en/self-hosted-environments-deploy). The rest of this page explains how self-hosting works and when to choose it.
+* If your team doesn't use cloud sessions, there's nothing here to configure: sessions in a terminal or IDE always run on the developer's own machine
+* To run Claude Code on your own always-on machine and drive it from other devices, use [Remote Control](/docs/en/remote-control), which is also available on Pro, Max, and Ultra plans
+* When you're ready to set up, go straight to the [quickstart](/docs/en/self-hosted-environments-quickstart); to review the security posture first, start with [Deploy to production](/docs/en/self-hosted-environments-deploy)
+
+To learn how self-hosting works and when to choose it, read [How self-hosted environments work](#how-self-hosted-environments-work) and [Why self-host](#why-self-host).
 
 ## How self-hosted environments work
 
@@ -96646,7 +96666,7 @@ Allow [channels](/docs/en/channels) for your organization. On claude.ai Team and
 * **Type**: Boolean
   * `true`: Claude Code allows channels for your organization
   * `false`: the same as unset; whether channels are blocked depends on your plan, as the Default says
-* **Default**: unset; channels are blocked on Team and Enterprise plans and on Console accounts with managed settings, and allowed on Pro and Max plans and on Console accounts without managed settings
+* **Default**: unset; channels are blocked on Team and Enterprise plans and on Console accounts with managed settings, and allowed on Pro, Max, and Ultra plans and on Console accounts without managed settings
 
 ```json managed-settings.json theme={null}
 {
@@ -98812,7 +98832,7 @@ To install Claude Code, open a terminal and run the command for your system. If 
 
 **macOS, Linux, WSL:**
 
-```bash theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+```bash theme={null}
 curl -fsSL https://claude.ai/install.sh | bash
 ```
 
@@ -98820,13 +98840,13 @@ On Windows, your prompt shows `PS C:\` when you're in PowerShell and `C:\` witho
 
 **Windows PowerShell:**
 
-```powershell theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+```powershell theme={null}
 irm https://claude.ai/install.ps1 | iex
 ```
 
 **Windows CMD:**
 
-```batch theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+```batch theme={null}
 curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd
 ```
 
@@ -98844,7 +98864,7 @@ If the install command fails with `syntax error near unexpected token '<'`, a `4
 
 **Homebrew**
 
-```bash theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+```bash theme={null}
 brew install --cask claude-code
 ```
 
@@ -98856,7 +98876,7 @@ Homebrew offers two casks. `claude-code` tracks the stable release channel, whic
 
 **WinGet**
 
-```powershell theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+```powershell theme={null}
 winget install Anthropic.ClaudeCode
 ```
 
@@ -98961,7 +98981,7 @@ claude doctor
 
 ## Authenticate
 
-Claude Code requires a Pro, Max, Team, Enterprise, or Console account. The free claude.ai plan does not include Claude Code access. You can also use Claude Code with a third-party API provider like [Amazon Bedrock](/docs/en/amazon-bedrock), [Google Cloud's Agent Platform](/docs/en/google-vertex-ai), or [Microsoft Foundry](/docs/en/microsoft-foundry).
+Claude Code requires a Pro, Max, Ultra, Team, Enterprise, or Console account. The free claude.ai plan does not include Claude Code access. You can also use Claude Code with a third-party API provider like [Amazon Bedrock](/docs/en/amazon-bedrock), [Google Cloud's Agent Platform](/docs/en/google-vertex-ai), or [Microsoft Foundry](/docs/en/microsoft-foundry).
 
 After installing, log in by running `claude` and following the browser prompts. If you've set the `ANTHROPIC_API_KEY` environment variable and you approve the key when Claude Code asks whether to use it, Claude Code skips the login prompt. See [Authentication](/docs/en/authentication) for all account types and team setup options.
 
@@ -99802,7 +99822,7 @@ Claude Code sends the following JSON fields to your script via stdin:
 > * `agent`: appears only when running with the `--agent` flag or agent settings configured
 > * `pr`: appears only while an open PR or GitLab merge request is found for the current branch, and is removed once it merges or closes. `pr.review_state` and `pr.kind` may be independently absent
 > * `worktree`: appears only while the session is in a [worktree session](/docs/en/worktrees). When present, `branch` and `original_branch` may also be absent for hook-based worktrees
-> * `rate_limits`: appears only for claude.ai Pro and Max subscribers, or behind a Claude apps gateway that sets a spend limit for you, and only after the first API response in the session. Each window (`five_hour`, `seven_day`, `spend_limit`) may be independently absent, and Claude Code drops a window once its `resets_at` time passes. Use `jq -r '.rate_limits.five_hour.used_percentage // empty'` to handle absence gracefully.
+> * `rate_limits`: appears only for claude.ai Pro, Max, and Ultra subscribers, or behind a Claude apps gateway that sets a spend limit for you. Even then, it appears only after the first API response in the session. Each window (`five_hour`, `seven_day`, `spend_limit`) may be independently absent, and Claude Code drops a window once its `resets_at` time passes. Use `jq -r '.rate_limits.five_hour.used_percentage // empty'` to handle absence gracefully.
 > * `prompt_cache`: appears after the main conversation's first API response. See [prompt cache fields](#prompt-cache-fields)
 >
 > **Fields that may be `null`**:
@@ -100280,9 +100300,9 @@ process.stdin.on('end', () => {
 
 ### Rate limit usage
 
-Display claude.ai subscription rate limit usage, or your spend against a Claude apps gateway spend limit, in the status line. For subscribers, the `rate_limits` object contains a rolling `five_hour` window and a weekly `seven_day` window. Each window provides `used_percentage`, from 0 to 100, and `resets_at`, the Unix epoch seconds when the window resets. Behind a gateway, read the `spend_limit` object, described under [spend limit fields](#spend-limit-fields).
+Display claude.ai subscription rate limit usage, or your spend against a Claude apps gateway spend limit, in the status line. For subscribers, the `rate_limits` object can contain a rolling `five_hour` window and a weekly `seven_day` window. Each window provides `used_percentage`, from 0 to 100, and `resets_at`, the Unix epoch seconds when the window resets. Behind a gateway, read the `spend_limit` object, described under [spend limit fields](#spend-limit-fields).
 
-The `rate_limits` object is only present for claude.ai Pro and Max subscribers, or behind a Claude apps gateway with spend limits, and only after the first API response. Each script handles the absent fields gracefully, and behind a gateway prints `spend: $314.12 / $500`, or `spend: 63%` while the dollar fields are absent:
+The `rate_limits` object is only present for claude.ai Pro, Max, and Ultra subscribers, or behind a Claude apps gateway with spend limits, and only after the first API response. Each script handles the absent fields gracefully, and behind a gateway prints `spend: $314.12 / $500`, or `spend: 63%` while the dollar fields are absent:
 
 ```bash Bash theme={null}
 #!/bin/bash
@@ -101245,7 +101265,7 @@ To add custom tools, connect an [MCP server](/docs/en/mcp). To extend Claude wit
 | Tool | Description | Permission required |
 | :- | :- | :- |
 | `Agent` | Spawns a [subagent](/docs/en/sub-agents) with its own context window to handle a task. With [agent teams](/docs/en/agent-teams) enabled, a call that carries a `name` can launch a [teammate](/docs/en/agent-teams#how-claude-starts-agent-teams) instead. See [Agent tool behavior](#agent-tool-behavior) | No |
-| `Artifact` | Publishes an HTML or Markdown file as an [artifact](/docs/en/artifacts): a private, interactive page on claude.ai. You can share it with a public link, or inside your organization on Team and Enterprise plans, where public sharing requires an Owner to [enable it](/docs/en/artifacts#control-public-sharing). Requires a Pro, Max, Team, or Enterprise plan and `/login` authentication; see [Availability](/docs/en/artifacts#availability) | Yes |
+| `Artifact` | Publishes an HTML or Markdown file to claude.ai as an [artifact](/docs/en/artifacts): a private, interactive page. You can share it with a public link, or inside your organization on Team and Enterprise plans, where public sharing requires an Owner to [enable it](/docs/en/artifacts#control-public-sharing). Requires a Pro, Max, Ultra, Team, or Enterprise plan and `/login` authentication; see [Availability](/docs/en/artifacts#availability) | Yes |
 | `AskUserQuestion` | Asks multiple-choice questions to gather requirements or clarify ambiguity. Questions stay open until you answer them by default. See [AskUserQuestion tool behavior](#askuserquestion-tool-behavior) | No |
 | `Bash` | Executes shell commands in your environment. See [Bash tool behavior](#bash-tool-behavior) | Yes |
 | `CronCreate` | Schedules a recurring or one-shot prompt within the current session. Tasks are session-scoped and restored on `--resume` or `--continue` if unexpired. See [session-scoped scheduled tasks](/docs/en/scheduled-tasks) | No |
@@ -101268,7 +101288,7 @@ To add custom tools, connect an [MCP server](/docs/en/mcp). To extend Claude wit
 | `PushNotification` | Sends a desktop notification, and a phone push when [Remote Control](/docs/en/remote-control) is connected, so a long-running task or [session-scoped scheduled task](/docs/en/scheduled-tasks) can reach you when you step away. Push delivery runs through Anthropic-hosted infrastructure, which is not accessible from Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform, or Microsoft Foundry | No |
 | `Read` | Reads the contents of files. See [Read tool behavior](#read-tool-behavior) | No |
 | `ReadMcpResourceTool` | Reads a specific MCP resource by URI | No |
-| `RemoteTrigger` | Creates, updates, runs, and lists [cloud scheduled tasks](/docs/en/routines), formerly routines, on claude.ai. Backs the `/schedule` command. The [`RemoteTrigger` input reference](/docs/en/agent-sdk/typescript#remotetrigger) documents every action and the organization policies that remove the tool. Cloud scheduled tasks live on claude.ai and require a Pro, Max, Team, or Enterprise plan. This tool is therefore not accessible from Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform, or Microsoft Foundry | No |
+| `RemoteTrigger` | Creates, updates, runs, and lists [cloud scheduled tasks](/docs/en/routines), formerly routines, on claude.ai. Backs the `/schedule` command. The [`RemoteTrigger` input reference](/docs/en/agent-sdk/typescript#remotetrigger) documents every action and the organization policies that remove the tool. Cloud scheduled tasks live on claude.ai and require a Pro, Max, Ultra, Team, or Enterprise plan. This tool is therefore not accessible from Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform, or Microsoft Foundry | No |
 | `ReportFindings` | Reports code-review findings as a structured list, with a file, summary, and failure scenario per finding, so Claude Code can render them instead of printing them as text. Claude calls it when active code-review instructions tell it to. A finding can also carry an optional `category` slug, such as `correctness` or `test-coverage`, shown next to the file location in the rendered list | No |
 | `ScheduleWakeup` | Reschedules the next iteration of a [self-paced `/loop`](/docs/en/scheduled-tasks#let-claude-choose-the-interval). Claude calls this at the end of each iteration to pick when the next one runs, between one minute and one hour out; you don't call it directly. To end the loop instead, Claude calls it with `stop: true`, which cancels the pending wakeup. The pending wakeup appears in `session_crons` in [Stop hook input](/docs/en/hooks#stop-input) | No |
 | `SendFeedback` | Drafts a feedback report about Claude Code, covering a product problem or Claude's own behavior in the session, and queues it on your machine for you to review. Claude Code sends nothing until you choose to send the draft. See [SendFeedback tool behavior](#sendfeedback-tool-behavior). Requires Claude Code v2.1.238 or later | No |
@@ -124461,7 +124481,7 @@ Legal agreements, compliance certifications, and security information for Claude
 Your use of Claude Code is subject to:
 
 * [Commercial Terms of Service](https://www.anthropic.com/legal/commercial-terms) - for Team, Enterprise, and Claude API users
-* [Consumer Terms of Service](https://www.anthropic.com/legal/consumer-terms) - for Free, Pro, and Max users
+* [Consumer Terms of Service](https://www.anthropic.com/legal/consumer-terms) - for Free, Pro, Max, and Ultra users
 
 ### Commercial agreements
 
@@ -124493,14 +124513,14 @@ Under the HIPAA configuration, cloud sessions, Remote Control, Claude Code in th
 
 ### Acceptable use
 
-Claude Code usage is subject to the [Anthropic Usage Policy](https://www.anthropic.com/legal/aup). Advertised usage limits for Pro and Max plans assume ordinary, individual usage of Claude Code and the Agent SDK.
+Claude Code usage is subject to the [Anthropic Usage Policy](https://www.anthropic.com/legal/aup). Advertised usage limits for Pro, Max, and Ultra plans assume ordinary, individual usage of Claude Code and the Agent SDK.
 
 ### Authentication and credential use
 
 Claude Code authenticates with Anthropic's servers using OAuth tokens or API keys. These authentication methods serve different purposes:
 
-* **OAuth authentication** is intended exclusively for purchasers of Claude Free, Pro, Max, Team, and Enterprise subscription plans and is designed to support ordinary use of Claude Code and other native Anthropic applications. For the sign-in steps, see [Logging in to your Claude account](https://support.claude.com/en/articles/13189465-logging-in-to-your-claude-account); for how Claude Code performs OAuth authentication, see [Authentication](/docs/en/authentication).
-* **Developers** building products or services that interact with Claude's capabilities, including those using the [Agent SDK](/docs/en/agent-sdk/overview), should use API key authentication through [Claude Console](https://platform.claude.com/) or a supported cloud provider. Anthropic does not permit third-party developers to offer Claude.ai login into their own applications, or to route requests through Free, Pro, or Max plan credentials on behalf of their users. Moreover, developers may not collect, store, or intermediate Claude.ai credentials or session tokens — sign-in to a Claude account must complete through Anthropic's own flow.
+* **OAuth authentication** is intended exclusively for purchasers of Claude Free, Pro, Max, Ultra, Team, and Enterprise subscription plans and is designed to support ordinary use of Claude Code and other native Anthropic applications. For the sign-in steps, see [Logging in to your Claude account](https://support.claude.com/en/articles/13189465-logging-in-to-your-claude-account); for how Claude Code performs OAuth authentication, see [Authentication](/docs/en/authentication).
+* **Developers** building products or services that interact with Claude's capabilities, including those using the [Agent SDK](/docs/en/agent-sdk/overview), should use API key authentication through [Claude Console](https://platform.claude.com/) or a supported cloud provider. Anthropic does not permit third-party developers to offer Claude.ai login into their own applications, or to route requests through Free, Pro, Max, or Ultra plan credentials on behalf of their users. Moreover, developers may not collect, store, or intermediate Claude.ai credentials or session tokens — sign-in to a Claude account must complete through Anthropic's own flow.
 
 This does not restrict how customers provision and manage their own API keys or third-party inference provider credentials — for example, configuring an API key in a development environment, secrets manager, or machine image for use by the customer's own authorized users — provided the resulting usage is billed to the key owner under their agreement with Anthropic (or the applicable provider) and is not resold or intermediated as described above. Nor does it prevent an end user from signing in to the unmodified Claude Code binary with their own Claude subscription, including where a platform hosts Claude Code as described under *Can customers offer Claude Code in their products?* above.
 
