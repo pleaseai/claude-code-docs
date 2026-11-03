@@ -2797,6 +2797,109 @@ This page is generated from the [CHANGELOG.md on GitHub](https://github.com/anth
 
 Run `claude --version` to check your installed version.
 
+**2.1.317**
+
+November 3, 2026
+
+**Added**
+
+* Added a warning to `/schedule` when a new cloud scheduled task gets connectors you did not ask for, with how to remove them
+* Added a check that asks before a web or shell tool call sends your account email address to the network
+* Added `onFailure: "block"` for Agent SDK hook callbacks, so a callback that fails blocks the action instead of letting it run
+* Added a notice in Claude Desktop's Code tab when your organization's remote managed settings haven't loaded for the session, and another once they do
+* Added a notice when auto mode's check has no answer for a subagent's tool call, which used to leave nothing in the main view
+* Added `anthropic.plan`, `anthropic.seat_type`, `anthropic.provider` and `anthropic.custom_base_url` to OTel metrics, events and spans
+* Added a cost report to the Claude apps gateway admin API, `GET /v1/organizations/analytics/cost`, for reading past spend over a date range in total, per developer, per day or per IdP group
+* Added a daily record of each developer's IdP groups on Claude apps gateways with `admin:` set, kept for `admin.identity_retention_days`, which the cost report groups by
+* Added `CLAUDE_CODE_DISABLE_NESTED_SESSION_ID`: set it to `1` on a self-hosted runner to have `claude -p` run inside a session use that session's ID and transcript, as in earlier versions
+* \[Cloud sessions] Added a link card to cloud sessions, so you can open or decline a link an MCP server asks you to visit instead of the request going unseen
+
+**Changed**
+
+* Changed SendMessage so a message to a running background agent arrives earlier: its running command moves to the background, without being stopped
+* Changed subagents and teammates on a different model from the main conversation to use that model's saved effort level or its default, instead of the session's effort level
+* Changed exit to skip the "Background work is running" prompt for plugin monitors
+* Changed the built-in `plugin-authoring` skill to offer once, after a mod you built works, to help share the mod
+* Removed the Read tool's "file unchanged since your last Read" stub: reading an unchanged file again returns its content
+* \[Cloud sessions] Changed the organization environment dialog in admin settings to the personal dialogs' short layout: each section opens from a row, and unsaved input asks before closing
+* \[Claude Tag] Changed newly pasted artifact links in Slack to show a simpler card with an Open button that opens the artifact in Claude, instead of Slack's side panel
+
+**8 improvements**
+
+* Improved the error shown on Microsoft Foundry when Azure credentials can't be loaded: it now says to check or refresh them, and reports as `cloud_credential_error`
+* Improved `/design-sync` to say up front when your design system has moved to Claude, and stop before building instead of failing at upload
+* Improved the startup error when a required Claude apps gateway can't be reached: it points to the network instead of a sign-in, and says when the gateway's TLS certificate can't be verified
+* Improved the "Resume this session with" hint shown at exit to repeat the flags you launched with (for example `--chrome --debug`) ahead of `--resume`
+* Improved how self-hosted runners recover from server errors: after a 5xx other than 501 or 529, a runner's next poll now opens a new connection instead of reusing the one that failed
+* Improved how self-hosted runner sessions recover from server errors: after a 5xx other than 501 or 529, a session now opens new connections instead of reusing the one that failed
+* Improved how self-hosted runner sessions recover when connections stop answering: after a heartbeat gets no answer, a session now opens new connections instead of trying each idle one in turn
+* Remote Control: Improved fork names when the app doesn't set one: a long name keeps its "(fork)" ending, and in sessions started with `claude remote-control` a fork of "Name (fork)" is "Name (fork 2)"
+
+**62 bug fixes**
+
+* Fixed project and local MCP servers disconnecting after the first turn in some Claude desktop sessions
+* Fixed auto mode failing every turn when an LLM gateway set as the base URL answers 403 or 422 to its server-side safety check (a 403 with an apiKeyHelper is unchanged)
+* Fixed `claude auth status` exiting before a slow token refresh was saved, which could sign you out on the next run
+* Fixed a project's `effortLevel` setting being ignored by sessions that an app starts ahead of time and then opens in the project, such as new sessions in the desktop app's Code tab
+* Fixed `claude --from-pr` reporting "No conversations found" in projects with many sessions when the linked session was older than the first page
+* Fixed the second of two simultaneous permission prompts showing no file path or command on claude.ai and the mobile apps
+* Fixed Remote Control and SDK hosts offering "don't ask again" on a mod's tool calls
+* Fixed session titles being lost in cloud and SDK sessions when a new message or Stop arrived while the title was generating
+* Fixed self-paced `/loop` wakeups sometimes not being scheduled when Claude left a field out of its request
+* Fixed auto mode in cloud sessions stopping for approval when the Artifact tool uploaded, wrote to a database or saved a file through the outputs folder
+* Fixed skills synced from claude.ai being lost or downloaded again every ten minutes when they can't be written to disk
+* Fixed `/schedule` leaving a cloud scheduled task's next run time and link out of its results after creating or updating it
+* Fixed screen readers speaking a running subagent's elapsed time and token count on every change in screen reader mode
+* Fixed a region or network block (HTTP 403) being shown as a sign-in failure; the error now explains the block
+* Fixed Claude saying a working claude.ai connector needed authorization or had failed in cloud sessions when a synced plugin included the same server
+* Fixed `claude -p` exiting 0 when a full disk or quota lost its transcript or \~/.claude.json writes; it now prints an error and, in text and json output, exits 1. Full NFS exports may be missed
+* Fixed edits to settings files made in the first second or so after launch not taking effect until a settings file changed again
+* Fixed old transcripts not being cleaned up on machines where some runs skip cleanup, such as runs using `--setting-sources`
+* Fixed deleted agent team inboxes being re-created by a teammate's late message
+* Fixed a re-created agent teammate being removed from its team by an earlier shutdown approval
+* Fixed stored scheduled tasks being impossible to list or delete after scheduled tasks were turned off
+* Fixed Claude deleting your most recently updated `/team-onboarding` guide when asked to delete one without naming which
+* Fixed Claude saying a `/team-onboarding` guide was deleted when the server refused the delete
+* Fixed the Claude apps gateway hiding Amazon Bedrock's "Input is too long." error, which left sessions failing every turn with "upstream rejected the request" instead of compacting
+* Fixed self-hosted runner sessions losing recent turns or the whole conversation when restarted while a plan waited for approval
+* Fixed "Prompt is too long" after automatic compaction in sessions whose very large CLAUDE.md changed since it was last sent
+* Fixed high memory use and slow startup in headless sessions with many plugins that register commands
+* Fixed stdio MCP servers receiving an empty `AWS_BEARER_TOKEN_BEDROCK` when their env config sets it to empty; the variable is now unset, so the server can use the machine's own AWS credentials
+* Fixed API requests failing with "unable to get local issuer certificate" behind some TLS-inspecting proxies after a root certificate renewal
+* Fixed very long conversations losing their earlier summary when compaction had to shorten its own request
+* Fixed a PDF's own metadata being able to make Read and @-mentions under-count its pages
+* Fixed `DISABLE_PROMPT_CACHING_OPUS` and `DISABLE_PROMPT_CACHING_SONNET` having no effect on `[1m]`, other-region and undated spellings of the default model
+* Fixed `/artifacts` and the Artifact tool's shared list showing no shared artifacts when you have 200 or more of your own
+* Fixed Claude treating partial Grep and Glob results as complete when a search hit its time limit
+* Fixed OpenTelemetry exports to an `https://` endpoint through a proxy never being sent when they started while another export was still in progress
+* Fixed a flood of connection attempts to a proxy that blocks (HTTP 403) OpenTelemetry exports to an `http://` endpoint
+* Fixed OpenTelemetry exports hanging indefinitely behind a proxy that never answers; they now time out after 10 seconds, or `OTEL_EXPORTER_OTLP_TIMEOUT` up to 30 seconds
+* Fixed resumed sessions telling Claude again about a file change it already knew about
+* Fixed Claude sometimes not using a built-in tool in a resumed session after an earlier call failed because the tool was switched off
+* Fixed `/remote-control` answering "Unknown command" instead of saying that Remote Control is turned off by the `disableRemoteControl` setting
+* Fixed agent team teammates in tmux or iTerm2 panes starting in auto mode when the lead session was in manual mode
+* Fixed a background session sometimes losing a just-made change of permission mode when it was upgraded or retired
+* Fixed Ctrl+C stopping all running background agents when pressed to clear typed text at the prompt
+* Fixed /feedback showing "Enter to confirm" while a report is being sent
+* Fixed child processes of a stopped shell command sometimes being sent SIGTERM twice, which could make some programs skip their cleanup
+* Fixed `claude -p` run inside a cloud or self-hosted runner session sharing that session's ID: it wrote into the session's transcript, and a restart could resume the wrong conversation
+* Fixed `claude -p` run inside a cloud or self-hosted runner session generating a title of its own and sending it to that session
+* Windows: Fixed every tool call being refused on some volumes where the native path lookup fails; the working-directory check now compares the folder's identity instead
+* Windows: Fixed the session scratchpad and other temporary paths growing with your project's path length in sessions not started by Claude Desktop, which made repositories cloned into them hit the 260-character path limit
+* Gateway: Fixed the status line and `/usage` showing a developer's own spend limit as 100% used after their group's pooled budget ran out
+* Self-hosted runner: Fixed Claude not seeing the interrupted tool call when a session moves to a new runner and the turn is older than `CLAUDE_CODE_RESUME_INTERRUPTED_TURN_MAX_AGE_MS`
+* Self-hosted runner: Fixed an MCP server that was switched off coming back on after the session moved to a new machine, when the session service had refused to save the switch
+* \[VSCode] Fixed forked conversations dropping messages: only one of the tool calls Claude ran in parallel was kept, and the last messages a compaction kept were lost, which could leave Claude's answer without the question it answered
+* \[VSCode] Fixed a message being lost when Claude did not finish starting in time: the extension now starts Claude once more before showing the error
+* \[VSCode] Fixed the sign-in screen opening when a request is blocked for its region or network
+* \[VSCode] Fixed the Account panel showing the plan name with a lower-cased second word
+* \[VSCode] Fixed file links in a Claude tab opening on top of the chat instead of in another editor group
+* \[VSCode] Fixed attachment chips, menus, banners and dialogs in the Claude panel staying small when `chat.fontSize` is raised
+* \[VSCode] Fixed `ultrathink` not raising effort for its turn or showing its rainbow when telemetry is off
+* \[Cloud sessions] Fixed adding a network secret for a host that already has one silently replacing it; the Add secret form now refuses and points you to the existing secret
+* \[Cloud sessions] Fixed new scheduled tasks ignoring your organization's default environment: the form now starts on the one an admin chose instead of the Anthropic-hosted default
+* \[Remote Control] Fixed the next message to an idle session going unanswered after you restart `claude remote-control`, when you sent it within a minute of your previous message
+
 **2.1.316**
 
 October 31, 2026
@@ -55708,7 +55811,11 @@ Claude Code doesn't check or prompt for these pins:
 * A pin in the `env` block of [managed settings](/docs/en/managed-settings)
 * A pin that points to an [application inference profile ARN](#map-each-model-version-to-an-inference-profile), because your administrator manages it
 
+If the update prompt still appears for a pin in managed settings, update Claude Code to v2.1.314 or later. Before v2.1.314, the managed pin stayed in effect after you accepted, so the prompt came back at the next start.
+
 If you have not pinned a model and the current default is unavailable in your account, Claude Code falls back for the current session and shows a notice. It tries earlier versions of the default model first and, when the default is an Opus model and no Opus version is available, falls back to the default Sonnet model. The fallback is not persisted. Enable the newer model in your Amazon Bedrock account or [pin a version](#4-pin-model-versions) to make the choice permanent.
+
+### Start a session on a specific model
 
 When you start the session on a specific Sonnet or Opus version, for example with `--model`, `ANTHROPIC_MODEL`, or the [`model` setting](/docs/en/settings-reference#model), that version acts as the session's pinned default for the matching `sonnet` or `opus` alias. Claude Code skips the availability check for the built-in default your model replaces and starts on the model you configured, with no fallback notice.
 
@@ -55717,7 +55824,9 @@ These don't act as pins when you start a session on them:
 * A model alias such as `opus`
 * A model ID Claude Code doesn't recognize, such as an application inference profile ARN
 
-When these checks find a model your account can't invoke, Claude Code remembers the refusal on this machine for up to a day, and launches during that time skip the remembered model without asking Amazon Bedrock again. Claude Code checks a remembered refusal of a current default model again at launch once ten minutes have passed since the last check, so a default your administrator re-enables comes back. To turn the memory off, set [`CLAUDE_CODE_SKIP_MODEL_ACCESS_MEMORY=1`](/docs/en/env-vars).
+### Remembered model refusals
+
+When the startup model checks find a model your account can't invoke, Claude Code can remember the refusal on this machine for up to a day. Once ten minutes have passed since the last check, Claude Code checks a remembered refusal of a current default model again at launch. A default your administrator re-enables then comes back. To turn the memory off, set [`CLAUDE_CODE_SKIP_MODEL_ACCESS_MEMORY=1`](/docs/en/env-vars).
 
 ### When your organization enforces a model allowlist
 
@@ -56490,7 +56599,7 @@ When multiple credentials are present, Claude Code chooses one in this order:
 2. `ANTHROPIC_AUTH_TOKEN` environment variable. Sent as the `Authorization: Bearer` header. Use this when routing through an [LLM gateway or proxy](/docs/en/llm-gateway) that authenticates with bearer tokens rather than Anthropic API keys.
 3. `ANTHROPIC_API_KEY` environment variable. Sent as the `X-Api-Key` header. Use this for direct Anthropic API access with a key from the [Claude Console](https://platform.claude.com). In interactive mode, you are prompted once to approve or decline the key, and your choice is remembered. To change it later, use the "Use custom API key" toggle in `/config`. The toggle only appears while `ANTHROPIC_API_KEY` is set in your environment. In non-interactive mode (`-p`), the key is always used when present.
 4. [`apiKeyHelper`](/docs/en/settings-reference#apikeyhelper) script output. Use this for dynamic or rotating credentials, such as short-lived tokens fetched from a vault.
-5. `CLAUDE_CODE_OAUTH_TOKEN` environment variable. A long-lived OAuth token generated by [`claude setup-token`](#generate-a-long-lived-token). Use this for CI pipelines and scripts where browser login isn't available. If you run `/login` while the variable is set, Claude Code switches the current session to the new login, but reads the variable again in every new session until you remove it from your shell profile or the `env` block of a [settings file](/docs/en/settings).
+5. `CLAUDE_CODE_OAUTH_TOKEN` environment variable. A long-lived OAuth token generated by [`claude setup-token`](#generate-a-long-lived-token). Use this for CI pipelines and scripts where browser login isn't available. If you run `/login` while the variable is set, Claude Code switches the current session to the new login. To keep that login in new sessions, remove the variable from your shell profile and from [settings files that can set it](/docs/en/settings-reference#variables-claude-code-ignores-in-env), such as your user settings.
 6. Anthropic profile and federation credentials, the credentials that the `ant` CLI and Workload Identity Federation use. A profile that `ant auth login` wrote ranks here only when you name it in `ANTHROPIC_PROFILE`; otherwise it ranks below `/login`. See [Anthropic profiles and federation credentials](#anthropic-profiles-and-federation-credentials).
 7. Subscription OAuth credentials from `/login`. This is the default for Claude Pro, Max, Ultra, Team, and Enterprise users.
 
@@ -65320,9 +65429,9 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_NONBLOCKING_STDOUT` | Set to `1` to write terminal output through a second non-blocking file descriptor, so a terminal that stops reading, such as a paused tmux control-mode pane or a stalled SSH connection, can't freeze Claude Code mid-session. Applies on macOS, Linux, and WSL when stdout is a terminal. Requires Claude Code v2.1.261 or later |
 | `CLAUDE_CODE_NONSTREAMING_TIMEOUT_RETRIES` | Limit how many times Claude Code re-sends a [non-streaming request](/docs/en/errors#streaming-response-ended-before-any-complete-data-was-received) that times out. With `0`, the request fails on the first timeout. See [Tune retry behavior](/docs/en/errors#tune-retry-behavior) for the timeout. Requires Claude Code v2.1.285 or later |
 | `CLAUDE_CODE_NO_FLICKER` | Set to `1` to enable [fullscreen rendering](/docs/en/fullscreen), a research preview that reduces flicker and keeps memory flat in long conversations. Overrides the [`tui`](/docs/en/settings-reference#tui) setting; you can also switch with `/tui fullscreen` |
-| `CLAUDE_CODE_OAUTH_REFRESH_TOKEN` | OAuth refresh token for Claude.ai authentication. When set, `claude auth login` exchanges this token directly instead of opening a browser. Requires `CLAUDE_CODE_OAUTH_SCOPES`. Useful for provisioning authentication in automated environments |
-| `CLAUDE_CODE_OAUTH_SCOPES` | Space-separated OAuth scopes the refresh token was issued with, such as `"user:profile user:inference user:sessions:claude_code"`. Required when `CLAUDE_CODE_OAUTH_REFRESH_TOKEN` is set |
-| `CLAUDE_CODE_OAUTH_TOKEN` | OAuth access token for claude.ai authentication. Alternative to `/login` for SDK and automated environments. Takes precedence over keychain-stored credentials. Generate one with [`claude setup-token`](/docs/en/authentication#generate-a-long-lived-token). Unless you run [`/login`](/docs/en/authentication#authentication-precedence), Claude Code uses the token you set for the whole session. To replace an expired token, generate a new one and restart |
+| `CLAUDE_CODE_OAUTH_REFRESH_TOKEN` | OAuth refresh token for claude.ai authentication. When set, `claude auth login` exchanges this token directly instead of opening a browser. Requires `CLAUDE_CODE_OAUTH_SCOPES`. Useful for provisioning authentication in automated environments. Ignored in [project and local settings](/docs/en/settings-reference#variables-claude-code-ignores-in-env) |
+| `CLAUDE_CODE_OAUTH_SCOPES` | Space-separated OAuth scopes the refresh token was issued with, such as `"user:profile user:inference user:sessions:claude_code"`. Required when `CLAUDE_CODE_OAUTH_REFRESH_TOKEN` is set. Ignored in [project and local settings](/docs/en/settings-reference#variables-claude-code-ignores-in-env) |
+| `CLAUDE_CODE_OAUTH_TOKEN` | OAuth access token for claude.ai authentication. Alternative to `/login` for SDK and automated environments. Ignored in [project and local settings](/docs/en/settings-reference#variables-claude-code-ignores-in-env). Takes precedence over keychain-stored credentials. Generate one with [`claude setup-token`](/docs/en/authentication#generate-a-long-lived-token). Unless you run [`/login`](/docs/en/authentication#authentication-precedence), Claude Code uses the token you set for the whole session. To replace an expired token, generate a new one and restart |
 | `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE` | Removed in v2.1.160 and now a no-op. Previously pinned [fast mode](/docs/en/fast-mode) to Claude Opus 4.6 instead of the current default. Opus 4.6 no longer supports fast mode |
 | `CLAUDE_CODE_OTEL_CONTENT_MAX_LENGTH` | Maximum length of content-bearing OpenTelemetry attributes (model responses, tool content, system prompts, raw API bodies), truncation marker included, in UTF-16 code units (default: 61440, i.e. 60 KB). Raise it only if your telemetry backend accepts attribute values larger than 64 KB, or lower it to cut telemetry volume. Requires Claude Code v2.1.214 or later. See [Monitoring](/docs/en/monitoring-usage) |
 | `CLAUDE_CODE_OTEL_DIAG_STDERR` | Set to `1` to write OpenTelemetry exporter diagnostic errors to stderr. By default these errors only appear with `--debug`, so a misconfigured exporter such as a Prometheus port collision otherwise fails silently. Requires Claude Code v2.1.179 or later. See [Monitoring](/docs/en/monitoring-usage) |
@@ -67163,15 +67272,19 @@ You may have pinned a model version that is older than the current Claude Code d
 * **If you accept**: Claude Code writes the new model ID to your [user settings file](/docs/en/settings) and restarts
 * **If you decline**: Claude Code remembers your choice until the next default version change
 
-For a pin in the `env` block of [managed settings](/docs/en/managed-settings), Claude Code runs no check and shows no prompt.
+For a pin in the `env` block of [managed settings](/docs/en/managed-settings), Claude Code runs no check and shows no prompt. If the update prompt still appears for this pin, update Claude Code to v2.1.314 or later. Before v2.1.314, the managed pin stayed in effect after you accepted, so the prompt came back at the next start.
 
 If you have not pinned a model and the current default is unavailable in your project, Claude Code falls back for the current session and shows a notice. It tries earlier versions of the default model first and, when the default is an Opus model and no Opus version is available, falls back to the default Sonnet model. The fallback is not persisted. Enable the newer model in [Model Garden](https://console.cloud.google.com/vertex-ai/model-garden) or [pin a version](#5-pin-model-versions) to make the choice permanent.
 
+### Start a session on a specific model
+
 When you start the session on a specific Sonnet or Opus version, for example with `--model`, `ANTHROPIC_MODEL`, or the [`model` setting](/docs/en/settings-reference#model), that version acts as the session's pinned default for the matching `sonnet` or `opus` alias. Claude Code skips the availability check for the built-in default your model replaces and starts on the model you configured, with no fallback notice.
 
-Model aliases such as `opus` don't act as pins, and neither does a model ID Claude Code doesn't recognize.
+When you start a session on a model alias such as `opus` or on a model ID Claude Code doesn't recognize, that value doesn't act as a pin.
 
-When these checks find a model your project can't invoke, Claude Code remembers the refusal on this machine for up to a day, and launches during that time skip the remembered model without asking Agent Platform again. Claude Code checks a remembered refusal of a current default model again at launch once ten minutes have passed since the last check, so a default your administrator re-enables comes back. To turn the memory off, set [`CLAUDE_CODE_SKIP_MODEL_ACCESS_MEMORY=1`](/docs/en/env-vars).
+### Remembered model refusals
+
+When the startup model checks find a model your project can't invoke, Claude Code can remember the refusal on this machine for up to a day. Once ten minutes have passed since the last check, Claude Code checks a remembered refusal of a current default model again at launch. A default your administrator re-enables then comes back. To turn the memory off, set [`CLAUDE_CODE_SKIP_MODEL_ACCESS_MEMORY=1`](/docs/en/env-vars).
 
 ### When your organization enforces a model allowlist
 
@@ -74234,7 +74347,7 @@ The retry doesn't cover cases such as a value with its own retry, a value Claude
 
 On v2.1.305 or later, Claude Code resends a request without [`defer_loading` fields and `tool_reference` blocks](/docs/en/mcp#tool-search-through-a-gateway) after a `400` or `422` that names tool search or whose cause it doesn't recognize. After a successful retry, later requests in that conversation omit them too.
 
-The developer's requests keep working without any change on the gateway, with their MCP tools loaded upfront. When Claude Code tries tool search again, the gateway sees another rejected request followed by its retry. For tool search itself, Claude Code expects the gateway to forward the `defer_loading` fields and `tool_reference` blocks with their `anthropic-beta` value.
+The developer's requests keep working without any change on the gateway, with their MCP tools loaded upfront. When Claude Code tries tool search again, the gateway can see another rejected request followed by its retry. For tool search itself, Claude Code expects the gateway to forward the `defer_loading` fields and `tool_reference` blocks with their `anthropic-beta` value.
 
 ### Disable pre-release capabilities
 
@@ -75352,7 +75465,9 @@ The cross-source keys include:
 * The sandbox binary paths `sandbox.bwrapPath` and `sandbox.socatPath`
 * The sandbox `ripgrep` binary, [`sandbox.ripgrep`](/docs/en/settings-reference#sandbox-ripgrep)
 * `sandbox.filesystem.disabled` and `sandbox.network.strictAllowlist`
-* [`useAutoModeDuringPlan`](/docs/en/settings-reference#useautomodeduringplan), [`syncClaudeAiSkills`](/docs/en/settings-reference#syncclaudeaiskills), and [`syncClaudeAiPlugins`](/docs/en/settings-reference#syncclaudeaiplugins), where a `false` from any admin source turns the behavior off. A `false` in the developer's user or local settings turns it off too; each key can only deny
+* [`useAutoModeDuringPlan`](/docs/en/settings-reference#useautomodeduringplan), [`syncClaudeAiSkills`](/docs/en/settings-reference#syncclaudeaiskills), and [`syncClaudeAiPlugins`](/docs/en/settings-reference#syncclaudeaiplugins), where a `false` from any admin source turns the behavior off. Each key can only deny:
+  * A `false` in the developer's user or local settings turns it off too
+  * For `useAutoModeDuringPlan`, a `false` in a user or local file the developer leaves out with an option such as [`--setting-sources`](/docs/en/cli-reference#cli-flags) doesn't count. Ignoring a left-out file requires Claude Code v2.1.314 or later
 * [`enableArtifact`](/docs/en/settings-reference#enableartifact), where a `false` from any admin source turns the [Artifact tool](/docs/en/artifacts) off. A `false` in the developer's user, project, or local settings turns it off too, and no source turns it back on; see [which lower-level values still count](/docs/en/settings#exceptions-to-managed-settings-precedence). Requires Claude Code v2.1.242 or later
 * [`maxEffortLevel`](/docs/en/settings-reference#maxeffortlevel), where the lowest cap in any admin source applies. If a developer sets a lower cap in their own settings or with `--settings`, Claude Code applies that one; no source can raise the cap. Requires Claude Code v2.1.267 or later
 * A commit-trailer opt-out in `attribution`, or in the deprecated `includeCoAuthoredBy`, from any tier
@@ -78887,7 +79002,11 @@ In [cloud sessions](/docs/en/claude-code-on-the-web), the hosting environment ma
 
 Claude Code notes each ignored key in the session's debug log.
 
-In [Claude Desktop](/docs/en/desktop) sessions where the app manages the provider connection, such as the Code tab on a [third-party provider](/docs/en/third-party-integrations) and Cowork sessions, Claude Code reads these variables and the proxy variables `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY` only from [managed settings](/docs/en/managed-settings) and `~/.claude/settings.json`: it ignores them in a repository's own settings files, so a checked-out repository can't redirect the TLS or proxy path of a session whose credentials come from the app. In a local, SSH, or WSL Code tab session signed in through claude.ai, the app doesn't manage the connection, and Claude Code reads these variables from every settings scope, like any terminal session; [cloud sessions](/docs/en/claude-code-on-the-web) follow the cloud-session rules above wherever you start them. Before v2.1.217, Claude Code ignored these variables in every settings file when the app managed the connection.
+In [Claude Desktop](/docs/en/desktop) sessions where the app manages the provider connection, such as the Code tab on a [third-party provider](/docs/en/third-party-integrations) and Cowork sessions, Claude Code reads these variables except `CLAUDE_CODE_OAUTH_SCOPES`, and the proxy variables `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY`, only from [managed settings](/docs/en/managed-settings) and `~/.claude/settings.json`. It ignores them in a repository's own settings files, so a checked-out repository can't redirect the TLS or proxy path of a session whose credentials come from the app. Before v2.1.217, Claude Code ignored these variables in every settings file when the app managed the connection.
+
+In a local, SSH, or WSL Code tab session signed in through claude.ai, you can set these variables and the proxy variables in any settings file, apart from `CLAUDE_CODE_OAUTH_SCOPES`. Desktop sets `CLAUDE_CODE_OAUTH_SCOPES` itself in Code tab and Cowork sessions, so you can't set it.
+
+When the session's launch environment already sets a variable, Claude Code [ignores the settings file's value](/docs/en/settings-reference#how-env-values-interact-with-your-shell) and names the variable in the [debug log](/docs/en/debug-your-config). To use your own proxy or certificate value in a local session, [add it to a saved local environment](/docs/en/desktop#set-environment-variables-for-local-sessions). [Cloud sessions](/docs/en/claude-code-on-the-web) follow the cloud-session rules above wherever you start them.
 
 ## Verify your configuration
 
@@ -88879,6 +88998,7 @@ Sandboxing reduces risk but is not a complete isolation boundary. Review the lim
 * **Filesystem permission escalation**: overly broad filesystem write permissions can enable privilege escalation attacks. Allowing writes to directories containing executables in `$PATH`, system configuration directories, or user shell configuration files such as `.bashrc` or `.zshrc` can lead to code execution in different security contexts when other users or system processes access these files.
 * **Linux sandbox strength**: the Linux implementation provides strong filesystem and network isolation but includes an `enableWeakerNestedSandbox` mode that enables it to work inside Docker environments without privileged namespaces. This option considerably weakens security and should only be used when additional isolation is otherwise enforced.
 * **Apple Events on macOS**: the macOS sandbox blocks Apple Events by default. The `allowAppleEvents` setting lifts this restriction so tools such as `open` and `osascript` work, but it removes code-execution isolation: sandboxed commands can launch other applications unsandboxed with no user prompt, and can send AppleScript commands to running applications, subject to the per-app macOS automation-consent prompt (TCC). It is only honored from user, managed, or CLI settings. Project settings cannot enable it.
+* **Mach and XPC services on macOS**: sandboxed commands can reach outside the sandbox to each service that you list in [`network.allowMachLookup`](/docs/en/settings-reference#sandbox-network-allowmachlookup), and the sandbox doesn't confine what those services do for those commands.
 * **User namespaces on Linux and WSL2**: by default, sandboxed commands can't create user namespaces. If you set [`allowNestedUserNamespaces`](/docs/en/settings-reference#sandbox-allownestedusernamespaces) to `true`, you turn off a security boundary: code from a sandboxed command can end up running outside the sandbox. Before you turn this setting on, read the warning in [Chromium or rootless Podman fails inside the sandbox on Linux](#chromium-or-rootless-podman-fails-inside-the-sandbox-on-linux).
 
 ### Scope
@@ -92946,7 +93066,7 @@ For a few keys whose values restrict a session, Claude Code honors a restrictive
 | [`autoMode.classifyAllShell`](/docs/en/settings-reference#automode-classifyallshell) | `true` from `~/.claude/settings.json` or `--settings` | Honored even when a managed source sets `false` |
 | [`remoteControlAtStartup`](/docs/en/settings-reference#remotecontrolatstartup) | `false` from `.claude/settings.json` or `.claude/settings.local.json` | Honored even when a managed source sets `true`; a project or local `true` is ignored |
 | [`crossSessionInbound`](/docs/en/settings-reference#crosssessioninbound) | A stricter value from `.claude/settings.json` or `.claude/settings.local.json`, on the `accept` \< `hold` \< `refuse` ladder | Honored over managed, `--settings`, and user values; a project or local value that isn't stricter is ignored |
-| [`useAutoModeDuringPlan`](/docs/en/settings-reference#useautomodeduringplan) | `false` from any managed source, `--settings`, `~/.claude/settings.json`, or `.claude/settings.local.json` | Honored even when the winning managed source sets `true`; a `false` in `.claude/settings.json` is ignored |
+| [`useAutoModeDuringPlan`](/docs/en/settings-reference#useautomodeduringplan) | `false` from any managed source, `--settings`, `~/.claude/settings.json`, or `.claude/settings.local.json` | Honored even when the winning managed source sets `true`; a `false` in `.claude/settings.json` is ignored. See [the key's entry](/docs/en/settings-reference#useautomodeduringplan) for a file you leave out at launch |
 | [`syncClaudeAiSkills`](/docs/en/settings-reference#syncclaudeaiskills) | `false` from any managed source, `--settings`, `~/.claude/settings.json`, or `.claude/settings.local.json` | Honored even when the winning managed source sets `true`; a `false` in `.claude/settings.json` is ignored |
 | [`syncClaudeAiPlugins`](/docs/en/settings-reference#syncclaudeaiplugins) | `false` from any managed source, `--settings`, `~/.claude/settings.json`, or `.claude/settings.local.json` | Honored even when the winning managed source sets `true`; a `false` in `.claude/settings.json` is ignored |
 | [`maxEffortLevel`](/docs/en/settings-reference#maxeffortlevel) | A lower cap from any scope, including `--settings` | Honored even when the managed settings Claude Code applies set a higher cap; the lowest cap applies. Requires Claude Code v2.1.267 or later |
@@ -94275,8 +94395,9 @@ The three rule arrays share one syntax; see [Permission rule syntax](#permission
 Choose whether Claude Code uses the auto mode classifier to review shell commands in plan mode. With the default `true`, the classifier reviews each command during planning when auto mode is available and you see no prompt, except for [critical-path removals](/docs/en/permission-modes#critical-paths). Set `false` to get a permission prompt for every command outside the built-in read-only set. Appears in `/config` as **Use auto mode during plan**.
 
 * **Scope**: [`User, local, or managed`](#scopes). A repository can't turn it off for you.
+  * A `false` in any of these files or in `--settings` turns it off, unless you leave that user or local file out with an option such as [`--setting-sources`](/docs/en/cli-reference#cli-flags). Ignoring a left-out file requires Claude Code v2.1.314 or later
 * **Type**: Boolean
-  * `true`: the same as unset; when auto mode is available, the classifier reviews each shell command during planning instead of prompting you for it, except [critical-path removals](/docs/en/permission-modes#critical-paths). A `false` in any of these files still turns it off
+  * `true`: the same as unset; when auto mode is available, the classifier reviews shell commands during planning
   * `false`: you get a permission prompt for every command outside the built-in read-only set
 * **Default**: `true`
 
@@ -95423,7 +95544,7 @@ Let sandboxed commands on macOS listen on network ports, for example to start a 
 
 ### `sandbox.network.allowMachLookup`
 
-List additional XPC and Mach service names the macOS sandbox may look up. Tools that communicate over XPC, such as the iOS Simulator or Playwright, need their services listed here.
+List additional XPC and Mach service names the macOS sandbox may look up. Tools that communicate over XPC, such as the iOS Simulator or Playwright, need their services listed here. Sandboxed commands can reach outside the sandbox to each service that you list, and the sandbox [doesn't confine what those services do for those commands](/docs/en/sandboxing#security-limitations).
 
 * **Scope**: [`Any file`](#scopes), with [limits on project and local settings](/docs/en/sandboxing#repository-settings-under-an-admin-required-sandbox)
 * **Type**: array of strings, each a service name; a single trailing `*` matches a prefix, and `"*"` alone matches every service
@@ -95772,6 +95893,7 @@ This example turns off automatic compaction and routes API requests through a pr
 
     Ignoring this group in project and local settings requires Claude Code v2.1.282 or later.
   * Variables that change how Claude Code starts or syncs, such as `CLAUDE_CODE_PROCESS_WRAPPER`, `CLAUDE_CODE_SYNC_SKILLS`, `CLAUDE_CODE_SYNC_PLUGINS`, `CLAUDE_CODE_PLUGIN_CACHE_DIR`, and `CLAUDE_CODE_PLUGIN_SEED_DIR`.
+  * Variables that set your claude.ai sign-in, such as [`CLAUDE_CODE_OAUTH_TOKEN`, `CLAUDE_CODE_OAUTH_REFRESH_TOKEN`, and `CLAUDE_CODE_OAUTH_SCOPES`](/docs/en/env-vars#variables).
   * The [screen reader mode](/docs/en/accessibility) variable `CLAUDE_AX_SCREEN_READER` and the other variables whose names start with `CLAUDE_AX_`, such as [`CLAUDE_AX_STARTUP_QUIET_MS`](/docs/en/env-vars#variables).
   * [`CLAUDE_CODE_USER_DIALOG_TIMEOUT_MS`](/docs/en/env-vars#variables), which sets the timer on an unanswered dialog.
   * [`CLAUDE_CODE_DISABLE_ATTACHMENTS`](/docs/en/env-vars#variables), which turns off attachment processing.
