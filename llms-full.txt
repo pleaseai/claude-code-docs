@@ -2317,7 +2317,7 @@ A `CLAUDE.md` that passes that test stays short:
 - Integration tests need DATABASE_URL set, see .env.example
 ```
 
-In a session, run `/context` to confirm that Claude loaded the file.
+In a session, run [`/context all`](/docs/en/commands#all-commands) to confirm that Claude loaded the file.
 
 Notice that the typecheck line is only the command. Claude needs to know the command so it can check its own work as it goes. If you also want Claude Code to *enforce* a passing typecheck before Claude finishes, that's a job for a [`Stop` hook](#enforce-the-check-with-a-stop-hook). A line like `Always typecheck before you finish` in this file works most of the time, not every time.
 
@@ -19949,7 +19949,9 @@ For installation, authentication, and connectivity problems, see [Troubleshoot i
 
 ## See what loaded into context
 
-The `/context` command shows everything occupying the context window for the current session, broken down by category: system prompt, system tools, MCP tools, custom subagents with the source each loaded from, memory files, skills, and conversation messages. Run it first to confirm whether your `CLAUDE.md`, rules, or skill descriptions are present at all. The skills section in `/context` also includes [bundled skills](/docs/en/skills#bundled-skills), which `/skills` doesn't list.
+The `/context` command shows everything occupying the context window for the current session. It breaks this down by category: system prompt, system tools, MCP tools, custom subagents with the source each loaded from, memory files, skills, and conversation messages. Run it first to confirm whether your `CLAUDE.md`, rules, or skill descriptions are present at all. The skills section in `/context` also includes [bundled skills](/docs/en/skills#bundled-skills), which `/skills` doesn't list.
+
+In [fullscreen mode](/docs/en/fullscreen), `/context` collapses the per-item breakdown, so run `/context all` to expand it.
 
 For detail on a specific category, follow up with the dedicated command:
 
@@ -21914,7 +21916,7 @@ If a command-line tool makes your remote machines on demand, add its command to 
 
 > [!NOTE]
 >
-> Connections from a command require Claude Desktop v3.6556.0 or later on macOS or Linux, signed in with a Claude account. Administrators can [distribute commands to a team](#distribute-commands-to-your-team).
+> Connections from a command require Claude Desktop v3.6556.0 or later on macOS or Linux, or v4.16336.0 or later on Windows, signed in with a Claude account. On Windows, Desktop also has to [connect through the OpenSSH client](#use-your-ssh-configuration). Administrators can [distribute commands to a team](#distribute-commands-to-your-team).
 
 Desktop runs the command only when you create the connection or [create another machine](#create-another-machine), not each time you connect. Each entry is one connection, which points at the host that Desktop last saved from the entry's command.
 
@@ -21944,6 +21946,8 @@ The following example adds a connection named Dev box. If the file doesn't exist
 }
 ```
 
+On Windows, a bare name such as `acme-dev` doesn't work, so [start the command with the program's full path](#write-the-command-on-windows).
+
 Each entry takes these fields, and `id`, `name`, and `command` are required:
 
 | Field | Value |
@@ -21958,11 +21962,14 @@ To change or remove the connection, edit its entry in the file, because the app'
 
 ##### Write the command
 
-Desktop starts the program directly, with no shell and no terminal:
+On Windows, start with [Write the command on Windows](#write-the-command-on-windows), which says which of these rules apply there.
 
-* **Program**: write its name, or its full path from `/`, without spaces. Desktop looks for a bare name on the `PATH` that your login shell exports. Relative paths such as `./acme-dev`, paths that start with `~`, and shell aliases and functions don't work.
-* **Arguments**: separate plain arguments with spaces. The command can hold only spaces, ASCII letters, digits, and the characters `+,-./:=@_~`, and no word can start with `~`.
-* **Scripts**: if the command needs anything else, such as quotes, pipes, variables, or a URL with `?` or `&`, put it in a script. Make the script executable, start it with a `#!` line, and set `command` to its full path, such as `/Users/you/bin/make-devbox`. On macOS, keep the script out of the Documents, Desktop, and Downloads folders, where macOS can block it.
+On macOS and Linux, Desktop starts the program directly, with no shell and no terminal:
+
+* **Program**: write its name, or its full path from `/`. Desktop looks for a bare name on the `PATH` that your login shell exports. Relative paths such as `./acme-dev`, paths that start with `~`, and shell aliases and functions don't work.
+* **Spaces in the path**: put the program's full path in single quotes, such as `'/Users/you/My Tools/make-devbox' create`. Quotes, single or double, require Claude Desktop v4.16336.0 or later, and work only around the program's path.
+* **Arguments**: separate arguments with spaces. Outside quotes, the command can hold only spaces, ASCII letters, digits, and the characters `+,-./:=@_~`, and no word can start with `~`. A quoted path can also hold some other characters, such as `(`, `)`, and `&`.
+* **Scripts**: if the command needs anything else, such as quoted arguments, pipes, variables, or a URL with `?` or `&`, put it in a script. Make the script executable, start it with a `#!` line, and set `command` to its full path, such as `/Users/you/bin/make-devbox`. On macOS, keep the script out of the Documents, Desktop, and Downloads folders, where macOS can block it.
 * **Input**: the program gets no input and no terminal, so it can't prompt you there. If your tool signs you in through a browser or a prompt, sign in from a terminal first, and again whenever that sign-in lapses.
 * **Environment**: the program runs in your home directory with the variables that your login shell exports. Desktop reads them when it starts, as it does for [a `ProxyCommand`](#use-variables-from-your-shell-in-a-proxycommand), so quit and reopen Desktop after you change them.
 * **Time limit**: Desktop stops a program that is still running after 10 minutes. Desktop's progress message doesn't show the program's output. To stop the program sooner, select **Cancel** next to that message.
@@ -21992,11 +21999,60 @@ tail -n 1 "$out"
 
 If the command fails, **View details** in Desktop's message shows the last line that the command wrote to standard error, if any.
 
+##### Write the command on Windows
+
+On Windows, start `command` with the full path of an `.exe`, `.cmd`, or `.bat` file, from the drive letter. Desktop doesn't look for a bare name on your `PATH`, so an entry whose `command` is `acme-dev create` is [gray](#if-a-command-is-missing-or-gray).
+
+The following entry in `%USERPROFILE%\.claude\settings.json` runs `C:\Program Files\Acme\acme-dev.exe` with the argument `create`. In JSON, write each backslash twice, or write `/` instead. The single quotes are there because the path has a space:
+
+```json settings.json theme={null}
+{
+  "sshHostCommands": [
+    {
+      "id": "devbox",
+      "name": "Dev box",
+      "command": "'C:\\Program Files\\Acme\\acme-dev.exe' create"
+    }
+  ]
+}
+```
+
+Follow the rules in [Write the command](#write-the-command) on spaces in the path, input, the time limit, and what the program prints. In place of its other rules, follow these:
+
+* **Program**: don't use a network path such as `\\server\share`, a variable such as `%USERPROFILE%`, or a letter outside ASCII. With any of these in the path, the entry is gray. If your user folder's name has such a letter, keep the program outside that folder.
+* **Arguments**: follow the Arguments rule in Write the command. The command can also hold `\`, but no word can end with it.
+* **Scripts**: use a `.cmd` or `.bat` file, which Desktop runs through `cmd.exe`. Even in quotes, the file's path can't hold `&`, `^`, or `;`. In a file that you write, read the arguments with `%*`, because `%1` to `%9` split an argument at `,` and `=`.
+* **Environment**: the program gets the Desktop app's environment variables, not a shell profile's. After you change a variable, quit and reopen Desktop.
+* **Test**: to see the output that Desktop reads, run the command in Command Prompt. Put a path that has a space in double quotes and use `NUL` for no input, as in `"C:\Program Files\Acme\acme-dev.exe" create < NUL > host.txt`. The file has to hold only the host. The test makes a machine too, so delete it with your tool afterward.
+
+##### Wrap a Windows tool that prints other lines
+
+If your tool prints other lines before the host, such as progress messages, wrap it in a batch file that prints only the host. The following file prints the last line of your tool's output, and exits with your tool's code if it fails:
+
+```batch make-devbox.cmd theme={null}
+@echo off
+setlocal
+set "host="
+set "out=%TEMP%\acme-dev-%RANDOM%.txt"
+call "C:\Program Files\Acme\acme-dev.exe" create > "%out%"
+set "code=%ERRORLEVEL%"
+for /f "usebackq delims=" %%L in ("%out%") do set "host=%%L"
+del "%out%"
+if not "%code%"=="0" exit /b %code%
+setlocal EnableDelayedExpansion
+echo(!host!
+```
+
+Set `command` to the file's full path, such as `C:\\tools\\make-devbox.cmd` in JSON. Keep its last two lines as they are, because they print the host without running it as a command.
+
 ##### Connect to a new host
 
 Answer two questions the first time you connect to each new host:
 
-* **Host key**: with OpenSSH's default host key checking, check the key's fingerprint, then choose whether to connect. To skip the question, have your command add the key to `~/.ssh/known_hosts` before it prints the host, using a key that your tool learned when it made the machine. For a port other than 22, that line starts with `[host]:port`. If your tool reuses host names, remove the old key's line too.
+* **Host key**: with OpenSSH's default host key checking, check the key's fingerprint, then choose whether to connect. To skip the question, have your command add the key to `~/.ssh/known_hosts`, or `%USERPROFILE%\.ssh\known_hosts` on Windows, before it prints the host:
+  * Use a key that your tool learned when it made the machine
+  * For a port other than 22, start the line with `[host]:port`
+  * If your tool reuses host names, remove the old key's line too
 * **Folder**: choose whether you trust the folder that you open there
 
 Keep host key checking on for these hosts, and keep a `known_hosts` file for them. If `StrictHostKeyChecking` is `no` or `accept-new` and `UserKnownHostsFile` is also `/dev/null` or `none`, nothing records the key. When your tool then reuses a name, you can connect to a different machine without a warning.
@@ -22058,7 +22114,8 @@ Before you deploy the key, settle each of these:
 
 * **Where to put the key**: if your MDM policy for Claude Code already sets a [policy key](/docs/en/managed-settings#how-claude-code-combines-managed-sources), put it there. Otherwise, put it in the managed settings file. By default, such a policy outranks the file, and Desktop then ignores entries in the file. Set it on the computer even where [server-managed settings](/docs/en/server-managed-settings) apply: Desktop ignores the key there, and in project and local settings.
 * **The `id`**: if a user's `sshHostCommands` entry has your `id`, only yours works. If any other SSH connection has it, such as one in a user's `sshConfigs`, your entry is gray. Pick an `id` that users are unlikely to choose.
-* **The program**: give its full path, because Desktop looks up a bare name on each user's own `PATH`. The program runs as the user, with the variables that their login shell exports.
+* **The program**: give its full path, because on macOS and Linux Desktop looks up a bare name on each user's `PATH`, and on Windows an entry with a bare name is gray. The program runs as the user, with [that user's variables](#write-the-command).
+* **Each platform**: deploy one entry to Windows computers and another to macOS and Linux computers. An entry with a [Windows path](#write-the-command-on-windows) is gray on macOS and Linux, and one with a macOS or Linux path is gray on Windows.
 * **Users' own entries**: Desktop treats a user's entry like a [hook](/docs/en/hooks), because both run a program on the computer. To allow only your entries, set [`strictPluginOnlyCustomization`](/docs/en/settings-reference#strictpluginonlycustomization) to `["hooks"]`, or add `"hooks"` to its list. You also stop Claude Code hooks from user, project, and local settings, with no way to keep them. If you set that key or [`allowManagedHooksOnly`](/docs/en/settings-reference#allowmanagedhooksonly) to `true` instead, you block more, as each key's entry lists.
 * **Every entry**: to turn off your entries too, set [`disableAllHooks`](/docs/en/settings-reference#disableallhooks) in managed settings. If you set [`disableDesktopLocalSessions`](/docs/en/settings-reference#disabledesktoplocalsessions), or an `sshHostAllowlist` that allows no host, the selector lists no **Create** or **Create another** items.
 * **Where the locks count**: for these entries, Desktop reads `allowManagedHooksOnly`, `strictPluginOnlyCustomization`, and `disableAllHooks` from server-managed settings and from the computer's own file or policy, and applies the stricter result. Every entry stays gray until Desktop has checked claude.ai for server-managed settings, even if your organization has none.
@@ -22071,13 +22128,14 @@ After you deploy the key, restart Desktop on a test computer. In the Code tab's 
 The environment selector lists no **Create** or **Create another** item in these cases:
 
 * **The file**: `~/.claude/settings.json` has [invalid JSON or a value that the schema rejects](/docs/en/settings#fix-a-broken-settings-file), you misspelled the key, or you put it in a project's settings. Fix the file.
-* **Platform and account**: you use Windows, or a [third-party provider](/docs/en/third-party-integrations) instead of a Claude account. Add each host as an [SSH connection](#ssh-sessions) yourself.
+* **Account**: you use a [third-party provider](/docs/en/third-party-integrations) instead of a Claude account. Add each host as an [SSH connection](#ssh-sessions) yourself.
+* **Windows**: Desktop is older than v4.16336.0, or it doesn't connect through the OpenSSH client. Update Desktop and meet [the requirements for the OpenSSH client](#use-your-ssh-configuration), then quit and reopen Desktop.
 * **Your organization's settings**: your administrator turned off local sessions, or turned off SSH sessions. Ask them whether you can use commands.
 * **No `ssh` program**: Desktop couldn't start the OpenSSH client on your computer. Install it, or ask your administrator to allow it, then restart Desktop.
 
 An entry that you can't select is gray. Hover over it to see the reason:
 
-* **A mistake in the entry**: fix the field or the command that the message names. If the `id` is in use, give the entry another one.
+* **A mistake in the entry**: fix the field or the command that the message names. If the `id` is in use, give the entry another one. On Windows, the command has to [start with the program's full path](#write-the-command-on-windows).
 * **A broken settings file**: while your own settings file is broken, your administrator's entries may be gray, with a message that names the file. [Fix the file](/docs/en/settings#fix-a-broken-settings-file).
 * **A new host**: [**Create another**](#create-another-machine) is gray for one minute after Desktop saves a host. Select it after that minute. Before Claude Desktop v4.4212.0, **Replace Dev box's host** is gray for 10 minutes.
 * **Hooks are off or restricted**: your own entries work only where your own hooks can run. Remove `disableAllHooks` from your settings, or ask your administrator.
@@ -22252,7 +22310,7 @@ Managed settings override project and user settings and apply to Claude Code ses
 | `disableMobileSimulatorTools` | set to `true` to block Claude's tools for controlling and capturing devices in the [iOS Simulator pane](/docs/en/desktop-ios-simulator#turn-off-simulator-access). The pane stays usable for the user's own taps; only Claude's access is removed. The value must be the JSON boolean `true`; the string `"true"` is ignored. |
 | `disableBrowserExternalNavigation` | set to `true` to turn off external browsing in the [Browser pane](#browse-external-sites) entirely. Neither users nor Claude can navigate to external sites, and localhost dev server previews are unaffected. The value must be the JSON boolean `true`; the string `"true"` is ignored. |
 | `sshConfigs` | pre-configure [SSH connections](#pre-configure-ssh-connections-for-your-team) that appear in the environment selector. Users can't delete managed connections or edit anything but their own **Worktree folder**. |
-| `sshHostCommands` | give users [SSH connections whose host comes from a command](#distribute-commands-to-your-team), alongside their own. Desktop reads it from the managed settings file or MDM policy on the computer, and ignores it in [server-managed settings](/docs/en/server-managed-settings). Requires Claude Desktop v3.6556.0 or later on macOS or Linux, signed in with a Claude account. |
+| `sshHostCommands` | give users [SSH connections whose host comes from a command](#distribute-commands-to-your-team), alongside their own. Desktop reads it from the managed settings file or MDM policy on the computer, and ignores it in [server-managed settings](/docs/en/server-managed-settings). Requires Claude Desktop v3.6556.0 or later on macOS or Linux, or v4.16336.0 or later on Windows, signed in with a Claude account. On Windows, Desktop also has to [connect through the OpenSSH client](#use-your-ssh-configuration). |
 | `sshHostAllowlist` | restrict [SSH sessions](#restrict-which-ssh-hosts-users-can-connect-to) to hosts whose resolved hostname matches one of these patterns. Read from managed settings only. |
 | `disableDesktopLocalSessions` | set to `true` to turn off [Code sessions that run on the device](#local-sessions-on-managed-devices), leaving SSH sessions to other hosts and cloud sessions available. The value must be the JSON boolean `true`. Read from managed settings only. Requires Claude Desktop v1.37937.0 or later. |
 | `disableSshSavedPasswords` | set to `true` to stop Desktop from offering to remember SSH passwords and from using or showing the ones it saved earlier. Turning it on doesn't delete them. Read from managed settings only. Requires Claude Desktop v1.49585.0 or later. |
@@ -23813,6 +23871,8 @@ Match the message you see to a section below.
 | `is ignored — managed settings set allowManagedReadPathsOnly` / `is ignored — managed settings set allowManagedDomainsOnly` | [Configuration warnings](#sandbox-allow-entries-are-ignored-under-a-managed-lock) |
 | `Sandbox mask files left behind at write-deny paths` | [Configuration warnings](#stale-sandbox-mask-files-left-by-a-killed-session) |
 | `Stale sandbox mask files left by a killed session` | [Configuration warnings](#stale-sandbox-mask-files-left-by-a-killed-session) |
+| `Ubuntu's AppArmor restriction on user namespaces stops bubblewrap here` | [Sandboxing troubleshooting](/docs/en/sandboxing#apparmor-restriction-stops-bubblewrap) |
+| `bwrap: setting up uid map: Permission denied` / `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted` | [Sandboxing troubleshooting](/docs/en/sandboxing#bwrap-uid-map-permission-denied) |
 | Responses seem lower quality than usual | [Response quality](#responses-seem-lower-quality-than-usual) |
 
 ## Automatic retries
@@ -33685,7 +33745,7 @@ Write database queries with the Knex query builder. Never put raw SQL strings in
 Never edit a migration after it has merged. Add a new migration instead.
 ```
 
-When you start Claude from `packages/api/`, it loads both `packages/api/CLAUDE.md` and the root `CLAUDE.md`. Claude sees the local instructions alongside the repository-wide rules, with no instructions from `packages/web/` in context. The same holds for any subdirectory in a non-monorepo tree. To confirm which files loaded, run `/context` and check the list under **Memory files**.
+When you start Claude from `packages/api/`, it loads both `packages/api/CLAUDE.md` and the root `CLAUDE.md`. Claude sees the local instructions alongside the repository-wide rules, with no instructions from `packages/web/` in context. The same holds for any subdirectory in a non-monorepo tree. To confirm which files loaded, run [`/context all`](/docs/en/commands#all-commands) and check the list under **Memory files**.
 
 A few ways to keep the files current as the codebase and models change:
 
@@ -36436,7 +36496,9 @@ For large projects, you can break instructions into topic-specific files using [
 
 ### Set up a project CLAUDE.md
 
-A project CLAUDE.md can be stored in either `./CLAUDE.md` or `./.claude/CLAUDE.md`. Create this file and add instructions that apply to anyone working on the project: build and test commands, coding standards, architectural decisions, naming conventions, and common workflows. These instructions are shared with your team through version control, so focus on project-level standards rather than personal preferences. To confirm the file loaded, run `/context` in a session and check the list under **Memory files**.
+A project CLAUDE.md can be stored in either `./CLAUDE.md` or `./.claude/CLAUDE.md`. Create this file and add instructions that apply to anyone working on the project: build and test commands, coding standards, architectural decisions, naming conventions, and common workflows. These instructions are shared with your team through version control, so focus on project-level standards rather than personal preferences.
+
+To confirm the file loaded, run [`/context all`](/docs/en/commands#all-commands) in a session and check the list under **Memory files**. In [fullscreen mode](/docs/en/fullscreen), `/context` alone collapses that list.
 
 > [!TIP]
 >
@@ -36830,7 +36892,7 @@ The command prints no output on success. Before you choose the symlink over the 
 * **Editing**: Claude reads `CLAUDE.md` through the link, but the Edit and Write tools [refuse to write through a symlink](/docs/en/errors#refusing-after-a-symlink-changed), and the refusal directs Claude to edit the link's target, `AGENTS.md`, instead
 * **Windows**: if you or anyone who clones the repository works on Windows, use the `@AGENTS.md` import instead. Creating a symlink there needs Administrator privileges or Developer Mode, and Git checks a committed symlink out as a plain text file unless `core.symlinks` is enabled, which leaves that clone with a one-line `CLAUDE.md` in place of your instructions
 
-With either approach, run `/context` in your next session and confirm `CLAUDE.md` appears under **Memory files**.
+With either approach, run `/context all` in your next session and confirm `CLAUDE.md` appears under **Memory files**.
 
 ### Migrate instructions from other tools
 
@@ -36936,7 +36998,7 @@ Auto memory files are plain markdown you can edit or delete at any time. Run [`/
 
 ## View and edit with `/memory`
 
-The `/memory` command lists your CLAUDE.md, CLAUDE.local.md, and other memory file locations across user and project scopes, including user and project CLAUDE.md entries for files that don't exist yet. It also lets you toggle auto memory on or off and provides an option to open the auto memory folder. Select any file to open it in your editor; selecting one that doesn't exist yet creates it first. To check which `CLAUDE.md` and rules files loaded at launch, run `/context`.
+The `/memory` command lists your CLAUDE.md, CLAUDE.local.md, and other memory file locations across user and project scopes. The list includes user and project CLAUDE.md entries for files that don't exist yet. The command also lets you toggle auto memory on or off and provides an option to open the auto memory folder. Select any file to open it in your editor; selecting one that doesn't exist yet creates it first.
 
 GUI editors such as VS Code open the file in a separate window, and you can keep using the session while it's open. Terminal editors such as Vim take over the terminal until you exit.
 
@@ -36952,7 +37014,7 @@ CLAUDE.md content is delivered as a user message after the system prompt, not as
 
 To debug:
 
-* Run `/context` and check the list under **Memory files** to verify the CLAUDE.md and CLAUDE.local.md files that should load at launch. If one is missing there, Claude can't see it. Use `/memory` to open and edit the files.
+* Run `/context all` and check the list under **Memory files** to verify the CLAUDE.md and CLAUDE.local.md files that should load at launch. If one is missing there, Claude can't see it. Use `/memory` to open and edit the files.
 * If an `Instruction file not loaded` notice appears, see [what it means and what to do about it](/docs/en/errors#instruction-file-not-loaded).
 * A `CLAUDE.md` in a subdirectory of your working directory doesn't appear under **Memory files**, because it loads on demand rather than at launch. When it loads, a `Loaded` line with its path appears in the terminal. To test a new one, create it from your shell rather than asking Claude to write it, then ask Claude to read a file in that subdirectory.
 * Check that the relevant CLAUDE.md is in a location that gets loaded for your session (see [Choose where to put CLAUDE.md files](#choose-where-to-put-claude-md-files)).
@@ -59434,7 +59496,7 @@ The role's trust policy names the gateway's own principal, such as its IRSA or E
 
 * If STS refuses or is unreachable, the gateway doesn't send the request with the upstream's own credentials. It logs the STS error with what to check, then tries the next upstream you listed. [Upstream error messages](#upstream-error-messages) covers what the client receives when no upstream succeeds. A later upstream without `assume_role` would serve the request with its own credentials, so list one only if that is what you want.
 * The gateway calls the regional STS endpoint `sts.<region>.amazonaws.com`, which its network must reach. For the FIPS endpoint, set `AWS_USE_FIPS_ENDPOINT=true` in the gateway's environment rather than `use_fips_endpoint` in an AWS config file.
-* `assume_role` applies to `provider: bedrock` only and needs SigV4 source credentials: the gateway refuses to start when it's set beside `aws_bearer_token`.
+* `assume_role` needs SigV4 source credentials: the gateway refuses to start when it's set beside `aws_bearer_token`.
 * Without a [`groups` list](#send-each-team-to-its-own-upstream), every developer the gateway admits can use this upstream. To limit which models a developer can use, set `availableModels` in a [`managed`](#managed) policy.
 * To keep a model served through the role from also being served from another account, give it a custom id whose `upstream_model` map has only this upstream's name. For such an id the gateway skips every other upstream, so neither the request nor the token count for an aborted request can fail over to another account.
 * A request for a built-in model name can still [reach this upstream](#multiple-upstreams), and the gateway signs it with the same role. List this upstream last unless its account should also serve those models.
@@ -59496,6 +59558,7 @@ The table below lists the fields specific to a `mantle` upstream.
 | `region` | Yes | AWS region. The gateway derives the endpoint from it as `https://bedrock-mantle.<region>.api.aws/anthropic`. |
 | `models` | Yes | The models your AWS account has been granted on Mantle, named as clients send them, such as `claude-haiku-4-5`. Only these go to this upstream, and every other model skips to the next one. |
 | `auth` | No | Takes the same keys as the [Amazon Bedrock](#amazon-bedrock) upstream's `auth` block, under the same rules. |
+| `assume_role` | No | The role that this upstream's requests go through, with the same keys as [on a `bedrock` upstream](#bedrock-in-another-aws-account), including `session_name` for [per-developer attribution](#per-developer-aws-cost-attribution). Give the role Mantle's IAM actions. Requires a gateway running Claude Code v2.1.318 or later. An earlier gateway exits at startup with `Unrecognized key(s) in object: 'assume_role'`. |
 | `base_url` | No | Override the derived endpoint. Keep the `/anthropic` path at the end. |
 
 Grant the upstream's AWS identity Mantle's own IAM actions for inference and token counting, which [Use the Mantle endpoint](/docs/en/amazon-bedrock#use-the-mantle-endpoint) lists.
@@ -59505,7 +59568,7 @@ For a Mantle model ID that the gateway doesn't know, add an entry to the top-lev
 A `bedrock` upstream's `guardrail` and `assume_role` settings don't extend to the requests Mantle serves:
 
 * **`guardrail`**: the gateway applies no [Bedrock guardrail](#apply-an-amazon-bedrock-guardrail) to requests it sends to Mantle, so it refuses to start when a `mantle` upstream is listed while any `bedrock` upstream sets `guardrail`.
-* **`assume_role`**: a `mantle` upstream takes no [`assume_role`](#bedrock-in-another-aws-account). Requests that Mantle serves are sent with the `mantle` upstream's own `auth` credentials, and aren't [attributed per developer](#per-developer-aws-cost-attribution).
+* **`assume_role`**: set it on the `mantle` upstream itself. Without it, requests that Mantle serves are sent with the `mantle` upstream's own `auth` credentials.
 
 For what Mantle's own error responses mean, see [Mantle endpoint errors](/docs/en/amazon-bedrock#mantle-endpoint-errors).
 
@@ -84755,7 +84818,7 @@ In each plugin component, `${...}` references resolve inline in specific fields,
 | :- | :- | :- |
 | Hook commands | Anywhere in `command` and `args` | `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`, `CLAUDE_PROJECT_DIR`, and `CLAUDE_PLUGIN_OPTION_<KEY>` |
 | Monitor commands | Anywhere in `command` | Not exported |
-| MCP `stdio` servers | `command`, `args`, `env` | `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA` |
+| MCP `stdio` servers | `command`, `args`, `env` | `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`, `CLAUDE_PROJECT_DIR` |
 | MCP `http`, `sse`, `ws` servers | `url`, `headers`, `headersHelper` | Not applicable |
 | LSP servers | `command`, `args`, `env`, `workspaceFolder` | `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`, `CLAUDE_PROJECT_DIR` |
 | Skill, command, and agent content | Anywhere in the Markdown body | Not applicable |
@@ -88181,7 +88244,7 @@ This opens the sandbox panel with three tabs, plus a Dependencies tab on Linux w
 * **Overrides**: choose whether commands that fail under the sandbox can fall back to running unsandboxed. This is the [`allowUnsandboxedCommands`](/docs/en/settings-reference#sandbox-allowunsandboxedcommands) setting
 * **Config**: view the resolved sandbox settings
 
-If the panel shows only a Dependencies tab, a required package is missing. Install it as described in [Set up Linux and WSL2](#set-up-linux-and-wsl2), restart Claude Code, and run `/sandbox` again.
+If the panel shows only a Dependencies tab, the sandbox can't start yet. Fix what the tab reports as described in [Set up Linux and WSL2](#set-up-linux-and-wsl2), restart Claude Code, and run `/sandbox` again.
 
 **2. Choose a mode**
 
@@ -88207,7 +88270,7 @@ claude --settings '{"sandbox": {"enabled": true, "allowUnsandboxedCommands": fal
 
 > [!WARNING]
 >
-> By default, if the sandbox can't start because a dependency is missing or the platform is unsupported, Claude Code runs commands without sandboxing. To make Claude Code exit at startup instead, set [`sandbox.failIfUnavailable`](/docs/en/settings-reference#sandbox-failifunavailable) to `true`. Managed deployments that require sandboxing as a security gate can use this setting.
+> By default, when the platform doesn't support the sandbox or the dependency check at startup fails, Claude Code runs commands without sandboxing. To make Claude Code exit at startup instead, set [`sandbox.failIfUnavailable`](/docs/en/settings-reference#sandbox-failifunavailable) to `true`. Managed deployments that require sandboxing as a security gate can use this setting.
 
 ### Confirm commands run inside the sandbox
 
@@ -88245,37 +88308,47 @@ When a dependency is missing, the Dependencies tab in `/sandbox` lists which of 
 
 Ripgrep is bundled with the native Claude Code binary. The seccomp filter is optional and adds Unix domain socket blocking. Install it with `npm install -g @anthropic-ai/sandbox-runtime` if it is missing.
 
-When a required dependency is missing, the Dependencies tab is the only tab shown until you install it. When only the optional seccomp filter is missing, the Dependencies tab appears alongside the other tabs. The dependency check runs at startup, so restart Claude Code after installing packages for `/sandbox` to detect them.
+* **Dependencies is the only tab**: the sandbox can't start. Install what the tab lists as missing, or if it reports Ubuntu's AppArmor restriction, [add an AppArmor profile for bubblewrap](#add-an-apparmor-profile-for-bubblewrap)
+* **Dependencies appears beside the other tabs**: the tab lists a missing optional item, such as the seccomp filter. The sandbox can start without it, so install it only if you want what it adds
 
-> [accordion] Ubuntu 24.04 and later: allow bubblewrap to create user namespaces
->
-> On Ubuntu 24.04 and later, the default AppArmor policy prevents bubblewrap from creating the user namespaces it needs for isolation.
->
-> To check whether your environment enforces this restriction, including inside WSL2, run `sysctl kernel.apparmor_restrict_unprivileged_userns`. If the command returns `0`, skip this step. If it prints a `No such file or directory` error, the key doesn't exist and you can skip this step. If it returns `1`, add an AppArmor profile that grants `bwrap` this capability:
->
-> ```bash theme={null}
-> sudo tee /etc/apparmor.d/bwrap > /dev/null <<'EOF'
-> abi <abi/4.0>,
-> include <tunables/global>
->
-> profile bwrap /usr/bin/bwrap flags=(unconfined) {
->   userns,
->   include if exists <local/bwrap>
-> }
-> EOF
-> ```
->
-> The profile applies only to `bwrap` itself, not to the commands it runs inside the sandbox. Reload AppArmor to apply it:
->
-> ```bash theme={null}
-> sudo systemctl reload apparmor
-> ```
+The dependency check runs at startup, so restart Claude Code after installing packages for `/sandbox` to detect them.
 
 > [accordion] WSL2 notes
 >
 > Check your WSL version with `wsl -l -v` from PowerShell. If you see `Sandboxing requires WSL2`, your distribution is running WSL1. Upgrade it to WSL2 or run Claude Code without sandboxing.
 >
 > On WSL2, WSL hands a launch of a Windows binary such as `cmd.exe`, `powershell.exe`, or anything under `/mnt/c/` to the Windows host over a Unix socket, so whether a sandboxed command can launch one follows the sandbox's [Unix-socket settings](/docs/en/settings-reference#sandbox-network-allowunixsockets): the optional seccomp filter has to be installed to block the socket in the first place. To allow these launches, set `allowAllUnixSockets`, which opens every Unix socket to sandboxed commands.
+
+#### Add an AppArmor profile for bubblewrap
+
+Add the profile if Claude Code runs `/usr/bin/bwrap` and either of these happens:
+
+* Claude Code [reports Ubuntu's AppArmor restriction on user namespaces](#apparmor-restriction-stops-bubblewrap)
+* Sandboxed commands fail with `bwrap: setting up uid map: Permission denied` or `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted` while [that restriction is on](#bwrap-uid-map-permission-denied)
+
+Claude Code runs the first `bwrap` on `PATH`, unless managed settings name one in [`sandbox.bwrapPath`](/docs/en/settings-reference#sandbox-bwrappath). To see which `bwrap` is first, run `which bwrap` in the shell you start Claude Code from. If Claude Code runs any path other than `/usr/bin/bwrap`, [lift the restriction with `sysctl`](#apparmor-restriction-stops-bubblewrap) instead.
+
+To add the profile for `/usr/bin/bwrap`, run this command:
+
+```bash theme={null}
+sudo tee /etc/apparmor.d/bwrap > /dev/null <<'EOF'
+abi <abi/4.0>,
+include <tunables/global>
+
+profile bwrap /usr/bin/bwrap flags=(unconfined) {
+  userns,
+  include if exists <local/bwrap>
+}
+EOF
+```
+
+Reload AppArmor to apply it:
+
+```bash theme={null}
+sudo systemctl reload apparmor
+```
+
+Then restart Claude Code and [confirm the sandbox works](#confirm-commands-run-inside-the-sandbox).
 
 ### Sandbox modes
 
@@ -88826,7 +88899,7 @@ The following managed settings configuration enables the sandbox, refuses to sta
 
 The two keys beyond `enabled` control what happens when the sandbox cannot run a command:
 
-* **`failIfUnavailable`**: a missing dependency such as bubblewrap on Linux blocks Claude Code from starting rather than falling back to unsandboxed execution
+* **`failIfUnavailable`**: when the platform doesn't support the sandbox or the dependency check at startup fails, Claude Code refuses to start rather than falling back to unsandboxed execution
 * **`allowUnsandboxedCommands: false`**: Claude Code ignores the `dangerouslyDisableSandbox` escape hatch, so when a command fails under the sandbox, Claude can't retry it unsandboxed
 
 Consider these additions alongside them:
@@ -89011,6 +89084,28 @@ Before v2.1.307, the folder was deleted even with something in it and no `HEAD`.
 ### Bubblewrap fails to start inside a container
 
 In an unprivileged container, [bubblewrap](#os-level-enforcement) can't mount a fresh `/proc` filesystem, so sandboxed commands fail with a `bwrap` error such as `Can't mount proc on /newroot/proc: Operation not permitted`. Set [`enableWeakerNestedSandbox`](/docs/en/settings-reference#sandbox-enableweakernestedsandbox) to `true` so the sandbox bind-mounts the container's existing `/proc` instead. Only use this setting when the outer container already provides the isolation boundary you need, since the setting exposes process information to sandboxed commands that a fresh `/proc` mount would hide.
+
+### Ubuntu's AppArmor restriction stops bubblewrap
+
+On Linux and WSL2, the message `Ubuntu's AppArmor restriction on user namespaces stops bubblewrap here` means that Ubuntu's AppArmor restriction keeps the sandbox from starting.
+
+To get the sandbox to start, lift the restriction in one of these two ways:
+
+* [Add an AppArmor profile for bubblewrap](#add-an-apparmor-profile-for-bubblewrap) if Claude Code runs `/usr/bin/bwrap`
+* In your shell, run `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0`, which lifts the restriction for every program on the machine and lasts until you reboot
+
+Then restart Claude Code and [confirm the sandbox works](#confirm-commands-run-inside-the-sandbox).
+
+Until you lift the restriction, commands run without the sandbox under the regular permission flow, or Claude Code refuses to start if [`sandbox.failIfUnavailable`](/docs/en/settings-reference#sandbox-failifunavailable) is `true`.
+
+### Sandboxed commands fail with `bwrap: setting up uid map: Permission denied`
+
+On Linux and WSL2, this error or `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted` can mean that Ubuntu's AppArmor restriction on user namespaces is stopping bubblewrap. To check, run `sysctl kernel.apparmor_restrict_unprivileged_userns` in your shell:
+
+* `kernel.apparmor_restrict_unprivileged_userns = 1`: the restriction is on. [Add an AppArmor profile](#add-an-apparmor-profile-for-bubblewrap) if Claude Code runs `/usr/bin/bwrap`, or run `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0`, which lifts it for every program until you reboot. Then restart Claude Code and [confirm the sandbox works](#confirm-commands-run-inside-the-sandbox)
+* Any other output: the restriction isn't the cause. To report the failure, run [`/feedback`](/docs/en/commands#all-commands) at the Claude Code prompt
+
+Before v2.1.310, Claude Code didn't check for this restriction at startup, so `/sandbox` didn't report it.
 
 ### 0-byte read-only files appear at `.claude` settings paths, and "Yes, and don't ask again" doesn't save
 
@@ -94937,7 +95032,7 @@ On Linux and WSL2 the sandbox needs `bubblewrap` and `socat`; see [Set up Linux 
 
 ### `sandbox.failIfUnavailable`
 
-Make Claude Code exit with an error at startup when `sandbox.enabled` is `true` but the sandbox can't start, because a dependency is missing or the platform is unsupported. Without this key, Claude Code runs commands unsandboxed. Managed deployments that require sandboxing as a security gate can use this setting.
+Make Claude Code exit with an error at startup when `sandbox.enabled` is `true` but the sandbox can't start because the platform doesn't support it or the dependency check fails. Without this key, Claude Code runs commands unsandboxed. Managed deployments that require sandboxing as a security gate can use this setting.
 
 On a platform the sandbox doesn't support, Claude Code doesn't start with this key on. See [Enforce sandboxing with managed settings](/docs/en/sandboxing#enforce-sandboxing-with-managed-settings).
 
@@ -98757,10 +98852,12 @@ If you set [`managedSourcesBehavior`](#managedsourcesbehavior) to `"merge"` in y
 
 ### `sshHostCommands`
 
-Add SSH connections whose host comes from a command to the [Desktop](/docs/en/desktop#create-an-ssh-connection-from-a-command) environment selector. When you create a connection or replace its host, Desktop runs the entry's command on your computer and connects to the host that the command prints. Requires Claude Desktop v3.6556.0 or later on macOS or Linux, signed in with a Claude account.
+Add SSH connections whose host comes from a command to the [Desktop](/docs/en/desktop#create-an-ssh-connection-from-a-command) environment selector. When you create a connection or create another machine for it, Desktop runs the entry's command on your computer and connects to the host that the command prints.
+
+Requires Claude Desktop v3.6556.0 or later on macOS or Linux, or v4.16336.0 or later on Windows, signed in with a Claude account. On Windows, Desktop also has to [connect through the OpenSSH client](/docs/en/desktop#use-your-ssh-configuration).
 
 * **Scope**: [`User or managed`](#scopes). Only the desktop app reads this key. It reads managed entries from [one managed settings file or MDM policy](/docs/en/desktop#distribute-commands-to-your-team) on the computer, and ignores the key in [server-managed settings](/docs/en/server-managed-settings).
-* **Type**: array of objects, each with required `id`, `name`, and `command` and optional `sshIdentityFile` and `startDirectory`. Desktop starts `command` without a shell, so [write it as a program and plain arguments](/docs/en/desktop#write-the-command).
+* **Type**: array of objects, each with required `id`, `name`, and `command` and optional `sshIdentityFile` and `startDirectory`. Desktop doesn't read `command` as shell syntax, so pipes and variables don't work: [write it as a program and its arguments](/docs/en/desktop#write-the-command).
 * **Default**: unset
 
 This example adds one connection named `Dev box`, where `acme-dev create` stands for your own tool:
@@ -98776,6 +98873,8 @@ This example adds one connection named `Dev box`, where `acme-dev create` stands
   ]
 }
 ```
+
+On Windows, a bare name such as `acme-dev` doesn't work, so [start the command with the program's full path](/docs/en/desktop#write-the-command-on-windows).
 
 Before Claude Code v2.1.307, the Edit tool refused a change that added this key to a valid settings file, with the error `Unrecognized field: sshHostCommands`. On those versions, add the key in a text editor instead; Claude Code loads a file that holds the key. In Desktop, the version that counts is the [Code tab's Claude Code version](/docs/en/desktop#claude-code-version-in-the-code-tab), not your terminal's.
 
