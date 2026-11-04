@@ -155,17 +155,17 @@ Claude Code checks the model it selects for a teammate against your organization
 * **Family alias such as `opus`**: On the Anthropic API and Claude Platform on AWS, Claude Code runs the teammate on the newest version of that family the allowlist permits. On providers with provider-specific model IDs, where the [substitution doesn't operate](/docs/en/model-config#restrict-model-selection), a blocked alias falls back like any other blocked value per the next bullet
 * **Any other blocked value, including a family alias on providers where the substitution doesn't operate, or one whose family has no permitted version**: Claude Code runs the teammate on the lead's model instead. If you set `CLAUDE_CODE_SUBAGENT_MODEL`, Claude Code tries that model first, under these same rules
 
-By default, teammates inherit the lead's [effort level](/docs/en/model-config#adjust-effort-level). In split-pane mode this applies from v2.1.186; earlier versions did not pass the lead's session effort to split-pane teammates.
+By default, a teammate on the lead's model inherits the lead's [effort level](/docs/en/model-config#adjust-effort-level). In split-pane mode this applies from v2.1.186; earlier versions did not pass the lead's session effort to split-pane teammates. For a teammate on another model, see [Effort level of subagents and teammates](/docs/en/model-config#effort-level-of-subagents-and-teammates).
 
 ### Have teammates plan before implementing
 
-For complex or risky tasks, you can have teammates plan before implementing. A teammate that Claude spawns while the lead is in [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode) works in read-only plan mode until its plan is ready. Switch the lead into plan mode first, then ask for the teammate:
+For complex or risky tasks, you can have teammates plan before implementing. A teammate that Claude spawns while the lead is in [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode) also works in plan mode until its plan is ready. Switch the lead into plan mode first, then ask for the teammate:
 
 ```text wrap theme={null}
 Spawn an architect teammate to refactor the authentication module.
 ```
 
-When that teammate finishes planning, it sends a plan approval request to the lead. If you haven't changed that teammate's permission mode since it was spawned, Claude Code approves the plan as soon as the request arrives, without the lead reviewing it. The teammate's edits and commands still go through the permission prompts described in [Permissions](#permissions). Once approved, the teammate exits plan mode and begins implementation.
+When that teammate finishes planning, it sends a plan approval request to the lead. If you haven't changed that teammate's permission mode since it was spawned, Claude Code approves the plan as soon as the request arrives, without the lead reviewing it. Once approved, the teammate exits plan mode and begins implementation. Claude Code passes it the lead's current [permission mode](#permissions), or Manual if that's plan mode.
 
 If you put a running in-process teammate in plan mode by pressing [`Shift+Tab`](/docs/en/permission-modes#switch-permission-modes) while viewing its session, the lead reviews that run's plan instead of Claude Code approving it. You aren't asked to approve it; the lead approves it or sends it back for revision.
 
@@ -285,7 +285,15 @@ For a teammate it brings back, Claude Code re-applies a definition that came fro
 
 ### Permissions
 
-Teammates start with the lead's permission mode, except [`dontAsk` mode](/docs/en/permission-modes#allow-only-pre-approved-tools-with-dontask-mode), which they don't inherit. If the lead runs with `--dangerously-skip-permissions`, all teammates do too. After spawning, you can change an individual teammate's permission mode, but you can't set per-teammate permission modes at spawn time.
+To cycle a running teammate's permission mode, press [`Shift+Tab`](/docs/en/permission-modes#switch-permission-modes), though an in-process teammate can run in the lead's mode instead. For a split-pane teammate, press it in its pane. For an [in-process](#choose-a-display-mode) teammate, press it while [viewing its session](#talk-to-teammates-directly), and the teammate checks its mode when it starts its next turn.
+
+> [!NOTE]
+>
+> An in-process teammate that isn't in [plan mode](#have-teammates-plan-before-implementing) runs in the lead's mode while the lead is in [`acceptEdits`](/docs/en/permission-modes#auto-approve-file-edits-with-acceptedits-mode), [`auto`](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), or [`bypassPermissions`](/docs/en/permission-modes#skip-all-checks-with-bypasspermissions-mode) mode. Switching the teammate to Manual doesn't change that, even if its status bar shows Manual.
+>
+> To have it ask before it edits, press Enter on the `main` row in the agent panel and switch the lead to Manual mode too. The lead then asks too, as does any other teammate in Manual mode.
+
+You can't set per-teammate permission modes at spawn time. A new teammate starts with the lead's mode, including `bypassPermissions` mode, which `--dangerously-skip-permissions` turns on. If the lead is in [`dontAsk` mode](/docs/en/permission-modes#allow-only-pre-approved-tools-with-dontask-mode), the teammate starts in [Manual mode](/docs/en/permission-modes#available-modes) instead.
 
 An [in-process](#choose-a-display-mode) teammate runs under the lead's live allow and deny rules, so [`--disallowedTools`](/docs/en/cli-reference#cli-flags), `--tools`, and `--allowedTools` all apply to it. For a split-pane teammate, check each flag:
 
@@ -485,7 +493,7 @@ Agent teams are experimental. Current limitations to be aware of:
 * **No nested teams**: teammates cannot spawn their own teammates. Only the lead can manage the team.
 * **No background subagents from in-process teammates**: an in-process teammate's own subagents run in the foreground, because a teammate's background work can't outlive the lead's process. Claude Code returns an error when a teammate spawns a subagent whose definition sets `background: true`. A teammate's `run_in_background: true` request also fails, either with an error or by running silently in the foreground. Subagents launched from the main conversation follow the [background default](/docs/en/sub-agents#run-subagents-in-foreground-or-background).
 * **Lead is fixed**: the main session is the lead for its lifetime. You can't promote a teammate to lead or transfer leadership.
-* **Permissions set at spawn**: teammates start with the permission mode described under [Permissions](#permissions). You can change an individual teammate's permission mode after spawning, but you can't set per-teammate permission modes at spawn time.
+* **No per-teammate permission modes at spawn**: teammates start with the permission mode described under [Permissions](#permissions).
 * **Split panes require tmux or iTerm2**: the default in-process mode works in any terminal. Split-pane mode isn't supported in VS Code's integrated terminal, Windows Terminal, or Ghostty.
 
 ## Next steps
@@ -938,7 +946,7 @@ Two commands move work from the session you're in to the background: `/backgroun
 
 Run `/background` or its alias `/bg` to move the current conversation into a background session. Pass a prompt such as `/bg run the test suite and fix any failures` to give one more instruction first. If Claude is responding when you run `/bg`, the response continues in the background session.
 
-Exiting a session that still has background work running, such as subagents, background shell commands, workflows, or [monitors](/docs/en/tools-reference#monitor-tool), shows a `Background work is running` dialog instead of quitting immediately. Choose `Move to background and exit` to background the session the same way `/background` does and return to your shell. The option isn't shown when agent view is [turned off](#turn-off-agent-view).
+If you exit a session while some kinds of background work are running, such as subagents or workflows, a `Background work is running` dialog warns that the work stops. Choose `Move to background and exit` to background the session the same way `/background` does and return to your shell. The option isn't shown when agent view is [turned off](#turn-off-agent-view).
 
 If a background session on the list already has the conversation's name, Claude Code numbers the new row's name, such as `my-session (2)`, and leaves the existing row's name alone. To rename the new row, select it in agent view and press `Ctrl+R`.
 
@@ -2757,7 +2765,7 @@ You rarely have to clean any of this up yourself:
 >
 > A `claude -p --worktree` run is one you clean up yourself, since it exits without asking. Remove those with `git worktree remove <path>`, and if git refuses because the worktree is locked, `git worktree unlock <path>` first.
 
-For one big mechanical change across many files, [`/batch migrate every handler to the v2 response helpers`](/docs/en/commands) splits the work into 5 to 30 units and shows you the plan. Then it runs each unit in its own worktree and opens a PR for it. From your shell, [`claude agents`](/docs/en/agent-view) (still a research preview) gives you one screen for everything running in the background on your machine.
+For one big mechanical change across many files, [`/batch migrate every handler to the v2 response helpers`](/docs/en/commands) splits the work into 5 to 30 units and shows you the plan. Once you approve it, each unit gets its own worktree and opens a PR or reports what happened. From your shell, [`claude agents`](/docs/en/agent-view) (still a research preview) gives you one screen for everything running in the background on your machine.
 
 A second session is also the easiest independent reviewer you can get. One session writes the rate limiter, another reviews `@src/middleware/rateLimiter.ts` without having watched it being written, and you paste the findings back into the first. Same idea as `/code-review`, with you carrying the messages.
 
@@ -2796,6 +2804,106 @@ Release notes for Claude Code, including new features, improvements, and bug fix
 This page is generated from the [CHANGELOG.md on GitHub](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md). Longer releases are grouped by type of change, with long lists of improvements and bug fixes collapsed.
 
 Run `claude --version` to check your installed version.
+
+**2.1.318**
+
+November 4, 2026
+
+**Added**
+
+* Added a record of your answer when Claude Code asks to turn on the mods it writes in a session
+* Added `assume_role` on `mantle` upstreams of the Claude apps gateway, for a role in another AWS account and for per-developer AWS cost attribution
+* Added an `effort` option to a mod's `$.model.fork`, so a quick side job can run at `low` whatever effort the session uses; the result reports the effort sent
+* Added the date a stored claude.ai sign-in ends to `claude auth status` (`loginExpiresAt`) and to `claude -p` JSON results (`credential_expires_at`)
+* Added a one-line stderr warning to `claude -p` text output, starting 10 days before a stored claude.ai sign-in ends
+* Gateway: Added a log warning when the Google access token from a federation (`external_account`) credentials file is about to expire
+* Self-hosted runner: Added `CLAUDE_RUNNER_SPAWN_REASON` to the orchestrator's spawn-runner hook environment: why Anthropic sent the request (e.g. `runner_lost`, `resumed`); unset when none was sent
+* Self-hosted runner: Added a startup warning when `--release-idle-session-min` is the last argument with no value (still ignored) or has a value of only spaces (still read as `0`)
+* \[Cloud sessions] Added a No repository option: a cloud session on an Anthropic-hosted environment can now start without picking a repository
+* \[Cloud sessions] Added the usual Chrome names to cloud sessions, so tools other than Playwright can find the built-in Chromium through google-chrome and CHROME\_PATH
+* \[Cloud sessions] Added a New session button to the card shown when a cloud session's environment was deleted, where the message box is hidden
+
+**Changed**
+
+* Changed Claude Code to no longer install or update the IDE extension when started in an IDE terminal; use `/ide` from an outside terminal or your editor's extensions view
+* Changed subagents to stop instead of switching models when "Switch models when a message is flagged" is set to "Ask each time"
+* Changed background subagents to move a shell command to the background after 3 minutes on all providers, so the prompt cache doesn't expire while it runs
+* Changed subagent progress summaries on Bedrock, Vertex, Foundry, or with telemetry off: on a cold prompt cache, one can now wait up to 5 minutes for the subagent's pending response
+* Changed what a mod attaches at `prompt.submit` to stay in the user's turn rather than go out as a system message
+* Changed `deniedMcpServers` URL entries to also block Anthropic-provided servers whose upstream URL matches, and connectors in cloud sessions and on self-hosted runners, where the session is given the connector's own URL; otherwise deny a connector by name
+* Changed the `/permissions` rule details, built-in rules and delete confirmation views to use the standard dialog; pressing Ctrl+C twice there now goes back or cancels instead of quitting
+* Changed `/claude-api managed-agents-onboard` to give a new agent's built-in tools, and a quickstart template's MCP tools, the `auto` permission policy ("Judge risky actions") by default, matching the Claude Console; say "run without asking" to opt out
+* Removed the 2.1.288 fix that kept the model's earlier thinking when resuming a conversation started on 2.1.286 or earlier; that thinking can now be dropped
+* Self-hosted runner: Changed the orchestrator's log lines: `ok session=…` now prints at every log level on stdout (was debug only, stderr) with `reason=…` after `jti=…`, and `nack session=…` ends its fields with `reason=…` after `retryable=…`; update scripts that match `retryable=true:` or `retryable=false:`
+* \[Cloud sessions] Changed connector search results to tell Claude that the search covers only part of the connector directory
+
+**15 improvements**
+
+* Improved how `~/.claude.json`, settings files and the stored login survive saves on shared network home directories: they are less often deleted, briefly emptied or replaced by a near-empty or older copy
+* Improved sessions on network file systems to look again when the configuration file is wrongly reported as missing, so fewer start without your MCP servers and trusted folders
+* Improved MCP tool errors: a call made before the tool is loaded now returns its input schema
+* Improved the reliability of git commits and pull request creation when the Bash tool runs macOS's built-in `/bin/bash`
+* Improved "Ask your admin for more usage" in the usage limit menu to send the request in one step
+* Improved how fast remote sessions reconnect after a pause or sleep
+* Improved You should know toasts to say "try again" instead of "press 2", which only works in the terminal
+* Improved auto-update reliability: a brief network failure while verifying a release is now retried right away instead of waiting for the next check
+* Improved unattended runs (`claude -p`, SDK apps) to stop rewriting `~/.claude.json` on every run when nothing in it changed
+* Gateway: Improved the log hints about `listen.trusted_proxies`: they now say to list only a proxy that adds the connecting address to `X-Forwarded-For` itself
+* Gateway: Improved the warning when AWS CountTokens fails on Amazon Bedrock: it says Claude Code, not the gateway, counts after the 501, and points at IAM only when AWS denies access
+* Remote Control: Improved the title a fork of a terminal fork is created with when the app doesn't set one: "Name (fork 2)"
+* \[VSCode] Improved the sign-in screen to show what Claude Code printed when its sign-in status check fails
+* \[Cloud sessions] Improved most Create PR failure messages in cloud and Remote Control sessions: they now give the reason or a link to GitHub instead of saying Try again
+* \[Code Review] Improved the Code Review analytics page to retry once after a server or network failure, then show a Try again banner instead of empty cards
+
+**47 bug fixes**
+
+* Fixed `--continue` sometimes losing the earlier conversation after a malformed tool call's retries ran out (regression in 2.1.314)
+* Fixed macOS sessions with many running Bash commands stalling while memory grew
+* Fixed permission prompts being answered by keys typed just after sending a message, or before a slow prompt appeared
+* Fixed `/logout`, `claude auth logout` and `claude mcp remove` reporting success, and changes to trust, consent or MCP settings being dropped with no word, when the config file could not be updated on a shared network home directory
+* Fixed jobs exiting with `Not logged in` when another terminal or host signs in again to the same account and organization on the same home
+* Fixed `claude mcp add` and `remove` writing the config without its lock: they now wait for it or exit 1, though another job's save can still replace a saved server
+* Fixed `claude plugin` commands exiting before a slow token refresh was saved, which could sign you out on the next run
+* Fixed `claude plugin validate` passing a custom-named marketplace file that `claude plugin marketplace add` rejects
+* Fixed stdio MCP servers that exit on the version probe being re-probed on every start; a server that dies in under 3s for its own reason is also pinned to the legacy handshake for 7 days
+* Fixed sessions being refused at startup by an `allowedProviders` list that another login on the same machine had stored
+* Fixed idle compaction replacing a conversation with a reply that was not a summary
+* Fixed the "Now using usage credits" notice reappearing about every 30 seconds while a background subagent is running
+* Fixed custom slash commands that fail, or that only Claude can invoke, printing nothing in `claude -p` and SDK sessions
+* Fixed `claude -p` and Agent SDK sessions reporting success when an API error cut off a reply while a mod hooked `turn.step`
+* Fixed a message sent right after a model change still running after Stop in headless sessions: Stop now cancels or stops it as it would a queued message
+* Fixed a deleted session transcript being re-created with its last prompt when an idle non-interactive session exited
+* Fixed `claude remote-control` hosts, the background daemon and self-hosted runners failing to start new sessions (`spawn ENOENT`) after an update or version cleanup removed the binary of a still-running process
+* Fixed a running Claude Code process owned by another user (for example one left by `sudo claude`) being treated as dead by version cleanup, which could delete its binary
+* Fixed `/remote-control` showing a session as available after a failed connection
+* Fixed `/design revoke` reporting success when the request failed with a 404
+* Fixed a shell command approved after a self-hosted runner or cloud session restart running in the session's start folder, not the folder it was asked in; if that folder can't be entered, it is not run
+* Fixed Claude not being told when an approved connector tool was unavailable after a cloud session restart
+* Fixed cloud sessions being stopped in the middle of a turn when the service refuses uploads for several minutes
+* Fixed variables a `Setup` hook writes to `CLAUDE_ENV_FILE` not reaching the Bash tool in some cloud sessions
+* Fixed the iPhone app showing a cloud session's turn as finished while it kept running, after a response was cut off at a tool call or a refused image or document was removed
+* Fixed a restarted session re-sending a message that failed with an API error, ahead of the newer message waiting behind it
+* Fixed a restarted session dropping its interrupted turn when the restart came right after Claude read a large image or retried a tool call
+* Fixed every connection failing when the `NODE_EXTRA_CA_CERTS` file is empty, not PEM, or starts with a damaged certificate: readable certificates are now used, with a warning on stderr
+* Fixed workflows re-running finished agents when resumed after a usage limit
+* Fixed `/mcp` in cloud sessions counting tools the model can't use; a server's row now shows how many of its tools are available
+* Fixed a duplicate notification when Claude left the status field out of a PushNotification call
+* Fixed the error for a too-large image in a request with more than 20 images always saying the limit was 2000px; it now shows the API's limit
+* Fixed the runtime in background shell details not updating while the dialog is open
+* Fixed a mod's `turn.step` hook making a stopped reply finish as a success in headless runs
+* Fixed retention cleanup leaving a home that only runs `claude -p` with no `~/.claude.json` backup: it now takes a fresh backup before deleting the last good one
+* Fixed the stored login being replaced by an empty file when a network home directory has no room left for data but still takes new files
+* Fixed tokens from `setup-token` being refused at start on machines with `forceLoginOrgUUID`, when the token belongs to a permitted organization
+* Fixed non-interactive launches replacing a `~/.claude.json` that isn't valid JSON with defaults; the start now fails, says how to restore the file, and leaves it as is (anthropics/claude-code#87551)
+* Fixed an empty `~/.claude.json` with no backup being reported as corrupted; Claude Code now starts as it does when the file is missing
+* Fixed the restore command printed for a damaged or missing `~/.claude.json` naming an empty or cut-off backup, or failing on a read-only file
+* Fixed the sign-in failure when a stored claude.ai login reaches its time limit: it now says so, and in `claude -p` names `claude auth login` and `claude setup-token`
+* Remote Control: Fixed a misleading "spawn error: ENOENT" when a session's working folder is missing; the error now names the folder
+* \[VSCode] Fixed a window whose sign-in the organization's settings refuse starting a new Claude Code process in the background every minute
+* \[VSCode] Fixed a long word in the chat panel's error banner pushing its close button out of view
+* \[Cloud sessions] Fixed reading GitHub Actions logs in cloud sessions: `gh run view --log` and `gh api` log requests now get the log in most environments, not an unreachable redirect
+* \[Remote Control] Fixed side-by-side checkouts of one repository looking identical in the environment menu's Remote Control rows; each now shows its own folder name
+* \[Claude Tag] Fixed keyboard focus and screen reader announcements in Claude Tag admin setup; pressing Escape in the connect form no longer also closes the Add dialog
 
 **2.1.317**
 
@@ -18104,7 +18212,7 @@ You can also add flags:
 
 **2. Keep working**
 
-The review runs as a background [subagent](/docs/en/sub-agents) with its own context window, so it doesn't fill your conversation. The findings arrive in your conversation when the review completes.
+In a terminal session, the review runs as a background [subagent](/docs/en/sub-agents) with its own context window, so it doesn't fill your conversation. The findings arrive in your conversation when the review completes.
 
 **3. Act on the findings**
 
@@ -23314,7 +23422,8 @@ Match the message you see to a section below.
 | `This organization has been disabled` | [Authentication](#this-organization-has-been-disabled) |
 | `Your organization has disabled API key authentication` | [Authentication](#your-organization-has-disabled-api-key-authentication) |
 | `Your organization has disabled Claude subscription access` | [Authentication](#your-organization-has-disabled-claude-subscription-access) |
-| `Routines are disabled by your organization's policy` | [Authentication](#routines-are-disabled-by-your-organizations-policy) |
+| `Scheduled tasks are off for your organization` | [Authentication](#routines-are-disabled-by-your-organizations-policy) |
+| `Routines are off for your organization` | [Authentication](#routines-are-disabled-by-your-organizations-policy) |
 | `Remote Control is only available when using Claude via api.anthropic.com` | [Authentication](#remote-control-requires-the-anthropic-api) |
 | `OAuth token refresh failed — run /login to re-authenticate` | [Authentication](#remote-control-couldnt-refresh-your-login) |
 | `JWT refresh failed: no OAuth token — run /login` | [Authentication](#remote-control-couldnt-refresh-your-login) |
@@ -23669,6 +23778,9 @@ Match the message you see to a section below.
 | `Ignoring N permissions.allow entries from ... this workspace has not been trusted` | [Configuration warnings](#workspace-has-not-been-trusted) |
 | `is a network path, which cannot be added as a working directory` | [Configuration warnings](#working-directory-is-a-network-path) |
 | `Remote managed settings failed to load (<cause>)` | [Configuration warnings](#remote-managed-settings-failed-to-load) |
+| `Your organization requires remote managed settings to load, but they could not be loaded` | [Enforce fail-closed startup](/docs/en/server-managed-settings#enforce-fail-closed-startup) |
+| `Remote managed settings are still loading` | [Configuration warnings](#remote-managed-settings-failed-to-load) |
+| `Remote managed settings did not load` | [Configuration warnings](#remote-managed-settings-failed-to-load) |
 | `Managed settings were not approved; exiting without applying them.` | [Configuration warnings](#managed-settings-were-not-approved) |
 | `Your organization's managed settings need your approval, which couldn't be asked for here.` | [Configuration warnings](#managed-settings-need-your-approval) |
 | `Claude Code can't start: your organization's managed settings block the default model` / `Claude Code can't start: your organization allows only the models listed in "availableModels"` | [Configuration warnings](#managed-settings-block-the-default-model) |
@@ -24003,6 +24115,8 @@ After ten responses in a row with no verdict, auto mode stops the turn:
 Auto mode is unavailable — the server returned no safety verdict for the last 10 responses, so Claude stopped. Send a message to try again, or switch out of auto mode.
 ```
 
+Some denials don't count toward the ten, including [a denial from a hook or mod's change](#hook-changed-input-after-review).
+
 The stop message appears in a different place in each kind of session:
 
 * In an interactive session, the message appears as a warning in the transcript and the turn ends
@@ -24021,6 +24135,21 @@ The stop message appears in a different place in each kind of session:
 Before v2.1.280, Claude Code denied each action from a response without a verdict immediately and never stopped the turn.
 
 Before v2.1.302, on a direct connection to the Anthropic API, Claude Code didn't compact a conversation that had grown too long for the server's check.
+
+#### `a hook changed this call's input after auto mode reviewed it`
+
+This denial means a hook or mod [changed the call's input](/docs/en/hooks#pretooluse-updatedinput-in-auto-mode) after the server reviewed it, so the review doesn't cover what would run. It isn't a judgment that the action is unsafe.
+
+Later calls in the same Claude response can be denied with this reason:
+
+```text theme={null}
+another call in this response was changed by a hook after auto mode reviewed it, or could not be confirmed unchanged
+```
+
+Claude can then issue each denied call again so the server reviews it. If a permission prompt opens, answer it. You don't need to do anything else unless Claude says in its reply that auto mode couldn't check the call. Then stop the change or approve the call yourself, and ask Claude to try the call again:
+
+* **Stop the change**: turn off the [hook](/docs/en/hooks#disable-or-remove-hooks) or [mod](/docs/en/plugins/mods/overview#turn-mods-on-or-off) that changed the call or an earlier call in the same Claude response, or ask your administrator to turn it off. To look for a hook, run [`/hooks`](/docs/en/hooks#the-%2Fhooks-menu) at the Claude Code prompt. In a terminal session, run `/plugin` to see the active mods.
+* **Approve the call yourself**: [switch to Manual mode](/docs/en/permission-modes#switch-permission-modes)
 
 ### Was not reviewed and did not run
 
@@ -24436,19 +24565,20 @@ The Agent SDK and `-p` non-interactive mode surface this as the `oauth_org_not_a
 * Authenticate with a Console API key instead of your subscription. See [Claude Console authentication](/docs/en/authentication#claude-console-authentication) for setup.
 * If you are the admin and do not see an option to enable access, contact [Anthropic support](https://support.claude.com)
 
-### Routines are disabled by your organization's policy
+### Scheduled tasks are off for your organization
 
-An Owner in your Team or Enterprise organization has turned off [cloud scheduled tasks](/docs/en/routines), formerly routines, at the organization level. The error appears when you try to create or run one, for example at [claude.ai/code/routines](https://claude.ai/code/routines). On Claude Code v2.1.227 or later, the same setting also [hides `/schedule`](/docs/en/routines#troubleshooting) in the CLI.
+[Cloud scheduled tasks](/docs/en/routines) are off for your organization, so you can't create or run them. The message from claude.ai calls them scheduled tasks or routines, and a sentence about your admin follows:
 
 ```text theme={null}
-Routines are disabled by your organization's policy.
+Scheduled tasks are off for your organization. …
+Routines are off for your organization. …
 ```
 
-This is a server-side setting, so it can't be overridden from local settings, environment variables, or CLI flags.
+You can't turn them on with local settings, environment variables, or CLI flags.
 
 **What to do:**
 
-* Ask an Owner in your organization to turn on the **Scheduled tasks (Was Routines)** toggle at [**Organization settings > Capabilities > Remote sessions**](https://claude.ai/admin-settings/capabilities)
+* Ask your Team or Enterprise Owner whether they can turn on the toggle labeled **Scheduled tasks (Was Routines)** or **Routines** at [**Organization settings > Capabilities > Remote sessions**](https://claude.ai/admin-settings/capabilities)
 
 ### Remote Control requires the Anthropic API
 
@@ -29047,7 +29177,7 @@ Before v2.1.257, Claude Code accepted a reachable network path as a working dire
 
 ### Remote managed settings failed to load
 
-Your session is eligible for [server-managed settings](/docs/en/server-managed-settings), but Claude Code couldn't fetch them or couldn't apply what the server returned, so it shows this warning in interactive sessions.
+Your session is eligible for [server-managed settings](/docs/en/server-managed-settings), but Claude Code couldn't fetch them or couldn't apply what the server returned, so it shows this warning in interactive sessions and in Claude Desktop's Code tab.
 
 The parenthesized cause names what failed, such as `network error`, `request timed out`, or `authentication rejected (401)`. The cause `no setting in the server response could be applied as written` means the server answered but none of the settings it returned passed [validation](/docs/en/server-managed-settings#invalid-entries-in-delivered-settings). Before v2.1.282, this cause read `server returned invalid settings`.
 
@@ -29055,6 +29185,12 @@ The rest of the line says which policy the session runs on:
 
 * **Settings cached from an earlier successful fetch**: Claude Code runs the session on that cached policy, except the [withheld environment variables](/docs/en/server-managed-settings#fetch-and-caching-behavior), and the line reads `using cached policy`.
 * **No cache**: Claude Code runs the session without server-managed settings, and the line reads `no remote policy applied`.
+
+In the Code tab, the warning appears as a line in the conversation when you send a message, and a new line appears when the state of the fetch changes. Three related messages appear the same way:
+
+* `Remote managed settings are still loading`: the fetch was still running when the session went ahead
+* `Remote managed settings did not load`: the fetch ended without an answer
+* `Remote managed settings have now loaded`: the settings loaded after one of these warnings, and the rest of the line says whether a remote policy applies
 
 **What to do:**
 
@@ -43257,9 +43393,15 @@ Subagent events fire when a subagent type is offered to Claude and when a subage
 | Event | Fires when | A hook can return |
 | :- | :- | :- |
 | `agent.offer` | A subagent type is offered to Claude | `{ isOffered: false }` to withhold it |
-| `agent.spawn` | A subagent or an [agent team](/docs/en/agent-teams) teammate is about to start. For a teammate, `e.isTeammate` is `true`. | `next({ ...e, model })` to choose its model, or `{ deny: reason }` |
+| `agent.spawn` | A subagent or an [agent team](/docs/en/agent-teams) teammate is about to start, or a subagent that finished or stopped is about to run again. For a teammate, `e.isTeammate` is `true`. For a resumed run, `e.resume` is set. | `next({ ...e, model })` to choose the model of one that is starting, or `{ deny: reason }` |
 
-When Claude resumes a subagent with the [`SendMessage`](/docs/en/sub-agents#resume-subagents) tool, your `agent.spawn` hook doesn't run again. To refuse the `SendMessage` calls that resume a subagent, match that tool in a [`tool.call`](/docs/en/plugins/mods/events#guard-or-change-a-tool-call) hook.
+Your `agent.spawn` hook also runs when a subagent that finished or stopped is about to run again, such as when Claude sends it a message with the [`SendMessage`](/docs/en/sub-agents#resume-subagents) tool. On that event, `e.resume` is `{ agentId }`. If your hook counts subagents, skip the events where `e.resume` is set, so a resumed subagent isn't counted again.
+
+Return `{ deny: reason }` to refuse a resumed run. The run doesn't start, and the subagent stays as it was. When a `SendMessage` call asked for the run, Claude reads `a plugin declined the resume:` followed by your reason as that call's result. If you pass a changed event to `next` for a resumed run, such as a different `model`, Claude Code ignores the change.
+
+> [!NOTE]
+>
+> The event for a resumed run requires Claude Code v2.1.299 or later. Before v2.1.299, your `agent.spawn` hook didn't run when a subagent resumed. On those versions, to refuse the `SendMessage` calls that resume a subagent, match that tool in a [`tool.call`](/docs/en/plugins/mods/events#guard-or-change-a-tool-call) hook.
 
 ### Interface
 
@@ -44144,6 +44286,10 @@ The mod loaded and its hooks run, and a tool call it touched is refused.
 In auto mode, a denied tool call gives this reason. A hook changed the tool call's input after the [server-side classifier](/docs/en/permission-modes#server-side-classifier-review) reviewed it, so that review doesn't cover what would run. The hook can be a mod's [`tool.call`](/docs/en/plugins/mods/reference#tools) or [`turn.step`](/docs/en/plugins/mods/reference#turns) hook, or a [`PreToolUse`](/docs/en/hooks#pretooluse) settings hook. The message doesn't say which.
 
 The message tells Claude to issue the call once more as recorded. If that's denied too, the hook changes the input every time, so turn off the mod or hook, or leave auto mode and approve the call yourself.
+
+> [!NOTE]
+>
+> In [some interactive terminal sessions and VS Code sessions](/docs/en/hooks#pretooluse-updatedinput-in-auto-mode), the same denial gives the reason `a hook changed this call's input after auto mode reviewed it`. The repeated call there carries the mod's first change, and a `tool.call` hook still runs on it, but a further change is dropped. You don't need to change your mod unless Claude tells you in its reply that [auto mode couldn't check the call](/docs/en/errors#hook-changed-input-after-review).
 
 ### A message about the deny rules in your settings
 
@@ -46180,7 +46326,7 @@ Scheduled tasks are available on Pro, Max, Ultra, Team, and Enterprise plans. Cr
 >
 > Two other features schedule work on your machine instead of in the cloud: [Desktop scheduled tasks](/docs/en/desktop-scheduled-tasks) and [`/loop`](/docs/en/scheduled-tasks). To choose among all three, see [Compare scheduling options](/docs/en/scheduled-tasks#compare-scheduling-options).
 
-Team and Enterprise Owners can turn off scheduled tasks for all members with the **Scheduled tasks (Was Routines)** toggle at [**Organization settings > Capabilities > Remote sessions**](https://claude.ai/admin-settings/capabilities). When the toggle is off, existing scheduled tasks stop running and members can't create new ones.
+Team and Enterprise Owners can turn off scheduled tasks for all members with the **Scheduled tasks (Was Routines)** or **Routines** toggle at [**Organization settings > Capabilities > Remote sessions**](https://claude.ai/admin-settings/capabilities). When the toggle is off, existing scheduled tasks stop running and members can't create new ones.
 
 If your Enterprise organization manages your access with [custom roles](https://support.claude.com/en/articles/13930452), you also need a role that includes the scheduled tasks permission. An Owner can add it in a role's **Remote sessions** section at [**Organization settings > Roles**](https://claude.ai/admin-settings/roles).
 
@@ -46634,7 +46780,7 @@ Scheduled tasks were previously called routines, and these places keep the earli
 * **Web address**: `claude.ai/code/routines`
 * **CLI**: the `/routines` alias for `/schedule`, the command's description, and Claude's replies while it sets up a task
 * **API**: the `/fire` endpoint path, its beta header, its response `type`, the `<routine-fire-payload>` tag, and the [Trigger a routine through the API](https://platform.claude.com/docs/en/api/claude-code/routines-fire) reference page
-* **Organization settings**: the **Scheduled tasks (Was Routines)** toggle
+* **Organization settings**: the **Scheduled tasks (Was Routines)** or **Routines** toggle
 
 ## Troubleshooting
 
@@ -46653,9 +46799,9 @@ The cause is usually one of the following:
 
 If the cause is your CLI sign-in or being inside a cloud session, you can still create and manage scheduled tasks at [claude.ai/code/routines](https://claude.ai/code/routines). You need a Pro, Max, Ultra, Team, or Enterprise account there. If scheduled tasks or cloud sessions are off for your organization or missing from your roles, you can't create them on the web either.
 
-### "Routines are disabled by your organization's policy"
+### Scheduled tasks are off for your organization
 
-An Owner in your Team or Enterprise organization has likely turned off the **Scheduled tasks (Was Routines)** toggle at [**Organization settings > Capabilities > Remote sessions**](https://claude.ai/admin-settings/capabilities). On Claude Code v2.1.227 or later, the same toggle also hides `/schedule` in the CLI. This is a server-side organization setting, so it cannot be overridden from your local configuration. Ask an Owner to turn scheduled tasks back on for your organization.
+Cloud scheduled tasks are off for your organization, and you can't change that from your local configuration. Ask your Team or Enterprise Owner whether they can turn on the **Scheduled tasks (Was Routines)** or **Routines** toggle at [**Organization settings > Capabilities > Remote sessions**](https://claude.ai/admin-settings/capabilities).
 
 ### "The last run" warnings
 
@@ -49396,6 +49542,10 @@ While `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` is [on](/docs/en/env-vars), Claude Code
 To run a subagent at its own [effort level](/docs/en/model-config#adjust-effort-level), set the [`effort`](#supported-frontmatter-fields) field in its definition.
 
 When you ask Claude to run a non-fork subagent at a specific effort level, it can also pass an `effort` parameter for that invocation. The parameter overrides the `effort` field and stays in effect when the subagent is [resumed](#resume-subagents). The [`CLAUDE_CODE_EFFORT_LEVEL`](/docs/en/env-vars#variables) environment variable takes precedence over both. The per-invocation parameter requires Claude Code v2.1.292 or later.
+
+#### When a subagent has no `effort` field or parameter
+
+On the main conversation's model, the subagent runs at the level you pick in the session, such as with `/effort`, or set with `--effort`. On another model, [that level doesn't apply](/docs/en/model-config#effort-level-of-subagents-and-teammates). To choose its level, set the `effort` field.
 
 ### Control subagent capabilities
 
@@ -52997,7 +53147,12 @@ Claude Code is available as both a VS Code extension (graphical panel) and a CLI
 
 ### Run CLI in VS Code
 
-To use the CLI while staying in VS Code, press `` Ctrl+` `` on Windows/Linux or `` Cmd+` `` on Mac to open the integrated terminal, then run `claude`. The CLI automatically integrates with your IDE for features like diff viewing and diagnostic sharing. If you use an external terminal, run `/ide` inside Claude Code to connect it to VS Code.
+To use the CLI while staying in VS Code, press `` Ctrl+` `` on Windows/Linux or `` Cmd+` `` on Mac to open the integrated terminal, then run `claude`. Starting `claude` doesn't install the extension. Without it, `/ide` in the integrated terminal reports "No available IDEs detected" and `/status` shows the IDE as "Not connected".
+
+To get features like diff viewing and diagnostic sharing, connect the CLI to the extension from the integrated terminal or an external terminal:
+
+* **Integrated terminal**: [install the extension](#install-the-extension), then start `claude`. The CLI connects automatically.
+* **External terminal**: run `/ide` inside Claude Code to connect to VS Code. If VS Code is running without the extension, `/ide` installs it, unless you turned off [`autoInstallIdeExtension`](/docs/en/settings-reference#autoinstallideextension).
 
 Installing the extension does not put `claude` on your shell PATH. The extension bundles a private copy of the CLI for its chat panel, but typing `claude` in a terminal requires the [standalone CLI install](/docs/en/setup). Run the install once and the commands on this page, including `claude mcp add` and `claude --resume`, work in any terminal. If `claude` is still not found after installing, [verify your PATH](/docs/en/troubleshoot-install#verify-your-path).
 
@@ -53265,7 +53420,7 @@ To uninstall the Claude Code extension:
 2. Search for "Claude Code"
 3. Click **Uninstall**
 
-If you run `claude` in a VS Code integrated terminal, Claude Code reinstalls the extension automatically. To keep it uninstalled, turn off **Auto-install IDE extension** in `/config`, or set [`autoInstallIdeExtension`](/docs/en/settings-reference#autoinstallideextension) to `false`. You can also set the [`CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL`](/docs/en/env-vars) environment variable to `1`.
+The extension stays uninstalled when you start `claude`. If you run `/ide` from an external terminal while VS Code is running, Claude Code reinstalls it. To stop that, set [`autoInstallIdeExtension`](/docs/en/settings-reference#autoinstallideextension) to `false` in `~/.claude.json`, or turn off **Auto-install IDE extension** in `/config` from the integrated terminal. You can also set the [`CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL`](/docs/en/env-vars) environment variable to `1`.
 
 To also remove extension data and reset all settings, delete the extension's storage directory for your platform.
 
@@ -53367,7 +53522,7 @@ After you sign in, claude.ai/code prompts you to connect GitHub. Follow the prom
 
 With this connection, a session can clone any public repository, but can work in a private repository only when the Claude GitHub App is installed on it. [Install the Claude GitHub App](https://github.com/apps/claude/installations/new) on each GitHub account or organization whose private repositories you want to use. On a GitHub organization, an organization owner may need to approve the installation. Installing it also enables [Auto-fix](/docs/en/claude-code-on-the-web#auto-fix-pull-requests), which lets Claude respond to CI failures and review comments on pull requests in those repositories.
 
-When you connect, Claude also links the GitHub accounts you own to your Claude organization, if they have the Claude GitHub App installed. On Team and Enterprise plans, admins see those accounts in the [connected GitHub accounts list](/docs/en/admin-setup#connected-github-accounts).
+When you connect, Claude also links the GitHub accounts you own to your Claude organization, if they have the Claude GitHub App installed. On Team and Enterprise plans, Owners of your Claude organization see those accounts in the [connected GitHub accounts list](/docs/en/admin-setup#connected-github-accounts).
 
 If onboarding prompts you to install the Claude GitHub App at this point and you'd rather do it later, click **Skip**.
 
@@ -54778,11 +54933,11 @@ For the threat model these controls defend against, see [Security](/docs/en/secu
 
 ### Connected GitHub accounts
 
-On Team and Enterprise plans, the GitHub section of [**Organization settings > Git providers**](https://claude.ai/admin-settings/source-control) lists the GitHub organizations and personal accounts linked to your Claude organization through the [Claude GitHub App](https://github.com/apps/claude). Claude Code, [Claude Tag](https://claude.com/docs/claude-tag/admins/configure-github), and Claude Security share the list. Opening the page requires an admin role in your Claude organization.
+On Team and Enterprise plans, the GitHub section of [**Organization settings > Git providers**](https://claude.ai/admin-settings/source-control) lists the GitHub organizations and personal accounts linked to your Claude organization through the [Claude GitHub App](https://github.com/apps/claude). Claude Code, [Claude Tag](https://claude.com/docs/claude-tag/admins/configure-github), and Claude Security share the list. Opening the page requires an [Owner role](/docs/en/server-managed-settings#access-control) in your Claude organization. The Admin role can't open it.
 
-An admin or a member can link an account:
+Someone can link an account from the Git providers page or by connecting GitHub to Claude:
 
-* **Admin connection**: an admin clicks **Connect** in that section, or **Add organization** once an account is connected, and installs the Claude GitHub App on a GitHub organization. Linking an organization this way requires someone who is both an owner of the GitHub organization and an admin of your Claude organization.
+* **Owner connection**: an Owner clicks **Connect** in that section, or **Add organization** once an account is connected, and installs the Claude GitHub App on a GitHub organization. Linking an organization this way requires an Owner of your Claude organization who also owns the GitHub organization.
 * **Member connection**: when a member connects their GitHub account to Claude, for example while [setting up cloud sessions](/docs/en/web-quickstart#connect-github), Claude links the GitHub accounts that member owns where the Claude GitHub App is already installed. That can include their personal account and GitHub organizations they own.
 
 A row marked **Not linked** comes from your own GitHub sign-in. It's an account you can see on GitHub where the Claude GitHub App is installed.
@@ -55963,9 +56118,11 @@ Claude Code sends this as the `X-Amzn-Bedrock-Service-Tier` header on each reque
 
 ## AWS Guardrails
 
-[Amazon Bedrock Guardrails](https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html) let you implement content filtering for Claude Code. Create a Guardrail in the [Amazon Bedrock console](https://console.aws.amazon.com/bedrock/), publish a version, then add the Guardrail headers to your [settings file](/docs/en/settings). Enable Cross-Region inference on your Guardrail if you're using cross-region inference profiles.
+[Amazon Bedrock Guardrails](https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html) let you implement content filtering for Claude Code. Create a Guardrail in the [Amazon Bedrock console](https://console.aws.amazon.com/bedrock/) and publish a version. Enable Cross-Region inference on your Guardrail if you're using cross-region inference profiles.
 
-Example configuration:
+To apply the Guardrail through a [Claude apps gateway](/docs/en/claude-apps-gateway), follow [Apply an Amazon Bedrock guardrail](/docs/en/claude-apps-gateway-config#apply-an-amazon-bedrock-guardrail). Without a Claude apps gateway, add the Guardrail headers to your [settings file](/docs/en/settings).
+
+Example settings file configuration:
 
 ```json theme={null}
 {
@@ -55974,8 +56131,6 @@ Example configuration:
   }
 }
 ```
-
-If your organization delivers the guardrail headers through a [Claude apps gateway](/docs/en/claude-apps-gateway) policy instead, they count as [settings that need approval](/docs/en/server-managed-settings#environment-variables-and-the-approval-dialog).
 
 When the guardrail blocks a response partway through, the text streamed so far stays and the reply ends with the message configured on the guardrail for blocked responses.
 
@@ -62563,7 +62718,7 @@ Customize Claude Code's behavior with these command-line flags. `claude --help` 
 | `--desktop` | Open the [Claude Desktop app](/docs/en/desktop) on the current directory and exit without starting a session in the terminal. Add `--continue`, or `--resume` with a session ID, to [open that session in Desktop](/docs/en/desktop#coming-from-the-cli) instead. `--resume` here takes only a session ID, not a name or transcript path. Takes no prompt and no other flags except `--verbose` and the `--debug` flags, since the app starts the session itself. Available on macOS and x64 Windows when you're signed in with a Claude subscription. Requires Claude Code v2.1.285 or later | `claude --desktop` |
 | `--disable-slash-commands` | Disable all skills and commands for this session | `claude --disable-slash-commands` |
 | `--disallowedTools`, `--disallowed-tools` | Deny rules. A bare tool name removes the matching tools from Claude's context: `"Edit"` removes Edit, `"*"` removes every tool, and `"mcp__*"` removes every MCP tool. A scoped rule such as `Bash(rm *)` leaves the tool available and denies only calls that match [as written](/docs/en/permissions#bash-rule-limits). A rule naming [`EndConversation`](/docs/en/tools-reference#endconversation-tool-behavior) can't remove it while any other tool remains | `"Bash(git log *)" "Bash(git diff *)" "Edit"` |
-| `--effort` | Set the [effort level](/docs/en/model-config#adjust-effort-level) for the current session. Options: `low`, `medium`, `high`, `xhigh`, `max`, or `ultracode`. Available levels depend on the model. `ultracode` requests `xhigh` effort with [ultracode](/docs/en/workflows#let-claude-decide-with-ultracode) turned on, and requires Claude Code v2.1.203 or later. Overrides the [`modelSettings`](/docs/en/settings-reference#modelsettings) and [`effortLevel`](/docs/en/settings-reference#effortlevel) settings for this session and does not persist | `claude --effort high` |
+| `--effort` | Set the [effort level](/docs/en/model-config#adjust-effort-level) for the current session. Options: `low`, `medium`, `high`, `xhigh`, `max`, or `ultracode`. Available levels depend on the model. `ultracode` requests `xhigh` effort with [ultracode](/docs/en/workflows#let-claude-decide-with-ultracode) turned on, and requires Claude Code v2.1.203 or later. On the main conversation's model, overrides the [`modelSettings`](/docs/en/settings-reference#modelsettings) and [`effortLevel`](/docs/en/settings-reference#effortlevel) settings for this session and doesn't persist | `claude --effort high` |
 | `--enable-auto-mode` | Removed in v2.1.111. Auto mode is now in the `Shift+Tab` cycle by default; use `--permission-mode auto` to start in it | `claude --permission-mode auto` |
 | `--environment <environment-id>` | Create a new cloud session that runs on the [self-hosted environment](/docs/en/self-hosted-environments) with the given ID. Environment IDs start with `ccpool_`. See [`--environment` dispatch behavior](/docs/en/self-hosted-environments-testing#environment-dispatch-behavior) for dispatch behavior and the flag combinations it rejects. Requires Claude Code v2.1.224 or later | `claude -p "Fix the login bug" --environment ccpool_abc123` |
 | `--exclude-dynamic-system-prompt-sections` | Move per-user context, such as the auto memory location, out of the system prompt and into the first user message. Improves prompt-cache reuse across different users and machines running the same task. Only applies with the default system prompt; ignored when `--system-prompt` or `--system-prompt-file` is set. Use with `-p` for scripted, multi-user workloads | `claude -p --exclude-dynamic-system-prompt-sections "query"` |
@@ -63541,7 +63696,7 @@ In the table below, `<arg>` indicates a required argument and `[arg]` indicates 
 | `/autocompact [auto\|<tokens>]` | Set the auto-compact window: how full the context window gets before Claude Code compacts automatically. Pass a size such as `500k`, or `auto` to return to the window tuned for your model. Claude Code saves the value to user settings and applies it to the current session. See [Set the auto-compact window](/docs/en/model-config#set-the-auto-compact-window) for accepted values and what overrides it. Without an argument, opens a dialog that shows the current window. Requires Claude Code v2.1.221 or later |
 | `/autofix-pr [prompt]` | Spawn a [cloud session](/docs/en/claude-code-on-the-web#auto-fix-pull-requests) that watches the current branch's PR and pushes fixes when CI fails or reviewers leave comments. Detects the open PR from your checked-out branch with `gh pr view`; to watch a different PR, check out its branch first. By default the cloud session is told to fix every CI failure and review comment; pass a prompt to give it different instructions, for example `/autofix-pr only fix lint and type errors`. Requires the `gh` CLI and access to [cloud sessions](/docs/en/claude-code-on-the-web) |
 | `/background [prompt]` | Detach the current session to run as a [background agent](/docs/en/agent-view) and free this terminal. Pass a prompt to send one more instruction before detaching. Monitor the session with `claude agents`. To copy the conversation into a new background session while this one keeps running, use `/fork`. Alias: `/bg` |
-| `/batch <instruction>` | **[Skill](/docs/en/skills#bundled-skills).** Orchestrate large-scale changes across a codebase in parallel. Researches the codebase, decomposes the work into 5 to 30 independent units, and presents a plan. Once approved, spawns one [background subagent](/docs/en/sub-agents#run-subagents-in-foreground-or-background) per unit in an isolated [worktree](/docs/en/worktrees). Each subagent implements its unit, runs tests, and publishes its change. Requires a git repository or a [`WorktreeCreate` hook](/docs/en/worktrees#non-git-version-control) that creates the worktrees. Outside a git repository, `/batch` requires Claude Code v2.1.281 or later. Example: `/batch migrate src/ from JavaScript to TypeScript` |
+| `/batch <instruction>` | **[Skill](/docs/en/skills#bundled-skills).** Orchestrate large-scale changes across a codebase in parallel. Researches the codebase, decomposes the work into 5 to 30 independent units, and presents a plan. Once approved, spawns one [background subagent](/docs/en/sub-agents#run-subagents-in-foreground-or-background) per unit in an isolated [worktree](/docs/en/worktrees). Each subagent implements its unit, runs tests, and opens a PR or reports what happened. Requires a git repository or a [`WorktreeCreate` hook](/docs/en/worktrees#non-git-version-control) that creates the worktrees. Outside a git repository, `/batch` requires Claude Code v2.1.281 or later. Example: `/batch migrate src/ from JavaScript to TypeScript` |
 | `/branch [name]` | Create a branch of the current conversation at this point, so you can try a different direction without losing the conversation as it stands. Switches you into the branch and preserves the original, which you can return to with `/resume`. To run a copy as a separate [background session](/docs/en/agent-view) instead of switching into it, use `/fork`; to hand a side task to a [subagent](/docs/en/sub-agents) that reports back into this conversation, use `/subtask` |
 | `/btw [question]` | Ask a [side question](/docs/en/interactive-mode#side-questions-with-%2Fbtw) about the current session without adding to the conversation. If you run `/btw` without a question, Claude Code shows your most recent side question so you can browse earlier answers; if you haven't asked one yet, Claude Code prints a usage line |
 | `/bug [report]` | Report a bug or share your conversation. You choose how much session history to include and confirm on a consent screen before anything is sent. When you're signed in to Anthropic on a first-party connection, the report goes to Anthropic; on a third-party provider, or without Anthropic credentials, Claude Code writes the report to a [local archive under `~/.claude/feedback-bundles/`](/docs/en/data-usage#telemetry-services) that you forward yourself. In the [VS Code extension](/docs/en/vs-code#use-the-prompt-box), `/bug` opens the extension's own feedback dialog instead; requires Claude Code v2.1.229 or later. When you run it while Claude is responding, Claude Code opens the dialog immediately. Before v2.1.232, Claude Code queued the command until the turn finished. Alias: `/share`. Before v2.1.212, `/bug` and `/share` were aliases of `/feedback` |
@@ -65410,7 +65565,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_GZIP_REQUEST_BODIES` | Set to `0` to turn off gzip compression of Claude API, telemetry, and [artifact](/docs/en/artifacts) publish request bodies sent to `api.anthropic.com`. By default, Claude Code compresses large request bodies on direct connections and skips compression when you send requests through a proxy, configure a client certificate, or set `NODE_EXTRA_CA_CERTS`. Use `0` if a [TLS-inspecting proxy](/docs/en/network-config#ca-certificate-store) that Claude Code can't detect mishandles compressed requests |
 | `CLAUDE_CODE_HIDE_CWD` | Set to `1` to hide the working directory in the startup logo. Useful for screenshares or recordings where the path exposes your OS username |
 | `CLAUDE_CODE_IDE_HOST_OVERRIDE` | Override the host address used to connect to the IDE extension. By default Claude Code auto-detects the correct address, including WSL-to-Windows routing |
-| `CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL` | Set to `1` to skip auto-installation of IDE extensions. Equivalent to setting [`autoInstallIdeExtension`](/docs/en/settings-reference#autoinstallideextension) to `false` |
+| `CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL` | Set to `1` to stop `/ide` from installing the IDE extension. Equivalent to setting [`autoInstallIdeExtension`](/docs/en/settings-reference#autoinstallideextension) to `false` |
 | `CLAUDE_CODE_IDE_SKIP_VALID_CHECK` | Set to `1` to skip validation of IDE lockfile entries during connection. Use when auto-connect fails to find your IDE despite it running |
 | `CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS` | Context size, in tokens, at which [idle compaction](/docs/en/settings-reference#idlecompaction) applies to a conversation (default: `200000`). Accepts a positive whole number, and anything else is ignored. Values below `100000` are raised to `100000`, the lowest threshold. Idle compaction is on by default for conversations that meet its conditions. To turn it off, set `idleCompaction` to `false`. Requires Claude Code v2.1.290 or later |
 | `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` | How many [subagents](/docs/en/sub-agents#concurrent-subagent-limit) can be running in one session before the Agent tool refuses to spawn another (default: 20). Accepts a positive whole number in plain digits; anything else is ignored, so the variable can adjust the cap but can't disable it. Requires Claude Code v2.1.217 or later |
@@ -68545,7 +68700,7 @@ To test the script, make `policy-check.sh` exit 2, then trigger a tool call that
 
 #### Block the action when a hook fails
 
-On most events, when a hook fails or times out, Claude Code still carries out the action. A policy hook with a wrong path or a crashing script then lets everything through. To block the action instead, set `"onFailure": "block"` on a `command` or `http` hook. Requires Claude Code v2.1.295 or later.
+On most events, when a hook fails or times out, Claude Code still carries out the action. A policy hook with a wrong path or a crashing script then lets everything through. To block the action instead, set `"onFailure": "block"` on a `command` or `http` hook. Requires Claude Code v2.1.295 or later. For Agent SDK callback hooks, see [Block the action when a callback fails](/docs/en/agent-sdk/hooks#block-the-action-when-a-callback-fails).
 
 > [!NOTE]
 >
@@ -69604,7 +69759,7 @@ In `PostToolUse`, `tool_response` is an object with `plan` and `filePath` fields
 | :- | :- |
 | `permissionDecision` | `"allow"` skips the permission prompt, except for [actions no mode auto-approves](/docs/en/permission-modes#actions-no-mode-auto-approves) and [reads from network paths](/docs/en/permissions#network-paths). It doesn't skip approval for calls to [tools an Agent SDK app marks `always_ask`](/docs/en/agent-sdk/custom-tools#require-approval-for-specific-tools) either, unless the [permission mode approves the call](/docs/en/agent-sdk/typescript#permission-modes-that-can-approve-an-always_ask-call). `AskUserQuestion` and `ExitPlanMode` need [`updatedInput` paired with `"allow"`](#allow-with-updatedinput). For plan mode, see [Hook approvals in plan mode](/docs/en/permissions#hook-approvals-in-plan-mode). `"deny"` prevents the tool call. `"ask"` prompts the user to confirm. `"defer"` ends the turn so the tool can be resumed later, and requires [non-interactive mode](#defer-a-tool-call-for-later) with the `-p` flag. [Deny and ask rules](/docs/en/permissions#manage-permissions) are still evaluated regardless of what the hook returns |
 | `permissionDecisionReason` | For `"ask"`, shown to the user in the permission prompt. When Claude Code [denies the call](/docs/en/headless#turn-off-permission-prompts-in-unattended-runs) in a `-p` run where no one can answer that prompt, Claude reads the reason in the tool result instead. For `"deny"`, shown to Claude. For `"allow"` and `"defer"`, written to the [debug log](#debug-hooks) only |
-| `updatedInput` | Modifies the tool's input parameters before execution. Replaces the entire input object, so include unchanged fields alongside modified ones. Claude Code evaluates permission rules and a Bash command's [auto-background eligibility](/docs/en/tools-reference#foreground-commands-that-move-to-the-background) against the input your hook returns, not the input Claude sent. Combine with `"allow"` to auto-approve, or `"ask"` to show the modified input to the user. For `"defer"`, ignored |
+| `updatedInput` | Modifies the tool's input parameters before execution. Replaces the entire input object, so include unchanged fields alongside modified ones. Claude Code evaluates permission rules and a Bash command's [auto-background eligibility](/docs/en/tools-reference#foreground-commands-that-move-to-the-background) against the input your hook returns, not the input Claude sent. Combine with `"allow"` to auto-approve, or `"ask"` to show the modified input to the user. For `"defer"`, ignored. With no `permissionDecision`, [auto mode can deny the changed call](#pretooluse-updatedinput-in-auto-mode) |
 | `additionalContext` | String added to Claude's context alongside the tool result. Ignored when `permissionDecision` is `"defer"`. See [Add context for Claude](#add-context-for-claude) |
 
 When multiple PreToolUse hooks return different decisions, precedence is `deny` > `defer` > `ask` > `allow`.
@@ -69630,6 +69785,23 @@ When a hook returns `"ask"`, the permission prompt displayed to the user include
 > [!NOTE]
 >
 > PreToolUse previously used top-level `decision` and `reason` fields, but these are deprecated for this event. Use `hookSpecificOutput.permissionDecision` and `hookSpecificOutput.permissionDecisionReason` instead. The deprecated values `"approve"` and `"block"` map to `"allow"` and `"deny"` respectively. Other events like PostToolUse and Stop continue to use top-level `decision` and `reason` as their current format.
+
+#### PreToolUse `updatedInput` in auto mode
+
+When your hook returns `updatedInput` with no `permissionDecision` in [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), Claude Code can deny the changed call. [The server reviewed](/docs/en/permission-modes#server-side-classifier-review) the input Claude wrote, not the input your hook returned. In interactive terminal sessions and VS Code sessions on a direct connection to the Anthropic API, the denial includes this text:
+
+```text theme={null}
+a hook changed this call's input after auto mode reviewed it
+```
+
+After a denial with this text, Claude can issue the changed call again so that the server reviews it. If Claude repeats the changed input exactly in its next response, your hook still runs:
+
+* It can deny the call or send it to the permission prompt
+* Any `updatedInput` it returns is dropped, so what runs is what the server reviewed
+
+You don't need to change your hook for this denial unless [Claude tells you in its reply that auto mode couldn't check the call](/docs/en/errors#hook-changed-input-after-review).
+
+In the sessions that show this text, a [`command` hook](#command-hook-fields) in settings or a plugin's hooks file can change Bash, PowerShell, Monitor, Edit, Write, and NotebookEdit calls without this denial. The denial can still appear, such as when any hook changed an earlier call in the same Claude response or a Bash command asks to run outside the sandbox.
 
 #### PreToolUse `ask` decisions in auto mode
 
@@ -72174,10 +72346,12 @@ To get back a draft you cleared with `Ctrl+C`, press `Up`, either right away or 
 
 ### Reverse search with Ctrl+R
 
-Press `Ctrl+R` to interactively search through your command history. In [fullscreen rendering](/docs/en/fullscreen), `Ctrl+R` opens a search dialog instead: type to filter, press `Up` and `Down` to move through matches, and press `Ctrl+S` to cycle the scope through this session, this project, and all projects. Press `Enter` or `Tab` to place a match in the prompt input, or `Esc` to cancel. The steps below describe the classic renderer's inline search:
+Press `Ctrl+R` to interactively search through your command history. In [fullscreen rendering](/docs/en/fullscreen), `Ctrl+R` opens a search dialog instead. Type to filter in the dialog, and press `Up` and `Down` to move through the list of matches, with a preview pane showing the start of the highlighted match.
+
+In the dialog, press `Ctrl+S` to cycle the scope through this session, this project, and all projects. Press `Enter` or `Tab` to place a match in the prompt input, or `Esc` to cancel. The steps below describe the classic renderer's inline search:
 
 1. **Start search**: press `Ctrl+R` to activate reverse history search
-2. **Type query**: enter text to search for in previous commands. The search term is highlighted in matching results
+2. **Type query**: enter text to search for in previous commands. The current match appears in the prompt input.
 3. **Navigate matches**: press `Ctrl+R` again to cycle through older matches
 4. **Search scope**: the inline search always searches prompts from all projects
 5. **Accept match**:
@@ -72186,8 +72360,6 @@ Press `Ctrl+R` to interactively search through your command history. In [fullscr
 6. **Cancel search**:
    * Press `Ctrl+C` to cancel and restore your original input
    * Press `Backspace` on empty search to cancel
-
-The inline search scans your full prompt history, newest first, with duplicates collapsed to the newest occurrence. The fullscreen dialog searches your whole prompt history in the selected scope, newest first, with duplicates collapsed to the newest occurrence: the most recent prompts appear immediately, and matches from older prompts fill in as Claude Code loads the rest. Matching prompts display with the search term highlighted, so you can find and reuse previous inputs.
 
 Accepting a match or canceling the search takes effect immediately, even while Claude Code is still loading the history.
 
@@ -76574,7 +76746,7 @@ Claude Code resolves the session's effort level in this order, taking the first 
 4. Your settings: the level you saved for the model or an [`effortLevel`](/docs/en/settings-reference#effortlevel) key, with the precedence between them and across settings files stated at [`modelSettings`](/docs/en/settings-reference#modelsettings)
 5. The model's default effort: `high` on every model that supports effort, except that Opus 5.5, Sonnet 5.5, and Haiku 5.5 default to `medium` and Opus 4.7 defaults to `xhigh`. If your organization sets a default effort level for its [organization default model](#organization-default-model), that level is the default when you run that model.
 
-After an automatic model fallback, see [Effort level after a fallback](#effort-level-after-a-fallback) for the level that applies.
+After an automatic model fallback, see [Effort level after a fallback](#effort-level-after-a-fallback) for the level that applies. For subagents and teammates, see [Effort level of subagents and teammates](#effort-level-of-subagents-and-teammates).
 
 Opus 5.5 starts at `medium` unless one of the sources above sets a level for it, and a top-level `effortLevel` in your user settings file doesn't count for Opus 5.5. That key is the older form `/effort` wrote before Claude Code saved levels per model: it keeps applying where it applied before, on Opus 5, Fable 5.1, and earlier models, while Opus 5.5 and models released after it start at their own default until you choose a level for them with `/effort` or the `/model` picker. A top-level `effortLevel` in project, local, or managed settings, or one passed with `--settings`, applies to every model.
 
@@ -76660,6 +76832,10 @@ You can change effort through any of the following:
 A skill's `effort` applies until the end of the turn it runs in, or for the forked subagent's run with `context: fork`. A subagent's `effort` applies while the subagent runs, unless [its invocation overrides it](/docs/en/sub-agents#choose-an-effort-level). While either one applies, the skill or subagent runs at its level, whatever level you launch with, save, or pick. If `CLAUDE_CODE_EFFORT_LEVEL` is set, that level applies instead.
 
 A [`maxEffortLevel`](/docs/en/settings-reference#maxeffortlevel) or [organization effort cap](#organization-effort-limits) still limits the level the skill or subagent runs at. If you set `effortLevel` in [managed settings](/docs/en/managed-settings), Claude Code applies it at the settings step of the [effort resolution order](#adjust-effort-level), and users can still change the level with `/effort` or `--effort`. To keep users at or below a level, set [`maxEffortLevel`](/docs/en/settings-reference#maxeffortlevel).
+
+#### Effort level of subagents and teammates
+
+On the main conversation's model, a [subagent](/docs/en/sub-agents#choose-an-effort-level) or [teammate](/docs/en/agent-teams#specify-teammates-and-models) with no `effort` of its own runs at the level you pick in the session or set with `--effort`. On another model, that level doesn't apply. To pick a subagent's level, set `effort` in its definition.
 
 #### Check the effort level you set
 
@@ -77387,6 +77563,10 @@ A `cancelled` decision with `source` `user_abort` means a message needing immedi
 This span appears only when detailed beta tracing is active, which requires `ENABLE_BETA_TRACING_DETAILED=1` and `BETA_TRACING_ENDPOINT`, a pair that also [changes where your logs and traces go](/docs/en/env-vars#variables). Set the pair in your shell, user settings, or managed settings; both variables are ignored in [project and local settings](/docs/en/settings-reference#variables-claude-code-ignores-in-env). `CLAUDE_CODE_ENHANCED_TELEMETRY_BETA` alone doesn't produce it.
 
 In interactive CLI sessions, detailed beta tracing also requires your organization to be allowlisted for the feature. Agent SDK and non-interactive `-p` sessions don't require allowlisting.
+
+> [!WARNING]
+>
+> Set `ENABLE_BETA_TRACING_DETAILED` only for debugging, not in production. Detailed beta tracing has a high export volume, and its [content attributes](#new-context-gates) aren't part of the stable span schema.
 
 | Attribute | Description | Gated by |
 | - | - | - |
@@ -79743,6 +79923,8 @@ Where the server reviews the actions, its verdicts decide them. Two other outcom
 * **The server doesn't review the session**: a response completes with no review results, or the server answers that it doesn't review this session. The most common causes are an LLM gateway or proxy that drops the request for review or the results, and a platform, region, or credential that doesn't have server-side checks yet. Claude Code falls back to its own classifier requests. Once that fallback holds for the rest of the session, it shows a [notice about classifier request charges](/docs/en/auto-mode-classifier-billing) on accounts where those requests are billed.
 * **The server gives no verdict for an action**: Claude Code denies the action rather than run it unreviewed. On any connection, this happens when the response ends before the review results arrive or the results arrive in a form Claude Code can't read. An LLM gateway or proxy that cuts responses short or rewrites the results can cause either. On a direct connection to the Anthropic API, it also happens when the server's check fails for the action, for example by timing out. [The server returned no safety verdict](/docs/en/errors#the-server-returned-no-safety-verdict) covers the denial message, what happens when denials repeat, and what to do.
 
+  If a [hook](/docs/en/hooks#pretooluse-updatedinput-in-auto-mode) or [mod](/docs/en/plugins/mods/overview) changes an action's input after the server's review, Claude Code can deny the action with no verdict. In interactive terminal and VS Code sessions on a direct connection to the Anthropic API, the denial's text includes `a hook changed this call's input after auto mode reviewed it`. [Its error entry](/docs/en/errors#hook-changed-input-after-review) covers what to do.
+
 To skip asking the server and always use Claude Code's own classifier requests, set [`CLAUDE_CODE_AUTO_MODE_SERVER=0`](/docs/en/env-vars). On a direct connection to the Anthropic API, the variable requires Claude Code v2.1.281 or later. Setting it to `1` there turns server review on in a session that doesn't have it yet, unless you've also set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`. If you set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` and leave `CLAUDE_CODE_AUTO_MODE_SERVER` unset, Claude Code also stops asking the server, except as [Disable pre-release capabilities](/docs/en/llm-gateway-protocol#disable-pre-release-capabilities) describes.
 
 ### Default classifier model
@@ -79917,7 +80099,7 @@ When auto mode can't approve your session's actions, what happens depends on the
 * **A blocked action**: Claude Code shows a notification and lists the action in `/permissions` under the **Recently blocked** tab, where you can [approve the action so Claude may retry](/docs/en/auto-mode-config#review-denials).
 * **Repeated blocks**: if the classifier blocks an action 3 times in a row or 20 times total, auto mode pauses and Claude Code resumes prompting. Approving the prompted action resumes auto mode. See [Repeated-block thresholds](#repeated-block-thresholds) for how the blocks are counted.
 * **No verdict from the classifier**: when a safety check separate from auto mode refuses the classifier's own request, or the classifier's response doesn't parse, Claude Code blocks the action without the notification or the **Recently blocked** entry. See [Auto mode cannot determine the safety of an action](/docs/en/errors#auto-mode-cannot-determine-the-safety-of-an-action) for the message each case shows and what to do.
-* **No verdict from the server**: under [server-side classifier review](#server-side-classifier-review), Claude Code denies an action the server gives no verdict for, and stops the turn after ten responses in a row with no verdict. See [The server returned no safety verdict](/docs/en/errors#the-server-returned-no-safety-verdict).
+* **No verdict from the server**: under [server-side classifier review](#server-side-classifier-review), Claude Code denies an action the server gives no verdict for, and can stop the turn after ten responses in a row with no verdict. See [The server returned no safety verdict](/docs/en/errors#the-server-returned-no-safety-verdict).
 * **A mode switch during a check**: if you switch permission modes while a classifier check is pending, Claude Code discards a verdict the new mode wouldn't have requested. You're prompted for approval instead, or the action is auto-denied in [`dontAsk` mode](#allow-only-pre-approved-tools-with-dontask-mode).
 
 #### Repeated-block thresholds
@@ -89340,7 +89522,14 @@ A few hook environment variables on this page still use `pool`, such as `CLAUDE_
 
 ## Wrapper scripts
 
-Use a wrapper script when each session needs setup the runner can't do on its own: provisioning short-lived credentials scoped to the session creator, exporting environment-specific secrets, preparing language toolchains, or applying resource limits around the child process. The runner starts your wrapper in place of the Claude Code binary, once per session. End the wrapper by `exec`-ing into `$CLAUDE_RUNNER_CLAUDE_BIN`, the runner's own binary, so signals and exit codes propagate correctly.
+Use a wrapper script when each session needs setup the runner can't do on its own:
+
+* Provisioning short-lived credentials scoped to the session creator
+* Exporting environment-specific secrets
+* Preparing language toolchains
+* Applying resource limits around the child process
+
+The runner starts your wrapper in place of the Claude Code binary each time it starts a session, including when a session resumes or is requeued. End the wrapper by `exec`-ing into `$CLAUDE_RUNNER_CLAUDE_BIN`, the runner's own binary, so signals and exit codes propagate correctly.
 
 Point `--exec-path`, or `SELF_HOSTED_RUNNER_EXEC_PATH`, at the wrapper when you start the runner, replacing `<writable-dir>` as the [quickstart](/docs/en/self-hosted-environments-quickstart#set-up-manually) describes:
 
@@ -89463,7 +89652,9 @@ These hooks are distinct from [Claude Code hooks](/docs/en/hooks), which run ins
 
 ### checkout
 
-Runs once per repository, in place of the runner's built-in clone and fetch. Use the hook to clone from a read-through mirror that you reach over HTTPS or SSH, seed a working tree from an archive, or apply per-session git auth. The runner sets these variables, and may set other `CLAUDE_RUNNER_` variables that the table doesn't list:
+Runs for each repository each time the runner starts a session, including when the session resumes or is requeued, in place of the runner's built-in clone and fetch. Use the hook to clone from a read-through mirror that you reach over HTTPS or SSH, seed a working tree from an archive, or apply per-session git auth.
+
+The runner sets these variables, and may set other `CLAUDE_RUNNER_` variables that the table doesn't list:
 
 | Variable | Description |
 | :- | :- |
@@ -89503,7 +89694,12 @@ When the hook succeeds, the runner removes the checkout path after the session e
 
 ### post-session
 
-Runs once per session, after the Claude Code child has exited and before the runner tears the workspace down. This hook is your only chance to save uncommitted work: at `--capacity` above one, the runner deletes per-session worktrees right after the hook returns, and at `--capacity 1` the reused [canonical clone](/docs/en/self-hosted-environments-deploy#reuse-a-pre-warmed-checkout) is hard-reset when the next session starts, so uncommitted tracked changes don't survive on either path. Typical uses are pushing a snapshot branch of uncommitted changes, archiving logs, or emitting a session-ended event to your own systems.
+Runs after the Claude Code child has exited and before the runner tears the workspace down. This hook is your only chance to save uncommitted work, because uncommitted tracked changes don't survive on either path:
+
+* **At `--capacity` above one**: the runner deletes per-session worktrees right after the hook returns
+* **At `--capacity 1`**: the reused [canonical clone](/docs/en/self-hosted-environments-deploy#reuse-a-pre-warmed-checkout) is hard-reset when the next session starts
+
+Typical uses are pushing a snapshot branch of uncommitted changes, archiving logs, or emitting a session-ended event to your own systems.
 
 The hook fires on every session end where a child process was spawned, whatever the cause; the `CLAUDE_RUNNER_EXIT_REASON` values below enumerate the cases. It can't fire when the runner terminates abruptly, such as a VM preemption or a power loss; if you need guarantees against abrupt termination, snapshot periodically from inside the session with a Claude Code `PostToolUse` hook instead. The runner sets:
 
@@ -89599,7 +89795,7 @@ Before v2.1.280, the runner set none of these settings, and under `--configure-g
 
 ### command
 
-Runs once per session after checkout, in place of the built-in child spawn. The hook receives the same environment as a [wrapper script](#wrapper-scripts) and should `exec` into `"$CLAUDE_RUNNER_CLAUDE_BIN"` the same way. Use the `command` hook to keep all customization in one hooks directory; use `--exec-path` when the wrapper lives elsewhere. If `--exec-path` is also set, the flag takes precedence and the `command` hook is ignored.
+Runs after checkout each time a session starts or resumes, in place of the built-in child spawn. The hook receives the same environment as a [wrapper script](#wrapper-scripts) and should `exec` into `"$CLAUDE_RUNNER_CLAUDE_BIN"` the same way. Use the `command` hook to keep all customization in one hooks directory; use `--exec-path` when the wrapper lives elsewhere. If `--exec-path` is also set, the flag takes precedence and the `command` hook is ignored.
 
 Always `exec` the runner's own binary rather than a PATH-resolved `claude`; otherwise you defeat [version pinning](/docs/en/self-hosted-environments-deploy#pin-the-version).
 
@@ -89847,7 +90043,7 @@ Check the method you choose against these runner behaviors:
 
 * **Metadata endpoint**: if you deny sessions the [cloud metadata endpoint](/docs/en/self-hosted-environments-deploy#harden-your-deployment) outright, credentials served from it, such as an instance profile, don't reach Claude Code either. A file-based web identity, such as IAM Roles for Service Accounts (IRSA) on Amazon EKS or a Workload Identity Federation credential file, doesn't depend on it.
 * **Renewal**: a session can outlive a credential, so use a method that renews itself, such as a file-based web identity
-* **Wrapper script**: the runner starts your [wrapper script](#provision-credentials-scoped-to-the-session-creator) once per session, so credentials it exports aren't renewed. Claude Code reads AWS credentials from its environment, so if your wrapper already exports AWS credentials for other work, Claude Code can sign model requests with them.
+* **Wrapper script**: credential values your [wrapper script](#provision-credentials-scoped-to-the-session-creator) exports aren't renewed while Claude Code runs, so for a long session, use a method that renews itself. Claude Code reads AWS credentials from its environment, so if your wrapper already exports AWS credentials for other work, Claude Code can sign model requests with them.
 
 **3. Set one provider's variables in the runner's environment**
 
@@ -91027,7 +91223,7 @@ If tool traffic must stay inside your network, run the equivalent tools as local
 
 ### Some sessions don't count as idle
 
-A session holding a background task that never finishes doesn't count as idle, so `--release-idle-session-min` won't release that session's slot. A session that's waiting on an approval requested from inside a running tool call also doesn't count as idle. Always set `--kill-session-after-min` alongside it as a hard backstop so no session can hold a slot indefinitely.
+A session holding a background task that keeps running doesn't count as idle, so `--release-idle-session-min` won't release that session's slot. A session that's waiting on an approval requested from inside a running tool call also doesn't count as idle. Set `--kill-session-after-min` alongside it as a hard backstop.
 
 `--kill-session-after-min` is a backstop for runaway sessions. On a runner on v2.1.260 or later, a session that reaches the limit isn't terminated outright. The runner gives it a grace window, 15 minutes by default, which you can change with [`SELF_HOSTED_RUNNER_MAX_LIFETIME_GRACE_MS`](/docs/en/self-hosted-environments-reference#environment-variable-only-settings):
 
@@ -91814,7 +92010,7 @@ The runner serves `GET /healthz` on the configured health port. The response is 
 }
 ```
 
-Use `last_poll_age_ms` as a liveness signal in custom probes; a value that grows unbounded indicates the poll loop is stuck. Both `last_poll_at` and `last_poll_age_ms` are `null` until the first poll completes.
+Alert on `last_poll_age_ms`, but don't use it in a liveness probe; keep that probe on the HTTP status code. The value is the time since the last successful poll, so it also rises while the runner can't reach Anthropic. Both `last_poll_at` and `last_poll_age_ms` are `null` until the first poll succeeds. To catch polls that fail from the start, also alert on `claude_code_self_hosted_runner_poll_errors_total`, listed under [Prometheus metrics](#prometheus-metrics).
 
 The orchestrator's own `/healthz`, on its health port, always returns `200`. The body carries a `connected` field reporting whether the most recent poll succeeded, plus per-state spawn-queue counts in `queue_counts`. To see why `connected` is `false`, read the top-level `last_error` field, which each successful poll resets to `null`. Gate readiness and alerting on `connected` rather than the status code.
 
@@ -92545,7 +92741,7 @@ A client signed in through a [Claude apps gateway](#platform-availability) fetch
 
 * When a developer signs in at startup, such as on a first run or after `/logout`, Claude Code waits up to five seconds for the fetch before it opens the session. When the policy arrives in time, Claude Code enforces it from the first screen and shows your [`companyAnnouncements`](/docs/en/settings-reference#companyannouncements) on it. When the payload needs [security approval](#security-approval-dialogs), Claude Code ends the wait and applies the payload once the developer approves
 * In any other startup, and when that five-second wait runs out, Claude Code opens the session while the fetch continues, so a brief window passes before the settings load and the restrictions take effect
-* If the fetch fails, Claude Code continues without server-managed settings and warns in interactive sessions that no remote policy applies; endpoint-managed settings still apply. If a managed source sets [`forceRemoteSettingsRefresh`](#enforce-fail-closed-startup), Claude Code exits instead
+* If the fetch fails, Claude Code continues without server-managed settings and warns in interactive sessions and in [Claude Desktop's Code tab](/docs/en/desktop) that no remote policy applies; endpoint-managed settings still apply. If a managed source sets [`forceRemoteSettingsRefresh`](#enforce-fail-closed-startup), Claude Code exits instead
 
 **Subsequent launches with cached settings:**
 
@@ -92555,7 +92751,7 @@ A client signed in through a [Claude apps gateway](#platform-availability) fetch
 * A cached [`prependPlugins`](/docs/en/settings-reference#prependplugins), [`appendPlugins`](/docs/en/settings-reference#appendplugins), or [`enabledPlugins`](/docs/en/settings-reference#enabledplugins) value can't remove the built-in guard, change its position, or turn it off until the session's fetch confirms the payload
 * On a machine where an [endpoint-managed source](/docs/en/managed-settings#choose-a-delivery-mechanism) lists or enables plugins of its own, a plugin that only a cached list enables counts as [the user's](/docs/en/plugins/mods/admin#install-your-organizations-mods), not your organization's, until the fetch confirms the payload
 * Claude Code fetches fresh settings in the background
-* Cached settings persist through network failures. If the startup fetch fails, Claude Code warns in interactive sessions that the cached policy is in effect
+* Cached settings persist through network failures. If the startup fetch fails, Claude Code warns in interactive sessions and in the Code tab that the cached policy is in effect
 * Until a fetch succeeds, the values withheld at startup stay withheld
 
 Claude Code withholds several categories of variables in the cached `env` block until the server confirms the payload for the session. This keeps a cached proxy, certificate authority, endpoint, or credential value from redirecting, intercepting, or re-authenticating the settings fetch that confirms the payload. The hardening applies only to the server-fetched settings cache: [endpoint-managed settings](/docs/en/managed-settings#delivery-mechanisms) deployed through MDM or `managed-settings.json` are unaffected. The withheld categories include:
@@ -93514,7 +93710,7 @@ Every key below links to its entry. Scope lists the [files](/docs/en/settings#se
 | [`autoCompactWindow`](#autocompactwindow) | Set how full the context gets before Claude Code [compacts](/docs/en/context-window) | Memory and context | Any file |
 | [`autoConnectIde`](#autoconnectide) | Connect to a running [VS Code](/docs/en/vs-code) or [JetBrains](/docs/en/jetbrains#from-external-terminals) IDE automatically from an external terminal | Global config settings | Global config |
 | [`autoContinueAtUsageLimit`](#autocontinueatusagelimit) | Wait in the open session and [continue the task automatically](/docs/en/interactive-mode#wait-for-a-usage-limit-to-reset) after a claude.ai usage limit resets | Interface and terminal | User or managed |
-| [`autoInstallIdeExtension`](#autoinstallideextension) | Turn off automatic install of the [IDE extension](/docs/en/vs-code#install-the-extension) from a VS Code terminal | Global config settings | Global config |
+| [`autoInstallIdeExtension`](#autoinstallideextension) | Let `/ide` install the [IDE extension](/docs/en/vs-code#install-the-extension) from an external terminal | Global config settings | Global config |
 | [`autoMemoryDirectory`](#automemorydirectory) | Store [auto memory](/docs/en/memory#auto-memory) in a directory you choose | Memory and context | Any file |
 | [`autoMemoryEnabled`](#automemoryenabled) | Turn [auto memory](/docs/en/memory#auto-memory) off or on | Memory and context | Any file |
 | [`autoMode`](#automode) | Add your own allow and deny rules to the [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) classifier | Permission settings | User or managed |
@@ -99297,12 +99493,12 @@ Claude Code ignores this key in `settings.json`.
 
 ### `autoInstallIdeExtension`
 
-Install the Claude Code IDE extension automatically when you run Claude Code from a VS Code terminal. Appears in `/config` as **Auto-install IDE extension** when you run Claude Code inside a VS Code or JetBrains terminal.
+Let [`/ide`](/docs/en/commands) install the Claude Code IDE extension in a running VS Code, Cursor, or Devin Desktop when you run the command from an external terminal. Claude Code doesn't install the extension when you start it. Appears in `/config` as **Auto-install IDE extension** when you run Claude Code inside a VS Code or JetBrains terminal.
 
 * **Scope**: [`Global config`](#scopes)
 * **Type**: Boolean
-  * `true`: Claude Code installs the IDE extension automatically when you run it from a VS Code terminal
-  * `false`: Claude Code doesn't install the extension automatically
+  * `true`: `/ide` installs the extension
+  * `false`: `/ide` doesn't install the extension
 * **Default**: `true`
 * **Per-session overrides**: [`CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL`](/docs/en/env-vars) set to `1` skips the install for one session even when this key is `true`
 
@@ -103214,7 +103410,7 @@ If you don't set `effort`, Claude Code resolves the effort level itself, in the 
 >
 > `effort` trades latency and token cost for reasoning depth within each response. [Extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) is a separate feature that produces `thinking` blocks in the output, and the `display` field on `ThinkingConfig` for [Python](/docs/en/agent-sdk/python#thinkingconfig) or [TypeScript](/docs/en/agent-sdk/typescript#thinkingconfig) controls whether you receive their text. They are independent: you can set `effort: "low"` with extended thinking enabled, or `effort: "max"` without it.
 
-Use lower effort for agents doing simple, well-scoped tasks (like listing files or running a single grep) to reduce cost and latency. Set `effort` in the top-level `query()` options for the whole session, or per subagent with the `effort` field on [`AgentDefinition`](/docs/en/agent-sdk/subagents#agentdefinition-configuration) to override the session level.
+Use lower effort for agents doing simple, well-scoped tasks, such as listing files or running a single grep, to reduce cost and latency. Set `effort` in the top-level `query()` options for the [session](/docs/en/sub-agents#choose-an-effort-level), or per subagent with the `effort` field on [`AgentDefinition`](/docs/en/agent-sdk/subagents#agentdefinition-configuration) to override the session level.
 
 ### Permission mode
 
@@ -106290,6 +106486,7 @@ SDK matchers follow the same rules as [matchers in settings files](/docs/en/hook
 | `matcher` | `string` | `undefined` | Pattern matched against the event's filter field, following the [rules for matchers in settings files](/docs/en/hooks#matcher-patterns). For tool hooks, that field is the tool name. Built-in tools include `Bash`, `Read`, `Write`, `Edit`, `Glob`, `Grep`, `WebFetch`, `Agent`, and others. See [Tool Input Types](/docs/en/agent-sdk/typescript#tool-input-types) for the full list. MCP tools use the pattern `mcp__<server>__<action>`, where `<server>` is the key you use in the `mcpServers` configuration, spelled as the [tool naming convention](/docs/en/agent-sdk/mcp#tool-naming-convention) describes. |
 | `hooks` | `HookCallback[]` | - | Required. Array of callback functions to execute when the pattern matches |
 | `timeout` | `number` | `undefined` | Timeout in seconds. When omitted, Claude Code applies the [event's default timeout](#hook-timeout). Your SDK callbacks follow the `command` hook defaults |
+| `onFailure` | `"continue" \| "block"` | `undefined` | What a failed callback does. Set `"block"` to [block the action when a callback fails](#block-the-action-when-a-callback-fails). In Python, use `on_failure` |
 
 Use the `matcher` pattern to target specific tools whenever possible. A matcher with `'Bash'` only runs for Bash commands, while omitting the pattern runs your callbacks for every occurrence of the event.
 
@@ -106348,6 +106545,53 @@ const asyncHook: HookCallback = async (input, toolUseID, { signal }) => {
 > [!NOTE]
 >
 > Async outputs can't block, modify, or inject context into the operation since the agent has already moved on. Use them only for side effects like logging, metrics, or notifications.
+
+### Block the action when a callback fails
+
+On most events, if a callback throws or returns output that fails validation, the action goes ahead and your app receives an [`SDKInformationalMessage`](/docs/en/agent-sdk/typescript#sdkinformationalmessage) warning whose `tag` is `hook_callback_failed`. A `PreToolUse` guard that crashes then lets the tool call reach the normal permission flow. A callback that returns nothing, such as a path with no `return`, also counts as failing. In Python, read `tag` from `SystemMessage.data`.
+
+To block the action instead, set `onFailure: "block"` in TypeScript or `on_failure="block"` in Python on the matcher. Requires TypeScript Agent SDK v0.3.317 or later, or Python Agent SDK v0.2.177 or later. This example blocks a Bash call when `check_policy` in Python or `checkPolicy` in TypeScript fails:
+
+```python Python theme={null}
+options = ClaudeAgentOptions(
+    hooks={
+        "PreToolUse": [
+            HookMatcher(matcher="Bash", hooks=[check_policy], on_failure="block")
+        ]
+    }
+)
+```
+
+```typescript TypeScript theme={null}
+import type { Options } from "@anthropic-ai/claude-agent-sdk";
+
+const options: Options = {
+  hooks: {
+    PreToolUse: [{ matcher: "Bash", hooks: [checkPolicy], onFailure: "block" }]
+  }
+};
+```
+
+To test it, make the callback raise an error and ask Claude to run a Bash command. The tool result includes `failed; blocking because onFailure is "block"`, and Claude doesn't see your error text.
+
+Return `{}` when the callback has no opinion. With `"block"` set, a path with no `return` blocks the action. A callback that catches its own error and returns `{}` isn't failing, so let the error propagate from a guard.
+
+#### Events that behave differently
+
+These events don't always block with `"block"` set:
+
+* **`Stop`, `SubagentStop`, `TaskCompleted`, and `TeammateIdle`**: these events ignore the option, so the action goes ahead.
+* **`PermissionRequest`**: the block counts only if it arrives before your `canUseTool` callback answers.
+* **`PostToolUse`**: the tool has already run, so Claude receives the failure as feedback.
+
+A callback that exceeds its timeout follows [Hook timeout](#hook-timeout). With `"block"` set, a timeout also blocks `PreCompact`, `Elicitation`, and `WorktreeCreate`.
+
+#### Startup errors for `onFailure`
+
+With `"block"` set, the query fails at startup and sends no prompt when it can't honor the option:
+
+* **Claude Code doesn't support the option**: the error includes `does not honor`. Update Claude Code, or remove the option.
+* **The session was already running and didn't register your hooks**: the error includes `did not register your hooks`. Start a new session.
 
 ## Examples
 
@@ -106845,7 +107089,7 @@ When a callback exceeds its timeout, Claude Code cancels it and discards its out
 * `Stop` and `SubagentStop`: the timed-out callback counts as returning no decision. The agent or subagent stops as if that callback had allowed it, and a decision from your other hooks on the event still applies. Before Claude Code v2.1.273, a timed-out `Stop` or `SubagentStop` callback counted as a failed hook run, and Claude Code discarded the decisions of your other hooks on the event.
 * `SessionStart`: the timed-out callback counts as returning no output, and the session continues with the output of your other `SessionStart` hooks.
 * `PreModelSwitch`: Claude Code blocks the model switch. A hook that doesn't answer hasn't approved the switch.
-* Other events, such as `Notification`, `PreCompact`, and `PostModelSwitch`: Claude Code logs the failure and continues.
+* Other events, such as `Notification`, `PreCompact`, and `PostModelSwitch`: Claude Code logs the failure and continues. With [`onFailure: "block"`](#block-the-action-when-a-callback-fails), a timeout on `PreCompact`, `Elicitation`, or `WorktreeCreate` blocks the action.
 
 The first time a `Stop` or `SessionStart` callback times out in the main session, Claude Code also adds an [`SDKInformationalMessage`](/docs/en/agent-sdk/typescript#sdkinformationalmessage) to the message stream saying the app driving the session didn't respond. Later timeouts don't repeat that message while your app stays unresponsive.
 
@@ -112059,7 +112303,12 @@ class HookMatcher:
         None  # Timeout in seconds. When omitted, the per-event default applies:
         # 600 for most events, 30 for UserPromptSubmit
     )
+    on_failure: Literal["continue", "block"] | None = (
+        None  # "block" blocks the action when a callback fails
+    )
 ```
+
+To decide what `on_failure` covers, see [Block the action when a callback fails](/docs/en/agent-sdk/hooks#block-the-action-when-a-callback-fails).
 
 ### `HookInput`
 
@@ -119984,6 +120233,7 @@ type SDKInformationalMessage = {
   level: "info" | "notice" | "suggestion" | "warning";
   tool_use_id?: string;
   prevent_continuation?: boolean;
+  tag?: string;
   uuid: UUID;
   session_id: string;
 };
@@ -120359,8 +120609,11 @@ interface HookCallbackMatcher {
   matcher?: string;
   hooks: HookCallback[];
   timeout?: number; // Timeout in seconds for all hooks in this matcher
+  onFailure?: "continue" | "block"; // "block" blocks the action when a callback fails
 }
 ```
+
+To decide what `onFailure` covers, see [Block the action when a callback fails](/docs/en/agent-sdk/hooks#block-the-action-when-a-callback-fails).
 
 ### `HookInput`
 
