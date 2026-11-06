@@ -293,7 +293,7 @@ To cycle a running teammate's permission mode, press [`Shift+Tab`](/docs/en/perm
 >
 > To have it ask before it edits, press Enter on the `main` row in the agent panel and switch the lead to Manual mode too. The lead then asks too, as does any other teammate in Manual mode.
 
-You can't set per-teammate permission modes at spawn time. A new teammate starts with the lead's mode, including `bypassPermissions` mode, which `--dangerously-skip-permissions` turns on. If the lead is in [`dontAsk` mode](/docs/en/permission-modes#allow-only-pre-approved-tools-with-dontask-mode), the teammate starts in [Manual mode](/docs/en/permission-modes#available-modes) instead.
+You can't set per-teammate permission modes at spawn time. A new teammate starts with the lead's mode, including `bypassPermissions` mode, which `--dangerously-skip-permissions` turns on. If the lead is in [`dontAsk` mode](/docs/en/permission-modes#allow-only-pre-approved-tools-with-dontask-mode), the teammate starts in [Manual mode](/docs/en/permission-modes#available-modes) instead. For a split-pane teammate of a lead in Manual or `dontAsk` mode, this requires Claude Code v2.1.317 or later.
 
 An [in-process](#choose-a-display-mode) teammate runs under the lead's live allow and deny rules, so [`--disallowedTools`](/docs/en/cli-reference#cli-flags), `--tools`, and `--allowedTools` all apply to it. For a split-pane teammate, check each flag:
 
@@ -1858,7 +1858,7 @@ Claude Code asks for your approval before Claude reads the artifact in these cas
 
 * **Cloud session without network access**: for a [cloud environment](/docs/en/cloud-environments#access-levels), that's the **None** level. In [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), the classifier can approve instead; in a [Cowork](https://claude.com/product/cowork) session, the approval is yours alone.
 * **Another organization's public artifact**: Claude Code asks you first, even in auto mode. Where Claude Code can't ask you, such as in `bypassPermissions` mode, Claude can't read the artifact. Claude can read these artifacts only while [feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) is on.
-* **Unconfirmed owner or network setting**: when Claude Code can't confirm who made the artifact, or can't confirm a cloud session's network setting, it asks, and your approval covers that one request.
+* **Unconfirmed owner or network setting**: when Claude Code can't confirm who made the artifact, or can't confirm a cloud session's network setting, it asks, and your approval covers that one request. In [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), the classifier can approve or block the read instead of asking you.
 * **Plan mode**: in [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode), Claude Code asks before the Artifact tool reads an artifact someone else in your organization made.
 
 When Claude reads the artifact with WebFetch, WebFetch's own [prompting rules](/docs/en/tools-reference#webfetch-tool-behavior) still apply.
@@ -17974,7 +17974,7 @@ A review reads the `CLAUDE.md` at your repository root and the `CLAUDE.md` files
 
 ## Use REVIEW\.md for review-only rules
 
-`REVIEW.md` is a file at your repository root that tailors Code Review to your repository. You can also add a `REVIEW.md` in a subdirectory to add checks for changes under that path, on top of the root file.
+`REVIEW.md` is a file at your repository root that tailors Code Review to your repository. On a [protected branch](#what-a-review-reads-for-each-branch-setup), you can also add a `REVIEW.md` in [most subdirectories](#when-a-subdirectory-review-md-doesnt-apply) to add checks for changes under that subdirectory, on top of the root file.
 
 The agents that find issues and the agents that verify them receive its contents as your repository's review instructions, alongside Code Review's default review guidance. The step that writes the final review consults it before settling severity and writing the summary.
 
@@ -17994,6 +17994,19 @@ Before you rely on a subdirectory file, protect your default branch and check [w
 > [!NOTE]
 >
 > The Code Review service and the local [`/code-review` command](/docs/en/code-review-local) are two separate tools, and they read different files. The service reads both `CLAUDE.md` and `REVIEW.md`. The `/code-review` command, which you run inside a Claude Code session on your own machine, reads your `CLAUDE.md` files and not `REVIEW.md`. Put guidance you want applied in both places in `CLAUDE.md`, and keep `REVIEW.md` for rules specific to pull request review.
+
+### When a subdirectory REVIEW\.md doesn't apply
+
+Code Review doesn't apply a `REVIEW.md` in or below a subdirectory with one of these names, whatever the subdirectory holds. A subdirectory name matches only as a whole, in any letter case and at any depth, so `Tests` matches and `integration-tests` doesn't:
+
+* **Tests**: `test`, `tests`, `__tests__`, `testdata`, `fixtures`, `__fixtures__`, `golden`, `corpus`, `snapshots`, `__snapshots__`
+* **Examples**: `example`, `examples`, `sample`, `samples`, `demo`, `demos`
+* **Generated code**: `generated`
+* **Third-party code**: `vendor`, `third_party`, `third-party`, `thirdparty`, `node_modules`, `bower_components`, `external`, `extern`, `deps`, `godeps`, `pods`, `carthage`, `site-packages`, `contrib`
+
+Put checks for those subdirectories in the root `REVIEW.md`, or in a parent subdirectory's `REVIEW.md` when neither that parent nor anything above it is on the list.
+
+The remaining subdirectory `REVIEW.md` files on the paths a pull request changes share a limit of 150,000 bytes, not counting the root file. If the [check run](/docs/en/code-review-pull-requests#check-run-output) reports that some of them didn't fit, shorten the files to fit that limit.
 
 ### Example REVIEW\.md
 
@@ -18166,8 +18179,8 @@ Find your repository's situation in the first column of the table below.
 
 | Branch protection | Copy read | Files read |
 | :- | :- | :- |
-| The default branch is protected, and the pull request targets it or targets a branch no ruleset protects | Default branch | Root file, the files it includes, and subdirectory files |
-| The pull request targets another branch that a ruleset protects | That base branch | Root file, the files it includes, and subdirectory files |
+| The default branch is protected, and the pull request targets it or targets a branch no ruleset protects | Default branch | Root file, the files it includes, and [most subdirectory files](#when-a-subdirectory-review-md-doesnt-apply) |
+| The pull request targets another branch that a ruleset protects | That base branch | Root file, the files it includes, and [most subdirectory files](#when-a-subdirectory-review-md-doesnt-apply) |
 | The default branch isn't protected, and the base branch has no protection rule of either kind | Default branch | Root file |
 | Code Review can't confirm the protection settings. This includes an unprotected default branch with a base branch that has only a classic rule | None | None |
 
@@ -20218,7 +20231,7 @@ The example below adds an investigation entry point to an incident runbook for a
 3. Post initial findings in #incident.
 ```
 
-To use this in your own runbook, replace `acme/web-gateway` with your service's repository slug. Before engineers click step 2, they must have [sent a prompt in an interactive Claude Code session](#registration-and-supported-platforms) on their machine and opened Claude Code in their local clone.
+To use this in your own runbook, replace `acme/web-gateway` with your service's repository slug. Before engineers click step 2, their machine must have the [`claude-cli://` handler registered](#registration-and-supported-platforms), and they must have run `claude` in their local clone or worktree.
 
 ### Open a link from the shell
 
@@ -22737,7 +22750,7 @@ When reporting a problem, include your desktop app version, your operating syste
 # Test iOS apps in the simulator
 Source: https://code.claude.com/docs/en/desktop-ios-simulator
 
-Claude Code Desktop opens your app in the iOS Simulator pane when Claude builds, runs, or checks it, with a separate simulator for each session.
+Claude Code Desktop opens your app in the iOS Simulator pane when Claude builds, runs, or checks it.
 
 > [!NOTE]
 >
@@ -22821,7 +22834,7 @@ You and Claude drive the same device, so your taps change the app state Claude s
 
 ## How sessions manage devices
 
-Each device belongs to the session that launched it, so [parallel sessions](/docs/en/desktop#work-in-parallel-with-sessions) don't share a device: what you see in one session's pane reflects that session's work, not another's. Switching sessions in the sidebar switches the simulator view along with the conversation, and switching back resumes the same device where it left off. If Claude works with more than one device, each opens its own pane, up to 4 per session.
+If your prompt doesn't name a simulator, Claude uses one that's already running, even if another [parallel session](/docs/en/desktop#work-in-parallel-with-sessions) opened it. To give each session its own simulator, name a different one in each session's prompt.
 
 Claude Code Desktop shuts down the simulators it booted once they're no longer in use: when you quit the app, when you archive the session, or 10 minutes after you detach a device from its pane. Devices you boot outside Claude Code Desktop, such as in Apple's Simulator app or in Device Hub, are never shut down automatically. To shut down the attached device right away, use the shutdown button in the pane.
 
@@ -22835,7 +22848,13 @@ The first time Claude uses a simulator, the desktop app asks you to allow it. Th
 
 After you allow a device, Claude's actions on it, such as tapping, typing, and taking screenshots, run without prompts, but you approve launching the app as your [permission mode](#actions-that-follow-your-permission-mode) requires. They carry the same trust as you clicking in the pane, and they only touch the simulated device, so the pane doesn't need the macOS Accessibility and Screen Recording permissions that computer use requires.
 
-If you decline, the device still boots and the pane still works for your own taps; only Claude's access stays off. To change your mind later, click **Let Claude use it** in the pane.
+If you decline Claude's request, the device doesn't attach and Desktop doesn't boot it. To use the device yourself:
+
+1. Click **Attach simulator** in the pane.
+2. Click **Continue** on the permission screen.
+3. Click **Cancel** in the dialog that follows.
+
+The device attaches and works for your own taps, and Claude's access stays off. After that, to give Claude access, click **Let Claude use it** in the pane.
 
 ### Actions that follow your permission mode
 
@@ -23345,9 +23364,9 @@ Keep this in mind when writing prompts. A task scheduled for 9am might run at 11
 
 ## Permissions for scheduled tasks
 
-Each task has its own permission mode, which you set when creating or editing the task. Allow rules from `~/.claude/settings.json` also apply to scheduled task sessions. If a task runs in [Manual mode](/docs/en/desktop#choose-a-permission-mode) and needs to run a tool it doesn't have permission for, the run stalls until you approve it. To approve it, [find the run's session](#find-a-runs-session) and answer the permission prompt there.
+Each task has its own [permission mode](/docs/en/desktop#choose-a-permission-mode), which you set when creating or editing the task. Allow rules from `~/.claude/settings.json` also apply to scheduled task sessions. When a run is stalled on a permission prompt, [find the run's session](#find-a-runs-session) and answer the prompt there.
 
-To avoid stalls, click **Run now** after creating a task, watch for permission prompts, and select "always allow" for each one. Future runs of that task auto-approve the same tools without prompting. You can review and revoke these approvals from the task's detail page.
+To avoid stalls, click **Run now** after creating a task, watch for permission prompts, and select "always allow" for each one. Future runs skip most of those prompts. You can review and revoke these approvals from the task's detail page. If you select "always allow" on a file edit in the task's folder, only that session moves to **Accept edits**, so set the task's permission mode to **Accept edits**.
 
 MCP tools marked [`requiresUserInteraction`](/docs/en/mcp#require-approval-for-a-specific-tool) prompt on every call and don't offer an always-allow option. Runs that call these tools stall each time.
 
@@ -23364,7 +23383,7 @@ In the **Code** tab, click **Scheduled** in the sidebar, then click a task in th
 
 You can also list, create, edit, and pause tasks by asking Claude in any Desktop session. For example, "pause my dependency-audit task" or "show me my scheduled tasks." To delete a task, use the **Delete** button on its detail page.
 
-A scheduled task can also modify its own schedule or prompt from within a running session using the `update_scheduled_task` MCP tool. This lets a task reschedule itself based on what it finds, for example, rescheduling a code review to run earlier when it detects a release branch has been created.
+To let a task change its own schedule or prompt with the `update_scheduled_task` MCP tool, click **Run now** and approve the call each time.
 
 To edit a task's prompt on disk, open `~/.claude/scheduled-tasks/<task-name>/SKILL.md` (or under [`CLAUDE_CONFIG_DIR`](/docs/en/env-vars) if set). The file uses YAML frontmatter for `name` and `description`, with the prompt as the body. Changes take effect on the next run. Schedule, folder, model, and enabled state are not in this file: change them through the Edit form or ask Claude.
 
@@ -32444,13 +32463,14 @@ Each tab below uses the platform's native notification command. Add this to `~/.
 > >
 > > If you run Claude Code inside WSL, `powershell.exe` must be available on your `PATH` through Windows interop.
 
-The empty `matcher` fires on all notification types. To fire only on specific events, set it to one of these values:
+The empty `matcher` fires on all notification types. To fire only on specific events, set it to a notification type, such as one of these:
 
 | Matcher | Fires when |
 | :- | :- |
 | `permission_prompt` | Claude needs you to approve a tool use or a sandboxed command's [network request](/docs/en/sandboxing#network-isolation), and the prompt has waited about six seconds |
 | `idle_prompt` | Claude finished responding about 60 seconds ago and you haven't typed since |
 | `auth_success` | Authentication completes |
+| `auth_storage_failure` | Your sign-in completes, but Claude Code can't save the new credentials to its [credential storage](/docs/en/authentication#credential-management). Fires in place of `auth_success` |
 | `elicitation_dialog` | An MCP server opens an elicitation form and you haven't typed for about six seconds |
 | `elicitation_url_dialog` | An MCP server asks you to open a browser URL and you haven't typed for about six seconds |
 | `elicitation_complete` | An MCP server reports that a [URL-mode elicitation](/docs/en/hooks#elicitation-input) is complete |
@@ -32464,7 +32484,7 @@ The empty `matcher` fires on all notification types. To fire only on specific ev
 
 Claude Code times `permission_prompt` differently in a terminal and in Claude Desktop, the VS Code extension, and other hosts that answer permission requests through the Agent SDK. See [when each notification type fires](/docs/en/hooks#notification) for both timings.
 
-The `quota_auto_resume_fired`, `quota_auto_resume_stale`, and `quota_auto_resume_disabled` matchers require Claude Code v2.1.234 or later.
+The `quota_auto_resume_fired`, `quota_auto_resume_stale`, and `quota_auto_resume_disabled` matchers require Claude Code v2.1.234 or later. The `auth_storage_failure` matcher requires v2.1.288 or later.
 
 In terminal sessions, `permission_prompt` for a sandboxed command's network request requires Claude Code v2.1.246 or later.
 
@@ -32955,7 +32975,7 @@ Each event type matches on a specific field:
 | `SessionStart` | how the session started | `startup`, `resume`, `clear`, `compact`, `fork` |
 | `Setup` | which CLI flag triggered setup | `init`, `maintenance` |
 | `SessionEnd` | why the session ended | `clear`, `resume`, `logout`, `prompt_input_exit`, `other` |
-| `Notification` | notification type | `permission_prompt`, `idle_prompt`, `auth_success`, `elicitation_dialog`, `elicitation_url_dialog`, `elicitation_complete`, `elicitation_response`, `agent_needs_input`, `agent_completed`, `quota_auto_resume_fired`, `quota_auto_resume_stale`, `quota_auto_resume_disabled`, `plugin_notification` |
+| `Notification` | notification type | `permission_prompt`, `idle_prompt`, `auth_success`, `auth_storage_failure`, `elicitation_dialog`, `elicitation_url_dialog`, `elicitation_complete`, `elicitation_response`, `agent_needs_input`, `agent_completed`, `quota_auto_resume_fired`, `quota_auto_resume_stale`, `quota_auto_resume_disabled`, `plugin_notification` |
 | `SubagentStart` | agent type | `general-purpose`, `Explore`, `Plan`, or custom agent names |
 | `PreCompact`, `PostCompact` | what triggered compaction | `manual`, `auto` |
 | `PreModelSwitch`, `PostModelSwitch` | canonical name of the model the session switches to, as described under [PreModelSwitch](/docs/en/hooks#premodelswitch) | `claude-opus-5`, `claude-opus-4-6\|claude-opus-5`, `.*opus.*` |
@@ -45308,7 +45328,7 @@ Before v2.1.260, changing effort on Fable 5.1 with an API key or a Claude subscr
 [Fast mode](/docs/en/fast-mode) and standard speed keep separate caches, so after you turn fast mode on or off, the next request can't use what the other speed cached. The first time you turn fast mode on in a conversation, the next request reads the whole conversation so far uncached at [fast mode rates](/docs/en/fast-mode#understand-the-cost-tradeoff). To keep that cost small, turn it on at the start of a session.
 
 * If you turn it on while Claude is working, that turn finishes at standard speed, and you pay for any uncached read on your next turn's first request.
-* If your current model doesn't support fast mode, enabling fast mode also [switches you to Opus](/docs/en/fast-mode#toggle-fast-mode). That [model switch](#switching-models) starts a fresh cache on its own from the next request in the running turn.
+* If your current model doesn't support fast mode, running `/fast` also [switches you to Opus](/docs/en/fast-mode#toggle-fast-mode). That [model switch](#switching-models) starts a fresh cache on its own from the next request in the running turn.
 
 Each later toggle reads uncached whatever the speed you switch to doesn't have cached. Speed changes Claude Code makes on its own, such as the [fallback to standard speed](/docs/en/fast-mode#handle-rate-limits) after a rate limit and the return to fast mode later, count as toggles too.
 
@@ -53390,11 +53410,11 @@ Claude Code is available as both a VS Code extension (graphical panel) and a CLI
 
 ### Run CLI in VS Code
 
-To use the CLI while staying in VS Code, press `` Ctrl+` `` on Windows/Linux or `` Cmd+` `` on Mac to open the integrated terminal, then run `claude`. Starting `claude` doesn't install the extension. Without it, `/ide` in the integrated terminal reports "No available IDEs detected" and `/status` shows the IDE as "Not connected".
+To use the CLI while staying in VS Code, press `` Ctrl+` `` on Windows/Linux or `` Cmd+` `` on Mac to open the integrated terminal, then run `claude`.
 
 To get features like diff viewing and diagnostic sharing, connect the CLI to the extension from the integrated terminal or an external terminal:
 
-* **Integrated terminal**: [install the extension](#install-the-extension), then start `claude`. The CLI connects automatically.
+* **Integrated terminal**: [install the extension](#install-the-extension), then start `claude`. The CLI connects automatically. Claude Code v2.1.318 or later doesn't install the extension for you, so until you install it, `/ide` reports "No available IDEs detected" and `/status` shows the IDE as "Not connected".
 * **External terminal**: run `/ide` inside Claude Code to connect to VS Code. If VS Code is running without the extension, `/ide` installs it, unless you turned off [`autoInstallIdeExtension`](/docs/en/settings-reference#autoinstallideextension).
 
 Installing the extension does not put `claude` on your shell PATH. The extension bundles a private copy of the CLI for its chat panel, but typing `claude` in a terminal requires the [standalone CLI install](/docs/en/setup). Run the install once and the commands on this page, including `claude mcp add` and `claude --resume`, work in any terminal. If `claude` is still not found after installing, [verify your PATH](/docs/en/troubleshoot-install#verify-your-path).
@@ -53663,7 +53683,16 @@ To uninstall the Claude Code extension:
 2. Search for "Claude Code"
 3. Click **Uninstall**
 
-The extension stays uninstalled when you start `claude`. If you run `/ide` from an external terminal while VS Code is running, Claude Code reinstalls it. To stop that, set [`autoInstallIdeExtension`](/docs/en/settings-reference#autoinstallideextension) to `false` in `~/.claude.json`, or turn off **Auto-install IDE extension** in `/config` from the integrated terminal. You can also set the [`CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL`](/docs/en/env-vars) environment variable to `1`.
+If you do either of these after uninstalling, the extension comes back:
+
+* Run `/ide` from an external terminal while VS Code is running
+* Start `claude` in the integrated terminal on a Claude Code version before v2.1.318
+
+To keep the extension from coming back, do one of these, then uninstall it again if it already came back:
+
+* Set [`autoInstallIdeExtension`](/docs/en/settings-reference#autoinstallideextension) to `false` in `~/.claude.json`
+* Set [`CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL`](/docs/en/env-vars#variables) to `1` under `env` in a [settings file](/docs/en/env-vars#in-settings-files)
+* In the integrated terminal, turn off **Auto-install IDE extension** in `/config`
 
 To also remove extension data and reset all settings, delete the extension's storage directory for your platform.
 
@@ -53834,7 +53863,7 @@ At claude.ai/code, to start Claude from a feature branch instead of the default,
 
 The [permission mode control](/docs/en/permission-modes#switch-permission-modes) shows the permission mode the session will run in:
 
-* **Auto**: a classifier reviews Claude's actions instead of asking you. Appears when your organization allows auto mode and the selected model supports it
+* **Auto**: a classifier reviews Claude's actions instead of asking you. Appears unless your organization turns off [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode). On claude.ai/code, if it's grayed out, select a model that supports auto mode
 * **Accept edits**: Claude makes changes and pushes a branch without stopping for approval
 * **Plan**: Claude proposes an approach and waits for you to approve it before editing files
 
@@ -58983,7 +59012,7 @@ A declared block narrows who can sign in but doesn't prove where a machine is, s
 
 ### Deliver policy to Claude Desktop sessions
 
-Claude Desktop runs its Cowork and Code tabs, plus Chat when you enable it, on embedded Claude Code sessions and sends their model requests through the gateway. It passes policy to each of those sessions, built from the configuration the gateway serves it at `/user/bootstrap`: the model allowlist, disabled tools, and egress allowlist derived from the matched policy's `cli` or `code` block, plus the [`desktop` overlay](/docs/en/claude-apps-gateway-config#claude-desktop-overlay).
+Claude Desktop runs its tabs on embedded Claude Code sessions and sends their model requests through the gateway. It passes policy to each of those sessions, built from the configuration the gateway serves it at `/user/bootstrap`. That configuration holds the model allowlist, disabled tools, and egress allowlist derived from the matched policy's `cli` or `code` block, plus the [`desktop` overlay](/docs/en/claude-apps-gateway-config#claude-desktop-overlay).
 
 The block's other keys, such as hooks, `env`, and scoped permission rules like `Bash(npm *)`, reach clients that sign in through `/login`. Under `code`, they also reach the Code tab's session when the [conditions for the Code tab](/docs/en/claude-apps-gateway-config#apply-code-settings-in-the-code-tab) hold. They don't reach Cowork or Chat sessions. Claude Desktop reads the gateway URL from its own managed configuration and signs in with its own flow, separate from the `forceLoginMethod` and `forceLoginGatewayUrl` keys in [Set the gateway URL](#set-the-gateway-url).
 
@@ -59109,11 +59138,9 @@ Passing these keys in `managedSettings` requires Claude Code v2.1.309 or later, 
 
 ### Connect Claude Desktop
 
-[Claude Desktop](/docs/en/desktop) connects to the same gateway through a different MDM key: set `bootstrapUrl` in Claude Desktop's [managed configuration](https://claude.com/docs/third-party/claude-desktop/configuration) to `<listen.public_url>/user/bootstrap`, and opt the user's policy in with a `desktop` key. [Claude Desktop overlay](/docs/en/claude-apps-gateway-config#claude-desktop-overlay) covers both halves. Requires Claude Code v2.1.203 or later on the gateway server.
+[Claude Desktop](/docs/en/desktop) connects to the same gateway through a different MDM key: set `bootstrapUrl` in Claude Desktop's [managed configuration](https://claude.com/docs/third-party/claude-desktop/configuration) to `<listen.public_url>/user/bootstrap`, and opt the user's policy in with a `desktop` key. [Claude Desktop overlay](/docs/en/claude-apps-gateway-config#claude-desktop-overlay) covers both halves. Requires Claude Code v2.1.203 or later on the gateway server. Once connected, Claude Desktop sends model requests from every enabled tab through the gateway.
 
 Claude Desktop signs the developer in through the gateway's identity provider with the same browser SSO step, then fetches its configuration from the gateway instead of from Anthropic. Model access and policy follow the same per-group rules as the CLI. A developer who uses both the CLI and Claude Desktop signs in to each separately; the gateway session isn't shared between them.
-
-Once connected, Claude Desktop sends model requests from every enabled tab through the gateway. It shows the Cowork and Code tabs by default. To make Chat available as well, set `chatTabEnabled` to `true` in the policy's [`desktop` block](/docs/en/claude-apps-gateway-config#claude-desktop-overlay) on a gateway running Claude Code v2.1.227 or later. With Cowork on, Claude Desktop then shows Chat and Cowork together in one tab.
 
 ### CI pipelines and remote machines
 
@@ -59156,7 +59183,7 @@ The gateway delivers the [`anthropic-beta`](https://platform.claude.com/docs/en/
 | Inference forwarding (Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform, Microsoft Foundry, Anthropic) | Available | With per-upstream model translation and failover. The Amazon Bedrock upstream uses the `bedrock-runtime` endpoint and the AWS default credential chain. The [Amazon Bedrock Mantle upstream](/docs/en/claude-apps-gateway-config#amazon-bedrock-mantle-endpoint) requires Claude Code v2.1.283 or later on the gateway server, and the [Claude Platform on AWS upstream](/docs/en/claude-apps-gateway-config#claude-platform-on-aws) requires v2.1.198 or later. |
 | 1M token context window | Available | Fable models, Sonnet 5 and later, and Opus 4.7 and later run with the 1M window by default; see [Extended context](/docs/en/model-config#extended-context). The 1M default for the Fable and Opus models requires Claude Code v2.1.287 or later on the developer machine |
 | Model access and managed settings by IdP group | Available | Model access is enforced server-side; managed settings are delivered per IdP group and applied by the CLI at the [managed settings tier](/docs/en/settings#settings-precedence) |
-| Claude Desktop | Available with opt-in | The gateway serves Claude Desktop's configuration at `/user/bootstrap` once a policy [opts in with a `desktop` key](/docs/en/claude-apps-gateway-config#claude-desktop-overlay), and Claude Desktop sends its model requests through the gateway. To turn on Chat, see [Connect Claude Desktop](#connect-claude-desktop). Requires Claude Code v2.1.203 or later on the gateway server. |
+| Claude Desktop | Available with opt-in | Opt a policy in with a [`desktop` key](/docs/en/claude-apps-gateway-config#claude-desktop-overlay). Requires Claude Code v2.1.203 or later on the gateway server. |
 | Telemetry fan-out (OTLP/HTTP) | Available | Identity-stamped per export; both protobuf and JSON encodings |
 | OIDC identity providers | Available | Any OIDC-compliant IdP; the gateway runs standard OIDC discovery and the authorization-code flow. See [Identity provider setup](/docs/en/claude-apps-gateway-deploy#identity-provider-setup) for per-IdP configuration |
 | Per-user and per-group spend limits | Available | See [Spend limits](/docs/en/claude-apps-gateway-spend-limits) |
@@ -59173,7 +59200,7 @@ The gateway delivers the [`anthropic-beta`](https://platform.claude.com/docs/en/
 | Multi-tenant (multiple OIDC issuers) | Not supported | One issuer per gateway. Run separate instances |
 | Windows server | Not supported | Deploy on Linux. macOS for local development only |
 | Helm chart | Not available | The gateway runs as a standard stateless Deployment; see the [deployment guide](/docs/en/claude-apps-gateway-deploy#kubernetes) |
-| Admin UI | Not available | Configuration is the YAML file; redeploy to change it |
+| Admin UI | Spend limits only | In Claude Desktop 4.23118.0 or later [connected to the gateway](#connect-claude-desktop), members of [`admin.admin_groups`](/docs/en/claude-apps-gateway-config#admin) can manage spend limits. Other configuration is the YAML file; redeploy to change it |
 
 ## Next steps
 
@@ -63189,9 +63216,8 @@ To add a secret to a [shared environment](#organization-shared-environments), op
 
 Select **Add secret**, labeled **Add** in admin settings, and fill in the form. Keep the default **Secret type**, **Bearer**, for an API key that travels in a request header, and fill in these fields:
 
-* **Name**: a label for the secret, such as `Internal billing API`
 * **Allowed websites**: the API's hosts, such as `api.example.com`. A leading `*.` matches every subdomain
-* **Custom headers**: one row for the header that carries the key. The row starts with `Authorization` as the header's **Name** and `Bearer` as its **Prefix**; paste the key itself as the **Value**. For a header like `X-Api-Key` that takes the bare value, change the name and clear the prefix
+* **Custom headers**: one row for the header that carries the key. The row already has `Authorization` as the **Header name** and `Bearer` as the **Prefix**; paste the key itself as the **Value**. For a header like `X-Api-Key` that takes the bare value, change the name and clear the prefix
 
 For an API that authenticates another way, pick a different **Secret type**. The list is the same one [Claude Tag](https://claude.com/docs/claude-tag/overview), the Slack integration for Team and Enterprise plans, offers for [connections](https://claude.com/docs/claude-tag/admins/add-connections).
 
@@ -63206,8 +63232,7 @@ To confirm the secret works, start a session in the environment and ask Claude t
 If you're on a Team or Enterprise plan and don't hold an [organization admin role](#requirements), the **Add secret** form takes one secret for one host. Select your environment's [**Network secrets** row](#add-a-credential) and then **Add secret**. Fill in these fields and select the form's **Add secret** button:
 
 * **Host**: the one host that gets the secret, such as `api.example.com`. The form doesn't accept a `*.` wildcard
-* **Name**: an optional label for the secret
-* **Secret type**: **Token** for a key that travels in a request header, or **Username and password**. For a token, paste the key as the **Value**
+* **Secret type**: **Token** for a key that travels in a request header, or **Username and password**. For a token, paste the key in the **Token** field. For a header other than `Authorization`, such as `X-Api-Key`, change **Header** to its name
 
 #### Which requests get the secret
 
@@ -65817,7 +65842,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_GZIP_REQUEST_BODIES` | Set to `0` to turn off gzip compression of Claude API, telemetry, and [artifact](/docs/en/artifacts) publish request bodies sent to `api.anthropic.com`. By default, Claude Code compresses large request bodies on direct connections and skips compression when you send requests through a proxy, configure a client certificate, or set `NODE_EXTRA_CA_CERTS`. Use `0` if a [TLS-inspecting proxy](/docs/en/network-config#ca-certificate-store) that Claude Code can't detect mishandles compressed requests |
 | `CLAUDE_CODE_HIDE_CWD` | Set to `1` to hide the working directory in the startup logo. Useful for screenshares or recordings where the path exposes your OS username |
 | `CLAUDE_CODE_IDE_HOST_OVERRIDE` | Override the host address used to connect to the IDE extension. By default Claude Code auto-detects the correct address, including WSL-to-Windows routing |
-| `CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL` | Set to `1` to stop `/ide` from installing the IDE extension. Equivalent to setting [`autoInstallIdeExtension`](/docs/en/settings-reference#autoinstallideextension) to `false` |
+| `CLAUDE_CODE_IDE_SKIP_AUTO_INSTALL` | Set to `1` to stop `/ide` from installing the IDE extension. Equivalent to setting [`autoInstallIdeExtension`](/docs/en/settings-reference#autoinstallideextension) to `false`. Claude Code versions before v2.1.318 also install or update the extension when you start `claude` in a VS Code, Cursor, or Devin Desktop terminal. This variable stops that too |
 | `CLAUDE_CODE_IDE_SKIP_VALID_CHECK` | Set to `1` to skip validation of IDE lockfile entries during connection. Use when auto-connect fails to find your IDE despite it running |
 | `CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS` | Context size, in tokens, at which [idle compaction](/docs/en/settings-reference#idlecompaction) applies to a conversation (default: `200000`). Accepts a positive whole number, and anything else is ignored. Values below `100000` are raised to `100000`, the lowest threshold. Idle compaction is on by default for conversations that meet its conditions. To turn it off, set `idleCompaction` to `false`. Requires Claude Code v2.1.290 or later |
 | `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` | How many [subagents](/docs/en/sub-agents#concurrent-subagent-limit) can be running in one session before the Agent tool refuses to spawn another (default: 20). Accepts a positive whole number in plain digits; anything else is ignored, so the variable can adjust the cap but can't disable it. Requires Claude Code v2.1.217 or later |
@@ -66143,9 +66168,9 @@ What to know:
 In the CLI, toggle fast mode in either of these ways:
 
 * Run `/fast`, press Space to toggle on or off, then press Enter to confirm
-* Set `"fastMode": true` in your [user settings file](/docs/en/settings)
+* On a model that supports fast mode, set `"fastMode": true` in your [user settings file](/docs/en/settings). If you set it on any other model, you stay on that model with fast mode off.
 
-By default, fast mode you turn on in an interactive session persists across sessions. You can configure fast mode to reset each session. See [require per-session opt-in](#require-per-session-opt-in) for details.
+By default, fast mode you turn on in an interactive session persists across sessions on a supported model. You can configure fast mode to reset each session. See [require per-session opt-in](#require-per-session-opt-in) for details.
 
 Outside a [cloud session](#use-fast-mode-in-cloud-sessions), in [non-interactive mode](/docs/en/headless) with the `-p` flag, `/fast` works only in a session launched with fast mode in its [`--settings`](/docs/en/cli-reference#cli-flags) value, for example `claude -p --settings '{"fastMode": true}'`; the toggle then applies to that session only and isn't saved as your default. The `-p` form requires Claude Code v2.1.205 or later. Elsewhere in non-interactive mode, the command reports that fast mode isn't available.
 
@@ -66153,7 +66178,7 @@ You can run `/fast` while Claude is working, and Claude Code toggles fast mode w
 
 For the best cost efficiency, enable fast mode at the start of a session rather than switching mid-conversation. See [understand the cost tradeoff](#understand-the-cost-tradeoff) for details.
 
-When you enable fast mode:
+When you enable fast mode with `/fast`:
 
 * If your current model doesn't support fast mode, Claude Code switches to Opus
 * You'll see a confirmation message: "Fast mode ON"
@@ -66304,7 +66329,7 @@ In both cases, set `CLAUDE_CODE_SKIP_FAST_MODE_ORG_CHECK=1`, which skips the che
 
 ### Require per-session opt-in
 
-By default, fast mode a user turns on in an interactive session persists across sessions. To change this, set `fastModePerSessionOptIn` to `true` in any [settings file](/docs/en/settings#where-settings-live), which causes each session to start with fast mode off and requires users to explicitly enable it with `/fast`. Owners on [Team](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=fast_mode_teams#team-&-enterprise) or [Enterprise](https://anthropic.com/contact-sales?utm_source=claude_code\&utm_medium=docs\&utm_content=fast_mode_enterprise) plans can deploy it organization-wide through [server-managed settings](/docs/en/server-managed-settings).
+By default, fast mode a user turns on in an interactive session persists across sessions on a supported model. To change this, set `fastModePerSessionOptIn` to `true` in any [settings file](/docs/en/settings#where-settings-live), which causes each session to start with fast mode off and requires users to explicitly enable it with `/fast`. Owners on [Team](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=fast_mode_teams#team-&-enterprise) or [Enterprise](https://anthropic.com/contact-sales?utm_source=claude_code\&utm_medium=docs\&utm_content=fast_mode_enterprise) plans can deploy it organization-wide through [server-managed settings](/docs/en/server-managed-settings).
 
 ```json theme={null}
 {
@@ -66329,7 +66354,7 @@ To disable fast mode manually instead of waiting for cooldown, run `/fast` again
 
 If you run out of usage credits mid-session, Claude Code retries each rejected fast mode request at standard speed and pricing, so you keep working, and there is no cooldown. How you see the rejection depends on the session type:
 
-* In an interactive session, Claude Code shows a "Fast mode disabled · usage credits exhausted" notification and turns fast mode off for the rest of the session. Your saved fast mode preference doesn't change; run `/fast` to turn fast mode back on.
+* In an interactive session, Claude Code shows a "Fast mode disabled · Out of usage credits" notification and turns fast mode off. Your saved fast mode preference doesn't change; run `/fast` to turn fast mode back on.
 * In [non-interactive mode](/docs/en/headless) with `--output-format stream-json`, and through the Agent SDK, Claude Code emits the same text on the message stream as a `system` message with subtype `notification`, once per turn while you're out of usage credits. Fast mode stays on. Requires Claude Code v2.1.221 or later.
 
 ## Research preview
@@ -68121,7 +68146,7 @@ To see how the event, the matcher, and the handler fit together, consider this `
 
 > [tab] macOS/Linux
 >
-> The `matcher` narrows to Bash tool calls and the `if` condition narrows further to Bash subcommands matching `rm *`, so `block-rm.sh` only spawns when both filters match:
+> The `matcher` narrows to Bash tool calls and [Monitor commands](#match-monitor-commands), and the `if` condition narrows further to Bash subcommands matching `rm *`, so `block-rm.sh` only spawns when both filters match:
 >
 > ```json theme={null}
 > {
@@ -68167,7 +68192,7 @@ To see how the event, the matcher, and the handler fit together, consider this `
 
 > [tab] Windows (PowerShell)
 >
-> The matcher `Bash|PowerShell` covers the [PowerShell tool](#powershell) as well as Bash. A single `if` rule matches only one tool's calls, so each tool gets its own handler: the first narrows to Bash subcommands matching `rm *`, the second to PowerShell commands matching `Remove-Item *`. Both run the same script through `powershell.exe`:
+> The matcher `Bash|PowerShell` covers the [PowerShell tool](#powershell) as well as Bash. A single `if` rule names one tool, so each tool gets its own handler: the first narrows to Bash subcommands matching `rm *`, the second to PowerShell commands matching `Remove-Item *`. Both run the same script through `powershell.exe`:
 >
 > ```json theme={null}
 > {
@@ -68276,7 +68301,7 @@ The [Configuration](#configuration) section below documents the full schema, and
 Hooks are defined in JSON settings files. The configuration has three levels of nesting:
 
 1. Choose a [hook event](#hook-events) to respond to, like `PreToolUse` or `Stop`
-2. Add a [matcher group](#matcher-patterns) to filter when it fires, like "only for the Bash tool"
+2. Add a [matcher group](#matcher-patterns) to filter when it fires, like "for the Bash tool"
 3. Define one or more [hook handlers](#hook-handler-fields) to run when matched
 
 See [How a hook resolves](#how-a-hook-resolves) above for a complete walkthrough with an annotated example.
@@ -68328,7 +68353,7 @@ The `matcher` field filters when hooks fire. How a matcher is evaluated depends 
 | Matcher value | Evaluated as | Example |
 | :- | :- | :- |
 | `"*"`, `""`, or omitted | Match all | fires on every occurrence of the event |
-| Only letters, digits, `_`, `-`, spaces, `,`, and `\|` | Exact string, or list of exact strings separated by `\|` or `,` with optional surrounding whitespace | `Bash` matches only the Bash tool; `Edit\|Write` and `Edit, Write` each match either tool exactly; `code-reviewer` matches only that agent type |
+| Only letters, digits, `_`, `-`, spaces, `,`, and `\|` | Exact string, or list of exact strings separated by `\|` or `,` with optional surrounding whitespace | `Bash` matches the Bash tool, and on `PreToolUse` and `PermissionRequest` also [Monitor commands](#match-monitor-commands); `Edit\|Write` and `Edit, Write` each match either tool exactly; `code-reviewer` matches only that agent type |
 | Contains any other character | JavaScript regular expression, unanchored | `^Notebook` matches any tool whose name starts with `Notebook`; `mcp__memory__.*` matches every tool from the `memory` server |
 
 A matcher on the regular-expression path is tested with JavaScript's `RegExp.prototype.test`, which succeeds on a match anywhere in the value. `Edit.*` matches both `Edit` and `NotebookEdit`; wrap the pattern in `^` and `$`, as in `^Edit$`, when you need a whole-string match.
@@ -68345,7 +68370,7 @@ Each event type matches on a different field:
 | `SessionStart` | how the session started | `startup`, `resume`, `clear`, `compact`, `fork` |
 | `Setup` | which CLI flag triggered setup | `init`, `maintenance` |
 | `SessionEnd` | why the session ended | `clear`, `resume`, `logout`, `prompt_input_exit`, `other` |
-| `Notification` | notification type | `permission_prompt`, `idle_prompt`, `auth_success`, `elicitation_dialog`, `elicitation_url_dialog`, `elicitation_complete`, `elicitation_response`, `agent_needs_input`, `agent_completed`, `quota_auto_resume_fired`, `quota_auto_resume_stale`, `quota_auto_resume_disabled`, `plugin_notification` |
+| `Notification` | notification type | `permission_prompt`, `idle_prompt`, `auth_success`, `auth_storage_failure`, `elicitation_dialog`, `elicitation_url_dialog`, `elicitation_complete`, `elicitation_response`, `agent_needs_input`, `agent_completed`, `quota_auto_resume_fired`, `quota_auto_resume_stale`, `quota_auto_resume_disabled`, `plugin_notification` |
 | `SubagentStart` | agent type | `general-purpose`, `Explore`, `Plan`, custom agent names, or plugin-scoped names like `^my-plugin:reviewer$` |
 | `PreCompact`, `PostCompact` | what triggered compaction | `manual`, `auto` |
 | `PreModelSwitch`, `PostModelSwitch` | canonical name of the model the session switches to, as described under [PreModelSwitch](#premodelswitch) | `claude-opus-5`, `claude-opus-4-6\|claude-opus-5`, `.*opus.*` |
@@ -68435,6 +68460,15 @@ This example logs all memory server operations and validates write operations fr
   }
 }
 ```
+
+#### Match Monitor commands
+
+A [`PreToolUse`](#pretooluse) or [`PermissionRequest`](#permissionrequest) hook with a `Bash` matcher also runs on shell commands Claude starts with the [Monitor tool](/docs/en/tools-reference#monitor-tool), but its `allow` and [`updatedInput`](#pretooluse-decision-control) have no effect on them. Requires Claude Code v2.1.314 or later. Matchers such as `Bash|PowerShell`, `^Bash$`, and `Bash.*` are `Bash` matchers too. A hook with a `Bash` matcher doesn't run for a [WebSocket watch](/docs/en/tools-reference#websocket-source), and a `PostToolUse` hook with one doesn't run for Monitor.
+
+A hook that runs for a Monitor command can deny it or have Claude Code ask you about it. To allow or rewrite the command, switch from a `Bash` matcher to one that includes Monitor:
+
+* **Matcher that includes Monitor**: with a matcher such as `Bash|Monitor` or `.*`, or with no matcher, the hook gets the Monitor call's own input, and `allow` and `updatedInput` apply. In [`if`](#common-fields), name Monitor, as in `Monitor(tail *)`, which matches by [the rules `Bash(tail *)` follows](#bash-if-matching). If its `if` names Bash, the hook still gets the Monitor call's input, but `allow` and `updatedInput` have no effect
+* **`Bash` matcher**: the hook gets a Bash call. In `if`, name Bash, as in `Bash(tail *)`. The hook doesn't run if its `if` names Monitor
 
 ### Hook handler fields
 
@@ -68862,7 +68896,10 @@ To fix your output, use the parse or validation message that the `<hook name> ho
 * **Two or more lines that each parse as JSON on their own, the first starting with `{` and the last ending with `}`**: plain text when no line is a JSON output object that sets a field. When one line is, the output is a parse failure, so print that object with nothing else on stdout.
 * **Anything else that starts with `{` and ends with `}` but isn't valid JSON**: a parse failure.
 
-For most events, Claude Code writes stdout to the debug log and doesn't show it in the transcript. The exceptions are `UserPromptSubmit`, `UserPromptExpansion`, `SessionStart`, and `PostModelSwitch`, where Claude Code adds plain-text stdout as context that Claude can see and act on. On those events, Claude Code doesn't add stdout it failed to parse.
+For most events, Claude Code writes stdout to the debug log and doesn't show it in the transcript. On these events, your stdout reaches Claude or the compaction summary:
+
+* **`UserPromptSubmit`, `UserPromptExpansion`, `SessionStart`, and `PostModelSwitch`**: Claude Code adds plain-text stdout as context that Claude can see and act on. It doesn't add stdout it failed to parse.
+* **`PreCompact`**: your stdout becomes [instructions for the compaction summary](#precompact-output)
 
 Claude never sees stderr from a hook that exits 0. To read it yourself on events such as `PreToolUse`, enable [debug logging](#debug-hooks). To surface a warning to Claude from a `PostToolUse` or `PostToolUseFailure` hook, exit 2 instead so [Claude sees the stderr](#exit-code-2-behavior-per-event) even though the tool already ran.
 
@@ -69101,7 +69138,7 @@ Print nothing but the JSON object to stdout. For a hook that isn't [async](#how-
 A hook's `additionalContext`, `systemMessage`, and `initialUserMessage` strings, and its plain stdout, are capped at 10,000 characters:
 
 * **Scope**: Claude Code measures each string on its own, even when several hooks run for the same event. For JSON output, each field is measured separately; plain stdout is measured whole.
-* **Over the limit**: Claude Code saves the output to a file in the session directory and replaces it with the file path and a preview of up to the first 2,000 characters. A large valid Bash result is handled the same way, described under [Output limits](/docs/en/tools-reference#output-limits). Unlike that Bash ceiling, this cap has no setting or environment variable to raise it.
+* **Over the limit**: except for [PreCompact stdout](#precompact-output), Claude Code saves the output to a file in the session directory. It replaces the output with the file path and a preview of up to the first 2,000 characters. A large valid Bash result is handled the same way, described under [Output limits](/docs/en/tools-reference#output-limits). Unlike that Bash ceiling, this cap has no setting or environment variable to raise it.
 * **Reading the file**: Claude Code doesn't ask Claude to read the file, so keep anything Claude must always see within the cap.
 
 The JSON object supports three kinds of fields:
@@ -70005,7 +70042,7 @@ In `PostToolUse`, `tool_response` is an object with `plan` and `filePath` fields
 
 #### PreToolUse decision control
 
-`PreToolUse` hooks can control whether a tool call proceeds. Unlike other hooks that use a top-level `decision` field, PreToolUse returns its decision inside a `hookSpecificOutput` object. This gives it richer control: four outcomes (allow, deny, ask, or defer) plus the ability to modify tool input before execution.
+`PreToolUse` hooks can control whether a tool call proceeds. Unlike other hooks that use a top-level `decision` field, PreToolUse returns its decision inside a `hookSpecificOutput` object. This gives it richer control: four outcomes (allow, deny, ask, or defer) plus the ability to modify tool input before execution. To allow or rewrite a Monitor command, see [Match Monitor commands](#match-monitor-commands).
 
 | Field | Description |
 | :- | :- |
@@ -70198,6 +70235,8 @@ PreToolUse hooks run before every tool call, whether or not it needs permission.
 | `updatedPermissions` | For `"allow"` only: array of [permission update entries](#permission-update-entries) to apply, such as adding an allow rule or changing the session permission mode |
 | `message` | For `"deny"` only: tells Claude why the permission was denied |
 | `interrupt` | For `"deny"` only: if `true`, stops Claude |
+
+To allow or rewrite a Monitor command, see [Match Monitor commands](#match-monitor-commands).
 
 A hook that exits 2 without a `decision` object leaves the permission flow unchanged, and its stderr is discarded. To grant or deny the request, return the `decision` object.
 
@@ -70530,6 +70569,7 @@ You receive these hook events even with desktop notifications turned off: the `p
 | `permission_prompt` | Claude needs you to approve a tool use or a sandboxed command's [network request](/docs/en/sandboxing#network-isolation), and the prompt has waited about six seconds |
 | `idle_prompt` | Claude finished responding about 60 seconds ago and you haven't typed since |
 | `auth_success` | Authentication completes |
+| `auth_storage_failure` | Your sign-in completes, but Claude Code can't save the new credentials to its [credential storage](/docs/en/authentication#credential-management). Fires in place of `auth_success` |
 | `elicitation_dialog` | An MCP server opens an elicitation form and you haven't typed for about six seconds |
 | `elicitation_url_dialog` | An MCP server asks you to open a browser URL and you haven't typed for about six seconds |
 | `elicitation_complete` | An MCP server reports that a [URL-mode elicitation](#elicitation-input) is complete |
@@ -70541,7 +70581,7 @@ You receive these hook events even with desktop notifications turned off: the `p
 | `quota_auto_resume_disabled` | Claude Code ends its wait for a claude.ai usage limit without continuing your task: [`autoContinueAtUsageLimit`](/docs/en/settings-reference#autocontinueatusagelimit) turned off or the reset moved more than 24 hours away during a wait Claude Code started on its own, the continued task kept hitting the limit, or the continuation was blocked before it reached the model. Doesn't fire when you press `Esc` or `Ctrl+C`, or pick **Don't continue automatically** |
 | `plugin_notification` | A [mod](/docs/en/plugins/mods/api#show-something-without-starting-a-turn) raises a notification with `$.ui.notify`. The hook's `title` is the mod's name unless the mod set one |
 
-The `quota_auto_resume_fired`, `quota_auto_resume_stale`, and `quota_auto_resume_disabled` types require Claude Code v2.1.234 or later.
+The `quota_auto_resume_fired`, `quota_auto_resume_stale`, and `quota_auto_resume_disabled` types require Claude Code v2.1.234 or later. The `auth_storage_failure` type requires v2.1.288 or later.
 
 In terminal sessions, `permission_prompt` for a sandboxed command's network request requires Claude Code v2.1.246 or later.
 
@@ -71376,6 +71416,10 @@ In addition to the [common input fields](#common-input-fields), PreCompact hooks
   "custom_instructions": null
 }
 ```
+
+#### PreCompact output
+
+When a PreCompact hook exits 0 and doesn't block, Claude Code uses its stdout as instructions for the compaction summary. Keep that stdout under 10,000 characters per hook. Claude Code cuts longer output at the cap and appends a marker.
 
 ### PostCompact
 
@@ -76951,8 +76995,17 @@ When you've chosen **Ask each time**, some cases behave differently:
 * If both models flag the same request, you can edit the prompt and retry, or start a new session.
 * In [cloud sessions](/docs/en/claude-code-on-the-web) on the mobile app, editing and retrying is not supported. Switch models, or continue the session from a desktop browser or the desktop app.
 * In [non-interactive mode](/docs/en/cli-reference#cli-flags) and SDK integrations that can't show the prompt, a flagged request ends the turn with a refusal instead.
-* In a [subagent](/docs/en/sub-agents), Claude Code doesn't show the prompt, and a flagged request that would switch models re-runs on the fallback model.
+* In a subagent that Claude starts with the [Agent tool](/docs/en/tools-reference#agent-tool-behavior), Claude Code doesn't pause to ask, and the subagent fails instead of switching models. See [Subagents switch or fail without asking](#subagents-switch-or-fail-without-asking).
 * When the fallback target is blocked by [`availableModels`](#restrict-model-selection), Claude Code doesn't show the prompt. The flagged request ends with the refusal, the same as automatic fallback when the target is blocked.
+
+#### Subagents switch or fail without asking
+
+In a built-in or custom [subagent](/docs/en/sub-agents) that Claude starts with the [Agent tool](/docs/en/tools-reference#agent-tool-behavior), Claude Code doesn't [pause to ask](#ask-before-switching) at a flagged request. If a fallback model is available, the request re-runs on it or the subagent fails, according to your **Switch models when a message is flagged** choice in `/config`:
+
+* **Switch automatically**, or no choice yet: the request re-runs on the fallback model, and your session's model is unchanged
+* **Ask each time**: the subagent fails with [`Agent terminated early due to an API error`](/docs/en/errors#agent-terminated-early-due-to-an-api-error) and the refusal message. Claude receives that error and decides what to do about the unfinished task. To let subagents switch models, choose **Switch automatically**. Your main conversation then switches without asking too.
+
+When no fallback model is available, the subagent fails the same way with either choice. Before v2.1.318, a subagent's flagged request re-ran on an available fallback model whichever you chose.
 
 #### Enable fallback on Bedrock, Agent Platform, and Foundry
 
@@ -80045,7 +80098,7 @@ Each interface has its own control for switching permission modes during a sessi
 >
 > On [claude.ai/code](https://claude.ai/code), use the mode dropdown in the row under the prompt box. In the mobile app, tap the **+** button in the prompt box, then **Permission**. Cloud sessions and Remote Control sessions offer different permission modes:
 >
-> * **[Cloud sessions](/docs/en/claude-code-on-the-web)**: Accept edits, Plan, and Auto. Accept edits corresponds to `default` mode: cloud sessions pre-approve file edits regardless of mode, so the dropdown shows Accept edits instead of Manual. Cloud sessions still honor `defaultMode: "acceptEdits"` from settings. Auto mode appears only when your organization allows it and the selected model supports it. Bypass permissions isn't available.
+> * **[Cloud sessions](/docs/en/claude-code-on-the-web)**: Accept edits, Plan, and Auto. Accept edits corresponds to `default` mode: cloud sessions pre-approve file edits regardless of mode, so the dropdown shows Accept edits instead of Manual. Cloud sessions still honor `defaultMode: "acceptEdits"` from settings. Auto mode appears unless your organization turns it off, and on claude.ai/code it's grayed out if the selected model doesn't [support it](#eliminate-prompts-with-auto-mode). Bypass permissions isn't available.
 > * **[Remote Control](/docs/en/remote-control) sessions** on your local machine: Manual, Accept edits, Plan, and Auto for a session you started yourself, and you can't select Bypass permissions from the app. To use Auto, the session has to meet the auto mode [availability requirements](#eliminate-prompts-with-auto-mode). For a project thread running on your computer, see [Run a thread on your own computer](/docs/en/claude-projects#run-a-thread-on-your-own-computer).
 >   * Except for Bypass permissions, the dropdown shows the permission mode the local session is in, including one set from the terminal. It updates when the permission mode changes in the app or in the terminal.
 >   * Sessions hosted by the [desktop app](/docs/en/desktop) or the [VS Code extension](/docs/en/vs-code) report permission mode changes to claude.ai as they happen, the same as sessions hosted in a terminal.
@@ -81182,7 +81235,7 @@ To block Claude's file tools from reading a file or directory, add a `Read` deny
 
 #### What `Read` and `Edit` rules cover
 
-`Edit` rules apply to all built-in tools that edit files. Claude makes a best-effort attempt to apply `Read` rules to all built-in tools that read files like Grep and Glob, to `@file` mentions in your prompts, and to the selection and open-file context that a connected [IDE](/docs/en/vs-code#the-built-in-ide-mcp-server) shares with Claude.
+`Edit` rules apply to all built-in tools that edit files. Claude makes a best-effort attempt to apply `Read(path)` deny rules to all built-in tools that read files like Grep and Glob. It makes the same attempt to apply `Read(path)` deny rules to `@file` mentions in your prompts and to the selection and open-file context that a connected [IDE](/docs/en/vs-code#the-built-in-ide-mcp-server) shares with Claude.
 
 A `Read(path)` deny rule also applies to image paths you paste into a prompt and directories you @-mention:
 
@@ -81197,11 +81250,14 @@ A `Read` deny rule also blocks the [Edit and Write tools](/docs/en/errors#file-i
 >
 > Read and Edit deny rules apply to Claude's built-in file tools, to file commands Claude Code recognizes in Bash, such as `cat`, `head`, `tail`, `sed`, and `tee`, and to the targets of Bash [redirections](#redirections) such as `> file` and `< file`. They don't apply to a command that reads files without naming them, such as `grep -r pattern .` run from the directory that holds the file, or to arbitrary subprocesses that read or write files indirectly, like a Python or Node script that opens files itself. For OS-level enforcement that blocks all processes from accessing a path, [enable the sandbox](/docs/en/sandboxing).
 
-#### `Write(path)`, `NotebookEdit(path)`, and `Glob(path)` rules never match
+#### `Write(path)`, `Glob(path)`, and `Grep(path)` rules don't match
 
-Claude Code checks file permissions against `Edit(path)` and `Read(path)` rules only. If you write a path rule for `Write`, `NotebookEdit`, `Glob`, or legacy `MultiEdit`, Claude Code accepts the rule but never matches a read or edit against it.
+Claude Code checks file permissions against `Edit(path)` and `Read(path)` rules. It accepts a rule with a path other than `*` for one of the tools below but doesn't match a read, search, or edit against it. A `Grep(docs/**)` deny rule doesn't stop Grep from searching `docs`. Write the `Edit` or `Read` rule in its place:
 
-Use `Edit(docs/**)` in place of `Write(docs/**)`, `NotebookEdit(docs/**)`, or `MultiEdit(docs/**)`, and `Read(docs/**)` in place of `Glob(docs/**)`. To match every use of the Write, NotebookEdit, or Glob tool regardless of path, write only the tool name.
+* **`Write`, `NotebookEdit`, or legacy `MultiEdit`**: use `Edit(docs/**)` in place of `Write(docs/**)`.
+* **`Glob` or `Grep`**: use `Read(docs/**)` in place of `Grep(docs/**)`. As an ask rule, `Read(docs/**)` prompts when Claude calls Grep or Glob on a matching path, but not when a search of a working directory above it returns matching files.
+
+To match every use of one of these tools regardless of path, [write only the tool name](#match-all-uses-of-a-tool).
 
 #### How path patterns match
 
@@ -94441,7 +94497,9 @@ Unlike most array settings, this key doesn't merge across settings files: the hi
 
 ### `fastMode`
 
-Turn [fast mode](/docs/en/fast-mode) on for sessions where it's available, for interactive work like rapid iteration or live debugging where you want speed at a higher cost per token. You don't usually edit this key by hand: running `/fast` writes `fastMode: true` to `~/.claude/settings.json`, and running it again to turn fast mode off removes the key. Fast mode runs only on Opus 5.5, Opus 5, and Opus 4.8: turning it on from another model switches you to Opus, and switching to an unsupported model turns it off. See [Switch models while fast mode is on](/docs/en/fast-mode#switch-models-while-fast-mode-is-on).
+Turn [fast mode](/docs/en/fast-mode) on for sessions where it's available, for interactive work such as rapid iteration or live debugging where you want speed at a higher cost per token. You don't usually edit this key yourself. Running `/fast` writes `fastMode: true` to `~/.claude/settings.json`, and running it again to turn fast mode off removes the key.
+
+Only Opus 5.5, Opus 5, and Opus 4.8 support fast mode. Running `/fast` from another model switches you to Opus, and switching to an unsupported model turns fast mode off. See [Switch models while fast mode is on](/docs/en/fast-mode#switch-models-while-fast-mode-is-on).
 
 * **Scope**: [`Any file`](#scopes)
 * **Type**: Boolean
@@ -94458,14 +94516,14 @@ Turn [fast mode](/docs/en/fast-mode) on for sessions where it's available, for i
 
 ### `fastModePerSessionOptIn`
 
-Normally, running `/fast` saves [`fastMode`](#fastmode) to a person's user settings, so fast mode is on at the start of every later session. Set this key to `true` to stop that: a saved `fastMode: true` no longer turns fast mode on at session start, and each person has to run `/fast` in each session they want it. Claude Code leaves the `fastMode` key in their file, so turning this key off restores the old behavior.
+Normally, running `/fast` saves [`fastMode`](#fastmode) to a person's user settings, so new sessions on a supported model start with fast mode on. Set this key to `true` to stop that: a saved `fastMode: true` no longer turns fast mode on at session start, and each person runs `/fast` in each session they want it. Claude Code leaves `fastMode` in their file, so turning this key off restores the old behavior.
 
 Owners on Team or Enterprise plans can deploy it organization-wide through [server-managed settings](/docs/en/server-managed-settings). When managed settings set the key, `/fast on` is refused outside interactive terminal sessions and reports that your organization has disabled fast mode. That covers [non-interactive mode](/docs/en/headless), the [VS Code extension](/docs/en/vs-code), and [cloud sessions](/docs/en/claude-code-on-the-web).
 
 * **Scope**: [`Any file`](#scopes)
 * **Type**: Boolean
   * `true`: a saved `fastMode: true` no longer turns fast mode on at session start, so each person runs `/fast` in each session they want it; a `fastMode: true` passed with `--settings` still counts for that session unless managed settings set this key
-  * `false`: a saved `fastMode: true` turns fast mode on at the start of every later session
+  * `false`: a saved `fastMode: true` turns fast mode on at the start of each new session on a supported model
 * **Default**: `false`
 
 ```json settings.json theme={null}
@@ -99822,7 +99880,9 @@ Claude Code ignores this key in `settings.json`.
 
 ### `autoInstallIdeExtension`
 
-Let [`/ide`](/docs/en/commands) install the Claude Code IDE extension in a running VS Code, Cursor, or Devin Desktop when you run the command from an external terminal. Claude Code doesn't install the extension when you start it. Appears in `/config` as **Auto-install IDE extension** when you run Claude Code inside a VS Code or JetBrains terminal.
+Let [`/ide`](/docs/en/commands) install the Claude Code IDE extension in a running VS Code, Cursor, or Devin Desktop when you run the command from an external terminal. Claude Code doesn't install or update the extension when you start `claude`. Before v2.1.318, Claude Code installs or updates the extension when you start `claude` in one of those editors' terminals, unless this key is `false`.
+
+Appears in `/config` as **Auto-install IDE extension** when you run Claude Code inside a VS Code or JetBrains terminal.
 
 * **Scope**: [`Global config`](#scopes)
 * **Type**: Boolean
@@ -103684,7 +103744,7 @@ Beyond built-in tools, you can:
 
 ### Tool permissions
 
-Claude determines which tools to call based on the task, but you control whether those calls are allowed to execute. You can auto-approve specific tools, block others entirely, or require approval for everything. Three options work together to determine what runs:
+Claude determines which tools to call based on the task, but you control whether those calls are allowed to execute. Use these options to auto-approve tools, block tools, and set the permission mode:
 
 * **`allowed_tools` / `allowedTools`** auto-approves listed tools. A read-only agent with `["Read", "Glob", "Grep"]` in its allowed tools list runs those tools without prompting, apart from reads from [network paths](/docs/en/permissions#network-paths). Tools not listed are still available, and calls to them that need approval fall through to the permission mode and `canUseTool`.
 * **`disallowed_tools` / `disallowedTools`** blocks listed tools, regardless of other settings. See [Permissions](/docs/en/agent-sdk/permissions) for the order that rules are checked before a tool runs.
@@ -104882,8 +104942,6 @@ For accurate cost tracking, account for the placeholder output count on assistan
 Claude Code builds each assistant message from the usage the API reported when the response began, so the message's `output_tokens` is only the count the API had reported at `message_start`, before the response was generated. One API response can produce several assistant messages, and every one of them carries that same placeholder.
 
 The API reports the real output count at the end of the response, and Claude Code adds it to the result message. Read output tokens from the result's `usage`, or from `modelUsage` for a per-model breakdown.
-
-To watch a response's output count grow while it streams, set `includePartialMessages`, or `include_partial_messages` in Python, and read `usage` from each `message_delta` stream event, typed as [`SDKPartialAssistantMessage`](/docs/en/agent-sdk/typescript#sdkpartialassistantmessage) in TypeScript and [`StreamEvent`](/docs/en/agent-sdk/python#streamevent) in Python.
 
 ### Track costs on failed conversations
 
@@ -106817,7 +106875,7 @@ SDK matchers follow the same rules as [matchers in settings files](/docs/en/hook
 | `timeout` | `number` | `undefined` | Timeout in seconds. When omitted, Claude Code applies the [event's default timeout](#hook-timeout). Your SDK callbacks follow the `command` hook defaults |
 | `onFailure` | `"continue" \| "block"` | `undefined` | What a failed callback does. Set `"block"` to [block the action when a callback fails](#block-the-action-when-a-callback-fails). In Python, use `on_failure` |
 
-Use the `matcher` pattern to target specific tools whenever possible. A matcher with `'Bash'` only runs for Bash commands, while omitting the pattern runs your callbacks for every occurrence of the event.
+Use the `matcher` pattern to target specific tools whenever possible. With a `'Bash'` matcher, your callbacks run for Bash commands. On Claude Code v2.1.314 or later, they also run on `PreToolUse` and `PermissionRequest` for Monitor commands, which they [can deny but not approve](/docs/en/hooks#match-monitor-commands). With no matcher, they run for every occurrence of the event.
 
 ### Callback functions
 
@@ -113019,7 +113077,7 @@ class AsyncHookJSONOutput(TypedDict):
 
 ### Hook Usage Example
 
-This example registers two hooks: one that blocks dangerous Bash commands like `rm -rf /`, and another that logs all tool usage for auditing. The security hook only runs on Bash commands (via the `matcher`), while the logging hook runs on all tools.
+This example registers two hooks: one that blocks dangerous Bash commands like `rm -rf /`, and another that logs all tool usage for auditing. With its [`Bash` matcher](/docs/en/agent-sdk/hooks#matchers), the security hook runs on Bash tool calls. The logging hook has no matcher, so it runs on every tool call.
 
 ```python theme={null}
 import asyncio
@@ -114170,18 +114228,11 @@ class SandboxNetworkConfig(TypedDict, total=False):
 
 ### `SandboxIgnoreViolations`
 
-Configuration for ignoring specific sandbox violations.
+Violations to leave out of the sandbox's violation report. Each key matches part of a command, or `*` for every command, and each value lists text to match in a violation line: `{"*": ["/etc/hosts"]}` hides violations that mention `/etc/hosts`. A matching access is still blocked. See [`sandbox.ignoreViolations`](/docs/en/settings-reference#sandbox-ignoreviolations).
 
 ```python theme={null}
-class SandboxIgnoreViolations(TypedDict, total=False):
-    file: list[str]
-    network: list[str]
+SandboxIgnoreViolations = dict[str, list[str]]
 ```
-
-| Property | Type | Default | Description |
-| :- | :- | :- | :- |
-| `file` | `list[str]` | `[]` | File path patterns to ignore violations for |
-| `network` | `list[str]` | `[]` | Network patterns to ignore violations for |
 
 ### Permissions Fallback for Unsandboxed Commands
 
@@ -120348,7 +120399,7 @@ Use the reason code to explain why fast mode is off in your own UI instead of re
 
 The same pair of fields appears on [`SDKSystemMessage`](#sdksystemmessage) and on the [`SDKControlInitializeResponse`](#sdkcontrolinitializeresponse), so you can read the fast mode state before the first turn.
 
-The `origin` field forwards the [`SDKMessageOrigin`](#sdkmessageorigin) of the user message that triggered this result. Results that carry `origin: { kind: "task-notification" }` include:
+The `origin` field holds the [`SDKMessageOrigin`](#sdkmessageorigin) that Claude Code assigned to the user message that triggered this result, not a copy of the `origin` you sent. Results that carry `origin: { kind: "task-notification" }` include:
 
 * **Synthetic follow-up turns**: when the SDK injects a synthetic follow-up turn, such as for a finished background task, the resulting `SDKResultMessage` carries this kind
 * **Fired scheduled tasks and messages from other sessions**: cloud scheduled tasks whose trigger fired and server-verified messages from your other sessions arrive with this kind too, each with the `subkind` described in [Task-notification subkinds](#task-notification-subkinds)
@@ -120357,7 +120408,10 @@ Check `kind` to distinguish results that answer your prompt from injected follow
 
 When several background-task completions are queued together, Claude Code can answer them in one turn rather than one turn each. Each completion still produces its own result with this origin. All but the last of the completions Claude Code answers together produce empty results with `num_turns: 0`, in order, and the last one's result carries the turn that answers them all.
 
-The field is absent for results emitted before any user turn, such as startup errors.
+`origin` is absent when Claude Code assigned none, such as:
+
+* On a turn you start with a message that has neither `origin` nor [`isSynthetic`](#sdkusermessage)
+* On results emitted before any user turn, such as startup errors
 
 When a `PreToolUse` hook returns `permissionDecision: "defer"`, the result has `stop_reason: "tool_deferred"` and `deferred_tool_use` carries the pending tool's `id`, `name`, and `input`. Read this field to surface the request in your own UI, then resume with the same `session_id` to continue. See [Defer a tool call for later](/docs/en/hooks#defer-a-tool-call-for-later) for the full round trip.
 
@@ -120852,7 +120906,7 @@ Before Agent SDK v0.3.277, the type declared `severity` and `is_active` as optio
 
 ### `SDKMessageOrigin`
 
-Provenance of a user-role message. This appears as `origin` on [`SDKUserMessage`](#sdkusermessage) and is forwarded onto the corresponding [`SDKResultMessage`](#sdkresultmessage) so you can tell what triggered a given turn.
+Provenance of a user-role message. This appears as `origin` on [`SDKUserMessage`](#sdkusermessage). The [`SDKResultMessage`](#sdkresultmessage) for a turn carries the `origin` that Claude Code assigned, so you can tell what triggered that turn.
 
 ```typescript theme={null}
 type SDKMessageOrigin =
@@ -120879,15 +120933,24 @@ type SDKMessageOrigin =
   | { kind: "unclassified" };
 ```
 
+Your application can set these kinds of `origin` on a message it sends:
+
+* `{ kind: "human" }`: what the user typed
+* `{ kind: "task-notification", subkind: "scheduled-trigger" }`: a [scheduled run you declare](#declare-a-scheduled-run)
+
+Leave the other kinds to Claude Code and Anthropic servers. If you set one of those kinds, Claude reads the message as the user's by default.
+
+To send text the user didn't write, such as a fetched page or another agent's output, send it as its own message with [`isSynthetic`](#sdkusermessage) set to `true` and `origin` unset. Also set [`client_composed`](#sdkusermessage) to `true`, so that text starting with `/` doesn't run as a command.
+
 | `kind` | Meaning |
 | - | - |
-| `human` | Direct input from the end user. If your application forwards what the user typed as a user message, set its `origin` to `{ kind: "human" }` explicitly: Claude Code treats a user message with no `origin` as unattributed, and checks that require a human-typed prompt, such as the [`ultracode` workflow keyword](/docs/en/workflows#ask-for-a-workflow-in-your-prompt), don't accept it. Before v2.1.210, Claude Code treated an absent `origin` on a user message as human input. |
+| `human` | Direct input from the end user. If your application forwards what the user typed as a user message, set its `origin` to `{ kind: "human" }`. Without that `origin`, Claude still reads the message as the user's, but checks that require a human-typed prompt, such as the [`ultracode` workflow keyword](/docs/en/workflows#ask-for-a-workflow-in-your-prompt), don't accept the message. |
 | `channel` | Message arriving on a [channel](/docs/en/channels). `server` is the source MCP server name. |
-| `peer` | Message from another agent: an in-process [teammate](/docs/en/agent-teams) or a [cross-session peer](/docs/en/cross-session-messaging), another of your Claude Code sessions. See [Peer origin fields](#peer-origin-fields) for the per-field semantics and the trust model. |
+| `peer` | Message from another Claude Code agent: an in-process [teammate](/docs/en/agent-teams) or a [cross-session peer](/docs/en/cross-session-messaging), another of your Claude Code sessions. The [desktop app](/docs/en/desktop#work-across-sessions), which relays such messages between your sessions, declares this kind with [`fromMode`](#peer-origin-fields). To relay another agent's output from your own application, set `isSynthetic` and `client_composed` instead. See [Peer origin fields](#peer-origin-fields) for the per-field semantics and the trust model. |
 | `task-notification` | Synthetic turn injected for a delivery that arrives without a fresh user prompt, such as a finished background task; see [`SDKTaskNotificationMessage`](#sdktasknotificationmessage) for that arm. A prompt your application [declares as a scheduled run](#declare-a-scheduled-run) carries this kind too. The optional `subkind` marks what raised the notification. See [Task-notification subkinds](#task-notification-subkinds). |
 | `coordinator` | Message from a team coordinator in an [agent team](/docs/en/agent-teams). |
 | `auto-continuation` | Synthetic turn injected when the session continues without fresh user input, such as a command result that triggers a follow-up prompt. |
-| `unclassified` | Injected turn whose origin couldn't be determined. Requires Claude Code v2.1.223 or later. When Claude Code receives an [`SDKUserMessage`](#sdkusermessage) with `isSynthetic: true` and can't classify it as any other `kind`, it sets this kind as the message arrives and frames the turn to the model as a non-user source rather than treating it as human input. Your application shouldn't set this value. |
+| `unclassified` | Message marked as not coming from the user, such as an [`SDKUserMessage`](#sdkusermessage) you send with `isSynthetic: true`. Requires Claude Code v2.1.223 or later. |
 
 ### Task-notification subkinds
 
@@ -120911,7 +120974,7 @@ If your application runs prompts on its own schedule, declare each run so Claude
 A `peer` origin identifies which agent sent the message: an in-process [teammate](/docs/en/agent-teams) sending to `main` with `SendMessage`, or a [cross-session peer](/docs/en/cross-session-messaging), another of your Claude Code sessions. Cross-session peers require Claude Code v2.1.224 or later on macOS and Linux; see [cross-session messaging availability](/docs/en/cross-session-messaging#availability) for the native Windows requirement. A cross-session peer can run on the same machine, or on [another of your machines](/docs/en/cross-session-messaging#message-sessions-on-other-machines) when its message arrives through [Remote Control](/docs/en/remote-control).
 
 * `from`: the teammate's name, or the sender address for a cross-session peer. For a [one-way cross-machine message](/docs/en/cross-session-messaging#message-sessions-on-other-machines), the sender has no reply address and `from` is `"unknown"`. The value is sender-authored; `verifiedPeerPid` is the verified identity.
-* `fromMode`: the sending session's permission class, `bypass` or `prompting`, declared by a host that relays a peer message between your sessions, such as the [desktop app](/docs/en/desktop#work-across-sessions). Claude Code reads it in the receiving session when it applies the [inbound controls](/docs/en/cross-session-messaging#control-inbound-messages). Requires Agent SDK v0.3.234 or later.
+* `fromMode`: the sending session's permission class, `bypass` or `prompting`. Claude Code reads it in the receiving session when it applies the [inbound controls](/docs/en/cross-session-messaging#control-inbound-messages). Requires Agent SDK v0.3.234 or later.
 * `senderTaskId`: the teammate's task ID. Absent for a cross-session peer.
 * `name`: the sender's display name, normalized by Claude Code: it strips Unicode control, format, surrogate, and line or paragraph separator code points, then trims the result and caps it at 64 code points with an ellipsis. Requires Claude Code v2.1.205 or later.
 * `body`: the decoded message body with the peer envelope stripped, byte-exact with what the model sees. Present for a single teammate message, absent when several are merged; for a cross-session peer, present only when the turn is exactly one peer envelope formed by Claude Code. Render `name` and `body` instead of re-parsing the message text. Before v2.1.299, merged messages kept the first message's `body`. Requires Claude Code v2.1.205 or later.
@@ -124459,7 +124522,7 @@ type SandboxSettings = {
 | `allowUnsandboxedCommands` | `boolean` | `true` | Allow the model to request running commands outside the sandbox. When `true`, the model can set `dangerouslyDisableSandbox` in tool input, which falls back to the [permissions system](#permissions-fallback-for-unsandboxed-commands) |
 | `network` | [`SandboxNetworkConfig`](#sandboxnetworkconfig) | `undefined` | Network-specific sandbox configuration |
 | `filesystem` | [`SandboxFilesystemConfig`](#sandboxfilesystemconfig) | `undefined` | Filesystem-specific sandbox configuration for read/write restrictions |
-| `ignoreViolations` | `Record<string, string[]>` | `undefined` | Map of command substrings, or `*` for every command, to substrings of the violation text to ignore, such as `{ "*": ['/etc/hosts'] }`; see [`sandbox.ignoreViolations`](/docs/en/settings-reference#sandbox-ignoreviolations) |
+| `ignoreViolations` | `Record<string, string[]>` | `undefined` | Violations to leave out of the sandbox's violation report. Each key matches part of a command, or `*` for every command, and each value lists text to match in a violation line: `{ "*": ['/etc/hosts'] }` hides violations that mention `/etc/hosts`. See [`sandbox.ignoreViolations`](/docs/en/settings-reference#sandbox-ignoreviolations) |
 | `enableWeakerNestedSandbox` | `boolean` | `false` | Enable a weaker nested sandbox for compatibility |
 | `allowNestedUserNamespaces` | `boolean` | `false` | Let sandboxed commands on Linux and WSL2 create user namespaces. Before you set it to `true`, read [`sandbox.allowNestedUserNamespaces`](/docs/en/settings-reference#sandbox-allownestedusernamespaces), which covers the tools that need it and the security boundary you turn off. Requires Claude Code v2.1.305 or later |
 | `ripgrep` | `{ command: string; args?: string[] }` | `undefined` | Custom ripgrep binary configuration for sandbox environments |
