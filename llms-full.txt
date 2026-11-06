@@ -15870,7 +15870,7 @@ Several Claude Code features connect to systems outside the terminal, each suite
 | Feature | What it does | Good for |
 | - | - | - |
 | [Cloud sessions](/docs/en/claude-code-on-the-web) | Run tasks in a fresh cloud sandbox, cloned from GitHub | Delegating self-contained async work you check on later |
-| [Claude in Slack](/docs/en/slack) | Spawns a cloud session from an `@Claude` mention in a channel or thread | Starting tasks directly from team conversation context |
+| [Claude in Slack](/docs/en/slack) | Spawns a cloud session from an `@Claude` mention in a channel or thread | Starting tasks directly from a team conversation |
 | Standard [MCP server](/docs/en/mcp) | Claude queries it during a task; nothing is pushed to the session | Giving Claude on-demand access to read or query a system |
 | [Remote Control](/docs/en/remote-control) | You drive your local session from claude.ai or the Claude mobile app | Steering an in-progress session while away from your desk |
 
@@ -17147,7 +17147,7 @@ At [claude.ai/code](https://claude.ai/code) or in the Code tab of the desktop ap
 Scope the project to one stream of work you'll keep adding to, such as everything it takes to keep one API under its latency target. [When to use a project](#when-to-use-a-project) has more examples. Then fill in the dialog's fields:
 
 * **Name**: how the project appears in the **Projects** list.
-* **Goal** (optional): one line of what you're trying to get done, such as "Hold p95 API latency under 200 ms". Claude in the conversation works toward it. Without a goal, Claude works from the tasks you send, and you can add a goal later in **Project settings > General**.
+* **What do you want to work on?** (optional): one line that becomes the project's goal, such as "Hold p95 API latency under 200 ms". Claude in the conversation works toward it. Without a goal, Claude works from the tasks you send, and you can add a goal later in **Project settings > General**.
 * **Context** (optional): the GitHub repositories this project works on, plus any files, folders, or Google Drive folders threads should read. Click **Add** for each. Add the repositories most tasks need rather than every one the work might touch; [Decide which repositories to add](#decide-which-repositories-to-add) covers the choice, and you can add more later in **Project settings > Environment**.
 
 Standing rules for how threads should work go in [project instructions](#give-a-project-standing-context), which you set after the project exists.
@@ -17440,6 +17440,7 @@ Settings save as you change them; a text field you're editing, such as the goal 
 | Plugins | Plugins | The plugins that load into each new cloud thread |
 | Usage | Usage | [Token use](#usage-and-cost) by thread and by model |
 | Memory | Memory | The project's [memory files](#give-a-project-standing-context) |
+| Auto-continue when usage limits reset | General | Whether a thread or the project conversation that [stops at a usage limit](#usage-limit-reached) continues on its own when the limit resets. On by default. |
 | Restart Claude | General | Restarts the project conversation when [Claude stops responding there](#claude-hasnt-responded) |
 | Pause, Archive, Delete | General | Stops, hides, or removes the project; see [Pause, archive, or delete a project](#pause-archive-or-delete-a-project) |
 
@@ -17455,7 +17456,7 @@ All three controls are at the bottom of **Project settings > General**:
 
 Project usage counts against the same [plan limits](/docs/en/errors#youve-hit-your-session-limit) as your other Claude Code sessions, and a project can't spend past those limits on its own.
 
-A thread that reaches your plan's limit waits and continues on its own when the limit resets, so work you left running starts using your next usage window without a message from you. [A thread hit the usage limit](#usage-limit-reached) covers what you see, how to stop it, and the one case that doesn't wait.
+A thread that stops at your plan's limit waits and by default continues on its own when the limit resets. Its work then counts against your next usage window. To keep threads from continuing, see [A thread hit the usage limit](#usage-limit-reached).
 
 Work goes past your plan's limits only if you have turned on [usage credits](/docs/en/costs#add-usage-credits-to-your-subscription) for your account. A thread can't turn them on for you.
 
@@ -17536,9 +17537,9 @@ To fix GitHub access for "Couldn't start the session" or "Unable to access your 
 
 ### A thread hit the usage limit
 
-When a thread or the project conversation reaches your plan's five-hour or weekly limit, it keeps retrying on its own and continues when the limit resets. A thread that a scheduled task started doesn't wait: its turn stops with a limit error, and you send it a message after the limit resets.
+When a thread or the project conversation stops at your plan's five-hour or weekly limit, it waits and by default continues on its own when the limit resets.
 
-While a thread waits, it shows **Service is busy** with "Claude is still retrying and will continue automatically." You don't need to do anything for the work to continue. If you'd rather it not use your next usage window, click **Stop** in the thread, or [pause the project](#pause-archive-or-delete-a-project) to hold every thread. [Usage limit errors](/docs/en/errors#youve-hit-your-session-limit) explain the limits and when they reset.
+To keep a thread or conversation from continuing at the reset time its message shows, turn off **Auto-continue when usage limits reset** in [**Project settings > General**](#project-settings-reference) before then. The setting is for the whole project, not only the thread you're looking at. To continue with the setting off, send the thread or conversation a message after the reset. [Usage limit errors](/docs/en/errors#youve-hit-your-session-limit) explain the limits and when they reset.
 
 ### Additional usage credits are required
 
@@ -17561,7 +17562,7 @@ These messages name their own cause. The table gives the next step for each.
 | "Unable to connect to repository" with "Claude couldn't access your repository or environment" | Your GitHub account needs push access to the repository, and the environment must still exist. Check both in **Project settings > Environment**, then retry |
 | "Couldn't show the setup proposal" | The app you have open is older than the **Setup recommendations** Claude sent. Refresh the page or restart the desktop app, or ask Claude to propose the setup again |
 | "The project's environment was removed" | Choose a different environment in **Project settings > Environment**; the change applies to new threads |
-| "Setup script failed" | Click **Edit setup script** on the error, fix the script in the environment, then send another message. [Setup script failed](/docs/en/web-quickstart#setup-script-failed) lists common causes |
+| "Setup script failed" | [Setup script failed](/docs/en/web-quickstart#setup-script-failed) lists common causes. Fix the script in the environment, then ask Claude in the project conversation to run the task in a new thread, so the script runs again |
 | "Claude ran out of context on this turn" | The thread filled its context window. If the message says the thread continues in a fresh session, it carries on by itself; otherwise ask Claude in the project conversation to start a new thread for the remaining work |
 | "Couldn't start in" followed by your folder's name | You allowed a thread to run on your computer, but the session couldn't start there. When a line under the message gives the reason, fix that, then ask Claude to run the task again |
 | "Claude is out of date on your device" | The computer you picked to run a thread has a Claude Code version older than v2.1.280. Update Claude Code there, or update the desktop app if that's what connects the folder, then ask Claude to run the task again |
@@ -23489,7 +23490,9 @@ Match the message you see to a section below.
 | `Could not resolve authentication method` | [Authentication](#could-not-resolve-authentication-method) |
 | `Invalid API key` | [Authentication](#invalid-api-key) |
 | `Your apiKeyHelper script is failing` | [Authentication](#your-apikeyhelper-script-is-failing) |
-| `Claude Code didn't send your claude.ai login, because the API key helper your administrator set isn't in effect` | [Authentication](#claude-code-didnt-send-your-claude-ai-login) |
+| `Your organization's settings need an update` | [Authentication](#claude-code-didnt-send-your-claude-ai-login) |
+| `Couldn't load your organization's settings. Check your connection` | [Authentication](#claude-code-didnt-send-your-claude-ai-login) |
+| `Restart Claude Code to finish signing in` | [Authentication](#claude-code-didnt-send-your-claude-ai-login) |
 | `Invalid auth token · Fix external auth token` | [Authentication](#invalid-request-header-value) |
 | `Invalid ANTHROPIC_CUSTOM_HEADERS · Fix the environment variable` | [Authentication](#invalid-request-header-value) |
 | `Invalid request header from the environment · Fix the environment variable` | [Authentication](#invalid-request-header-value) |
@@ -24545,16 +24548,23 @@ Running `/login` doesn't help here: the helper's output [takes precedence](/docs
 
 ### Claude Code didn't send your claude.ai login
 
-Send this full message to your administrator. It lists the changes they can make. The message means Claude Code refused your prompt. While you use your claude.ai login, Claude Code keeps refusing prompts, after a restart too:
+These messages mean Claude Code refused your request and didn't send your claude.ai login:
 
 ```text theme={null}
-Claude Code didn't send your claude.ai login, because the API key helper your administrator set isn't in effect. Your organization's managed settings may be overriding it. Ask your administrator to keep the key helper and its API address in effect, to name Anthropic's API address in those managed settings, or to remove the key helper. Run /status to see your setting sources.
+Your organization's settings need an update. Ask your administrator to fix the API key helper configuration.
+Couldn't load your organization's settings. Check your connection, then restart Claude Code.
+Restart Claude Code to finish signing in.
 ```
 
 **What to do:**
 
-* To tell your administrator which managed sources your machine has, run `/status` at the Claude Code prompt and copy the [`Setting sources` line](/docs/en/managed-settings#read-the-source-in-/status). If a `Skipped sources` line appears, copy it too
-* If you administer the settings, see [why the machine's key helper isn't in effect](/docs/en/server-managed-settings#machine-apikeyhelper-not-in-effect)
+* `Your organization's settings need an update`: ask your administrator to fix the API key helper configuration
+  * To tell your administrator which managed sources your machine has, run `/status` at the Claude Code prompt and copy the [`Setting sources` line](/docs/en/managed-settings#read-the-source-in-/status). If a `Skipped sources` line appears, copy it too
+  * If you administer the settings and the helper is in a machine's managed settings file or MDM policy, see [When a machine's `apiKeyHelper` isn't in effect](/docs/en/server-managed-settings#machine-apikeyhelper-not-in-effect)
+* `Couldn't load your organization's settings`: check your connection, then restart Claude Code. If the message comes back after a restart, tell your administrator
+* `Restart Claude Code to finish signing in`: restart Claude Code
+
+Before v2.1.315, a refused prompt or file upload printed one message that began `Claude Code didn't send your claude.ai login`.
 
 ### Invalid request header value
 
@@ -49114,9 +49124,8 @@ This integration is built on the existing Claude for Slack app but adds intellig
 
 ## Use cases
 
-* **Bug investigation and fixes**: Ask Claude to investigate and fix bugs as soon as they're reported in Slack channels.
-* **Quick code reviews and modifications**: Have Claude implement small features or refactor code based on team feedback.
-* **Collaborative debugging**: When team discussions provide crucial context (for example, error reproductions or user reports), Claude can use that information to inform its debugging approach.
+* **Bug investigation and fixes**: Describe a bug and ask Claude to investigate and fix it.
+* **Quick code reviews and modifications**: Have Claude implement small features or refactor code.
 * **Parallel task execution**: Kick off coding tasks in Slack while you continue other work, receiving notifications when complete.
 
 ## Prerequisites
@@ -49185,11 +49194,10 @@ You can also explicitly tell Claude to handle a request as a coding task, even i
 
 ### Context gathering
 
-**From threads**: When you @mention Claude in a thread, it gathers context from all messages in that thread to understand the full conversation.
+* **From threads**: when you first @mention Claude in a thread, it gathers context from your messages and its own in that thread.
+* **From channels**: when you @mention Claude directly in a channel, it looks at your recent messages and its own in that channel, and at the channel's name, topic, and description.
 
-**From channels**: When mentioned directly in a channel, Claude looks at recent channel messages for relevant context.
-
-This context helps Claude understand the problem, select the appropriate repository, and inform its approach to the task.
+This context helps Claude understand the problem, select the appropriate repository, and inform its approach to the task. To give Claude something a teammate wrote, such as an error report, paste its text into the message where you @mention Claude.
 
 > [!WARNING]
 >
@@ -49256,13 +49264,12 @@ for more details.
 ### Writing effective requests
 
 * **Be specific**: Include file names, function names, or error messages when relevant.
-* **Provide context**: Mention the repository or project if it's not clear from the conversation.
+* **Provide context**: Mention the repository or project.
 * **Define success**: Explain what "done" looks like. Should Claude write tests? Update documentation? Create a PR?
-* **Use threads**: Reply in threads when discussing bugs or features so Claude can gather the full context.
 
 ### When to use Slack vs. web
 
-**Use Slack when**: Context already exists in a Slack discussion, you want to start a task asynchronously, or you're collaborating with teammates who need visibility.
+**Use Slack when**: You want to start a task asynchronously, or you're collaborating with teammates who need visibility.
 
 **Use the web directly when**: You need to upload files, want real-time interaction during development, or are working on longer, more complex tasks.
 
@@ -53931,13 +53938,15 @@ Cloud session features create a default cloud environment automatically if you d
 
 ### Setup script failed
 
-The setup script exited with a non-zero status, which blocks the session from starting. Common causes:
+The [setup script](/docs/en/cloud-environments#setup-scripts) exited with a non-zero status, so the session failed to start or started without whatever the script failed to install. If the session started, you can keep working in it.
+
+Common causes:
 
 * A package install failed because the registry isn't in your [network access level](/docs/en/cloud-environments#access-levels). `Trusted` covers most package managers; `None` blocks them all.
 * The script references a file or path that doesn't exist in a fresh clone.
 * A command that works locally needs a different invocation on Ubuntu.
 
-To debug, add `set -x` at the top of the script to see which command failed. For non-critical commands, append `|| true` so they don't block session start.
+To debug, add `set -x` at the top of the script to see which command failed. For non-critical commands, append `|| true` so they don't fail the script. After you fix the cause, start a new session so the script runs again. If what failed to start was a run of a [cloud scheduled task](/docs/en/routines), click **Run now** on the task's detail page instead of starting a new session.
 
 ### New sessions hang or time out during setup
 
@@ -60827,7 +60836,7 @@ load_test_mode:
 | `reply_tokens` | No | Default `750`. Roughly how many tokens of text each canned reply carries, a whole number from 1 to 100000. |
 | `reply_seconds` | No | Default `9.5`. How long a streamed reply takes, from 0 to 600. `0` sends the whole reply at once. A reply to a non-streaming request always comes back at once. |
 
-A load test in this mode covers the gateway, your Postgres, and everything in front of the gateway. It doesn't cover the provider's limits, speed, or network path.
+A load test in this mode covers the gateway, your Postgres, and everything in front of the gateway. It doesn't cover the provider's limits, speed, and network path, or the wait at each replica's [limit on concurrent upstream requests](/docs/en/claude-apps-gateway-deploy#concurrent-upstream-requests). A replica still logs the `client requests are open` warning when more requests are open than that limit, the point where production requests start to wait.
 
 No model request is sent to the provider, so a replica's CPU per request is an estimate and reads lower than production, which also encrypts its traffic to the provider. Confirm a replica count with a small pilot against the real provider. Before v2.1.283, the estimate reads much lower.
 
@@ -61235,6 +61244,8 @@ If you autoscale on CPU, a replica at the limit queues requests without triggeri
 > [!WARNING]
 >
 > Every open request holds memory in the gateway process while it streams and while it waits for a slot. If you keep the limit at 256, memory on an overloaded replica still grows, because waiting requests keep their request bodies. Size the container's memory for the number of requests open at peak, and watch memory when you change the limit. A replica that runs out of memory is killed and drops every stream it holds.
+
+In a load test with [`load_test_mode`](/docs/en/claude-apps-gateway-config#load_test_mode), requests don't wait at this limit, but a replica still logs the `client requests are open` warning.
 
 ### Keep `API_TIMEOUT_MS` above the gateway's time to first byte
 
@@ -62192,6 +62203,7 @@ In the gateway's own [spend limits](/docs/en/claude-apps-gateway-spend-limits#se
 
 * [Configuration reference](/docs/en/claude-apps-gateway-config): every `gateway.yaml` option, including `managed.policies` and `telemetry`
 * [Deployment and operations](/docs/en/claude-apps-gateway-deploy): IdP setup, health checks, JWT secret rotation, upgrades, and the security model
+* [Load-test mode](/docs/en/claude-apps-gateway-config#load_test_mode): load testing a gateway without calling a model provider
 * [Claude apps gateway overview](/docs/en/claude-apps-gateway): quickstart and connecting developers
 * [AWS samples for Claude apps gateway](https://github.com/aws-samples/anthropic-on-aws/tree/main/claude-apps-gateway): AWS-maintained deployment samples covering a range of customer environments
 
@@ -62511,6 +62523,7 @@ For gateway boot and login errors, see the platform-agnostic [troubleshooting ta
 
 * [Configuration reference](/docs/en/claude-apps-gateway-config): every `gateway.yaml` option, including `managed.policies` and `telemetry`
 * [Deployment and operations](/docs/en/claude-apps-gateway-deploy): IdP setup, health checks, JWT secret rotation, upgrades, and the security model
+* [Load-test mode](/docs/en/claude-apps-gateway-config#load_test_mode): load testing a gateway without calling a model provider
 * [Claude apps gateway overview](/docs/en/claude-apps-gateway): quickstart and connecting developers
 
 
@@ -63501,7 +63514,7 @@ apt update && apt install -y shellcheck
 
 A setup script has four constraints to write around:
 
-* **Exit zero**: if the script exits non-zero, the session fails to start. Append `|| true` to non-critical commands so an intermittent install failure doesn't block the session.
+* **Exit zero**: if the script exits non-zero, the session [fails to start](/docs/en/web-quickstart#setup-script-failed) or starts without whatever the script failed to install. Append `|| true` to non-critical commands so an intermittent install failure doesn't fail the script.
 * **Finish within five minutes**: keep the script's total runtime under roughly five minutes so the [environment cache](#environment-caching) can build. When setup takes longer than that, the environment isn't cached. Run independent installs in parallel with `&` and `wait`, and move any single download that won't fit into a [SessionStart hook](#setup-scripts-vs-sessionstart-hooks) that launches it in the background. If new sessions stall or fail during setup, see [New sessions hang or time out during setup](/docs/en/web-quickstart#new-sessions-hang-or-time-out-during-setup).
 * **Network access for installs**: package installs need to reach registries. The default **Trusted** level covers [common package registries](#default-allowed-domains) including npm, PyPI, RubyGems, and crates.io; with **None** network access, installs fail.
 * **The environment's variables aren't set yet**: the script runs before the session sets the environment's [environment variables](#set-environment-variables). Set any value the script needs in the script itself.
@@ -65786,7 +65799,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_EVEN_MORE_DANGEROUSLY_SKIP_PERMISSIONS` | Set to `1` to [run dangerous `rm` commands with no prompt](/docs/en/permission-modes#turn-off-the-critical-path-removal-prompt-in-bypasspermissions-mode) in `bypassPermissions` mode, which removes a safety prompt for destructive deletes. The linked section lists where it has no effect. [Set it in the environment that launches Claude Code](#set-variables-in-your-shell), because Claude Code [ignores it in a settings `env` block](/docs/en/settings-reference#variables-claude-code-ignores-in-env). Requires Claude Code v2.1.311 or later |
 | `CLAUDE_CODE_EXIT_AFTER_STOP_DELAY` | Time in milliseconds to wait after the query loop becomes idle before automatically exiting. Useful for automated workflows and scripts using SDK mode |
 | `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` | Set to `1` to enable [agent teams](/docs/en/agent-teams). Agent teams are experimental and disabled by default |
-| `CLAUDE_CODE_EXTRA_BODY` | JSON object to merge into the top level of every API request body. Useful for passing provider-specific parameters that Claude Code doesn't expose directly. A value exported in your shell also applies to the [background sessions](/docs/en/agent-view) you dispatch with `claude agents` or `--bg`. Before v2.1.206, background sessions ignored a shell-exported value and used whatever copy the background supervisor process inherited |
+| `CLAUDE_CODE_EXTRA_BODY` | JSON object to merge into the top level of model request bodies except on some requests outside the conversation, such as `/model` checks. Useful for passing provider-specific parameters that Claude Code doesn't expose directly. A value exported in your shell also applies to the [background sessions](/docs/en/agent-view) you dispatch with `claude agents` or `--bg`. Before v2.1.206, background sessions ignored a shell-exported value and used whatever copy the background supervisor process inherited |
 | `CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS` | Override the default token limit for [file reads](/docs/en/tools-reference#large-files), which is 25,000 tokens. Useful when you need to read larger files in full. A read that Claude makes with the `allow_large` parameter can go past this limit when the context window has room |
 | `CLAUDE_CODE_FORCE_SESSION_PERSISTENCE` | Set to `1` to force transcript persistence, prompt history, and `claude agents` registration even when this `claude` was launched from inside another Claude Code session. Use when an inherited `CLAUDE_CODE_CHILD_SESSION` value, for example from a `screen` session or a background launcher first started by Claude Code's Bash tool, causes a genuine top-level session to be misclassified as nested. As of v2.1.178, Claude Code detects the tmux case automatically and ignores the inherited marker, so tmux no longer needs this variable. Also honored on v2.1.169 and earlier; has no effect on v2.1.170 and v2.1.171, where the nested-session detection it overrides was removed |
 | `CLAUDE_CODE_FORCE_STRIKETHROUGH` | Set to `1` to force strikethrough rendering for `~~text~~` in Claude's responses when your terminal supports it but is not auto-detected, such as over SSH without `TERM_PROGRAM` forwarded. Without this, undetected terminals show the literal `~~` markers instead of rendering the text as strikethrough. Requires Claude Code v2.1.186 or later |
@@ -89824,7 +89837,7 @@ The runner sets the following in the wrapper's environment:
 | `CLAUDE_CODE_REMOTE_SLACK_CHANNEL_ID` | For a Claude Tag session, the ID of the Slack channel or direct message that the session serves or that its thread is in, such as `C0123ABCDE`. A Slack timestamp identifies a message within one channel, so record this ID together with `CLAUDE_CODE_REMOTE_SLACK_THREAD_TS`. Unset for other sessions, and can be unset for a Claude Tag session too. |
 | `CLAUDE_SESSION_INGRESS_TOKEN_FILE` | Absolute path to a per-session file holding the current session JWT, kept fresh across token refreshes. Shell subprocesses read it for their `Authorization` header when downloading attachments the user added to the session. `exec` preserves the variable automatically; a wrapper that rebuilds the child's environment must carry the variable over, or attachment downloads silently stop working. |
 | `CLAUDE_CONFIG_DIR` | Per-session Claude config directory, written at session start from the snapshot of the runner host's config that the runner captures at startup; see [Permissions and tool approval](#permissions-and-tool-approval). Writes here are isolated to this session. The directory stays under `<base-dir>/_sessions/` after the session ends unless you start the runner with [`--remove-session-state`](/docs/en/self-hosted-environments-reference#runner-cli-flags); see [Reuse a pre-warmed checkout](/docs/en/self-hosted-environments-deploy#reuse-a-pre-warmed-checkout). |
-| `CLAUDE_CODE_REMOTE_MCP_CONFIG` | Path to a file in `CLAUDE_CONFIG_DIR` holding the MCP server definitions that Anthropic's control plane delivered for this session. If your wrapper rebuilds the child's environment, carry this variable over. Without it, when the control plane updates the delivered servers, the child shuts down any stdio, HTTP, or SSE server your wrapper adds with [`--mcp-config`](/docs/en/cli-reference#cli-flags) that isn't in the update. Requires Claude Code v2.1.299 or later. |
+| `CLAUDE_CODE_REMOTE_MCP_CONFIG` | Path to a file in `CLAUDE_CONFIG_DIR` holding the control plane's delivered MCP servers. If your wrapper rebuilds the child's environment, carry this variable, [`CLAUDE_CODE_REMOTE`](/docs/en/env-vars#variables), and `CLAUDE_CODE_ENVIRONMENT_KIND` over unchanged; the runner sets all three. If `CLAUDE_CODE_REMOTE` arrives but this variable or `CLAUDE_CODE_ENVIRONMENT_KIND` doesn't, the child stops stdio, HTTP, and SSE servers your wrapper adds with [`--mcp-config`](/docs/en/cli-reference#cli-flags) that an update of the delivered servers omits. Requires Claude Code v2.1.299 or later. |
 | `ANTHROPIC_BASE_URL` | The API base URL the child will use, delivered by the control plane per session and normally `https://api.anthropic.com`. Don't override it: the session's inference credential is an Anthropic-issued OAuth token that other providers don't accept. |
 | `CLAUDE_CODE_OAUTH_TOKEN` | The short-lived OAuth access token the child uses for model inference, with a lifetime of about 30 minutes. The runner re-mints it before expiry and delivers the rotation over the child's stdin, so a wrapper that doesn't [keep stdin attached](#keep-stdin-and-file-descriptor-3-attached) sees only the initial value. Don't rely on your organization's IP allowlist to bound this token's use: treat it as a bearer credential that stays usable for roughly 30 minutes if it leaks, and don't log it, write it to disk, or forward it outside the session container. |
 | `CLAUDE_RUNNER_ALIVE_EVERY_MS` | The runner sets how often, in milliseconds, the child reports that it's alive when a [turn starts before the child initializes](/docs/en/self-hosted-environments-reference#session-startup-timeout). If your wrapper rebuilds the child's environment, carry this variable over, or the runner can release the session during that turn and log `no child output for <n> — releasing`. Requires v2.1.309 or later on the runner and child. |
@@ -90606,18 +90619,26 @@ Search your copy of `stop-hook-nudge.sh` for `GIT_OPTIONAL_LOCKS`. If it's missi
 
 A self-hosted session has no terminal attached, so an unanswered permission prompt stalls the turn until the user responds in the UI. Anthropic's control plane sends each session's tool list and permission rules with the work payload; the default configuration pre-approves routine tool calls, including `Bash`, and cloud sessions [pre-approve file edits regardless of mode](/docs/en/permission-modes#switch-permission-modes). A call that nothing pre-approves prompts through the session UI.
 
+### Pin a permission mode from your wrapper
+
 > [!NOTE]
 >
 > Only pin auto mode on an environment whose session containers run with [default-deny network egress](/docs/en/self-hosted-environments-deploy#default-deny-egress) and the rest of the [hardening section](/docs/en/self-hosted-environments-deploy#harden-your-deployment) in place. Routine tool calls, including `Bash` network requests, run without a human in the loop on both the default pre-approved tool set and in auto mode, so the network boundary is what limits where those calls can reach.
 
-To keep prompts to a minimum regardless of what the control plane sends, pin [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) from your wrapper script or [`command` hook](#command). Auto mode lets sessions run without routine permission prompts: a separate classifier model reviews actions before they run and blocks the ones it rejects, and explicit ask rules still force a prompt; the permission modes page covers what the classifier checks. The runner appends server-computed flags before invoking the wrapper, and for single-value flags such as `--permission-mode` the parser honors the last occurrence, so a flag you append after `"$@"` overrides the server-sent value:
+To start sessions in [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) until claude.ai/code or another client sets a permission mode for them, pin it from your wrapper script or [`command` hook](#command). The runner invokes the wrapper with its own flags as arguments, and Claude Code applies the last `--permission-mode` on the command line, so append yours after `"$@"`:
 
 ```bash theme={null}
 #!/bin/bash
 exec "$CLAUDE_RUNNER_CLAUDE_BIN" "$@" --permission-mode auto
 ```
 
-To pre-approve specific tools instead, append `--allowed-tools` with your rules, for example `--allowed-tools "Bash(bazel *) Bash(yarn *) mcp__internal__*"`. List flags such as `--allowed-tools` and `--disallowed-tools` accumulate across occurrences rather than overriding, so your rules apply on top of any rules the control plane sends. To narrow, append `--disallowed-tools`, which denies tools even if another rule allows them.
+Once a client sets a mode, your appended mode no longer applies, even after the session restarts on the runner. claude.ai/code, for example, sets one with the session's first message when its mode dropdown shows Auto, or when someone picked a mode there.
+
+In auto mode, a separate classifier model reviews actions before they run and blocks the ones it rejects. An explicit ask rule still forces a prompt. A call that a [deny rule](/docs/en/permissions#manage-permissions) blocks stays blocked in every mode.
+
+### Pre-approve specific tools
+
+To pre-approve specific tools, append `--allowed-tools` with your rules after `"$@"` in your wrapper script, for example `--allowed-tools "Bash(bazel *) Bash(yarn *) mcp__internal__*"`. List flags such as `--allowed-tools` and `--disallowed-tools` accumulate across occurrences rather than overriding, so your rules apply on top of any rules the control plane sends. To narrow, append `--disallowed-tools`, which denies tools even if another rule allows them.
 
 ### How each session's config is assembled
 
@@ -98960,7 +98981,7 @@ Choose how Claude Code notifies you when a task completes or a permission prompt
 
 * **Scope**: [`Any file`](#scopes). Claude Code also reads a value left in `~/.claude.json` by older versions.
 * **Type**: string, one of:
-  * `"auto"`: Claude Code sends a desktop notification in iTerm2, Ghostty, and Kitty, rings the bell in Terminal.app only when its audible bell is off, and does nothing elsewhere
+  * `"auto"`: Claude Code sends a desktop notification when it detects iTerm2, Ghostty, or Kitty, rings the bell in Terminal.app only when its audible bell is off, and does nothing elsewhere
   * `"terminal_bell"`: Claude Code rings the bell character in any terminal
   * `"iterm2"`: Claude Code sends an iTerm2 desktop notification
   * `"iterm2_with_bell"`: Claude Code sends an iTerm2 desktop notification and rings the bell
@@ -98975,7 +98996,7 @@ Choose how Claude Code notifies you when a task completes or a permission prompt
 }
 ```
 
-With `"auto"`, Claude Code sends a desktop notification in iTerm2, Ghostty, and Kitty. In Terminal.app it rings the bell character only when you have turned Terminal's audible bell off, and in other terminals it does nothing. Set `"terminal_bell"` to ring the bell character in any terminal. See [Get a terminal bell or notification](/docs/en/terminal-config#get-a-terminal-bell-or-notification).
+With `"auto"`, Claude Code sends a desktop notification when it detects iTerm2, Ghostty, or Kitty. In Terminal.app it rings the bell character only when you have turned Terminal's audible bell off, and in other terminals it does nothing. Set `"terminal_bell"` to ring the bell character in any terminal. See [Get a terminal bell or notification](/docs/en/terminal-config#get-a-terminal-bell-or-notification).
 
 ### `remote.defaultEnvironmentId`
 
@@ -101987,7 +102008,7 @@ When Claude finishes a task or pauses for a permission prompt, and you appear to
 
 By default, Claude Code sends a desktop notification in some terminals, and a bell character or nothing in others:
 
-* **Ghostty, Kitty, and iTerm2**: a desktop notification, which iTerm2 shows only after you turn on its alert settings.
+* **Ghostty, Kitty, and iTerm2, when Claude Code detects them**: a desktop notification, which iTerm2 shows only after you turn on its alert settings.
 * **Apple Terminal**: no sound; a silent bell character when Claude Code finds "Audible bell" off in the front Terminal window's profile, otherwise nothing. That bell character shows as a window flash, or a Dock bounce while Terminal is in the background, if that profile's "Visual bell" or Dock bounce option is on.
 * **Other terminals**: nothing.
 
@@ -101999,7 +102020,7 @@ To make Claude Code send the bell character whatever the terminal or profile, se
 }
 ```
 
-The desktop notification reaches your local machine over SSH, so a remote session can still alert you. Ghostty and Kitty forward it to your OS notification center without further setup. iTerm2 requires you to enable forwarding:
+Over SSH from a terminal running outside tmux, set [`preferredNotifChannel`](/docs/en/settings-reference#preferrednotifchannel) to your local terminal's value, `"iterm2"`, `"kitty"`, or `"ghostty"`, on the machine running Claude Code. The desktop notification then reaches your local machine. Ghostty and Kitty forward it to your OS notification center without further setup. iTerm2 requires you to enable forwarding:
 
 **1. Open iTerm2 notification settings**
 
@@ -102044,7 +102065,7 @@ The tab title doesn't start with a status glyph in a terminal that reports suppo
 
 ## Configure tmux
 
-When Claude Code runs inside tmux, by default Shift+Enter submits instead of inserting a newline, and desktop notifications and the [progress bar](/docs/en/settings-reference#terminalprogressbarenabled) never reach the outer terminal. Add these lines to `~/.tmux.conf`, then run `tmux source-file ~/.tmux.conf` to apply them to the running server:
+When Claude Code runs inside tmux, by default Shift+Enter submits instead of inserting a newline, and desktop notifications don't reach the outer terminal. Add these lines to `~/.tmux.conf`, then run `tmux source-file ~/.tmux.conf` to apply them to the running server:
 
 ```bash ~/.tmux.conf theme={null}
 set -g allow-passthrough on
@@ -102053,7 +102074,7 @@ set -s extended-keys on
 set -as terminal-features 'xterm*:extkeys'
 ```
 
-The `allow-passthrough` line lets notifications and progress updates reach the outer terminal instead of being swallowed by tmux. The `extended-keys` lines let tmux distinguish Shift+Enter from plain Enter so the newline shortcut works.
+To send notifications from a visible pane to the outer terminal, keep the `allow-passthrough` line and set [`preferredNotifChannel`](/docs/en/settings-reference#preferrednotifchannel) to `"iterm2"`, `"kitty"`, or `"ghostty"`. With this sample, a pane in a window you aren't viewing sends none. The `extended-keys` lines let tmux distinguish Shift+Enter from plain Enter so the newline shortcut works.
 
 A [mod's `Image`](/docs/en/plugins/mods/reference#elements) needs the `allow-passthrough` and `focus-events` lines, along with the other [requirements for drawing inside tmux](/docs/en/plugins/mods/gallery#draw-an-image-inside-tmux). After you add the lines, also detach from tmux, attach again, and restart Claude Code.
 
@@ -110202,6 +110223,10 @@ Plugin paths can be:
 > [!NOTE]
 >
 > The path should point to the plugin's root directory: the parent of `skills/`, `agents/`, `hooks/`, `commands/`, or `.claude-plugin/`.
+
+### Reload plugins in a running session
+
+To apply a change to a plugin's skills, commands, agents, or hooks without starting a new session, call [`reloadPlugins()`](/docs/en/agent-sdk/typescript#query-object) on the TypeScript SDK's `Query` object. The Python SDK doesn't expose an equivalent method; send [`/reload-plugins`](/docs/en/plugins/cli-reference#reload-plugins) as a prompt in the session instead.
 
 ### Add plugins to a running session
 
