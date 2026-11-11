@@ -17237,7 +17237,7 @@ The scratchpad lives under Claude Code's temp directory rather than `~/.claude`.
 * **Linux**: `/tmp/claude-<uid>/<project>/<session-id>/scratchpad/`, or the same shape under `$TMPDIR` when your system sets one
 * **Windows**: `%TEMP%\claude\<project>\<session-id>\scratchpad\`
 
-`<project>` is your working directory path with every character other than letters and digits replaced by `-`, such as `-Users-you-my-project`. If you set [`CLAUDE_CODE_TMPDIR`](/docs/en/env-vars), the tree moves under that directory instead. Hooks receive the current session's path as [`scratchpad_dir`](/docs/en/hooks#common-input-fields).
+`<project>` is your working directory path with every character other than letters and digits replaced by `-`, such as `-Users-you-my-project`. On Windows, `<project>` is a 16-character hash of that string, such as `73295dabccd14c56`. In a Desktop app session, it can be the string itself. To get the exact path, ask Claude. If you set [`CLAUDE_CODE_TMPDIR`](/docs/en/env-vars), the tree moves under that directory instead. Hooks receive the current session's path as [`scratchpad_dir`](/docs/en/hooks#common-input-fields).
 
 Scratchpad files last as long as the session's transcript: the [retention sweep](#cleaned-up-automatically) deletes the directory when it deletes the transcript, and [`claude purge`](#clear-local-data) doesn't touch the temp directory. Because the directory sits under the system temp location, your operating system can also clear it, such as on restart. To keep something Claude wrote there, ask Claude to move it into your project.
 
@@ -19584,7 +19584,7 @@ Work on a feature in one terminal while Claude fixes a bug in another, without t
 claude --worktree feature-auth
 ```
 
-Run the same command with a different name in a second terminal to start an isolated parallel session. In a repository with no commits, the command fails with `Failed to resolve base branch "HEAD": git rev-parse failed`. See [Worktrees](/docs/en/worktrees) for cleanup, `.worktreeinclude`, and non-git VCS support. To monitor parallel sessions from one screen instead of separate terminals, see [background agents](/docs/en/agent-view).
+Run the same command with a different name in a second terminal to start an isolated parallel session. See [Worktrees](/docs/en/worktrees) for cleanup, `.worktreeinclude`, and non-git VCS support. To monitor parallel sessions from one screen instead of separate terminals, see [background agents](/docs/en/agent-view).
 
 ## Plan before editing
 
@@ -19863,7 +19863,7 @@ The session walks through a realistic flow with representative token counts:
 
 ## What survives compaction
 
-When a long session compacts, Claude Code summarizes the conversation history to fit the context window. As of v2.1.198, the summarization request inherits your session's [extended thinking](/docs/en/model-config#extended-thinking) configuration, so it reasons with thinking enabled when your session has it enabled and stays off otherwise. Thinking affects only how the summary is produced; your session settings are unchanged afterward. What happens to each kind of content depends on how it was loaded:
+When a long session compacts, Claude Code summarizes the conversation history to fit the context window.
 
 | Mechanism | After compaction |
 | :- | :- |
@@ -47991,7 +47991,7 @@ When both day-of-month and day-of-week are constrained, a date matches if either
 
 ## Disable session-scoped scheduled tasks
 
-Set `CLAUDE_CODE_DISABLE_CRON=1` in your environment to disable the scheduler entirely. The cron tools and `/loop` become unavailable, and any already-scheduled tasks stop firing. See [Environment variables](/docs/en/env-vars) for the full list of disable flags.
+Set `CLAUDE_CODE_DISABLE_CRON=1` in your environment to disable the scheduler entirely. `CronCreate` and `/loop` become unavailable, and any already-scheduled tasks stop firing. While the project's `.claude/scheduled_tasks.json` file holds tasks, `CronList` and `CronDelete` stay available, so you can still ask Claude to list or cancel them. See [Environment variables](/docs/en/env-vars) for the full list of disable flags.
 
 ## Limitations
 
@@ -66547,7 +66547,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_DISABLE_BUNDLED_SKILLS` | Set to `1` to disable the [skills](/docs/en/skills) and workflows included with Claude Code: bundled skills and workflows are removed entirely, while built-in commands like `/init` stay typable but are hidden from the model. `/doctor` stays typable like the built-in commands; hide it with `DISABLE_DOCTOR_COMMAND` instead. Skills from plugins, `.claude/skills/`, and `.claude/commands/` are unaffected. Equivalent to the [`disableBundledSkills`](/docs/en/settings-reference#disablebundledskills) setting |
 | `CLAUDE_CODE_DISABLE_CFC_PROMPT` | For hosts that embed Claude Code and supply their own browser guidance. Set to `1` to keep the [Claude in Chrome](/docs/en/chrome) browser tools available while omitting the Chrome section of the system prompt and the `/claude-in-chrome` [bundled skill](/docs/en/skills#bundled-skills). In VS Code, the extension at v2.1.314 or later also leaves the Claude in Chrome instructions out of a session's messages. Requires Claude Code v2.1.257 or later |
 | `CLAUDE_CODE_DISABLE_CLAUDE_MDS` | Set to `1` to prevent loading any CLAUDE.md memory files into context, including user, project, and auto memory files |
-| `CLAUDE_CODE_DISABLE_CRON` | Set to `1` to disable [session-scoped scheduled tasks](/docs/en/scheduled-tasks). The `/loop` skill and cron tools become unavailable and any already-scheduled tasks stop firing, including tasks that are already running mid-session |
+| `CLAUDE_CODE_DISABLE_CRON` | Set to `1` to disable [session-scoped scheduled tasks](/docs/en/scheduled-tasks#disable-scheduled-tasks). The `/loop` skill and `CronCreate` become unavailable and any already-scheduled tasks stop firing, including tasks that are already running mid-session |
 | `CLAUDE_CODE_DISABLE_DANGEROUS_RM_TIMEOUT` | Set to `1` to turn off the `auto` and `bypassPermissions` [time limit and denials](/docs/en/permission-modes#time-limits-and-denials-in-auto-and-bypasspermissions-modes) on critical-path removals. These removals then go to the classifier in `auto` mode, and get an untimed prompt in `bypassPermissions` mode wherever Claude Code can show one. Set it in the environment that launches Claude Code, since Claude Code ignores a copy delivered through a settings `env` block. Requires Claude Code v2.1.281 or later |
 | `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` | Set to `1` to strip pre-release `anthropic-beta` request headers, the body fields that pair with them, and beta tool-schema fields such as `defer_loading` and `eager_input_streaming` from API requests. Use this when a proxy gateway rejects requests with an `Unexpected value(s)` error for the `anthropic-beta` header or an `Extra inputs are not permitted` error. [Disable pre-release capabilities](/docs/en/llm-gateway-protocol#disable-pre-release-capabilities) lists what the variable removes, including [MCP tool search](/docs/en/mcp#scale-with-mcp-tool-search), and what Claude Code keeps sending |
 | `CLAUDE_CODE_DISABLE_EXPLORE_PLAN_AGENTS` | Set to `1` to disable the built-in [Explore and Plan subagents](/docs/en/sub-agents#built-in-subagents). Claude explores with its search tools or the general-purpose subagent instead, and [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode) reads files directly rather than launching Explore and Plan agents. Custom subagents named `Explore` or `Plan` are unaffected. To remove every built-in subagent type in the Agent SDK or non-interactive mode, use `CLAUDE_AGENT_SDK_DISABLE_BUILTIN_AGENTS` instead. Requires Claude Code v2.1.198 or later |
@@ -67973,7 +67973,7 @@ Learn more: [Auto memory](/docs/en/memory#auto-memory)
 
 ### Auto mode
 
-A [permission mode](#permission-mode) where a separate classifier model reviews actions instead of you, so Claude Code runs most of them without asking you. Claude Code still asks you before actions your explicit ask rules match. The classifier blocks scope escalation, untrusted infrastructure, and [prompt injection](#prompt-injection). Tool results are stripped from what it sees, so hostile content in a file or web page can't manipulate it directly.
+A [permission mode](#permission-mode) where a separate classifier model reviews actions instead of you, so Claude Code runs most of them without asking you. Claude Code still asks you before actions your explicit ask rules match. The classifier blocks scope escalation, untrusted infrastructure, and [prompt injection](#prompt-injection).
 
 * **Claude Code v2.1.283 or later**: auto mode is the [built-in starting permission mode](/docs/en/permission-modes#which-mode-a-session-starts-in) for interactive terminal and VS Code sessions
 * **Earlier versions**: auto mode is the built-in starting permission mode only on Pro, Max, Ultra, and Team plans
@@ -68180,7 +68180,7 @@ Learn more: [The `.claude` directory](/docs/en/claude-directory)
 
 ### Prompt injection
 
-Hostile instructions embedded in a file, web page, or tool result that attempt to redirect Claude toward actions you never asked for. Claude Code's defenses include the permission system, command injection detection, and trust verification. [Auto mode](#auto-mode) adds a server-side probe that scans tool results for suspicious content and a classifier that reviews actions with tool results stripped, so injected text can't manipulate it directly.
+Hostile instructions embedded in a file, web page, or tool result that attempt to redirect Claude toward actions you didn't ask for. Claude Code's defenses include the permission system, command injection detection, and trust verification. In [auto mode](#auto-mode), a server-side probe scans tool results for suspicious content, and a classifier reviews actions.
 
 Learn more: [Protect against prompt injection](/docs/en/security#protect-against-prompt-injection)
 
@@ -71224,7 +71224,7 @@ The example below replaces the output of a `Bash` call. The replacement value ma
 
 #### Annotate a result for the auto mode classifier
 
-Return `classifierContext` to send a short note about the tool call's result to the [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) classifier rather than to Claude. The classifier [never receives tool results themselves](/docs/en/permission-modes#how-the-classifier-evaluates-actions), so this field is the supported way to tell it something about what a call returned before it reviews later actions. The field requires Claude Code v2.1.236 or later.
+Return `classifierContext` to send a short note about the tool call's result to the [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) classifier rather than to Claude. The note is for the classifier's review of later actions. The field requires Claude Code v2.1.236 or later.
 
 The example below tells the classifier where a query's output came from:
 
@@ -78065,11 +78065,18 @@ Extended thinking is the reasoning Claude emits before responding. On models tha
 | :- | :- |
 | Toggle for the current session | Press `Option+T` on macOS or `Alt+T` on Windows and Linux |
 | Set the global default | Run `/config` and toggle thinking mode. Saved as `alwaysThinkingEnabled` in `~/.claude/settings.json` |
-| Disable through an environment variable | Set [`MAX_THINKING_TOKENS=0`](/docs/en/env-vars), which turns thinking off on the Anthropic API except on Opus 5.5, Sonnet 5.5, Haiku 5.5, and Fable models. On [third-party providers](/docs/en/third-party-integrations), Claude Code omits the `thinking` parameter instead, and adaptive-reasoning models may still think |
+| Disable through an environment variable | Set [`MAX_THINKING_TOKENS=0`](/docs/en/env-vars) |
+
+Claude Code collapses thinking output by default. Press `Ctrl+O` to toggle verbose mode and see the reasoning as gray italic text. Interactive sessions on the Anthropic API receive redacted thinking blocks by default, so set [`showThinkingSummaries: true`](/docs/en/settings-reference#showthinkingsummaries) in settings if you want the full summaries available when you expand. You are charged for all thinking tokens generated, even when collapsed or redacted.
+
+#### Where you can't turn thinking off
 
 You can't turn thinking off on Opus 5.5, Sonnet 5.5, Haiku 5.5, or the Fable models. The session toggle and the `/config` row show `Thinking can't be turned off` for these models instead of offering the switch, and a saved `alwaysThinkingEnabled: false` or `MAX_THINKING_TOKENS=0` has no effect there. On these models, the model decides per step how much to think based on the effort level. The saved setting applies again when you switch to a model that accepts it.
 
-Claude Code collapses thinking output by default. Press `Ctrl+O` to toggle verbose mode and see the reasoning as gray italic text. Interactive sessions on the Anthropic API receive redacted thinking blocks by default, so set `showThinkingSummaries: true` in [settings](/docs/en/settings) if you want the full summaries available when you expand. You are charged for all thinking tokens generated, even when collapsed or redacted.
+To stop or reduce thinking, use the step for your provider:
+
+* **Anthropic API**: you can turn thinking off on models such as `claude-opus-5`, `claude-sonnet-5`, and `claude-haiku-4-5`. [Aliases](#model-aliases) such as `sonnet` select models where you can't, so [set the model](#setting-your-model) by its ID.
+* **[Third-party providers](/docs/en/third-party-integrations)**: on providers such as Amazon Bedrock and Microsoft Foundry, models with [adaptive reasoning](#adaptive-reasoning-and-fixed-thinking-budgets) may still think with thinking off. [Lower the effort level](#set-the-effort-level) to reduce thinking.
 
 ### Extended context
 
@@ -81252,9 +81259,11 @@ The classifier trusts your working directory and the remotes that were configure
 * Opening a pull request against a different repository or organization, forking with `gh repo fork`, or pushing to a third-party repository, unless you named that external target
 * Content from a sensitive local store, or from a file whose name, path, or type marks it as sensitive, entering a commit, a push, PR or issue text, a gist or paste, or a package publish, unless you named both the source and the destination. Session transcripts and conversation logs, credential and configuration dot-folders such as SSH keys, cloud credentials, browser profiles, and shell history, and user-data exports all count, and the repository being private doesn't clear it
 * Writing to Claude Code session transcripts, the `.jsonl` history files under `~/.claude/projects/` or your configured config directory, whether directly or through a shell command. The rule also covers the metadata lines Claude Code appends to each transcript entry for its own checks. Reading a transcript isn't blocked
-* A recursive forced delete such as `rm -rf "$VAR"` or `Remove-Item -Recurse -Force $dir` whose target is a shell variable that isn't assigned anywhere in the conversation the classifier sees, or a glob rooted at such a variable. The value came only from earlier command output, which the classifier never receives, so the classifier can't verify the deletion target against the other deletion rules. The block clears when you name the exact path being deleted, or when Claude re-runs the delete with the resolved literal path written into the command. Deletes whose target the classifier can resolve aren't affected.
+* A recursive forced delete such as `rm -rf "$VAR"` or `Remove-Item -Recurse -Force $dir` whose target is a shell variable that isn't assigned in the conversation the classifier sees, or a glob rooted at such a variable. Without that assignment, the classifier can't tell what the command would delete.
 
-  A glob directly under the variable, as in `rm -rf "$VAR"/*`, is a [critical path](#critical-paths) instead. `Remove-Item` targets that are a bare `*` or end in `/*` or `\*` never reach the classifier: Claude Code [denies them outright](#remove-item-in-powershell).
+  The block clears when you name the exact path being deleted, or when Claude re-runs the delete with the resolved literal path written into the command. Deletes whose target the classifier can resolve aren't affected.
+
+  A glob directly under the variable, as in `rm -rf "$VAR"/*`, is a [critical path](#critical-paths) instead. For a `Remove-Item` target that is a bare `*` or ends in `/*` or `\*`, see [Remove-Item in PowerShell](#remove-item-in-powershell): Claude Code denies that command outright.
 
 Several of these categories depend on [environment](/docs/en/auto-mode-config#define-trusted-infrastructure) entries, such as sensitive remote targets and protected IaC scopes, that you can narrow to concrete names.
 
@@ -91019,10 +91028,10 @@ The hook fails when it exits non-zero, or exits 0 without leaving a usable check
 
 * **A repository the session pushes results to**: the runner fails the session, and on a non-zero exit surfaces the tail of the script's stderr to the user. Write the reason to stderr as one short line, write it last, and then exit non-zero. Don't print secrets to stderr, and remove `set -x` before you deploy the hook.
 
-  If git's `couldn't find remote ref` appears in roughly the last 4 KB of the hook's stderr, the runner reports a deleted branch instead. The session's error message then says the branch no longer exists on the remote and asks the user to restore it. If that branch exists, see [A session fails with `no longer exists on the remote` or `couldn't find remote ref`](/docs/en/self-hosted-environments-deploy#no-longer-exists-on-the-remote).
+  If git's `couldn't find remote ref` appears in roughly the last 4 KB of the hook's stderr, the runner reports a missing branch instead. If that branch exists, see [A session fails with `couldn't be found in the remote repository` or `couldn't find remote ref`](/docs/en/self-hosted-environments-deploy#no-longer-exists-on-the-remote).
 * **A repository the session only reads from**, such as a repository added to a running session: the runner skips it and continues with the remaining repositories. The runner posts a `Skipped` step to the session and removes whatever the hook left at the checkout path.
 
-  When the `Skipped` step mentions the checkout hook, find the failure detail on the `[runner:warn] checkout hook failed` line in the runner's log. When the step says a source ref `no longer exists on remote`, see [A session fails with `no longer exists on the remote` or `couldn't find remote ref`](/docs/en/self-hosted-environments-deploy#no-longer-exists-on-the-remote). If skipping leaves the session with no repository at all, the runner fails the session anyway.
+  When the `Skipped` step mentions the checkout hook, find the failure detail on the `[runner:warn] checkout hook failed` line in the runner's log. When the step says a source ref `no longer exists on remote`, see [A session fails with `couldn't be found in the remote repository` or `couldn't find remote ref`](/docs/en/self-hosted-environments-deploy#no-longer-exists-on-the-remote). If skipping leaves the session with no repository at all, the runner fails the session anyway.
 
 When the hook succeeds, the runner removes the checkout path after the session ends.
 
@@ -92680,15 +92689,21 @@ Common issues:
 * **Runner logs `Poll failed` lines containing `rejecting the malformed poll response`**: the runner received a work-poll response whose body isn't the queue's expected JSON. One cause is an intercepting proxy or a captive portal answering with its own page. If the runner connects through a proxy, configure the proxy to pass responses from `api.anthropic.com` through unaltered.
 
   The runner rejects the malformed response, counts it under the `transport` kind of the `claude_code_self_hosted_runner_poll_errors_total` [metric](/docs/en/self-hosted-environments-reference#prometheus-metrics), and retries on the failed-poll schedule described in [Session lifecycle](/docs/en/self-hosted-environments#session-lifecycle). The runner keeps serving its live sessions. Before v2.1.246, the runner read such a response as an empty work queue, which could end its live sessions or make it exit.
-* **A session fails with `no longer exists on the remote` or `couldn't find remote ref`**: the runner reads git's `couldn't find remote ref` as a deleted branch. The branch can still exist. Look for it on your git host, under exactly the name in the message, then check each cause that fits:
+* **A session fails with `couldn't be found in the remote repository` or `couldn't find remote ref`**: look for the branch on your git host. Search for exactly the name in the message.
 
-  * **The branch is gone**: restore it, as the message asks.
+  The session's error includes `Retrying will fail the same way until you fix the missing branch described below.` When the error names the branch, the text under `Last output before exit:` reads:
+
+  ```text theme={null}
+  The branch '<ref>' couldn't be found in the remote repository <repo>. If it was never pushed, push it. If it was deleted after a merge, restore it from its pull request. Then send a new message, or start a new session from a branch that has been pushed. (couldn't find remote ref)
+  ```
+
+  * **The branch isn't on the host**: push it if it was never pushed, or restore it from its pull request if it was deleted after a merge.
   * **The branch exists and you don't administer the runner**: send the runner's administrator the full message and tell them the branch exists.
   * **The branch exists and the runner has a `checkout` hook**: a git command in your hook can print `couldn't find remote ref` to stderr before the hook exits non-zero. Find that command, and correct the ref it asks for or the remote it fetches from. The runner passes your hook the revision the session asked for as [`CLAUDE_RUNNER_REPO_REF`](/docs/en/self-hosted-environments-configuration#checkout).
   * **The branch exists and the runner has no `checkout` hook**: the runner fetches the branch itself. If a [`--git-host-rewrite`](#rewrite-git-urls-for-private-networks) applies to the repository, confirm that the host it rewrites to has the branch under the same name, and push the branch there if it doesn't.
   * **The branch exists and the runner is older than v2.1.301**: upgrade the runner as described in [Pin the version](#pin-the-version), so that a different failure shows its own error. Before v2.1.301, other failures with `couldn't find remote ref` in their error output were also reported as a deleted branch.
 
-  Once the runner is upgraded or the cause is fixed, retry the session or start a new one. If none of these checks finds the cause, [report an issue](#report-an-issue).
+  Once the runner is upgraded or the cause is fixed, send the session a new message, or start a new session from a branch that has been pushed. If none of these checks finds the cause, [report an issue](#report-an-issue). Before v2.1.314, the message said the branch `no longer exists on the remote`. Follow the same checks for that message.
 
   For the source the session pushes results to, a deleted branch fails the session. For a git source the session only reads from, the runner skips that source and continues on the remaining ones. The runner fails the session when skipping would leave it with no repository at all. Before v2.1.228, such a session started in an empty directory.
 * **Claude Tag sometimes doesn't post its reply in Slack**: the reply reminder is a [hook the control plane supplies](/docs/en/self-hosted-environments-configuration#how-each-session’s-config-is-assembled). Confirm the runner is Claude Code v2.1.229 or later with `claude --version`, since older runners ignore supplied hooks; confirm `python3 --version` succeeds inside the runner image, since the hooks run `python3`; and confirm no settings file turns hooks off, whether `disableAllHooks` in `managed-settings.json`, the runner user's `~/.claude/settings.json`, or the repository's `.claude/settings.json` or `.claude/settings.local.json`, or `allowManagedHooksOnly` or a [`strictPluginOnlyCustomization`](/docs/en/settings-reference#strictpluginonlycustomization) that covers hooks in managed settings.
@@ -103871,7 +103886,7 @@ The time limit requires Claude Code v2.1.285 or later. Before v2.1.288, it appli
 The time limit counts from the moment the command enters the background:
 
 * A command that Claude starts in the background gets 30 minutes, or the `timeout` Claude passes with `run_in_background`, up to a maximum of 2 hours
-* A command that starts in the foreground and then moves to the background, for example at its timeout, gets 30 minutes from the move
+* A command that starts in the foreground and then moves to the background at its timeout gets 30 minutes from the move
 
 In a run with the `-p` flag whose prompt you pass as text rather than with `--input-format stream-json`, both defaults are 10 minutes instead of 30, because the run [waits for background commands after its result](/docs/en/headless#background-tasks-at-exit).
 
@@ -104940,7 +104955,7 @@ If you don't set `effort`, Claude Code resolves the effort level itself, in the 
 
 > [!NOTE]
 >
-> `effort` trades latency and token cost for reasoning depth within each response. [Extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) is a separate feature that produces `thinking` blocks in the output, and the `display` field on `ThinkingConfig` for [Python](/docs/en/agent-sdk/python#thinkingconfig) or [TypeScript](/docs/en/agent-sdk/typescript#thinkingconfig) controls whether you receive their text. They are independent: you can set `effort: "low"` with extended thinking enabled, or `effort: "max"` without it.
+> `effort` trades latency and token cost for reasoning depth within each response. [Extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) produces `thinking` blocks in the output, and the `display` field on `ThinkingConfig` for [Python](/docs/en/agent-sdk/python#thinkingconfig) or [TypeScript](/docs/en/agent-sdk/typescript#thinkingconfig) controls whether you receive their text.
 
 Use lower effort for agents doing simple, well-scoped tasks, such as listing files or running a single grep, to reduce cost and latency. Set `effort` in the top-level `query()` options for the [session](/docs/en/sub-agents#choose-an-effort-level), or per subagent with the `effort` field on [`AgentDefinition`](/docs/en/agent-sdk/subagents#agentdefinition-configuration) to override the session level.
 
@@ -113091,7 +113106,7 @@ ThinkingConfig = ThinkingConfigAdaptive | ThinkingConfigEnabled | ThinkingConfig
 | :- | :- | :- |
 | `adaptive` | `type`, `display` | Claude adaptively decides when to think |
 | `enabled` | `type`, `budget_tokens`, `display` | Enable thinking with a specific token budget |
-| `disabled` | `type` | Disable thinking |
+| `disabled` | `type` | Turn thinking off [where the model and provider allow it](/docs/en/model-config#where-you-cant-turn-thinking-off) |
 
 The optional `display` field controls whether thinking text is returned `"summarized"` or `"omitted"`. On Claude Opus 4.7 and later, the API default is `"omitted"`, so set `"summarized"` to receive thinking content in [`ThinkingBlock`](#thinkingblock) outputs. On providers such as Amazon Bedrock and Google Cloud's Agent Platform, Claude Code doesn't pass `display` for earlier models it recognizes. Those are Opus 4.6, Sonnet 4.6, Haiku 4.5, and earlier models, which use their default.
 
@@ -120301,7 +120316,7 @@ interface Query extends AsyncGenerator<SDKMessage, void> {
 | `rewindFiles(userMessageId, options?)` | Restores files to their state at the specified user message. Pass `{ dryRun: true }` to preview changes. Requires `enableFileCheckpointing: true`. See [File checkpointing](/docs/en/agent-sdk/file-checkpointing) |
 | `setPermissionMode()` | Changes the permission mode (only available in streaming input mode) |
 | `setModel()` | Changes the model (only available in streaming input mode). Passing `undefined` or the string `"default"` resets to [Claude Code's default model](/docs/en/model-config). A session in `auto` mode [changes to `default` mode](/docs/en/agent-sdk/permissions#auto-mode-auto) if the new model doesn't support auto mode |
-| `setMaxThinkingTokens()` | *Deprecated:* Use the `thinking` option instead. Changes the maximum thinking tokens. Passing `null` resets thinking to the session default: a mid-session override is cleared, and thinking stays off for sessions that have it disabled |
+| `setMaxThinkingTokens()` | *Deprecated:* Use the `thinking` option instead. Changes the maximum thinking tokens. Pass `null` to undo earlier calls and restore the `thinking` or `maxThinkingTokens` option the session started with |
 | `applyFlagSettings(settings)` | Merges settings into the session's flag settings layer at runtime (only available in streaming input mode). See [`applyFlagSettings()`](#applyflagsettings) |
 | `updateSettings(source, settings)` | Writes one allowlisted key to the project's local settings file or your user settings file, so the value persists for later sessions. See [`updateSettings()`](#updatesettings). Requires TypeScript SDK v0.3.257 or later, which bundles Claude Code v2.1.257 |
 | `initializationResult()` | Returns the full initialization result including supported commands, models, account info, and output style configuration |
@@ -125069,8 +125084,10 @@ type ThinkingDisplay = "summarized" | "omitted";
 type ThinkingConfig =
   | { type: "adaptive"; display?: ThinkingDisplay } // The model determines when and how much to reason (Opus 4.6+)
   | { type: "enabled"; budgetTokens?: number; display?: ThinkingDisplay } // Fixed thinking token budget
-  | { type: "disabled" }; // No extended thinking
+  | { type: "disabled" }; // Turn thinking off where the model and provider allow it
 ```
+
+For `disabled`, see [where you can't turn thinking off](/docs/en/model-config#where-you-cant-turn-thinking-off).
 
 The optional `display` field controls whether thinking text is returned `"summarized"` or `"omitted"`. On Claude Opus 4.7 and later, the API default is `"omitted"`, so set `"summarized"` to receive thinking content in `thinking` blocks. On providers such as Amazon Bedrock and Google Cloud's Agent Platform, Claude Code doesn't pass `display` for earlier models it recognizes. Those are Opus 4.6, Sonnet 4.6, Haiku 4.5, and earlier models, which use their default.
 
