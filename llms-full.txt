@@ -20792,9 +20792,13 @@ If you closed the notice, open the file again to bring it back.
 
 #### Turn off scripts in SSH and WSL previews for your organization
 
-To keep [HTML previews in SSH and WSL sessions](#preview-html-files-in-ssh-and-wsl-sessions) from running scripts, set the [`disableBrowserExternalNavigation` managed setting](#managed-settings) to `true`. With this setting, users also can't [browse external sites](#restrict-external-browsing-for-your-organization) in the Browser pane.
+To keep [HTML previews in SSH and WSL sessions](#preview-html-files-in-ssh-and-wsl-sessions) from running scripts, set the [`disableRemotePreviewScripts` managed setting](#managed-settings) to `true`. Users can still browse external sites. Requires Claude Desktop v5.1231.0 or later.
 
-Set it in your [server-managed settings](/docs/en/server-managed-settings), or in a [Claude Code MDM policy or managed settings file](/docs/en/managed-settings#where-each-mechanism-stores-the-policy) on the computer that runs Desktop. Desktop doesn't read it from the remote machine or the WSL distribution. With a [third-party provider](/docs/en/third-party-integrations), use the MDM policy or the file.
+> [!NOTE]
+>
+> Earlier versions ignore `disableRemotePreviewScripts`. To stop the scripts there, update Desktop, or also set `disableBrowserExternalNavigation` to `true`. Users then [can't browse external sites](#restrict-external-browsing-for-your-organization) on any computer that receives `disableBrowserExternalNavigation`.
+
+Set each key in your [server-managed settings](/docs/en/server-managed-settings), or in a [Claude Code MDM policy or managed settings file](/docs/en/managed-settings#where-each-mechanism-stores-the-policy) on the computer that runs Desktop. Desktop doesn't read these keys from the remote machine, the WSL distribution, a [`policyHelper`](/docs/en/settings-reference#policyhelper), or [Desktop's own policies](#device-management-policies). With a [third-party provider](/docs/en/third-party-integrations), use the MDM policy or the file.
 
 > [!WARNING]
 >
@@ -20804,9 +20808,13 @@ Set it in your [server-managed settings](/docs/en/server-managed-settings), or i
 
 Then have users restart Desktop to make sure that the setting applies, and tell them what to expect:
 
-* **Files they open**: the preview doesn't run scripts, so charts and tables that scripts draw stay empty
+* **Files they open**: the preview doesn't run scripts, so charts and tables that scripts draw stay empty. Its notice starts with `This preview doesn't run scripts`.
 * **Previews that are running scripts**: if Desktop picks up the setting before the restart, they close. Users see `This preview closed because scripts are turned off for previews. Open the file again to view it without scripts.`
 * **Files they export**: if a user [exports a file](#preview-html-files-in-ssh-and-wsl-sessions) and opens it in a browser, its scripts run there, with or without this setting
+
+##### Check a computer for scripts that still run
+
+After the restart, open an HTML file from an SSH or WSL session on that computer. If the notice above the preview starts with `This preview doesn't load anything from the web`, scripts still run there. Check [Desktop's version](#check-your-version), where you put the key, and that its value is the JSON Boolean `true`.
 
 ### Browse external sites
 
@@ -22681,6 +22689,7 @@ Managed settings override project and user settings and apply to Claude Code ses
 | `browserExternalPageTools` | set to `"disabled"` to prevent Claude from using tools to read or act on external pages in the [Browser pane](#browse-external-sites). Users can still navigate to external sites themselves, and local dev server previews are unaffected. |
 | `disableMobileSimulatorTools` | set to `true` to block Claude's tools for controlling and capturing devices in the [iOS Simulator pane](/docs/en/desktop-ios-simulator#turn-off-simulator-access). The pane stays usable for the user's own taps; only Claude's access is removed. The value must be the JSON boolean `true`; the string `"true"` is ignored. |
 | `disableBrowserExternalNavigation` | set to `true` to turn off external browsing in the [Browser pane](#browse-external-sites) entirely. Neither users nor Claude can navigate to external sites, and localhost dev server previews are unaffected. HTML previews in SSH and WSL sessions [don't run scripts](#turn-off-scripts-in-ssh-and-wsl-previews-for-your-organization). The value must be the JSON boolean `true`; the string `"true"` is ignored. |
+| `disableRemotePreviewScripts` | set to `true` to [turn off only the scripts in HTML previews](#turn-off-scripts-in-ssh-and-wsl-previews-for-your-organization) in SSH and WSL sessions. Desktop doesn't read it from the remote machine or the WSL distribution. The value must be the JSON boolean `true`; the string `"true"` is ignored. Requires Claude Desktop v5.1231.0 or later. |
 | `sshConfigs` | pre-configure [SSH connections](#pre-configure-ssh-connections-for-your-team) that appear in the environment selector. Users can't delete managed connections or edit anything but their own **Worktree folder**. |
 | `sshHostCommands` | give users [SSH connections whose host comes from a command](#distribute-commands-to-your-team), alongside their own. Desktop reads it from the managed settings file or MDM policy on the computer, and ignores it in [server-managed settings](/docs/en/server-managed-settings). Requires Claude Desktop v3.6556.0 or later on macOS or Linux, or v4.16336.0 or later on Windows, signed in with a Claude account. On Windows, Desktop also has to [connect through the OpenSSH client](#use-your-ssh-configuration). |
 | `sshHostAllowlist` | restrict [SSH sessions](#restrict-which-ssh-hosts-users-can-connect-to) to hosts whose resolved hostname matches one of these patterns. Read from managed settings only. |
@@ -22688,7 +22697,12 @@ Managed settings override project and user settings and apply to Claude Code ses
 | `disableSshSavedPasswords` | set to `true` to stop Desktop from offering to remember SSH passwords and from using or showing the ones it saved earlier. Turning it on doesn't delete them. Read from managed settings only. Requires Claude Desktop v1.49585.0 or later. |
 | `managedMcpServers` | push MCP server configurations to all users. Available in third-party (3P) Desktop deployments only. In each entry, set a transport of `"http"`, `"sse"`, or `"stdio"`, connection details, and optionally a `toolPolicy` map to restrict which of that server's tools users can invoke. Deliver it through the managed settings file, MDM, or a Claude apps gateway policy's [`desktop` block](/docs/en/claude-apps-gateway-config#claude-desktop-overlay), since 3P deployments don't receive admin-console settings. To deliver it through the gateway, you need Claude Code v2.1.232 or later on the gateway server. This is the desktop app's own key; Claude Code reads a [same-named managed setting](/docs/en/managed-mcp#provide-servers-through-managed-settings) of its own, with a different entry shape. |
 
-If you turn a feature off with `browserExternalPageTools`, `disableMobileSimulatorTools`, or `disableBrowserExternalNavigation` in a computer's [highest-ranked MDM policy or managed settings file](/docs/en/managed-settings#how-claude-code-combines-managed-sources), the feature stays off there. It stays off even when your [server-managed settings](/docs/en/server-managed-settings) leave that key unset or allow the feature. Don't use a user-level `HKCU` registry value for this. To turn the feature back on, remove the value wherever you set it. Requires Claude Desktop v4.4212.0 or later.
+If you turn a feature off with one of these four keys in a computer's [highest-ranked MDM policy or managed settings file](/docs/en/managed-settings#how-claude-code-combines-managed-sources), the feature stays off there:
+
+* **`browserExternalPageTools`, `disableMobileSimulatorTools`, `disableBrowserExternalNavigation`**: requires Claude Desktop v4.4212.0 or later
+* **`disableRemotePreviewScripts`**: requires Claude Desktop v5.1231.0 or later
+
+It stays off even when your [server-managed settings](/docs/en/server-managed-settings) leave that key unset or allow the feature. Don't use a user-level `HKCU` registry value for this. To turn the feature back on, remove the value wherever you set it.
 
 Which managed settings reach a Desktop session depends on where that session runs. Model restrictions such as [`availableModels`](/docs/en/model-config#restrict-model-selection) are enforced in Desktop's Claude Code sessions the same way as in the terminal CLI; see [surface coverage](/docs/en/model-config#surface-coverage).
 
@@ -22753,7 +22767,14 @@ Replace the placeholder with your claude.ai organization ID, shown in [claude.ai
 >
 > Check the `forceLoginOrgUUID` value before you deploy it. If the ID isn't your organization's, people in your organization can't use Claude Desktop unless they also belong to an organization with that ID. To recover, deploy the correct ID and have them restart Claude Desktop.
 
-If you set `forceLoginMethod` and `forceLoginOrgUUID` in Claude Code's [managed settings](/docs/en/managed-settings), you don't change the Claude Desktop sign-in screen.
+If you set `forceLoginMethod` and `forceLoginOrgUUID` in Claude Code's [managed settings](/docs/en/managed-settings), you don't change the Claude Desktop sign-in screen. A person can still use Claude Desktop with their own Claude API key or [Claude Console account](https://claude.com/docs/third-party/claude-desktop/claude-api#which-devices-offer-the-claude-api-account-sign-in), and run Code tab sessions that way.
+
+To stop that, also deploy `forceLoginOrgUUID` in the Claude Desktop policy (in `HKLM` on Windows), with your claude.ai organization ID. Unless the policy itself [selects the Claude API](https://claude.com/docs/third-party/claude-desktop/claude-api#choose-an-authentication-approach), Claude Desktop stops using a person's own API key or Console account at the app's next launch.
+
+Check two cases before you deploy it:
+
+* **Claude Console organizations**: don't deploy `forceLoginOrgUUID` on its own with a Claude Console organization's ID, or you'd lock your people out of Claude Desktop. See [Which devices offer the Claude API account sign-in](https://claude.com/docs/third-party/claude-desktop/claude-api#which-devices-offer-the-claude-api-account-sign-in) instead.
+* **Enterprise Admin Console**: if it delivers your computers' Claude Desktop configuration, update them to Claude Desktop v2.37337.0 or later first, because earlier versions ignore it once this key is set. See [Keep a device on its managed profile](https://claude.com/docs/third-party/claude-desktop/admin-console#keep-a-device-on-its-managed-profile).
 
 ### Network access requirements
 
@@ -44775,7 +44796,18 @@ This table lists the ones mods use most. The first column is the call your mod m
 | `session.receive` | `($, e) => ({ text: e.text })`. Fire it with `$.session.receive({ origin: { kind: 'peer-send-message' }, text })`. |
 | `ui.render` | `() => ({ type: 'Text', props: {}, children: ['...'] })` |
 
-`expect` has the assertions `toBe`, `toEqual`, `toMatch`, `toMatchObject`, `toContain`, `toBeDefined`, `toBeUndefined`, and `toThrow`, and `.not` before any of them.
+### Check a result with `expect`
+
+The kit has these assertions, and the one you pick goes after the value you're checking, as in `expect(answer.text).toBe('ok')`:
+
+* **Equality**: `toBe` for the same value or object, `toEqual` for structure, `toStrictEqual` for structure plus `undefined` fields and the prototype, and `toMatchObject` for the fields you name
+* **Text**: `toMatch`, which takes a regular expression or a substring, `toStartWith`, and `toEndWith`
+* **Numbers**: `toBeGreaterThan`, `toBeGreaterThanOrEqual`, `toBeLessThan`, `toBeLessThanOrEqual`
+* **Contents**: `toContain` for a substring or a member, `toContainEqual` for a member compared by structure, `toHaveLength`, and `toHaveProperty`
+* **Presence and type**: `toBeDefined`, `toBeUndefined`, `toBeNull`, `toBeTruthy`, `toBeFalsy`, `toBeNaN`, `toBeInstanceOf`
+* **Throwing**: `toThrow`, for a function `expect` calls, or for a promise you check with `.rejects`
+
+Put `.not` in front of an assertion to check the opposite, and `.resolves` or `.rejects` to check what a promise settles with.
 
 When an `expect` fails inside a stub or hook that you passed to `on` as a plain function rather than an async generator, the test fails. The engine skips that hook, and the failure output names it, such as `in the test's store.set hook`.
 
@@ -95219,6 +95251,7 @@ Every key below links to its entry. Scope lists the [files](/docs/en/settings#se
 | [`disabledMcpjsonServers`](#disabledmcpjsonservers) | Reject specific servers from a project's [`.mcp.json`](/docs/en/mcp#project-scope) | MCP | Any file |
 | [`disableMobileSimulatorTools`](#disablemobilesimulatortools) | Block Claude's tools in the [desktop](/docs/en/desktop) iOS Simulator pane | Tools | Managed |
 | [`disableRemoteControl`](#disableremotecontrol) | Turn off [Remote Control](/docs/en/remote-control) everywhere it can start | Remote, desktop, and notifications | Any file |
+| [`disableRemotePreviewScripts`](#disableremotepreviewscripts) | Turn off scripts in the [desktop](/docs/en/desktop#preview-html-files-in-ssh-and-wsl-sessions) app's HTML previews in SSH and WSL sessions | Remote, desktop, and notifications | Managed |
 | [`disableSideloadFlags`](#disablesideloadflags) | Reject the CLI flags that sideload [plugins](/docs/en/plugins/overview), [subagents](/docs/en/sub-agents), and [MCP servers](/docs/en/mcp) | Enterprise and managed settings | Managed |
 | [`disableSkillShellExecution`](#disableskillshellexecution) | Stop [skills](/docs/en/skills) and custom commands from running inline shell | Plugins and skills | Any file |
 | [`disableWorkflows`](#disableworkflows) | Turn [dynamic workflows](/docs/en/workflows) off for everyone; use `enableWorkflows` for yourself | Hooks and automation | Any file |
@@ -96329,7 +96362,7 @@ With the setting on, Claude Code also stops these requests for an answer:
 * **Question and plan tools**: Claude Code leaves out [`AskUserQuestion`](/docs/en/tools-reference#askuserquestion-tool-behavior), `EnterPlanMode`, and `ExitPlanMode`, so a session in plan mode can't leave it on its own. A teammate in an agent team keeps `EnterPlanMode` and `ExitPlanMode`
 * **MCP elicitation**: Claude Code cancels an [elicitation request](/docs/en/mcp#respond-to-mcp-elicitation-requests) unless an [`Elicitation` hook](/docs/en/hooks#elicitation) answers it
 * **Permission hosts**: Claude Code doesn't ask your [`canUseTool` callback](/docs/en/agent-sdk/user-input) or [`--permission-prompt-tool`](/docs/en/cli-reference#cli-flags). To approve calls from code, answer from a `PermissionRequest` hook. Some calls are denied before any hook is asked, such as a [critical-path removal](/docs/en/permission-modes#critical-path-removals-in-each-permission-mode) in `auto` mode that no ask rule covers.
-* **Classifier billing notice**: where the [notice about billed classifier requests](/docs/en/auto-mode-classifier-billing#actions-denied-in-place-of-the-notice) would open a dialog, Claude Code doesn't show it and denies the actions that need those requests
+* **Classifier billing notice**: where the [notice about billed classifier requests](/docs/en/auto-mode-classifier-billing) would open a dialog, Claude Code doesn't show it and denies the actions that need those requests
 
 A session can still wait on the [workspace trust dialog](/docs/en/permissions#project-allow-rules-and-workspace-trust) and on [project MCP server approval](/docs/en/mcp#project-server-approvals-and-workspace-trust). Answer both before you leave the session running.
 
@@ -100137,6 +100170,30 @@ Turn off [Remote Control](/docs/en/remote-control): Claude Code then refuses `cl
   "disableRemoteControl": true
 }
 ```
+
+### `disableRemotePreviewScripts`
+
+Keep scripts from running when people [preview an HTML file](/docs/en/desktop#preview-html-files-in-ssh-and-wsl-sessions) from an SSH or WSL session in the desktop app. External browsing in the Browser pane is unaffected.
+
+The desktop app reads this key; the terminal CLI ignores it. Requires Claude Desktop v5.1231.0 or later. Earlier versions ignore the key: to stop the scripts there, also set [`disableBrowserExternalNavigation`](#disablebrowserexternalnavigation), which turns off external browsing too.
+
+* **Scope**: [`Managed`](#scopes). The desktop app doesn't read the key from the remote machine or the WSL distribution.
+* **Type**: Boolean; only the JSON Boolean `true` takes effect
+  * `true`: HTML previews in SSH and WSL sessions don't run scripts
+  * `false`: the key doesn't turn scripts off
+* **Default**: unset, so the key has no effect
+
+If the computer that runs the desktop app receives no other Claude Code managed settings, also set [`parentSettingsBehavior`](#parentsettingsbehavior) to `"merge"` in the managed settings that you create. On Windows, if you create a managed settings file, users also lose WSL sessions until you [allow them](/docs/en/admin-setup#wsl-sessions-in-claude-code-desktop). [Turn off scripts in SSH and WSL previews for your organization](/docs/en/desktop#turn-off-scripts-in-ssh-and-wsl-previews-for-your-organization) explains both and says where to set the key.
+
+This example shows the key alone, as you'd add it to managed settings that a computer already receives:
+
+```json managed-settings.json theme={null}
+{
+  "disableRemotePreviewScripts": true
+}
+```
+
+The desktop app ignores any other value, and a value that isn't a Boolean, such as the string `"true"` or `1`, also logs a warning.
 
 ### `enableArtifact`
 
