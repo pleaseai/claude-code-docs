@@ -2494,7 +2494,7 @@ Here's the formatter rule as a `PostToolUse` hook. It runs after every `Edit` or
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command", "command": "npx prettier --write --ignore-unknown \"$(jq -r '.tool_input.file_path')\"" }
+          { "type": "command", "command": "f=$(jq -r '.tool_input.file_path') && npx prettier --write --ignore-unknown \"$f\"" }
         ]
       }
     ]
@@ -17645,6 +17645,8 @@ Claude answers with an **Allow Claude to work in a folder on your device** card.
 
 The thread runs in [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), so Claude runs commands and edits files in that folder without asking you each time. If auto mode is unavailable or turned off in that computer's Claude Code, the thread runs without it, and any permission prompt it raises waits for your answer in the thread, as [Unblock a thread waiting on approval](#unblock-a-thread-waiting-on-approval) describes.
 
+To run the thread in another mode, start `claude remote-control` with [`--settings`](/docs/en/remote-control#start-a-remote-control-session). Then [`permissions.defaultMode`](/docs/en/permission-modes#start-in-a-different-mode), in that file or in that computer's settings, can pick another mode.
+
 While the thread runs, a laptop icon in its header shows whether your computer is connected. Click it to see which folder the thread is using or to turn the connection off. The thread pauses while that computer is asleep, and stops if the desktop app or `claude remote-control` quits.
 
 * **To get the thread going again**: see [Lost contact with your folder](#lost-contact-with-your-folder)
@@ -23346,7 +23348,7 @@ sudo apt update && sudo apt install claude-desktop
 
 Launch **Claude** from your application launcher, or run `claude-desktop` from a terminal, and sign in with your Anthropic account.
 
-The Linux app signs in the same way as on macOS and Windows: with a claude.ai subscription, or through your organization's SSO. For API-key authentication, use the [CLI](/docs/en/quickstart). To use Desktop with Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, or an LLM gateway instead, see [Claude Desktop on 3P](https://claude.com/docs/third-party/claude-desktop/overview). For proxy servers and custom certificate authorities in those deployments, see [network configuration](/docs/en/network-config).
+The Linux app signs in the same way as on macOS and Windows: with a claude.ai subscription, or through your organization's SSO. To use Desktop with a Claude API key, Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, or an LLM gateway instead, see [Claude Desktop on 3P](https://claude.com/docs/third-party/claude-desktop/overview). For proxy servers and custom certificate authorities in those deployments, see [network configuration](/docs/en/network-config).
 
 ### Install from a downloaded file
 
@@ -23662,11 +23664,16 @@ Back in the **Trigger** card, select a [schedule preset](#schedule-options).
 
 **8. Choose the permission mode and model**
 
-In the instructions box's toolbar, select a [permission mode](#permissions-for-scheduled-tasks) and model. If you leave them unchanged, runs use your Claude Code settings and the default model.
+In the instructions box's toolbar, select a [permission mode](#permissions-for-scheduled-tasks) and model.
+
+* **Permission mode**: if you leave it unchanged, runs use your Claude Code settings.
+* **Model**: if the model menu reads **Default · Set by admin** and you don't pick another model, runs use the model your organization set in [managed settings](/docs/en/managed-settings). A [catch-up run](#missed-runs) that starts as the app opens can use the [runtime default for your account](/docs/en/model-config#default-model-setting) instead.
 
 **9. Create the task**
 
 Click **Create**. If you haven't trusted the folder yet, Desktop asks you to trust it at this point. The task's detail page opens.
+
+To see which model **Default · Set by admin** stands for, click **Run now** on the detail page to run the task at once. Then [open the run's session](#find-a-runs-session), where the row under the prompt box shows the model's name.
 
 On the detail page, click the pencil icon to open the [**Edit** form](#manage-scheduled-tasks). There you can change the **Description** that Desktop filled in from your instructions, select **Worktree**, or switch the schedule to **Manual** or **Custom**.
 
@@ -23760,7 +23767,7 @@ You can also list, create, edit, and pause tasks by asking Claude in any Desktop
 
 To let a task change its own schedule or prompt with the `update_scheduled_task` MCP tool, click **Run now** and approve the call each time.
 
-To edit a task's prompt on disk, open `~/.claude/scheduled-tasks/<task-name>/SKILL.md` (or under [`CLAUDE_CONFIG_DIR`](/docs/en/env-vars) if set). The file uses YAML frontmatter for `name` and `description`, with the prompt as the body. Changes take effect on the next run. Schedule, folder, model, and enabled state are not in this file: change them through the Edit form or ask Claude.
+To edit a task's prompt on disk, open `~/.claude/scheduled-tasks/<task-name>/SKILL.md` (or under [`CLAUDE_CONFIG_DIR`](/docs/en/env-vars) if set). The file uses YAML frontmatter for `name` and `description`, with the prompt as the body. Changes take effect on the next run. Schedule, folder, and enabled state are not in this file: change them through the Edit form or ask Claude.
 
 ## Related resources
 
@@ -23945,6 +23952,7 @@ Match the message you see to a section below.
 | `A request to MCP server "<name>" was sent without your stored credentials` | [Authentication](#couldnt-read-the-stored-credentials-for-mcp-server) |
 | `This server's URL is missing or not a valid URL, so sign-in can't start` | [Authentication](#mcp-server-url-is-missing-or-not-a-valid-url) |
 | `Issuer mismatch in authorization response (RFC 9207)` | [Authentication](#issuer-mismatch-in-authorization-response) |
+| `Stopped an OAuth request` | [Authentication](#stopped-an-oauth-request) |
 | `Refusing to send credentials to non-https token endpoint` / `<short-name> from the MCP SDK for <server-url>` | [Authentication](#refusing-to-send-credentials-to-non-https-token-endpoint) |
 | `Cloud gateway session expired — run /login to reconnect.` | [Authentication](#cloud-gateway-session-expired) |
 | `Cloud gateway <url> no longer accepts this session` | [Authentication](#cloud-gateway-session-expired) |
@@ -24074,6 +24082,8 @@ Match the message you see to a section below.
 | `Ultrareview did not start` | [Command-line errors](#ultrareview-did-not-start) |
 | `Remote Control did not start: "<question>" got no answer` | [Command-line errors](#remote-control-did-not-start-got-no-answer) |
 | `` `<flag>` before `remote-control` is not carried over to the sessions Remote Control starts `` | [Command-line errors](#not-carried-over-to-the-sessions-remote-control-starts) |
+| `Remote Control did not start, because sessions would skip part or all of the --settings file` | [Command-line errors](#remote-control-did-not-start-because-of-the-settings-file) |
+| `The settings file <file> has changed since Remote Control started, so this session did not start` | [Command-line errors](#settings-file-changed-since-remote-control-started) |
 | `--sandbox is not supported by claude remote-control` / `--no-sandbox is not supported by claude remote-control` | [Command-line errors](#sandbox-is-not-supported-by-claude-remote-control) |
 | `` `claude import` is not yet available in this build `` | [Command-line errors](#claude-import-is-not-yet-available-in-this-build) |
 | `Could not read Claude Code config` | [Command-line errors](#could-not-read-claude-code-config) |
@@ -24648,7 +24658,7 @@ This denial means a hook or mod [changed the call's input](/docs/en/hooks#pretoo
 Later calls in the same Claude response can be denied with this reason:
 
 ```text theme={null}
-another call in this response was changed by a hook after auto mode reviewed it, or could not be confirmed unchanged
+another call in this response was changed after auto mode reviewed it, or could not be confirmed unchanged
 ```
 
 Claude can then issue each denied call again so the server reviews it. If a permission prompt opens, answer it. You don't need to do anything else unless Claude says in its reply that auto mode couldn't check the call. Then stop the change or approve the call yourself, and ask Claude to try the call again:
@@ -25645,6 +25655,19 @@ Issuer mismatch in authorization response (RFC 9207): expected "https://auth.exa
 
 Before v2.1.232, Claude Code used the v2 runtime only in a gradual rollout or when you set `MCP_SDK_GENERATION=v2`.
 
+### Stopped an OAuth request
+
+This message means that Claude Code stopped an [OAuth request for an MCP server](/docs/en/mcp#authenticate-with-remote-mcp-servers) because an OAuth endpoint redirected it. In both forms of the message, the first address is the one that sent the redirect:
+
+```text theme={null}
+Stopped an OAuth request, which can hold secrets: https://auth.example.com redirected it to https://other.example.com. Ask the owner of https://auth.example.com to remove that redirect.
+Stopped an OAuth request: https://auth.example.com redirected it more than 5 times. Ask the owner of https://auth.example.com to fix those redirects.
+```
+
+**What to do:**
+
+* Ask whoever runs the first address, such as the MCP server's operator, to remove or fix the redirect. Then try again from `/mcp`.
+
 ### Refusing to send credentials to non-https token endpoint
 
 On the [v2 runtime](/docs/en/mcp#mcp-client-runtimes), Claude Code sends an [MCP OAuth](/docs/en/mcp#authenticate-with-remote-mcp-servers) token request only to a token endpoint served over HTTPS or at `localhost`, `127.0.0.1`, or `::1`. This message means the server's token endpoint is neither, so Claude Code stopped before sending the request. That happens after the browser sign-in, so the browser step succeeds first, and again whenever Claude Code refreshes the server's token.
@@ -26030,7 +26053,7 @@ On [Amazon Bedrock](/docs/en/amazon-bedrock), the requests Claude Code itself se
 
 ### Host not allowed in a cloud session
 
-An outbound HTTP request from a cloud session or cloud scheduled task was blocked by the environment's network policy.
+In a cloud session or cloud scheduled task, a `403` or a DNS error such as `ENOTFOUND` can mean that the requested host isn't on the [cloud environment's allowlist](/docs/en/cloud-environments#access-levels). To confirm, check the host against that list. A `403` with this header confirms the block, but not every blocked request's `403` has it:
 
 ```text theme={null}
 HTTP 403
@@ -26387,6 +26410,8 @@ Unable to resize image — its pixels could not be decoded (the file may be dama
 ```
 
 Claude Code normally resizes large images automatically. These errors mean the image couldn't be decoded or resized to fit within the API limits.
+
+The error you see can name a different pixel limit, such as `2576x2576px` where these examples say `2000x2000px`.
 
 **What to do:**
 
@@ -27345,7 +27370,7 @@ Remote Control did not start: "Choose [1/2] (default: 1):" got no answer. You ca
 You started [Remote Control](/docs/en/remote-control) with a global `claude` flag before the `remote-control` verb, one that would restrict or configure the sessions Remote Control starts, such as `--settings`, `--setting-sources`, `--permission-mode`, `--disallowed-tools`, or `--mcp-config`. A flag placed before the verb never reaches those sessions. Claude Code refuses to start instead, naming the flag:
 
 ```text theme={null}
-Error: `--settings` before `remote-control` is not carried over to the sessions Remote Control starts, so Remote Control refuses to start rather than drop it — remove it, and give Remote Control's own options after the verb (see `claude remote-control --help`).
+Error: `--settings` before `remote-control` is not carried over to the sessions Remote Control starts, so Remote Control refuses to start rather than drop it — remove it, and give Remote Control's own options after the verb (see `claude remote-control --help`). Pass settings with `claude remote-control --settings <file>`.
 ```
 
 Claude Code doesn't refuse global flags that are harmless to drop, such as `--verbose`, `--model`, or a wrapper-injected `--session-id` or `--plugin-dir`: it ignores them and Remote Control starts.
@@ -27358,6 +27383,31 @@ Claude Code also refuses to start for a global flag it doesn't yet recognize as 
 * When the refused flag is `--permission-mode`, run `claude remote-control --permission-mode <mode>` to set the permission mode for the sessions Remote Control starts
 
 Before v2.1.248, `claude remote-control` didn't accept its own flags when a global flag came first, and the command failed with an `unknown option` error.
+
+### Remote Control did not start because of the `--settings` file
+
+The file you passed to [`claude remote-control --settings`](/docs/en/remote-control#start-a-remote-control-session) has a problem:
+
+```text theme={null}
+Error: Remote Control did not start, because sessions would skip part or all of the --settings file ./rc-settings.json: Invalid or malformed JSON
+```
+
+**What to do:**
+
+* Fix the problem the message names, then run your `claude remote-control` command again
+
+### The settings file has changed since Remote Control started
+
+This message in the terminal running `claude remote-control` means that sessions won't start from the file you passed to [`--settings`](/docs/en/remote-control#start-a-remote-control-session) as it is now:
+
+```text theme={null}
+Session failed: Error: The settings file /path/to/settings.json has changed since Remote Control started, so this session did not start. Restart `claude remote-control` to use it as it is now.
+```
+
+**What to do:**
+
+* To use the file as it is now, stop `claude remote-control` and run the same command again. To bring back the sessions it was serving, see [Resume sessions after stopping the server](/docs/en/remote-control#resume-sessions-after-stopping-the-server).
+* To keep the settings Remote Control started with, put the file's contents back as they were, then run the command again if `claude remote-control` has exited
 
 ### `--sandbox` or `--no-sandbox` is not supported by claude remote-control
 
@@ -29289,12 +29339,13 @@ Can't open — this session is running in another terminal
 This conversation is already open in another running Claude session — use that one, or close it and try again
 ```
 
-* **`running in another terminal`**: a terminal holds the conversation, for example one where you resumed it with `claude --resume` or `/resume`. The row also shows `Open in a terminal`.
-* **`already open in another running Claude session`**: another non-interactive Claude Code process holds it, for example a [background session](/docs/en/agent-view#the-supervisor-process) process for the same conversation that hasn't exited yet.
+* **`running in another terminal`**: a process other than a background session holds the conversation, for example a `claude -p` run, or a terminal where you resumed it with `claude --resume` or `/resume`. The row also shows `Open in a terminal`.
+* **`already open in another running Claude session`**: another [background session](/docs/en/agent-view#the-supervisor-process) holds it.
 
 **What to do:**
 
-* Continue the conversation in the process that has it open, or exit that process and open the row again
+* For `running in another terminal`: continue in that terminal, or exit that process or let it finish, and then try again
+* For `already open in another running Claude session`: use that session, or stop it and then try again
 
 Before v2.1.248, only the `already open in another running Claude session` refusal existed: a conversation resumed in a terminal didn't count as open, and opening the row started a second Claude Code process writing to the same conversation.
 
@@ -31365,7 +31416,7 @@ Configure your cloud to trust the OIDC token that GitHub issues to the workflow,
 > Create a Microsoft Entra application with a federated credential for your repository, following [Microsoft's guide to authenticating from GitHub Actions](https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect):
 >
 > * Register a Microsoft Entra application and add a federated identity credential that trusts tokens GitHub issues to your repository. A user-assigned managed identity works in place of an application. Both have the client ID you note below
-> * Assign the application the `Azure AI User` role on your Foundry resource. See [Azure RBAC configuration](/docs/en/microsoft-foundry#azure-rbac-configuration) for a narrower custom role
+> * Assign the application the `Foundry User` role on your Foundry resource. See [Azure RBAC configuration](/docs/en/microsoft-foundry#azure-rbac-configuration) for the other built-in role and custom roles
 >
 > Note the application's client ID, your tenant ID, and your subscription ID. You add them as secrets in the next step.
 
@@ -32920,7 +32971,7 @@ If your settings file already has a `hooks` key, add `Notification` as a sibling
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
-        "hooks": [{ "type": "command", "command": "jq -r '.tool_input.file_path' | xargs npx prettier --write" }]
+        "hooks": [{ "type": "command", "command": "f=$(jq -r '.tool_input.file_path') && npx prettier --write --ignore-unknown \"$f\"" }]
       }
     ],
     "Notification": [
@@ -33091,7 +33142,7 @@ This hook uses the `PostToolUse` event with an `Edit|Write` matcher, so it runs 
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path' | xargs npx prettier --write"
+            "command": "f=$(jq -r '.tool_input.file_path') && npx prettier --write --ignore-unknown \"$f\""
           }
         ]
       }
@@ -33206,7 +33257,7 @@ You can replace the `echo` with any command that produces dynamic output, like `
 
 Track when settings or skills files change during a session. The `ConfigChange` event fires when an external process or editor modifies a configuration file, so you can log changes for compliance or block unauthorized modifications.
 
-This example appends each change to an audit log. Add this to `~/.claude/settings.json`:
+This example appends each event to an audit log. Add this to `~/.claude/settings.json`:
 
 ```json theme={null}
 {
@@ -40379,7 +40430,7 @@ This example shows the shape with one hook that runs a linter on each file Claud
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
-        "hooks": [{ "type": "command", "command": "jq -r '.tool_input.file_path' | xargs npm run lint:fix" }]
+        "hooks": [{ "type": "command", "command": "f=$(jq -r '.tool_input.file_path') && npm run lint:fix -- \"$f\"" }]
       }
     ]
   }
@@ -44120,9 +44171,9 @@ Each of the others has its own page: [Hooks](/docs/en/hooks), [Skills](/docs/en/
 
 ## Mods built into Claude Code
 
-Some of Claude Code's own features are mods. To see the ones your session has, run `/plugin` at the Claude Code prompt and go to the **Installed** tab, which lists them under **Built-in**. You can't update or uninstall a built-in mod, and the table's last column says how to turn each one off. The [`mods active` line](#see-which-mods-a-session-loaded) omits built-in mods.
+Some of Claude Code's own features are mods. To see the ones your session has, run `/plugin` at the Claude Code prompt and go to the **Installed** tab, which lists them under **Built-in**. You can't update or uninstall a built-in mod. The [`mods active` line](#see-which-mods-a-session-loaded) omits built-in mods.
 
-This table lists each entry by the name `/plugin` shows:
+This table lists some of the **Built-in** entries by the name `/plugin` shows:
 
 | Name in `/plugin` | What it does | Where it's on | How to turn it off |
 | :- | :- | :- | :- |
@@ -44132,6 +44183,8 @@ This table lists each entry by the name `/plugin` shows:
 | `cc-plugin-sec-default` | Guards what your organization manages from the mods a user installs | [Where the guard loads](/docs/en/plugins/mods/admin#know-what-happens-by-default) | You can't. An administrator [sets the order](/docs/en/plugins/mods/admin#install-your-organizations-mods) in managed settings |
 | `cc-plugin-telemetry` | Sends the analytics records that Claude Code and its built-in mods log | Wherever Claude Code's own analytics are on | Disable it in `/plugin`, or turn analytics off, for example with [`DISABLE_TELEMETRY`](/docs/en/env-vars) |
 | `cc-plugin-you-should-know` | [You should know](/docs/en/interactive-mode#you-should-know-suggestions): a side agent shows a note above the prompt when it finds something you might have missed | Off until you [turn it on](/docs/en/interactive-mode#you-should-know-suggestions) | Disable it in `/plugin` |
+
+For a **Built-in** plugin that isn't in the table, [open its details in `/plugin`](/docs/en/plugins/install#manage-installed-plugins) to read what it does or to disable it.
 
 The settings and flags that stop installed mods, such as `disableAllHooks`, `--bare`, and `--safe-mode`, don't stop built-in mods.
 
@@ -44798,16 +44851,7 @@ This table lists the ones mods use most. The first column is the call your mod m
 
 ### Check a result with `expect`
 
-The kit has these assertions, and the one you pick goes after the value you're checking, as in `expect(answer.text).toBe('ok')`:
-
-* **Equality**: `toBe` for the same value or object, `toEqual` for structure, `toStrictEqual` for structure plus `undefined` fields and the prototype, and `toMatchObject` for the fields you name
-* **Text**: `toMatch`, which takes a regular expression or a substring, `toStartWith`, and `toEndWith`
-* **Numbers**: `toBeGreaterThan`, `toBeGreaterThanOrEqual`, `toBeLessThan`, `toBeLessThanOrEqual`
-* **Contents**: `toContain` for a substring or a member, `toContainEqual` for a member compared by structure, `toHaveLength`, and `toHaveProperty`
-* **Presence and type**: `toBeDefined`, `toBeUndefined`, `toBeNull`, `toBeTruthy`, `toBeFalsy`, `toBeNaN`, `toBeInstanceOf`
-* **Throwing**: `toThrow`, for a function `expect` calls, or for a promise you check with `.rejects`
-
-Put `.not` in front of an assertion to check the opposite, and `.resolves` or `.rejects` to check what a promise settles with.
+`expect` has its own set of assertions, such as `toEqual` and `toHaveLength`, which go after the value you're checking, as in `expect(answer.text).toBe('ok')`. For the full list, search `claude-code/index.d.ts` in [the types for your build](/docs/en/plugins/mods/create#get-the-types-for-your-build) for `type Matchers`. Put `.not` before the assertion to check the opposite. To check what a promise settles with, put `.resolves` or `.rejects` right after `expect(...)` and `await` the line, as in `await expect(promise).rejects.toThrow()`.
 
 When an `expect` fails inside a stub or hook that you passed to `on` as a plain function rather than an async generator, the test fails. The engine skips that hook, and the failure output names it, such as `in the test's store.set hook`.
 
@@ -45950,7 +45994,7 @@ To get the most out of prefix matching, Claude Code orders each request so conte
 | Project context | CLAUDE.md, auto memory, unscoped rules | Session starts, or after `/clear` or `/compact` |
 | Conversation | Your messages, Claude's responses, tool results | Every turn |
 
-A change to the conversation layer leaves the system prompt and project context cached. A change to the system prompt invalidates everything, because all later content now sits behind a different prefix. The third column gives common triggers rather than an exhaustive list, and the sections below cover the full set.
+An addition to the conversation layer leaves the system prompt and project context cached. A change to the system prompt invalidates everything, because all later content now sits behind a different prefix. The third column gives common triggers rather than an exhaustive list, and the sections below cover the full set.
 
 The prefix-match rule explains most of the behaviors on this page. [Plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode) and [skill loading](/docs/en/skills), for example, append their instructions as conversation messages, so the cached prefix stays intact.
 
@@ -46098,14 +46142,14 @@ Only a deny rule that matches in the tool-name position blocks a tool this way: 
 
 ### Compacting the conversation
 
-[Compaction](/docs/en/context-window#what-survives-compaction) replaces your message history with a summary. By design, this invalidates the conversation layer: the next request has a new, shorter history that doesn't share a prefix with the old one. The system prompt and project context layers can stay cached:
+[Compaction](/docs/en/context-window#what-survives-compaction) replaces your message history with a summary. By design, this invalidates the conversation layer: the next request has a new, shorter history that doesn't share a prefix with the old one.
 
 * **System prompt**: the next request reads this layer from the cache, unless a [resumed conversation](#resuming-a-session) kept a system prompt that is now out of date. The first time that conversation is compacted, Claude Code switches it to the current prompt, and the next request rebuilds this layer's cache once.
-* **Project context**: Claude Code reloads this layer from disk. The next request reads it from the cache only if CLAUDE.md and memory are unchanged since the session started.
+* **Project context**: Claude Code reloads this layer from disk. It's cached together with the conversation, so after `/compact` or automatic compaction its cache is rebuilt even if its files are unchanged.
 
 To produce the summary, Claude Code sends a separate request. The request repeats your conversation's system prompt, tools, and the history being summarized. It ends with a summarization instruction. While the cache is warm, that request reads your prefix from the cache. A mid-session `/compact` then costs a fraction of what the context size suggests and spends most of its time generating the summary.
 
-After a break longer than the [cache lifetime](#cache-lifetime), there is no cache left to read, so the summarization request reprocesses that history as uncached input. This is why `/compact` costs the most when you [resume an old session](/docs/en/sessions#resume-a-session). In both the warm and cold cases, the turn after compaction rebuilds the conversation cache for only the much shorter summary, so that turn isn't the slow part.
+After a break longer than the [cache lifetime](#cache-lifetime), there is no cache left to read, so the summarization request reprocesses that history as uncached input. This is why `/compact` costs the most when you [resume an old session](/docs/en/sessions#resume-a-session). In both the warm and cold cases, the turn after compaction rebuilds the conversation cache for only the much shorter history, so that turn isn't the slow part.
 
 > [!TIP]
 >
@@ -46405,7 +46449,7 @@ To install Claude Code, open a terminal and run the command for your system. If 
 >
 > **macOS, Linux, WSL:**
 >
-> ```bash theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+> ```bash theme={null}
 > curl -fsSL https://claude.ai/install.sh | bash
 > ```
 >
@@ -46413,13 +46457,13 @@ To install Claude Code, open a terminal and run the command for your system. If 
 >
 > **Windows PowerShell:**
 >
-> ```powershell theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+> ```powershell theme={null}
 > irm https://claude.ai/install.ps1 | iex
 > ```
 >
 > **Windows CMD:**
 >
-> ```batch theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+> ```batch theme={null}
 > curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd
 > ```
 >
@@ -46437,7 +46481,7 @@ To install Claude Code, open a terminal and run the command for your system. If 
 
 > [tab] Homebrew
 >
-> ```bash theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+> ```bash theme={null}
 > brew install --cask claude-code
 > ```
 >
@@ -46449,7 +46493,7 @@ To install Claude Code, open a terminal and run the command for your system. If 
 
 > [tab] WinGet
 >
-> ```powershell theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null} theme={null}
+> ```powershell theme={null}
 > winget install Anthropic.ClaudeCode
 > ```
 >
@@ -46761,13 +46805,14 @@ You can start a Remote Control session from the CLI, the [Claude Desktop app](/d
 > | `--capacity <N>` | Maximum number of concurrent sessions. Default is 32. Cannot be used with `--spawn=session`. |
 > | `--[no-]create-session-in-dir` | Pre-create one session in the current directory when the server starts, so you have somewhere to type immediately. In `worktree` mode this session stays in the current directory while on-demand sessions get isolated worktrees. On by default. If you pass `--no-create-session-in-dir` to start with none, Claude Code archives the server's sessions when you stop it, so there's nothing to [resume](#resume-sessions-after-stopping-the-server). |
 > | `--permission-mode <mode>` | Set the starting [permission mode](/docs/en/permission-modes) for the server's sessions, such as `acceptEdits`. Accepts `manual` as an alias for `default`; an unrecognized mode stops the server at startup and lists the valid modes. |
+> | `--settings <file>` | Apply a JSON settings file to the server's sessions, at the same [precedence](/docs/en/settings#settings-precedence) as `claude --settings`. Give a file path, not a JSON string. Requires Claude Code v2.1.321 or later. |
 > | `--chrome` / `--no-chrome` | Turn [Chrome integration](/docs/en/chrome) on or off in the sessions the server creates, so Claude can use Chrome on your machine while you work from another device. Without either flag, the session the server pre-creates and any session you start yourself from claude.ai/code or the Claude app begin with Chrome off, even if you [enabled Chrome by default](/docs/en/chrome#enable-chrome-by-default). A session the server starts for one of your [project](/docs/en/claude-projects) threads follows that setting instead, except in `bypassPermissions` mode. Requires Claude Code v2.1.273 or later. |
 > | `-d`, `--debug[=<filter>]` | Turn on debug logging for the server, optionally filtered by category. Pass a filter only in the `=` form, such as `--debug=api,hooks`. Requires Claude Code v2.1.282 or later. |
 > | `--debug-file <path>` | Write debug logs to the given file. |
 > | `--verbose` | Show detailed connection and session logs. |
 > | `--sandbox`, `--no-sandbox` | Removed in v2.1.300. If you pass either flag, the server [exits with an error](/docs/en/errors#sandbox-is-not-supported-by-claude-remote-control) instead of starting. |
 >
-> If you pass a global `claude` flag before `remote-control`, or a wrapper script adds one, Claude Code doesn't carry the flag over to the sessions the server creates. Claude Code lets the flag through only when dropping it is known not to change what those sessions can do, such as `--verbose` or `--model`. For any other flag, such as `--settings`, Claude Code [refuses to start](/docs/en/errors#not-carried-over-to-the-sessions-remote-control-starts) and names the flag to remove.
+> If you pass a global `claude` flag before `remote-control`, or a wrapper script adds one, Claude Code doesn't carry the flag over to the sessions the server creates. The server still starts with some flags, such as `--verbose` or `--model`. With any other flag, the server [doesn't start](/docs/en/errors#not-carried-over-to-the-sessions-remote-control-starts). To pass a settings file, put `--settings` after `remote-control`.
 >
 > To sandbox the sessions the server starts, turn on [sandboxing](/docs/en/sandboxing) in a settings file.
 >
@@ -47693,7 +47738,7 @@ In every other case, including a run that an API or GitHub trigger starts, Claud
 
 Each scheduled task uses a [cloud environment](/docs/en/cloud-environments) that controls network access, environment variables, and setup scripts. The task inherits the environment's network policy on every run.
 
-The **Default** environment uses **Limited** access with **Allow package managers** checked, so its runs reach the [default allowlist](/docs/en/cloud-environments#default-allowed-domains). A request to a blocked host fails with `403` and `x-deny-reason: host_not_allowed`. MCP connector traffic is routed through Anthropic's servers, so the connectors you add to the task work without adding their hosts to **Allowed domains**. Remove any connectors you don't need under [Connectors](#connectors).
+The **Default** environment uses **Limited** access with **Allow package managers** checked, so its runs reach the [default allowlist](/docs/en/cloud-environments#default-allowed-domains). A request to a blocked host fails with [an error such as a `403` or `ENOTFOUND`](/docs/en/errors#host-not-allowed-in-a-cloud-session). MCP connector traffic is routed through Anthropic's servers, so the connectors you add to the task work without adding their hosts to **Allowed domains**. Remove any connectors you don't need under [Connectors](#connectors).
 
 To allow additional domains on one of your own environments, follow these steps. An [organization-shared environment](/docs/en/cloud-environments#organization-shared-environments) opens read-only here, so an Owner changes its network access from the **Cloud environments** page in [admin settings](https://claude.ai/admin-settings) instead.
 
@@ -51961,7 +52006,7 @@ Confirm the binary exists and is executable:
 > Get-Command claude | Select-Object Source
 > ```
 
-On Linux, check for missing shared libraries. If `ldd` shows missing libraries, you may need to install system packages. On Alpine Linux and other musl-based distributions, see [Alpine Linux setup](/docs/en/setup#alpine-linux-and-musl-based-distributions).
+On Linux, check for missing shared libraries. If `ldd` shows missing libraries, you may need to install system packages. On Alpine Linux and other musl-based distributions, see [Linux musl or glibc binary mismatch](#linux-musl-or-glibc-binary-mismatch).
 
 ```bash theme={null}
 ldd "$(command -v claude)" | grep "not found"
@@ -52479,13 +52524,11 @@ If this prints `False`, you are on a 32-bit edition of Windows. Claude Code requ
 
 ### Linux musl or glibc binary mismatch
 
-If you see errors about missing shared libraries like `libstdc++.so.6` or `libgcc_s.so.1` after installation, the installer may have downloaded the wrong binary variant for your system.
+If you see errors about missing shared libraries like `ld-linux-x86-64.so.2` or `ld-linux-aarch64.so.1` after installation, the installer may have downloaded the wrong binary variant for your system.
 
 ```text theme={null}
-Error loading shared library libstdc++.so.6: No such file or directory
+Error loading shared library ld-linux-x86-64.so.2: No such file or directory
 ```
-
-This can happen on glibc-based systems that have musl cross-compilation packages installed, causing the installer to misdetect the system as musl.
 
 **Solutions:**
 
@@ -52497,11 +52540,7 @@ This can happen on glibc-based systems that have musl cross-compilation packages
 
 2. **If you're on glibc but got the musl binary**, remove the installation and reinstall. You can also manually download the correct binary using the manifest at `https://downloads.claude.ai/claude-code-releases/{VERSION}/manifest.json`. File a [GitHub issue](https://github.com/anthropics/claude-code/issues) with the output of `ldd --version` and `ls /lib/libc.musl*`.
 
-3. **If you're actually on musl**, such as Alpine Linux, install the required packages:
-   ```bash theme={null}
-   apk add libgcc libstdc++ ripgrep
-   ```
-   On Alpine, `ripgrep` is in the community repository. If `apk` reports that the package is missing, see [Alpine Linux setup](/docs/en/setup#alpine-linux-and-musl-based-distributions).
+3. **If you're on musl but got the glibc binary**, [remove the installation](/docs/en/setup#uninstall-claude-code). On Alpine Linux, first install the packages that [Alpine Linux setup](/docs/en/setup#alpine-linux-and-musl-based-distributions) names. Then run the [install command](/docs/en/setup#install-claude-code), which installs the musl binary.
 
 ### `Illegal instruction`
 
@@ -53042,7 +53081,7 @@ If the Search tool, `@file` mentions, custom agents, or custom skills aren't fin
 > apk add ripgrep
 > ```
 >
-> `ripgrep` is in Alpine's community repository. If `apk` reports that the package is missing, see [Alpine Linux setup](/docs/en/setup#alpine-linux-and-musl-based-distributions).
+> `ripgrep` is in Alpine's community repository.
 
 > [tab] Arch
 >
@@ -54806,8 +54845,6 @@ Claude Code includes `/deep-research` as a built-in workflow:
 | Command | What it does |
 | :- | :- |
 | `/deep-research <question>` | Fans out web searches on a question across several angles, fetches and cross-checks the sources it finds, votes on each claim, and returns a cited report with claims that didn't survive cross-checking filtered out. Requires the [WebSearch tool](/docs/en/tools-reference#websearch-tool-behavior) to be available |
-
-`/deep-research` runs only when you invoke it.
 
 [Workflows you save](#save-the-workflow-for-reuse) yourself become commands the same way and appear in `/` autocomplete alongside the bundled ones.
 
@@ -57015,11 +57052,16 @@ For aliases, version prefixes, and `modelOverrides` entries, see [Pin models for
 
 ### When a model is disabled mid-session
 
-If your account loses access to the model your session is running on, for example because an administrator disables it in your Amazon Bedrock account, Claude Code switches the session to another model instead of failing each request, and shows `Switched to <fallback> because <model> is not available`. It tries the same models as the startup fallback: earlier versions of the same tier first and, for an Opus session with no Opus version available, the default Sonnet model.
+When Amazon Bedrock rejects your session's model as unavailable to your account, Claude Code switches your session to another model, and you can keep working. You see a message that starts with `Switched to <fallback> because <model> is not available`. This happens, for example, when an administrator disables the model or the newest model isn't yet available to your account.
 
-The switch applies only to a tier you haven't pinned, the same condition as the startup fallback. A session on a specific version you picked, or on an [application inference profile ARN](#map-each-model-version-to-an-inference-profile), keeps its model and, without a fallback model chain, the request fails instead. In [auto mode](/docs/en/permission-modes#enable-auto-mode-on-bedrock-agent-platform-or-foundry), Claude Code switches only to a model auto mode supports on Amazon Bedrock. If none of those models is available either, the request fails with [AWS authentication failed](/docs/en/errors#aws-authentication-failed) and a hint to enable the model.
+If you configured a [fallback model chain](/docs/en/model-config#fallback-model-chains), Claude Code switches to your configured fallback instead. Without a chain, the request fails in cases such as these:
 
-A [fallback model chain](/docs/en/model-config#fallback-model-chains) you configure replaces the tier switch: on these refusals Claude Code switches to your configured fallback instead. To have refused requests fail rather than switch, set [`CLAUDE_CODE_DISABLE_MODEL_ACCESS_FALLBACK=1`](/docs/en/env-vars). A fallback chain you configured still switches on these refusals; remove the chain as well if you want every refused request to fail.
+* Your session is on a pinned model, a specific version you picked, or an [application inference profile ARN](#map-each-model-version-to-an-inference-profile)
+* None of the [models Claude Code tries](#startup-model-checks) is available. In [auto mode](/docs/en/permission-modes#enable-auto-mode-on-bedrock-agent-platform-or-foundry), Claude Code only switches to a model auto mode supports on Amazon Bedrock.
+
+To keep working, run `/model` in the session and press `s` on a model your account can use, which leaves your default unchanged. A `403` shows as [AWS authentication failed](/docs/en/errors#aws-authentication-failed).
+
+To have rejected requests fail instead of switching, set [`CLAUDE_CODE_DISABLE_MODEL_ACCESS_FALLBACK=1`](/docs/en/env-vars). If you configured a fallback model chain, remove it as well, because Claude Code still moves to that fallback.
 
 ## Cross-region inference profile prefixes
 
@@ -57178,7 +57220,7 @@ claude --model anthropic.claude-haiku-4-5
 
 ### Run Mantle alongside the Invoke API
 
-The models available to you on Mantle may not include every model you use today. Setting both `CLAUDE_CODE_USE_BEDROCK` and `CLAUDE_CODE_USE_MANTLE` lets Claude Code call both endpoints from the same session. Model IDs that match the Mantle format are routed to Mantle, and all other model IDs go to the Amazon Bedrock Invoke API.
+The models available to you on Mantle may not include every model you use today. If you connect without a gateway, set both `CLAUDE_CODE_USE_BEDROCK` and `CLAUDE_CODE_USE_MANTLE` to call Mantle and the Invoke API from the same session. Model IDs that match the Mantle format are routed to Mantle, and all other model IDs go to the Amazon Bedrock Invoke API.
 
 ```bash theme={null}
 export CLAUDE_CODE_USE_BEDROCK=1
@@ -57284,7 +57326,12 @@ What a `403` from the Mantle endpoint means depends on whether the error names a
 * If the error names a `bedrock-mantle:` action, grant your IAM identity that action.
 * If the error names no action and your credentials are valid, your AWS account has not been granted access to the model you requested. Contact your AWS account team to request access.
 
-A `400` that names the model ID means that model isn't served on Mantle. Mantle has its own model lineup separate from the standard Amazon Bedrock catalog, so inference profile IDs such as `us.anthropic.claude-sonnet-4-6` don't work. Use a Mantle-format ID, or enable [both endpoints](#run-mantle-alongside-the-invoke-api) so Claude Code sends inference profile IDs to the Invoke API.
+A `400` that names the model ID means that model isn't served on Mantle. Mantle has its own model lineup separate from the standard Amazon Bedrock catalog, so inference profile IDs such as `us.anthropic.claude-sonnet-4-6` don't work.
+
+To clear the error:
+
+* **Without a gateway**: use a [Mantle-format ID](#select-a-mantle-model) that Mantle serves, or [run Mantle alongside the Invoke API](#run-mantle-alongside-the-invoke-api) to send IDs in other formats to that API.
+* **Through a gateway**: ask its operator which model IDs to use.
 
 ## Additional resources
 
@@ -59478,8 +59525,10 @@ Have these in place before you start:
 | PostgreSQL 11 or later | Backs the device sign-in flow and rate-limit counters. A managed PostgreSQL service works, including the smallest tier; see [which databases are supported](/docs/en/claude-apps-gateway-deploy#postgres). With [spend limits](/docs/en/claude-apps-gateway-spend-limits), it also holds durable spend, audit, and identity tables that should be backed up. TLS via `?sslmode=require` is recommended. PostgreSQL 11, 12, and 13 require Claude Code v2.1.290 or later on the gateway server. The PostgreSQL project no longer maintains those versions, so use a newer one where you can. |
 | Model upstream | Amazon Bedrock credentials, Claude Platform on AWS credentials, Google Cloud credentials, a Microsoft Foundry resource, or an Anthropic API key. Multiple upstreams are supported with failover. |
 | HTTPS | The gateway must be reachable over `https://` from developer laptops and from any browser used for sign-in; the gateway serves the device-verification page on the same listener. Either provide a TLS cert via `listen.tls` or run behind a TLS-terminating ingress, and set `listen.public_url` to the external origin in both cases. At `/login`, Claude Code accepts a plain `http://` origin only when the gateway host is loopback: `localhost`, `127.0.0.1`, or `::1`. |
-| Private-network address | At `/login`, Claude Code requires the gateway's hostname or IP address to resolve only to private addresses: RFC 1918, link-local, CGNAT `100.64.0.0/10`, IPv6 ULA `fc00::/7`, or loopback. For a gateway you host, any public address outside a block you declare is rejected; see the [threat model](/docs/en/claude-apps-gateway-deploy#threat-model-summary) in the deployment guide. If developer machines route HTTPS through a corporate proxy, sign-in also requires the proxy host to resolve to private addresses; if it doesn't, add the gateway host to `NO_PROXY` so the CLI connects directly. If your internal network is numbered from public IPv4 space your organization owns, [declare those blocks](#allow-a-gateway-on-public-address-space-you-own) so `/login` accepts a gateway there. |
+| Private-network address | Claude Code's `/login` requires the gateway's hostname or IP address to resolve only to private addresses: RFC 1918 and link-local ranges, CGNAT `100.64.0.0/10`, IPv6 ULA `fc00::/7` and loopback. See the [threat model](/docs/en/claude-apps-gateway-deploy#threat-model-summary). If your internal network is numbered from public IPv4 space your organization owns, [declare those blocks](#allow-a-gateway-on-public-address-space-you-own) so `/login` accepts a gateway there. |
 | Linux runtime | The gateway server runs only on the native Linux binary. macOS works for local development. Windows isn't supported as a server platform. |
+
+When `HTTPS_PROXY` or `HTTP_PROXY` applies to the gateway host, sign-in also needs either a proxy whose hostname resolves to private addresses or the gateway host in `NO_PROXY` on developer machines. If those machines also set `no_proxy`, add the gateway host there too, or model requests still go through the proxy.
 
 ### Steps
 
@@ -60610,7 +60659,7 @@ upstreams:
 
 | Setup | How |
 | - | - |
-| RBAC | Grant the gateway's identity `Azure AI User` or `Cognitive Services User` on the Microsoft Foundry resource |
+| RBAC | Grant the gateway's identity the `Foundry User` or `Cognitive Services User` role on the Microsoft Foundry resource |
 | Deployments | Microsoft Foundry uses admin-chosen deployment names, not canonical model IDs. Add a [`models:`](#models) block mapping each canonical ID to your deployment name. |
 | AKS (workload identity) | Federate a User-Assigned Managed Identity with the cluster's OIDC issuer and bind it to the gateway's service account. `use_azure_ad: true` picks it up via `WorkloadIdentityCredential`. |
 | ACI / App Service | Enable system-assigned or user-assigned managed identity on the resource. `use_azure_ad: true` picks it up. |
@@ -60955,6 +61004,8 @@ models:
 
 Each key under `upstream_model` must match the `name` of a configured upstream, which defaults to the provider name. A key that matches no upstream fails boot, so omit the lines for providers you don't use.
 
+To let developers use the `fable` alias with `auto_include_builtin_models: false`, add a `claude-fable-5` entry to `models`. That's the ID the [`fable` alias](/docs/en/model-config#fable-alias-resolution) resolves to for developers signed in to the gateway. Without it, their messages fail with an error that starts with `API Error: 400 model claude-fable-5 is not in the operator's model allowlist`.
+
 ### `managed`
 
 The `managed` block defines role-based access policies keyed on IdP groups or email domain. Policies are evaluated in order; by default the first match is selected, then merged onto the `match: {}` catch-all base. A user who matches two role policies gets only the first, so the second policy's deny rules don't apply unless you [apply every matching policy](#apply-every-matching-policy). Policies are served per-user at `GET /managed/settings` with ETag/304 caching.
@@ -60979,7 +61030,11 @@ managed:
 A `match: {}` catch-all, conventionally listed last, is treated as a base layer. Every other policy inherits any key it doesn't set from the catch-all, so per-role entries only need to list what differs from the org default. The merge rules depend on the key type:
 
 * **Allow-lists**: `availableModels` and `permissions.allow`. A specific policy's list fully replaces the base's.
-* **Deny-lists and hook arrays**: `permissions.deny`, `permissions.ask`, `disabledMcpjsonServers`, `deniedMcpServers`, `blockedMarketplaces`, `deniedModels`, and every `hooks` event-type array. These take the union of base and policy, so an org-wide deny or audit hook can't be accidentally dropped by a per-role override.
+* **Deny-lists and hook arrays**: these take the union of base and policy:
+  * `permissions.deny` and `permissions.ask`
+  * `disabledMcpjsonServers` and `deniedMcpServers`
+  * `blockedMarketplaces` and `deniedModels`
+  * The `hooks` event-type arrays
 * **Record-typed keys**: `env`, `modelOverrides`, and `skillOverrides`. These shallow-merge, so a per-role `env` block overrides keys it sets and inherits the rest from the base.
 
 `availableModels` is also enforced server-side at `/v1/messages`, so a denied model returns `400` regardless of what the client sends. An empty list denies every model. The check also covers the model a session starts on before the developer picks one, so [start sessions on a model the policy allows](#start-sessions-on-a-model-the-policy-allows).
@@ -61946,7 +62001,7 @@ Mirror the release into your internal registry if your builds can't reach the re
 
 Beyond the binary, the image needs:
 
-* **A glibc-based image**: the glibc build's only dynamic dependencies are glibc libraries. Musl-based images need the `linux-x64-musl` or `linux-arm64-musl` build plus additional packages; see [Alpine Linux setup](/docs/en/setup#alpine-linux-and-musl-based-distributions).
+* **A glibc-based image**: the glibc build's only dynamic dependencies are glibc libraries. Musl-based images need the `linux-x64-musl` or `linux-arm64-musl` build, whose only dynamic dependency is musl.
 * **A writable state directory**: the gateway runs as any user, but minimal images have no writable home. Set `CLAUDE_CONFIG_DIR` to a writable path such as `/tmp/.claude`.
 * **The container command**: `claude gateway --config /etc/claude/gateway.yaml`, with the config file mounted read-only and secrets supplied as environment variables; the gateway listens on `listen.port`, default `8080`.
 
@@ -64759,9 +64814,7 @@ Most commands are useful at a specific point in a session, from setting up a pro
 The table below lists all the commands included in Claude Code. Most are built-in commands whose behavior is coded into the CLI. Two kinds of entries are marked:
 
 * **[Skill](/docs/en/skills#bundled-skills)**: a bundled skill. It works like skills you write yourself: a prompt handed to Claude.
-  * `/verify` runs only when you invoke it.
 * **[Workflow](/docs/en/workflows#bundled-workflows)**: a bundled [dynamic workflow](/docs/en/workflows) that fans work out across many subagents and runs in the background.
-  * `/deep-research` runs only when you invoke it.
 
 To add your own commands, see [skills](/docs/en/skills).
 
@@ -67046,7 +67099,7 @@ You see fast mode spend in a different place depending on how you signed in, so 
 
 * **Pro, Max, and Ultra**: you pay for fast mode from your usage credits. Go to [**Settings > Usage**](https://claude.ai/settings/usage) on claude.ai, where the **Usage credits** section shows how much you've spent in usage credits this month. That figure includes fast mode but doesn't break it out separately.
 * **Team and Enterprise**: your organization pays for your fast mode usage from its usage credits. To see your own usage-credits spend, run [`/usage`](/docs/en/costs#check-your-usage-credits-spend). For where your organization sees that spend, see [Claude for Teams and Enterprise](/docs/en/costs#claude-for-teams-and-enterprise).
-* **Claude Console**: your organization pays for fast mode with the rest of its API usage. On the Console [Usage](https://platform.claude.com/usage) and [Cost](https://platform.claude.com/cost) pages, select **Speed (research preview)** in the **Group by** menu to separate fast mode from standard-speed usage. You see that option only when the selected date range includes fast mode usage.
+* **Claude Console**: your organization pays for fast mode with the rest of its API usage. On the Console [Usage](https://platform.claude.com/usage) and [Cost](https://platform.claude.com/cost) pages, select **Speed** in the **Group by** menu to separate fast mode from standard-speed usage. You see that option only when the selected date range includes fast mode usage.
 
 ## Decide when to use fast mode
 
@@ -67945,7 +67998,7 @@ A gateway routes model API requests. A few things you might expect it to handle 
 * **Client telemetry**: Claude Code disables its Anthropic-bound client analytics when a session signs in to a Claude apps gateway. To keep pre-sign-in startup analytics off as well, deliver [`DISABLE_TELEMETRY`](/docs/en/managed-settings#turn-telemetry-off-for-your-organization) in the [client-side managed settings](/docs/en/claude-apps-gateway-config#client-side-managed-settings) on each device.
 * **Client telemetry on other gateways**: whether Claude Code sends the optional client telemetry stream depends on your provider, and the [telemetry defaults table](/docs/en/data-usage#default-behaviors-by-api-provider) covers each case.
 * **Telemetry destinations**: where Claude Code sends a gateway session's telemetry depends on how the session signed in, and [What's enforced on developers](/docs/en/claude-apps-gateway#whats-enforced-on-developers) says where each kind of session's exports go.
-* **Corporate HTTP proxies**: an `HTTPS_PROXY` sits between Claude Code and every server it talks to, including the gateway. If your network requires one, [configure the proxy](/docs/en/network-config) in addition to the gateway. For a Claude apps gateway you host, [sign-in checks that the proxy host is also on a private network](/docs/en/claude-apps-gateway#prerequisites); if it isn't, add the gateway host to `NO_PROXY` so the CLI connects to it directly.
+* **Corporate HTTP proxies**: Claude Code sends its requests, including those to the gateway, through the proxy in `HTTPS_PROXY`. If your network requires a proxy, [configure it](/docs/en/network-config). If the proxy applies to a Claude apps gateway you host, [sign-in](/docs/en/claude-apps-gateway#prerequisites) needs the proxy's hostname to resolve to private addresses, or the gateway host in `NO_PROXY`.
 
 ## Next steps
 
@@ -68582,11 +68635,16 @@ For aliases, version prefixes, and `modelOverrides` entries, see [Pin models for
 
 ### When a model is disabled mid-session
 
-If your project loses access to the model your session is running on, for example because an administrator disables it in [Model Garden](https://console.cloud.google.com/vertex-ai/model-garden), Claude Code switches the session to another model instead of failing each request, and shows `Switched to <fallback> because <model> is not available`. It tries the same models as the startup fallback: earlier versions of the same tier first and, for an Opus session with no Opus version available, the default Sonnet model.
+When Agent Platform rejects your session's model as unavailable in your project or region, Claude Code switches your session to another model, and you can keep working. You see a message that starts with `Switched to <fallback> because <model> is not available`. This happens, for example, when an administrator disables the model in [Model Garden](https://console.cloud.google.com/vertex-ai/model-garden) or it isn't served in your region.
 
-The switch applies only to a tier you haven't pinned, the same condition as the startup fallback. A session on a specific version you picked keeps its model and, without a fallback model chain, the request fails instead. In [auto mode](/docs/en/permission-modes#enable-auto-mode-on-bedrock-agent-platform-or-foundry), Claude Code switches only to a model auto mode supports on Agent Platform. If none of those models is available either, the request fails.
+If you configured a [fallback model chain](/docs/en/model-config#fallback-model-chains), Claude Code switches to your configured fallback instead. Without a chain, the request fails in cases such as these:
 
-A [fallback model chain](/docs/en/model-config#fallback-model-chains) you configure replaces the tier switch: on these refusals Claude Code switches to your configured fallback instead. To have refused requests fail rather than switch, set [`CLAUDE_CODE_DISABLE_MODEL_ACCESS_FALLBACK=1`](/docs/en/env-vars). A fallback chain you configured still switches on these refusals; remove the chain as well if you want every refused request to fail.
+* Your session is on a pinned model or a specific version you picked
+* None of the [models Claude Code tries](#startup-model-checks) is available. In [auto mode](/docs/en/permission-modes#enable-auto-mode-on-bedrock-agent-platform-or-foundry), Claude Code only switches to a model auto mode supports on Agent Platform.
+
+To keep working, run `/model` in the session and press `s` on a model available in your project and region, which leaves your default unchanged.
+
+To have rejected requests fail instead of switching, set [`CLAUDE_CODE_DISABLE_MODEL_ACCESS_FALLBACK=1`](/docs/en/env-vars). If you configured a fallback model chain, remove it as well, because Claude Code still moves to that fallback.
 
 ## IAM configuration
 
@@ -71919,7 +71977,7 @@ exit 0
 
 Runs when a configuration file changes during a session. Use this to audit settings changes, enforce security policies, or block unauthorized modifications to configuration files.
 
-Claude Code runs ConfigChange hooks when a settings file, a managed policy file, or a skill file changes. For managed policy, it runs them only when `managed-settings.json` or a file in `managed-settings.d/` changes. It applies [server-managed settings](/docs/en/server-managed-settings) and changes to macOS managed preferences or Windows registry policy without running them. On WSL with [`wslInheritsWindowsSettings`](/docs/en/settings-reference#wslinheritswindowssettings), it also applies a changed Windows-side managed settings file on its policy poll without running them.
+Claude Code runs ConfigChange hooks when a settings file, a managed policy file, or a skill file changes. For managed policy, it runs them only when `managed-settings.json` or a file in `managed-settings.d/` changes.
 
 The matcher filters on the configuration source:
 
@@ -71931,7 +71989,13 @@ The matcher filters on the configuration source:
 | `policy_settings` | `managed-settings.json` or a file in `managed-settings.d/` changes |
 | `skills` | A skill file in `.claude/skills/` changes |
 
-This example logs all configuration changes for security auditing:
+Changes such as these take effect without running the hooks:
+
+* Rules and settings you save with **Yes, and don't ask again**, `/permissions`, or `/model`, in the session you saved them from. If another open session loads the same file, the hooks run there.
+* Updates to [server-managed settings](/docs/en/server-managed-settings), macOS managed preferences, or Windows registry policy
+* On WSL with [`wslInheritsWindowsSettings`](/docs/en/settings-reference#wslinheritswindowssettings), a changed Windows-side managed settings file, which Claude Code picks up on its policy poll
+
+This example logs configuration changes for security auditing:
 
 ```json theme={null}
 {
@@ -72254,7 +72318,7 @@ Claude Code passes the path returned by WorktreeCreate as `worktree_path` in the
         "hooks": [
           {
             "type": "command",
-            "command": "bash -c 'jq -r .worktree_path | xargs rm -rf'"
+            "command": "bash -c 'p=$(jq -er .worktree_path) && rm -rf -- \"$p\"'"
           }
         ]
       }
@@ -73289,7 +73353,7 @@ Complete reference for keyboard shortcuts, input modes, and interactive features
 | `Esc` | Interrupt Claude, or close a dialog | Stop the current response or tool call mid-turn so you can redirect. Claude keeps the work done so far. If you have [messages queued](#queue-messages-while-claude-works), Claude Code sends them next. When a dialog is open, `Esc` closes the dialog. While a footer item is selected, such as a row in the [subagent panel](/docs/en/sub-agents#run-subagents-in-foreground-or-background) below the prompt, `Esc` [deselects it](/docs/en/keybindings#footer-actions) instead of interrupting. On a permission prompt, `Esc` declines the action, the same as [**No** without a comment](/docs/en/permissions#add-a-comment-when-you-answer-a-permission-prompt) |
 | `Esc` + `Esc` | Clear input draft, or rewind | When the prompt input contains text, double `Esc` clears it and saves the draft to history so `Up` recalls it. When the input is empty, double `Esc` opens the [rewind menu](/docs/en/checkpointing) to restore or summarize code and conversation from a previous point |
 | `Ctrl+Enter` or `Ctrl+X Ctrl+S` | Send queued messages now | Sends your [queued messages](#queue-messages-while-claude-works), and your draft with them, right away. [When Claude Code sends what you queued](#when-claude-code-sends-what-you-queued) covers what happens to the turn Claude is working on. In [shell mode](#shell-mode-with-prefix), the key only queues your command. In terminals that don't report extended keys, `Ctrl+Enter` arrives as plain `Enter`; `Ctrl+X Ctrl+S` works in any terminal. Requires Claude Code v2.1.275 or later |
-| `Shift+Tab`, or `Alt+M` on Windows when the Node or Bun runtime doesn't enable VT input mode | Cycle permission modes | Cycle through `default` (labeled Manual in the mode indicator), `acceptEdits`, `plan`, and, when available, `bypassPermissions` and then `auto`. From `auto`, the first press switches to `default`. See [permission modes](/docs/en/permission-modes). On a file permission prompt, the same key closes an open [comment field](/docs/en/permissions#add-a-comment-when-you-answer-a-permission-prompt). With no field open, it selects the option that allows the action for the rest of the session, when the prompt offers that option |
+| `Shift+Tab`, or `Alt+M` on Windows when the Node or Bun runtime doesn't enable VT input mode | Cycle permission modes | Cycle through `default` (labeled Manual in the mode indicator), `acceptEdits`, and `plan`, then `bypassPermissions` and `auto` where available. See [permission modes](/docs/en/permission-modes). On a file permission prompt, the same key closes an open [comment field](/docs/en/permissions#add-a-comment-when-you-answer-a-permission-prompt). With no field open, it selects the option that allows the action for the rest of the session, when the prompt offers that option. At the plan approval prompt, it approves the plan |
 | `Option+P` (macOS) or `Alt+P` (Windows/Linux) | Switch model | Switch models without clearing your prompt |
 | `Option+T` (macOS) or `Alt+T` (Windows/Linux) | Toggle extended thinking | Enable or disable extended thinking mode. Has no effect on Opus 5.5, Sonnet 5.5, Haiku 5.5, or the Fable models, which always use extended thinking. Works on macOS without configuring Option as Meta |
 | `Option+O` (macOS) or `Alt+O` (Windows/Linux) | Toggle fast mode | Enable or disable [fast mode](/docs/en/fast-mode) |
@@ -73334,7 +73398,7 @@ You can't remap these shortcuts in the [keybindings configuration file](/docs/en
 | :- | :- | :- |
 | Quick escape | `\` + `Enter` | Works in all terminals |
 | Option key | `Option+Enter` | After enabling [Option as Meta](/docs/en/terminal-config#enable-option-key-shortcuts-on-macos) on macOS |
-| Shift+Enter | `Shift+Enter` | Native in iTerm2, WezTerm, Ghostty, Kitty, Warp, Apple Terminal, Windows Terminal. For other terminals, see [Enter multiline prompts](/docs/en/terminal-config#enter-multiline-prompts) |
+| Shift+Enter | `Shift+Enter` | Native in iTerm2, WezTerm, Ghostty, Kitty, Warp, Windows Terminal. For other terminals, see [Enter multiline prompts](/docs/en/terminal-config#enter-multiline-prompts) |
 | Control sequence | `Ctrl+J` | Works in any terminal without configuration |
 | Paste mode | Paste directly | For code blocks, logs |
 
@@ -73389,8 +73453,6 @@ A plugin skill matches on its bare name too, so `/deploy` finds a skill named `m
 ## Vim editor mode
 
 Enable vim-style editing via `/config` → Editor mode.
-
-Claude Code keeps your vim mode and cursor position when you toggle the [transcript viewer](#transcript-viewer) with `Ctrl+O` or open and close a panel such as `/config`. If you leave the prompt in NORMAL mode, it's still in NORMAL mode when you return, with the cursor where you left it.
 
 ### Mode switching
 
@@ -73554,8 +73616,6 @@ In the dialog, press `Ctrl+S` to cycle the scope through this session, this proj
 6. **Cancel search**:
    * Press `Ctrl+C` to cancel and restore your original input
    * Press `Backspace` on empty search to cancel
-
-Accepting a match or canceling the search takes effect immediately, even while Claude Code is still loading the history.
 
 To find an earlier prompt when all you remember is something long you pasted into it, such as an error log, press `Ctrl+R` and type a word from the paste. Requires Claude Code v2.1.314 or later.
 
@@ -73853,7 +73913,7 @@ If more than one of the three places has a `spellcheck` setting, Claude Code use
 
 ### What Claude Code underlines
 
-Shortly after you pause typing, Claude Code underlines the words the dictionary doesn't know. It leaves the word you're still typing alone until you move past it, and it never changes your text. It also skips text that looks like code:
+Shortly after you pause typing, Claude Code underlines the words the dictionary doesn't know. It leaves the word you're still typing alone until you move past it. It also skips text that looks like code:
 
 * Commands such as `/help`, `@` mentions, URLs, file paths, and flags such as `--verbose`
 * Words with digits, underscores, or a capital letter after the first, and text in backticks
@@ -74703,7 +74763,7 @@ This also works for chord bindings. Unbinding every chord that shares a prefix f
 
 Claude Code binds these default chords on the `ctrl+x` prefix, by context:
 
-* `Chat`: `ctrl+x ctrl+k`, `ctrl+x ctrl+e`, `ctrl+x enter`, `ctrl+x ctrl+a`, `ctrl+x ctrl+s`, and `ctrl+x tab`
+* `Chat`: `ctrl+x ctrl+k`, `ctrl+x ctrl+e`, `ctrl+x enter`, `ctrl+x ctrl+a`, `ctrl+x ctrl+s`, `ctrl+x tab`, `ctrl+x ctrl+=`, `ctrl+x ctrl+-`, `ctrl+x ctrl+_`, `ctrl+x =`, and `ctrl+x -`
 * `Task`: `ctrl+x ctrl+b`
 * `DiffPanel`: `ctrl+x b`
 * `Pane`: `ctrl+x left`, `ctrl+x right`, `ctrl+x up`, `ctrl+x down`, and `ctrl+x x`
@@ -74753,6 +74813,11 @@ To reclaim `ctrl+x` itself as a single-key binding, unbind all of them:
         "ctrl+x ctrl+a": null,
         "ctrl+x ctrl+s": null,
         "ctrl+x tab": null,
+        "ctrl+x ctrl+=": null,
+        "ctrl+x ctrl+-": null,
+        "ctrl+x ctrl+_": null,
+        "ctrl+x =": null,
+        "ctrl+x -": null,
         "ctrl+x": "chat:newline"
       }
     }
@@ -75061,7 +75126,7 @@ Each variable sends the credential in a different HTTP header: `ANTHROPIC_AUTH_T
 
 ### Conflicts with an existing login
 
-A gateway credential variable takes precedence over a saved claude.ai login or Console key. With `ANTHROPIC_AUTH_TOKEN`, the variable takes precedence immediately. With `ANTHROPIC_API_KEY`, you are prompted once in interactive mode to approve the key before it takes over.
+Your requests use a gateway credential variable rather than a saved claude.ai login. With `ANTHROPIC_AUTH_TOKEN`, the variable takes precedence immediately. With `ANTHROPIC_API_KEY`, you are prompted once in interactive mode to approve the key before it takes over.
 
 Run `/status` to confirm which credential source is active. If startup shows an auth-conflict warning naming two sources, see the first row of the [troubleshooting table](#troubleshoot-gateway-errors) for which one to drop. To clear a saved login so only the gateway credential remains, run `/logout`.
 
@@ -75411,7 +75476,7 @@ These are the most common errors when running Claude Code through a gateway, wit
 
 | Error | Cause | Fix |
 | :- | :- | :- |
-| A startup warning naming two credential sources and ending in `auth may not work as expected`. Older versions show `Auth conflict: Both a token (SOURCE) and an API key (SOURCE) are set` instead. | A gateway credential and a saved login are both active; the variable is used for requests, but the stale login can cause unexpected auth behavior | Unset the variable to use the saved login, or run `/logout` to use the gateway credential |
+| A startup warning naming two credential sources and ending in `auth may not work as expected`. Older versions show `Auth conflict: Both a token (SOURCE) and an API key (SOURCE) are set` instead. | A gateway credential and a saved login are both active | Unset the variable to use the saved login, or run `/logout` to use the gateway credential |
 | `401` errors naming an invalid or unrecognized token | The credential isn't one the gateway issued, or it's in a header the gateway doesn't read | Confirm the variable matches your credential kind in the [credential table](#set-the-credential-variable), and regenerate the key at the gateway if it was revoked |
 | `Your apiKeyHelper script is failing`, or `apiKeyHelper failed:` on stderr in non-interactive mode | The command in the [`apiKeyHelper`](/docs/en/settings-reference#apikeyhelper) setting didn't produce a usable key, so requests carry a placeholder key | Run the command directly to see why it fails, and re-authenticate with your credential provider if it reports an expired session; see [the error reference](/docs/en/errors#your-apikeyhelper-script-is-failing) |
 | `Connection refused — a firewall or proxy may be blocking it (ConnectionRefused)` when nothing answers at the address, or `Can't reach the API server — check your internet or DNS (ENOTFOUND)` when the hostname doesn't resolve, often after a silent pause while Claude Code [retries with backoff](/docs/en/errors#automatic-retries). The code in parentheses varies; [Unable to connect to API](/docs/en/errors#unable-to-connect-to-api) covers the code spellings and the earlier wording | Nothing answered at the base URL: the address is wrong, or a VPN or firewall blocks the path to the gateway | Run the [curl test above](#verify-the-connection), which fails immediately with the same cause, and confirm the URL and network path with your gateway team |
@@ -75425,6 +75490,7 @@ These are the most common errors when running Claude Code through a gateway, wit
 | `/fast` reports `Fast mode unavailable due to network connectivity issues` while inference requests work | The [fast mode](/docs/en/fast-mode) availability check goes directly to `api.anthropic.com` and doesn't follow `ANTHROPIC_BASE_URL`, so blocked direct egress fails the check | Allowlist `api.anthropic.com` if egress is blocked, or set a skip variable. See [use fast mode behind proxies and LLM gateways](/docs/en/fast-mode#use-fast-mode-behind-proxies-and-llm-gateways) |
 | `/fast` reports `Fast mode is currently unavailable` in a session that authenticates with a gateway-issued key in `ANTHROPIC_API_KEY` | While `ANTHROPIC_BASE_URL` points at your gateway and the key isn't in the format of an Anthropic API key, Claude Code doesn't send the [fast mode](/docs/en/fast-mode) availability check. Without an earlier successful check cached, it treats fast mode as unavailable | Set `CLAUDE_CODE_SKIP_FAST_MODE_NETWORK_ERRORS=1`; see [use fast mode behind proxies and LLM gateways](/docs/en/fast-mode#use-fast-mode-behind-proxies-and-llm-gateways) |
 | `/fast` reports `Fast mode has been disabled by your organization` in a session authenticated with `ANTHROPIC_AUTH_TOKEN`, even though the organization has fast mode enabled | The availability check requires a claude.ai login or an API key; with only a bearer token, Claude Code treats fast mode as disabled without sending the check | Set `CLAUDE_CODE_SKIP_FAST_MODE_ORG_CHECK=1`; see [use fast mode behind proxies and LLM gateways](/docs/en/fast-mode#use-fast-mode-behind-proxies-and-llm-gateways) |
+| `/feedback` saves a local file in a session that uses `ANTHROPIC_BASE_URL` | Behind a gateway, `ANTHROPIC_AUTH_TOKEN` and a key that isn't in the format of an Anthropic API key aren't Anthropic credentials. Without one, Claude Code writes the report to a local archive under `~/.claude/feedback-bundles/` instead of sending it | Send the file to your Anthropic account representative or attach it to a support request. See [telemetry services](/docs/en/data-usage#telemetry-services) |
 | Claude Code asks you to log in even though the [curl test](#verify-the-connection) succeeds | The CLI has no credential of its own: a reachable base URL isn't one, and in an interactive session an `env` block in a project's `.claude/settings.json` or `.claude/settings.local.json` applies only after the first-run wizard and [trust prompt](/docs/en/permissions#what-runs-before-you-trust-a-folder) | Set `ANTHROPIC_AUTH_TOKEN` somewhere Claude Code reads before first-run setup: a shell export, the `env` block in `~/.claude/settings.json`, or managed settings |
 | `ANTHROPIC_API_KEY` is set but ignored, with no prompt | The key needs a one-time approval in interactive sessions, and a previously declined key is ignored without asking again | Enable it under `/config` with the `Use custom API key` option |
 | `This machine's managed settings require a first-party login`, or [`Administrator policy requires a Cloud gateway sign-in`](/docs/en/errors#administrator-policy-requires-a-cloud-gateway-sign-in) when managed settings set `forceLoginMethod` to `"gateway"` or also set `forceLoginGatewayUrl` | Managed settings include `forceLoginMethod` or `forceLoginOrgUUID`, which cannot coexist with `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, or `apiKeyHelper` | Your administrator must remove `forceLoginMethod`, `forceLoginOrgUUID`, and `forceLoginGatewayUrl` from managed settings to use gateway credentials, or remove the gateway credential and use the sign-in the managed settings require. The two cannot be combined |
@@ -75965,9 +76031,9 @@ Then send a one-shot prompt through the gateway:
 claude -p "Reply with one word: connected"
 ```
 
-**Checkpoint**: the prompt returns a response, and the request appears in the gateway's log as a `POST` to the `/v1/messages` path with status `200`. Claude Code appends a query string such as `?beta=true`, so match on the path, not the full URL. Two failure messages point in different directions:
+**Checkpoint**: the prompt returns a response, and the request appears in the gateway's log as a `POST` to the `/v1/messages` path with status `200`. Claude Code appends a query string such as `?beta=true`, so match on the path, not the full URL. Check the failure message:
 
-* `Not logged in`: check the gateway log to tell the two causes apart. If it's empty, no credential reached the session and no request left the machine; re-run the exports in the shell you're testing from. If it shows a rejected request with `x-api-key` in the `401` body, the gateway expects keys in that header instead; switch to `ANTHROPIC_API_KEY`
+* `Not logged in`: check the gateway log. If it's empty, no credential reached the session and no request left the machine; re-run the exports in the shell you're testing from. If it shows a `401` from the gateway naming `x-api-key`, the gateway expects keys in that header instead; switch to `ANTHROPIC_API_KEY`. If it shows a `401` from `api.anthropic.com` or your provider's endpoint, fix the provider credential the gateway holds
 * `Failed to authenticate. API Error: 401` means a credential was sent and rejected, and the gateway log says where: a `401` naming `api.anthropic.com` or your provider's endpoint means the gateway reached the upstream but its provider credential was rejected, so the developer key worked and the provider credential the gateway holds is wrong or a placeholder
 
 A wrong or unreachable base URL produces a different symptom: Claude Code [retries the connection with backoff](/docs/en/errors#automatic-retries) and can sit with no output for several minutes before reporting an error. If the command appears to hang, check the gateway log instead of waiting; no arriving request means `ANTHROPIC_BASE_URL` doesn't point at the gateway.
@@ -76070,10 +76136,10 @@ Confirm everything works from a developer machine, not the gateway host, so the 
 
 You should see `data:` lines arrive incrementally. The whole response arriving at once after a pause means the gateway is buffering, which stalls Claude Code; a `404` means the model name isn't routed. Repeat per model name.
 
-Then start `claude` and send a message. Each symptom at this step has one cause:
+Then start `claude`, send a message, and match what you see:
 
-* A login prompt means a credential gap. Run `/status` and open the **Status** tab: when the `Setting sources` line doesn't include managed settings, the distribution didn't reach the machine; when it does, the developer credential wasn't delivered, so set `ANTHROPIC_AUTH_TOKEN` or the `apiKeyHelper`
-* `Failed to authenticate` errors mean the gateway is rejecting requests; its log says which credential failed. A rejection the gateway logs itself names the developer key, while a `401` from `api.anthropic.com` or your provider's endpoint means the provider credential the gateway holds was rejected
+* A login screen, or `Not logged in` with nothing new in the gateway log, means a credential gap. Run `/status` and open the **Status** tab: when the `Setting sources` line doesn't include managed settings, the distribution didn't reach the machine; when it does, the developer credential wasn't delivered, so set `ANTHROPIC_AUTH_TOKEN` or the `apiKeyHelper`
+* `Please run /login · API Error: 401`, `Not logged in`, or `Invalid API key` with a `401` in the gateway log: check who wrote the `401`. Fix the developer key or its header if the gateway wrote it, or the provider credential it holds if it came from `api.anthropic.com` or your provider's endpoint
 * A one-time approval prompt for the key is expected on first use when the gateway expects keys in the `x-api-key` header, set as `ANTHROPIC_API_KEY`
 
 If your organization uses [fast mode](/docs/en/fast-mode), run `/fast` here too: the availability check calls `api.anthropic.com` directly rather than following the gateway base URL, so a gateway-routed session can report fast mode as unavailable or disabled even though inference works. [Use fast mode behind proxies and LLM gateways](/docs/en/fast-mode#use-fast-mode-behind-proxies-and-llm-gateways) maps each message to the variable that restores it, distributed with [the rest of the configuration](#distribute-the-configuration).
@@ -77277,23 +77343,9 @@ To verify your setup, run `/status` inside Claude Code. The API provider line sh
 
 ## Azure RBAC configuration
 
-The `Azure AI User` and `Cognitive Services User` default roles include all required permissions for invoking Claude models.
+If you authenticate with Microsoft Entra ID or a bearer token it issued, assign your identity the `Foundry User` or `Cognitive Services User` role on your Foundry resource. You might still see `Foundry User` under its previous name, `Azure AI User`.
 
-For more restrictive permissions, create a custom role with the following:
-
-```json theme={null}
-{
-  "permissions": [
-    {
-      "dataActions": [
-        "Microsoft.CognitiveServices/accounts/providers/*"
-      ]
-    }
-  ]
-}
-```
-
-For details, see [Microsoft Foundry RBAC documentation](https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/rbac-azure-ai-foundry).
+If these roles don't meet your needs, see [Microsoft Foundry RBAC documentation](https://learn.microsoft.com/en-us/azure/foundry/concepts/rbac-foundry) for custom roles.
 
 ## 1M token context window
 
@@ -78232,7 +78284,7 @@ See the [`idleCompaction`](/docs/en/settings-reference#idlecompaction) setting f
 
 ### Correct the window for a gateway or custom model ID
 
-Either of these startup warnings means Claude Code doesn't recognize your session's model ID, so it can't tell the model's context window and assumes 200K tokens:
+Either of these warnings means Claude Code doesn't recognize your session's model ID, so it can't tell the model's context window and assumes 200K tokens:
 
 ```text theme={null}
 ⚠ Model "my-gateway-opus" isn't recognized · context assumed to be 200k tokens · ...
@@ -78906,7 +78958,7 @@ Each custom key becomes a label on every metric series, so high-cardinality valu
 > * **No spaces allowed**: values can't contain spaces. For example, `user.organizationName=My Company` is invalid
 > * **Format**: must be comma-separated key=value pairs: `key1=value1,key2=value2`
 > * **Allowed characters**: only US-ASCII characters excluding control characters, whitespace, double quotes, commas, semicolons, and backslashes
-> * **Special characters**: characters outside the allowed range must be percent-encoded
+> * **Special characters**: characters outside the allowed range must be percent-encoded, and an `=` inside a value must be written as `%3D`
 >
 > For a value that would need a space, use underscores or camelCase instead. The following examples set `org.name` with each form:
 >
@@ -81115,7 +81167,7 @@ Enter plan mode by pressing `Shift+Tab` or prefixing a single prompt with `/plan
 claude --permission-mode plan
 ```
 
-Press `Shift+Tab` again to leave plan mode without approving a plan.
+With no approval prompt open, press `Shift+Tab` again to leave plan mode. At the approval prompt, press `Esc` first, since pressing `Shift+Tab` there approves the plan.
 
 ### Review and approve a plan
 
@@ -83981,7 +84033,7 @@ This example shows the shape with one hook that runs a linter on each file Claud
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
-        "hooks": [{ "type": "command", "command": "jq -r '.tool_input.file_path' | xargs npm run lint:fix" }]
+        "hooks": [{ "type": "command", "command": "f=$(jq -r '.tool_input.file_path') && npm run lint:fix -- \"$f\"" }]
       }
     ]
   }
@@ -87398,9 +87450,9 @@ Each of the others has its own page: [Hooks](/docs/en/hooks), [Skills](/docs/en/
 
 ## Mods built into Claude Code
 
-Some of Claude Code's own features are mods. To see the ones your session has, run `/plugin` at the Claude Code prompt and go to the **Installed** tab, which lists them under **Built-in**. You can't update or uninstall a built-in mod, and the table's last column says how to turn each one off. The [`mods active` line](#see-which-mods-a-session-loaded) omits built-in mods.
+Some of Claude Code's own features are mods. To see the ones your session has, run `/plugin` at the Claude Code prompt and go to the **Installed** tab, which lists them under **Built-in**. You can't update or uninstall a built-in mod. The [`mods active` line](#see-which-mods-a-session-loaded) omits built-in mods.
 
-This table lists each entry by the name `/plugin` shows:
+This table lists some of the **Built-in** entries by the name `/plugin` shows:
 
 | Name in `/plugin` | What it does | Where it's on | How to turn it off |
 | :- | :- | :- | :- |
@@ -87410,6 +87462,8 @@ This table lists each entry by the name `/plugin` shows:
 | `cc-plugin-sec-default` | Guards what your organization manages from the mods a user installs | [Where the guard loads](/docs/en/plugins/mods/admin#know-what-happens-by-default) | You can't. An administrator [sets the order](/docs/en/plugins/mods/admin#install-your-organizations-mods) in managed settings |
 | `cc-plugin-telemetry` | Sends the analytics records that Claude Code and its built-in mods log | Wherever Claude Code's own analytics are on | Disable it in `/plugin`, or turn analytics off, for example with [`DISABLE_TELEMETRY`](/docs/en/env-vars) |
 | `cc-plugin-you-should-know` | [You should know](/docs/en/interactive-mode#you-should-know-suggestions): a side agent shows a note above the prompt when it finds something you might have missed | Off until you [turn it on](/docs/en/interactive-mode#you-should-know-suggestions) | Disable it in `/plugin` |
+
+For a **Built-in** plugin that isn't in the table, [open its details in `/plugin`](/docs/en/plugins/install#manage-installed-plugins) to read what it does or to disable it.
 
 The settings and flags that stop installed mods, such as `disableAllHooks`, `--bare`, and `--safe-mode`, don't stop built-in mods.
 
@@ -89724,6 +89778,8 @@ By default, sandboxed commands can write to the current working directory, the p
 
 These paths are enforced at the OS level, so all commands running inside the sandbox, including their child processes, respect them. This is the recommended approach when a tool needs write access to a specific location, rather than excluding the tool from the sandbox entirely with `excludedCommands`.
 
+On Linux and WSL2, an entry for a path that doesn't exist yet has no effect, so create the path first.
+
 When you define the same filesystem array in multiple [settings scopes](/docs/en/settings#settings-precedence), Claude Code merges them, combining the paths rather than replacing one scope's array with another's. Claude Code leaves an entry out of the merge when a lock under [Keep developers from widening the policy](#keep-developers-from-widening-the-policy) covers it.
 
 If you exclude a source with [`--setting-sources`](/docs/en/cli-reference) on the CLI or [`settingSources`](/docs/en/agent-sdk/claude-code-features#control-filesystem-settings-with-settingsources) in the Agent SDK, Claude Code ignores its `sandbox.filesystem` entries, its `Edit` permission rules, and its `Read` deny rules when building the sandbox configuration. Requires Claude Code v2.1.246 or later.
@@ -89824,9 +89880,9 @@ The sandbox has two independent layers: [filesystem isolation](#filesystem-isola
 
 Because turning filesystem isolation off widens what sandboxed commands can do, Claude Code honors `filesystem.disabled` from these settings sources only:
 
-* User settings, managed settings, and the `--settings` CLI flag can set it. Project settings in `.claude/settings.json` and `.claude/settings.local.json` can't, so a checked-out project can't switch filesystem isolation off.
-* When managed settings configure `sandbox.filesystem` at all, or list any `sandbox.credentials.files` entry with `"mode": "deny"`, only managed settings can set the key. This keeps developers from turning filesystem isolation off in such a deployment; to turn it off for everyone, set `"disabled": true` in managed settings.
-* When [`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB`](/docs/en/env-vars) is set, Claude Code ignores `filesystem.disabled` from every source, including managed settings, and keeps filesystem isolation on.
+* User settings, managed settings, and the `--settings` CLI flag can set it. Project settings in `.claude/settings.json` and `.claude/settings.local.json` can't set it.
+* When managed settings configure `sandbox.filesystem` at all, or list any `sandbox.credentials.files` entry with `"mode": "deny"`, only managed settings can set the key. To turn filesystem isolation off for everyone, set `"disabled": true` in managed settings.
+* When [`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB`](/docs/en/env-vars) is set, Claude Code ignores `filesystem.disabled` from every source, including managed settings.
 
 A [valid](/docs/en/settings-reference#invalid-credential-entries-in-managed-settings) `mask` entry doesn't lock the key, even when Claude Code [falls back to `deny`](#mask-credential-files) for it at startup. List a path that can't be masked, such as a credential directory, as an explicit `deny` entry in managed settings, which locks the key.
 
@@ -94624,7 +94680,7 @@ claude --settings '{"model": "claude-opus-5-5"}'
 
 Claude Code watches your settings files and reloads them when they change, so it applies most edits to the running session without a restart, including edits to `permissions`, `hooks`, and credential helpers such as `apiKeyHelper`. Claude Code also loads a settings file you create mid-session if its folder existed when the session started. For the project's `.claude/` folder, it loads the file even when you create the folder in the same session.
 
-The reload covers user, project, local, and managed settings, and Claude Code runs the [`ConfigChange` hook](/docs/en/hooks#configchange) for each settings-file change it detects, not for managed settings that arrive from MDM or the claude.ai console. Managed settings that arrive through MDM or from the claude.ai console reach a running session on a schedule rather than on save; the [delivery table](/docs/en/managed-settings#choose-a-delivery-mechanism) gives it per source.
+The reload covers user, project, local, and managed settings. Claude Code runs the [`ConfigChange` hook](/docs/en/hooks#configchange) for direct edits to settings files, not for managed settings that arrive from MDM or the claude.ai console. Managed settings that arrive through MDM or from the claude.ai console reach a running session on a schedule rather than on save; the [delivery table](/docs/en/managed-settings#choose-a-delivery-mechanism) gives it per source.
 
 Claude Code reads some keys only once, at session start, so an edit to one of them doesn't reach the running session. Admin-side keys that also wait for a restart, such as `requiredMinimumVersion`, are listed under [where and when a policy applies](/docs/en/managed-settings#where-and-when-a-policy-applies). The ones you're most likely to edit mid-session:
 
@@ -96697,6 +96753,8 @@ This lets a build write under `/tmp/build` and lets `kubectl` update your kubeco
   }
 }
 ```
+
+On Linux and WSL2, an entry for a path that doesn't exist yet has no effect, so create the path first.
 
 Claude Code merges `allowWrite` entries and the paths from your `Edit(...)` allow permission rules across the settings scopes the session loads, leaving out the ones from repository settings while [`permissions.blockReadsOutsideWorkingDirectories`](#sandboxed-commands-under-the-block) is on. [Repository locks](/docs/en/sandboxing#repository-settings-under-an-admin-required-sandbox) can leave out a repository's entries too. An `allowWrite` entry can't lift a [protected path](/docs/en/sandboxing#protected-paths).
 
@@ -101438,30 +101496,12 @@ Open your WSL distribution and run the Linux installer from the [install instruc
 
 ### Alpine Linux and musl-based distributions
 
-Installing Claude Code on Alpine and other musl/uClibc-based distributions requires `bash` and `curl` for the install command, and `libgcc`, `libstdc++`, and `ripgrep` at runtime. Alpine doesn't include `bash` or `curl` by default, so the documented install command fails with a `not found` error until you install them. Install these packages using your distribution's package manager, then set `USE_BUILTIN_RIPGREP=0`.
+On Alpine and other musl-based distributions, the [install command](#install-claude-code) requires `bash` and `curl`, and Claude Code itself requires `bash` or `zsh`. Alpine doesn't include `bash` or `curl` by default, so the documented install command fails with a `not found` error until you install them.
 
 This example installs the required packages on Alpine:
 
 ```bash theme={null}
-apk add bash curl libgcc libstdc++ ripgrep
-```
-
-On Alpine, `ripgrep` is in the community repository. If `apk` reports that the package is missing, add the community repository to `/etc/apk/repositories`, using your Alpine version:
-
-```bash theme={null}
-echo "https://dl-cdn.alpinelinux.org/alpine/v3.22/community" >> /etc/apk/repositories
-```
-
-Run `apk update` to refresh the package index, and retry the `apk add` command.
-
-Then set `USE_BUILTIN_RIPGREP` to `0` in your [`settings.json`](/docs/en/settings-reference#all-settings) file:
-
-```json theme={null}
-{
-  "env": {
-    "USE_BUILTIN_RIPGREP": "0"
-  }
-}
+apk add bash curl
 ```
 
 ## Verify your installation
@@ -101740,7 +101780,7 @@ All repositories are signed with the [Claude Code release signing key](#binary-i
 > wget -O /etc/apk/keys/claude-code.rsa.pub \
 >   https://downloads.claude.ai/keys/claude-code.rsa.pub
 > echo "https://downloads.claude.ai/claude-code/apk/stable" >> /etc/apk/repositories
-> apk add claude-code
+> apk add bash claude-code
 > ```
 >
 > To switch to the `latest` channel, remove the `stable` repository line and add the `latest` repository:
@@ -103223,7 +103263,7 @@ In most terminals you can also press Shift+Enter, but support varies by terminal
 
 | Terminal | Shift+Enter for newline |
 | :- | :- |
-| Ghostty, Kitty, iTerm2, WezTerm, Warp, Apple Terminal, Windows Terminal | Works without setup |
+| Ghostty, Kitty, iTerm2, WezTerm, Warp, Windows Terminal | Works without setup |
 | Other terminals that support the kitty keyboard protocol, such as foot and Alacritty 0.16 or later | Works without setup. Requires Claude Code v2.1.269 or later |
 | VS Code, Cursor, Devin Desktop, Alacritty before 0.16, Zed | Run `/terminal-setup` once |
 | gnome-terminal, JetBrains IDEs such as PyCharm and Android Studio | Not available; use Ctrl+J or `\` then Enter |
@@ -103878,8 +103918,6 @@ To [limit what a subagent can reach](/docs/en/sub-agents#control-subagent-capabi
 
 Claude uses `AskUserQuestion` to ask you multiple-choice questions when it needs a decision or a clarification. Answer by picking an option, or type your own text through the `Other` row or the notes field.
 
-When you answer by typing your own text, Claude Code relays the answer with neutral wording so Claude follows what you wrote, including a request to wait or explain first.
-
 ### Question auto-continue timeout
 
 Questions stay open until you answer them. If you want a question you leave unanswered to eventually close and let Claude continue without you, set the [`askUserQuestionTimeout`](/docs/en/settings-reference#askuserquestiontimeout) setting to `60s`, `5m`, or `10m`, either in your user `settings.json` or from the **Question auto-continue timeout** row in `/config`.
@@ -104276,7 +104314,7 @@ The PowerShell tool has the following known limitations during the preview:
 
 ## Read tool behavior
 
-The Read tool takes a file path and returns the contents with line numbers. Claude is instructed to always pass absolute paths.
+The Read tool takes a file path and returns the contents with line numbers.
 
 Reading an empty file returns a notice that the file exists but its contents are empty, and an `offset` past the last line returns a notice giving the file's line count.
 
@@ -105051,7 +105089,7 @@ Here's how each component affects context in the SDK:
 | Source | When it loads | Impact |
 | :- | :- | :- |
 | **System prompt** | Every request | Small fixed cost, always present |
-| **CLAUDE.md files** | Session start, via [`settingSources`](/docs/en/agent-sdk/claude-code-features) | Full content in every request (but prompt-cached, so only the first request pays full cost) |
+| **CLAUDE.md files** | Session start, via [`settingSources`](/docs/en/agent-sdk/claude-code-features) | Full content in every request (but prompt-cached) |
 | **Tool definitions** | Every request for core built-in tools such as Bash, Read, and Edit; on demand for MCP tools and other built-in tools, which [tool search](/docs/en/agent-sdk/mcp#mcp-tool-search) defers by default | Every schema loads upfront in the cases under [Configure tool search](/docs/en/agent-sdk/tool-search#configure-tool-search) |
 | **Conversation history** | Accumulates over turns | Grows with each turn: prompts, responses, tool inputs, tool outputs |
 | **Skill descriptions** | Session start, via setting sources | Short summaries; full content loads only when invoked |
@@ -116192,9 +116230,9 @@ When the store has nothing for the session, the SDK runs under your real config 
 
 ### Mirror writes are best-effort
 
-If `append()` rejects, the SDK retries the batch up to two more times with a short backoff, for at most three attempts in total. A call that times out isn't retried, since the original call may still land. If the batch still fails, the SDK logs the error, emits a `{ type: "system", subtype: "mirror_error" }` message into the iterator, drops the batch, and continues the query. Because a retried batch can re-deliver entries that already landed, deduplicate by `entry.uuid` in your `append()` implementation.
+If `append()` rejects, the SDK retries the batch up to two more times with a short backoff, for at most three attempts in total. A call that times out isn't retried, since the original call may still land. Because a retried batch can re-deliver entries that already landed, deduplicate by `entry.uuid` in your `append()` implementation, and keep every entry that has no `uuid`.
 
-A store outage doesn't interrupt the agent, since the subprocess writes locally first. Monitor for `mirror_error` if you need to detect store data loss. On a run [resumed from the store](#resume-from-the-store), a dropped batch has no surviving copy once the run ends.
+If the batch still fails, the SDK logs the error, emits a `{ type: "system", subtype: "mirror_error" }` message into the iterator, drops the batch, and continues the query. A store outage doesn't interrupt the agent, since the subprocess writes locally first. Monitor for `mirror_error` to detect store data loss. On a run [resumed from the store](#resume-from-the-store), a dropped batch has no surviving copy once the run ends.
 
 ### `getSessionMessages` returns the post-compaction chain
 
