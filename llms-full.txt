@@ -99,17 +99,39 @@ Agent teams support two display modes:
 >
 > `tmux` has known limitations on certain operating systems and traditionally works best on macOS. Using `tmux -CC` in iTerm2 is the suggested entrypoint into `tmux`.
 
-The default is `"in-process"`. Set `"auto"` to enable split panes when you're already running inside a tmux session, or when your terminal is iTerm2 with the `it2` CLI installed, falling back to in-process otherwise. The `"tmux"` setting enables split-pane mode and auto-detects whether to use tmux or iTerm2 based on your terminal.
+With agent teams [enabled](#enable-agent-teams), follow these steps to give each teammate its own pane:
 
-Set `"iterm2"` to use iTerm2 native split panes explicitly. This mode requires the [`it2` CLI](https://github.com/mkusaka/it2) and shows an error with the install command if `it2` is missing. The setup prompt that offers to install `it2` or switch to tmux appears under `"auto"` or `"tmux"` when your terminal is iTerm2 and tmux is available as a fallback.
+**1. Install tmux or set up iTerm2**
 
-To override the default, set [`teammateMode`](/docs/en/settings-reference#teammatemode) in `~/.claude/settings.json`:
+Split-pane mode requires either [tmux](https://github.com/tmux/tmux/wiki) or iTerm2 with the [`it2` CLI](https://github.com/mkusaka/it2). Set up the one you'll run Claude Code in:
+
+* **tmux**: install through your system's package manager. See the [tmux wiki](https://github.com/tmux/tmux/wiki/Installing) for platform-specific instructions.
+* **iTerm2**: install the [`it2` CLI](https://github.com/mkusaka/it2), then enable the Python API in **iTerm2 > Settings > General > Magic > Enable Python API**.
+
+**2. Turn on split panes**
+
+Teammates run in-process until you change the [`teammateMode`](/docs/en/settings-reference#teammatemode) setting.
+
+Set it to `"auto"` in `~/.claude/settings.json`:
 
 ```json theme={null}
 {
   "teammateMode": "auto"
 }
 ```
+
+With `"auto"`, teammates open in split panes when you run Claude Code inside tmux or iTerm2, and run in-process in other terminals.
+
+**3. Start Claude Code and spawn teammates**
+
+Run `claude` inside tmux or in iTerm2, then ask Claude to spawn teammates.
+
+If a setup prompt for `it2` appears in iTerm2, select **Install it2 now** to open the panes in your iTerm2 window.
+
+If you run Claude Code outside tmux and iTerm2, or the panes don't open in your iTerm2 window, change `teammateMode` again:
+
+* **Outside tmux and iTerm2**: with tmux installed, set `teammateMode` to `"tmux"`. The panes open in a separate tmux session. To watch them, copy the command from the `View teammates` line at the Claude Code prompt and run that command in a second terminal.
+* **Panes don't open in your iTerm2 window**: set `teammateMode` to `"iterm2"` to use iTerm2's own panes. Teammates then start only when you run Claude Code in iTerm2 with `it2` set up.
 
 To set the mode for a single session, pass it as a flag:
 
@@ -118,11 +140,6 @@ claude --teammate-mode auto
 ```
 
 The `--teammate-mode` flag is experimental and doesn't appear in `claude --help`.
-
-Split-pane mode requires either [tmux](https://github.com/tmux/tmux/wiki) or iTerm2 with the [`it2` CLI](https://github.com/mkusaka/it2). To install manually:
-
-* **tmux**: install through your system's package manager. See the [tmux wiki](https://github.com/tmux/tmux/wiki/Installing) for platform-specific instructions.
-* **iTerm2**: install the [`it2` CLI](https://github.com/mkusaka/it2), then enable the Python API in **iTerm2 → Settings → General → Magic → Enable Python API**.
 
 ### Specify teammates and models
 
@@ -494,7 +511,7 @@ Agent teams are experimental. Current limitations to be aware of:
 * **No background subagents from in-process teammates**: an in-process teammate's own subagents run in the foreground, because a teammate's background work can't outlive the lead's process. Claude Code returns an error when a teammate spawns a subagent whose definition sets `background: true`. A teammate's `run_in_background: true` request also fails, either with an error or by running silently in the foreground. Subagents launched from the main conversation follow the [background default](/docs/en/sub-agents#run-subagents-in-foreground-or-background).
 * **Lead is fixed**: the main session is the lead for its lifetime. You can't promote a teammate to lead or transfer leadership.
 * **No per-teammate permission modes at spawn**: teammates start with the permission mode described under [Permissions](#permissions).
-* **Split panes require tmux or iTerm2**: the default in-process mode works in any terminal. Split-pane mode isn't supported in VS Code's integrated terminal, Windows Terminal, or Ghostty.
+* **Split panes require tmux or iTerm2**: the default in-process mode works in any terminal.
 
 ## Next steps
 
@@ -648,7 +665,7 @@ Separately, the icon's shape has its own meaning:
 | Shape | What it means |
 | :- | :- |
 | `✻` or animated `✽` | The session process is running, or the session needs your input |
-| `∙` | The process has exited. You can still peek at the row, and when you reply or attach, Claude restarts it from its saved conversation |
+| `∙` | The process has exited. You can still peek at the row, and when you reply or press `Enter`, Claude restarts it from its saved conversation |
 | `✢` | A [`/loop`](/docs/en/scheduled-tasks) session sleeping between iterations. The row shows its run count and a countdown |
 
 The `#N` or `!N` label that can appear at the right edge of a row is a link to the session's [pull request or merge request](#pull-request-status), not part of the state icon.
@@ -820,7 +837,7 @@ Within a group:
 * Press `Enter` on a group header to collapse it, except while a [filter](#filter-sessions) is active, when every group stays expanded
 * Press `Ctrl+X` to stop a session and `Ctrl+X` again within two seconds to delete it from the list, or `Esc` to dismiss the confirmation without deleting. The second press deletes the session even when the stop attempt fails, for example because the [background service isn't responding](#agent-view-says-the-background-service-did-not-respond). In that case the confirmation stays active for another two seconds, and the delete ends the session's process itself
 
-Pressing `Ctrl+X` on a group header deletes every session in that group after confirmation. Except in the kept cases covered in [What deleting a session removes](#what-deleting-a-session-removes), deleting removes the session from the list. A worktree Claude created for it is removed, kept, or left in place depending on how you delete and what the worktree holds. The conversation transcript stays on your local machine, available through `claude --resume`.
+Press `Ctrl+X` on a group header to delete every session in that group after confirmation, except any that Claude Code [refuses to delete](#delete-a-session-after-claude-code-refuses). See [What deleting a session removes](#what-deleting-a-session-removes) for what happens to each session's worktree. The conversation transcript stays on your local machine, available through `claude --resume`.
 
 Completed sessions that don't fit on screen fold into a `… N more` row. The `Completed` group fills the vertical space left after the live groups. On a short terminal, the header compacts to a single summary line so sessions that are working or need input stay visible.
 
@@ -1126,48 +1143,37 @@ Whatever the task, Claude ends the job with a report saying what it did and wher
 
 #### What deleting a session removes
 
-Delete a session with `Ctrl+X` twice in [agent view](#organize-the-list) or with [`claude rm`](#manage-sessions-from-the-shell). Except in the kept cases below, the session leaves the list. Its transcript stays on your machine through `claude --resume`, and the removal survives supervisor restarts.
+Delete a session with `Ctrl+X` twice in [agent view](#organize-the-list) or with [`claude rm`](#manage-sessions-from-the-shell). The session disappears from the list, unless Claude Code [refuses to delete it](#delete-a-session-after-claude-code-refuses). Its transcript stays on your machine, available through `claude --resume`.
 
 What happens to a worktree Claude created for the session:
 
 * Agent view removes it, including uncommitted changes, so commit what you want to keep first.
 * `claude rm` keeps it, along with the session row, when it has uncommitted changes.
-* Neither agent view nor `claude rm` removes a worktree that another running session is using or has locked, and deleting again doesn't change that. Claude Code keeps the worktree and the session, and names the kept directory and the reason; in agent view, the session's row shows `not removed`. Close the other session, then delete again.
-* When you delete a session whose worktree has commits that Claude Code can't confirm are saved elsewhere, Claude Code keeps the worktree and the session, and the message names the worktree's branch and how many commits are unpushed. The message also offers the two ways forward: push the commits, or delete again to discard them.
 
-  Commits on a remote don't block the delete. Neither do commits on the local copy of your `origin` remote's default branch, as long as that branch is checked out in your main checkout, the repository directory itself rather than a worktree.
+One reason Claude Code refuses to delete a session is [unpushed commits in its worktree](/docs/en/errors#worktree-has-commits-that-are-not-pushed-anywhere). To keep those commits, push them before you delete the session.
 
-  After that refusal, you choose:
+Some worktrees stay on disk, whether you use agent view or `claude rm`:
 
-  * To keep the commits, push them, or merge them into that default branch, then delete the session again.
-  * To discard them, delete the session again without pushing: press `Ctrl+X` twice on its row in agent view, or run the `claude rm <id> --discard-unpushed` command the refusal printed. This removes the session and the worktree along with its branch, discarding the unpushed commits and any uncommitted changes.
+* If you created a worktree yourself and started the session from inside it, the worktree stays on disk for you to keep or remove.
+* If a worktree directory Claude created inside your repository no longer has its `.git` file, the directory stays on disk for you to remove. The worktree's branch stays in the repository, so you keep the commits on that branch.
 
-  When you delete again, Claude Code discards only what the refusal showed: if the worktree has gained a commit since, Claude Code keeps it again and shows the updated state.
+##### Delete a session after Claude Code refuses
 
-  When another finished session's records also name the worktree, it stays when you delete again; push the commits, then delete again.
-* A worktree git no longer recognizes, for example after `git worktree prune`, doesn't block the delete. Claude Code deletes the session and leaves the directory on disk.
-* When git or your [`WorktreeRemove` hook](/docs/en/hooks#worktreeremove) fails to remove the worktree, Claude Code keeps the worktree and the session, and the message names the cause. For a hook, the message says how it ended, such as `exited 1`, and quotes the start of its stderr. The message also tells you which of these to do next:
+When Claude Code refuses to delete a session because of its worktree, follow the message it shows. If the message names unpushed commits, see [Worktree has commits that are not pushed anywhere](/docs/en/errors#worktree-has-commits-that-are-not-pushed-anywhere).
 
-  * Delete the session again to remove the directory anyway, by pressing `Ctrl+X` twice on its row in agent view or running the `claude rm <id> --force-remove-worktree <worktree-id>` command that the `claude rm` refusal printed. The worktree's branch stays in the repository.
+##### Resolve a `Worktree not removed` message
 
-    Claude Code offers this only when it can confirm all of the following:
+A `Worktree not removed` message means Claude Code or your [`WorktreeRemove` hook](/docs/en/hooks#worktreeremove) didn't finish removing the session's worktree. Push any commits and copy out any files you want to keep, then follow the message.
 
-    * The directory is one of the repository's linked worktrees under `.claude/worktrees/`
-    * Neither the worktree nor a checked-out submodule has uncommitted changes to tracked files
-    * No other session's record names it
+##### Resolve a `files that weren't checked against a repository` message
 
-    When Claude Code can't verify a submodule checkout's state, such as one replaced by a separate git repository, it doesn't offer this either.
-  * Fix what stands in the way, such as committing or stashing the uncommitted changes, moving a separate git repository out of the worktree, closing whatever is using the directory, or fixing the hook, then delete the session again.
-  * Remove the directory yourself, then delete the session again.
+This message from `claude rm` means files remain in a worktree directory that isn't inside any git repository or that a [`WorktreeCreate` hook](/docs/en/hooks#worktreecreate) manages. Copy out any files you want to keep, then take the step for your case:
 
-A worktree you created yourself and started the session inside is left in place either way.
-
-A session whose worktree directory belongs to no git repository, because the repository was deleted or a [`WorktreeCreate` hook](/docs/en/hooks#worktreecreate) created the directory elsewhere, can still be deleted. While files remain in the directory:
-
-* Agent view asks for the same `Ctrl+X` double-press before discarding them. For a hook-created directory it runs your [`WorktreeRemove` hook](/docs/en/hooks#worktreeremove) instead, and without one it refuses the delete and keeps the session.
-* `claude rm` keeps the session and worktree, and names the reason.
-
-Either path keeps a directory that another finished session's records name.
+| Your case | What to do |
+| :- | :- |
+| No `WorktreeCreate` hook manages the directory | To discard the files, press `Ctrl+X` twice on the session's row in agent view. Or remove the directory yourself, then run `claude rm <id>` again |
+| A `WorktreeCreate` hook manages the directory, and you have a [`WorktreeRemove` hook](/docs/en/hooks#worktreeremove) | To try removing the directory with your hook, press `Ctrl+X` twice on the session's row in agent view. Or remove the directory yourself, then run `claude rm <id>` again |
+| A `WorktreeCreate` hook manages the directory, and you have no `WorktreeRemove` hook | Remove the directory yourself, then run `claude rm <id>` again |
 
 ### Set the model, effort, and fast mode
 
@@ -1306,9 +1312,9 @@ Every background session has a short ID you can use from the shell. The ID is pr
 | `claude stop <id>` | Stop a session. Also accepts `claude kill` |
 | `claude respawn <id>` | Restart a session, running or stopped, for example to pick up an updated Claude Code binary. A session that has a saved conversation resumes it |
 | `claude respawn --all` | Restart every running session, e.g. to move all sessions onto an updated Claude Code binary at once |
-| `claude rm <id>` | Remove a session from the list, along with a worktree Claude created for it when that's safe to delete; see [What deleting a session removes](#what-deleting-a-session-removes). The conversation transcript stays on your local machine and remains available through `claude --resume` |
-| `claude rm <id> --discard-unpushed <commit>@<worktree-id>` | Delete a session whose delete was refused over unpushed commits, discarding the worktree along with its branch and commits. Pass the exact value that refusal printed; see [What deleting a session removes](#what-deleting-a-session-removes). Requires v2.1.260 or later |
-| `claude rm <id> --force-remove-worktree <worktree-id>` | Delete a session whose delete was refused because git or the `WorktreeRemove` hook couldn't remove its worktree, deleting the worktree directory anyway and leaving its branch in the repository. Pass the exact value that refusal printed; see [What deleting a session removes](#what-deleting-a-session-removes). Requires v2.1.268 or later |
+| `claude rm <id>` | Remove a session from the list, along with a worktree Claude created for it when that's safe to delete. If Claude Code refuses to delete the session because of its worktree, see [Delete a session after Claude Code refuses](#delete-a-session-after-claude-code-refuses). The conversation transcript stays on your local machine and remains available through `claude --resume` |
+| `claude rm <id> --discard-unpushed <commit>@<worktree-id>` | Try again to delete a session and discard its worktree, after Claude Code refused because of unpushed commits. Copy the command from the `claude rm` message that offers it; see [Worktree has commits that are not pushed anywhere](/docs/en/errors#worktree-has-commits-that-are-not-pushed-anywhere). Requires v2.1.260 or later |
+| `claude rm <id> --force-remove-worktree <worktree-id>` | Try again to delete a session and remove its worktree directory anyway, after Claude Code refused because it couldn't remove the worktree. Copy the command from the `claude rm` message that offers it; see [Resolve a `Worktree not removed` message](#resolve-a-worktree-not-removed-message). Requires v2.1.268 or later |
 | `claude daemon status` | Print the [supervisor's](#the-supervisor-process) state, version, socket directory, and worker count |
 | `claude daemon logs` | Follow the supervisor's log file, [`~/.claude/daemon.log`](#where-state-is-stored), printing new lines as they arrive until you press `Ctrl+C` |
 | `claude daemon stop --any` | Stop the supervisor process and the background sessions it hosts. Pass `--keep-workers` to leave background sessions running for [the next supervisor](#the-supervisor-process) to reconnect to. The next `claude agents` or `claude --bg` starts a fresh supervisor |
@@ -1443,7 +1449,7 @@ Shutting down or restarting your machine stops running background sessions. A se
 
   Press `Enter` on the row and the footer shows `Press enter again to resume this session (it ended while the background service was off), or ctrl+x to remove it.` Press `Enter` on the same row again to resume its saved conversation. A reply, or `claude attach <id>`, resumes it without that footer prompt.
 
-When [transcript cleanup](/docs/en/settings-reference#cleanupperioddays) has removed a stopped session's saved conversation, Claude Code refuses to open the row: the message says there is nothing to resume. `claude rm <id>` deletes the row, except in the [kept cases](#what-deleting-a-session-removes) described above, and `claude respawn <id>` runs its original prompt again. See [This session's saved conversation is no longer on disk](/docs/en/errors#this-sessions-saved-conversation-is-no-longer-on-disk).
+When [transcript cleanup](/docs/en/settings-reference#cleanupperioddays) has removed a stopped session's saved conversation, Claude Code refuses to open the row: the message says there is nothing to resume. `claude rm <id>` deletes the row, unless [Claude Code refuses](#what-deleting-a-session-removes), and `claude respawn <id>` runs its original prompt again. See [This session's saved conversation is no longer on disk](/docs/en/errors#this-sessions-saved-conversation-is-no-longer-on-disk).
 
 Sleep alone doesn't stop sessions. Sessions are preserved across sleep and the supervisor reconnects to them on wake.
 
@@ -1477,9 +1483,11 @@ Claude Code never restarts a row running a [shell command](#run-a-shell-command)
 
 When a background session's process exits before it finishes starting and the host is low on memory, the row's status names the exit and adds `possibly low memory — free some up and retry`.
 
-The note is a hypothesis, not a confirmed cause. Claude Code adds it only when the process exited silently, without writing an error and without being stopped by a signal, and the host reported low memory at that moment. When the process did write an error before exiting, the row shows that error instead.
+> [!NOTE]
+>
+> The note is a hypothesis, not a confirmed cause. Claude Code adds it only when the process exited silently, without writing an error and without being stopped by a signal, and the host reported low memory at that moment. When the process did write an error before exiting, the row shows that error instead.
 
-Free up memory on the machine, then attach or reply to the row and the supervisor starts a fresh process for the session. When memory stays low, the supervisor also [stops idle sessions](#the-supervisor-process) to free resources on its own, and stops idle pinned sessions too if stopping the others freed nothing.
+Free up memory on the host, then press `Enter` on the row, and press it again if [the footer asks](#opening-a-session-says-it-has-no-saved-transcript). The [supervisor](#the-supervisor-process) starts a new process for the session. When memory stays low, the supervisor also [stops idle sessions](#the-supervisor-process) to free resources on its own, and stops idle pinned sessions too if stopping the others freed nothing.
 
 ### Agent view says the background service did not respond
 
@@ -1540,9 +1548,9 @@ While the process starts, Claude Code shows the tail of the session's transcript
 
 ### `.claude/worktrees/` is filling up
 
-Deleting a session in agent view removes the worktree Claude created for it, but [some deletes keep the worktree or leave its directory on disk](#what-deleting-a-session-removes), so leftover directories can accumulate. Directories git no longer recognizes don't appear in `git worktree list`, so remove those by hand.
+Deleting a session in agent view removes the worktree Claude created for it, but [some worktree directories stay on disk](#what-deleting-a-session-removes). Directories git no longer recognizes don't appear in `git worktree list`, so remove those yourself.
 
-List leftover entries with `git worktree list` in the project directory and remove each with `git worktree remove <path>`. See [Clean up worktrees](/docs/en/worktrees#clean-up-worktrees).
+List leftover entries with `git worktree list` in the project directory and remove each with `git worktree remove <path>`. If git refuses, see [Clean up subagent and background-session worktrees](/docs/en/worktrees#clean-up-subagent-and-background-session-worktrees).
 
 ## Limitations
 
@@ -1550,7 +1558,7 @@ Agent view is in research preview with the following limitations:
 
 * **Rate limits apply**: background sessions consume your subscription usage the same as interactive sessions, so running ten agents in parallel uses quota roughly ten times as fast as running one.
 * **Sessions are local**: background sessions run on your machine. They are preserved across sleep but stop if the machine shuts down.
-* **Claude-created worktrees are deleted with the session in agent view**: commit changes before deleting a session that edited files in its own worktree. [Some deletes keep the worktree instead](#what-deleting-a-session-removes).
+* **Claude-created worktrees are deleted with the session in agent view**: commit changes before deleting a session that edited files in its own worktree. [Some worktrees stay on disk](#what-deleting-a-session-removes).
 
 ## Related resources
 
@@ -2151,9 +2159,9 @@ Public sharing is off by default on Team and Enterprise plans. To let members pu
 
 To set how long artifacts are kept before automatic deletion, go to [**Organization settings > Data and privacy**](https://claude.ai/admin-settings/data-privacy-controls). You can set separate retention periods for artifacts that are still private to their author and artifacts that have been shared.
 
-### Review the audit log
+### Audit artifact activity with the Compliance API
 
-Publishing, sharing, and deleting an artifact each appear in your organization's audit log under the `claude_artifact_*` event types, the same family used for artifacts created in claude.ai conversations.
+On Enterprise plans, query the Compliance API's [Activity Feed](https://platform.claude.com/docs/en/manage-claude/compliance-activity-feed) to see who published, shared, or deleted an artifact. To find the activity types to filter by, expand `activity_types` in the [Activity Feed reference](https://platform.claude.com/docs/en/api/compliance/activities/list) and look for names that contain `artifact`.
 
 ### Allowlist the viewer domain
 
@@ -17671,6 +17679,7 @@ Claude Code deletes the files in the paths below once they're older than [`clean
 | `usage-data/` | `report.html` and timestamped report copies written by [`/insights`](/docs/en/costs#analyze-your-usage-patterns), plus cached per-session analysis data used to build them |
 | `skills/.trash/`, `plugins/.trash/` | [Skills](/docs/en/skills#how-synced-skills-behave) and [plugins](/docs/en/plugins/loading#synced-plugins) that the claude.ai sync removed, such as after you turn one off on claude.ai or stop syncing. The files stay here so you can recover them until the sweep deletes them |
 | `plugins/installed_plugins.set-aside.<date>.<hash>.json`, `plugins/installed_plugins.unreadable.<date>.<hash>.kept` | Dated copies Claude Code makes before rewriting [`installed_plugins.json`](/docs/en/plugins/loading#find-plugins-on-disk): install records it dropped, and the contents of a file it couldn't read. |
+| `plugins/mcpb/` | The files Claude Code extracted from the [MCP bundles](/docs/en/plugins/components#include-a-packaged-mcpb-server) that plugins declare. A bundle's age counts from the last session that used it. |
 | `todos/`, `statsig/`, `logs/` | Legacy directories from older versions. No longer written. The sweep removes their contents and then the empty directory. |
 
 Session files in `sessions/`, auto memory, and Claude Desktop and Cowork transcripts each follow their own retention rule:
@@ -23234,10 +23243,11 @@ If you set `forceLoginMethod` and `forceLoginOrgUUID` in Claude Code's [managed 
 
 To stop that, also deploy `forceLoginOrgUUID` in the Claude Desktop policy (in `HKLM` on Windows), with your claude.ai organization ID. Unless the policy itself [selects the Claude API](https://claude.com/docs/third-party/claude-desktop/claude-api#choose-an-authentication-approach), Claude Desktop stops using a person's own API key or Console account at the app's next launch.
 
-Check two cases before you deploy it:
+Check three cases before you deploy it:
 
 * **Claude Console organizations**: don't deploy `forceLoginOrgUUID` on its own with a Claude Console organization's ID, or you'd lock your people out of Claude Desktop. See [Which devices offer the Claude API account sign-in](https://claude.com/docs/third-party/claude-desktop/claude-api#which-devices-offer-the-claude-api-account-sign-in) instead.
 * **Enterprise Admin Console**: if it delivers your computers' Claude Desktop configuration, update them to Claude Desktop v2.37337.0 or later first, because earlier versions ignore it once this key is set. See [Keep a device on its managed profile](https://claude.com/docs/third-party/claude-desktop/admin-console#keep-a-device-on-its-managed-profile).
+* **Third-party providers**: if people set up their own [third-party inference configuration](https://claude.com/docs/third-party/claude-desktop/in-app-configuration) in the app, Claude Desktop ignores that configuration from the next launch after you deploy this key. To keep people on Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, or an LLM gateway, [deploy a configuration](https://claude.com/docs/third-party/claude-desktop/configuration) to their computers in the same Claude Desktop policy.
 
 ### Network access requirements
 
@@ -24376,6 +24386,7 @@ Match the message you see to a section below.
 | `Session failed: working folder not found:` | [Troubleshoot Remote Control](/docs/en/remote-control#working-folder-not-found) |
 | `The program file this Remote Control started from is gone` | [Troubleshoot Remote Control](/docs/en/remote-control#program-file-is-gone) |
 | `Session failed: spawn error:` followed by an `ENOENT` message | [Troubleshoot Remote Control](/docs/en/remote-control#program-file-is-gone) |
+| `Remote Control disconnected:` followed by a reason that mentions a `share link` | [Remote Control](/docs/en/remote-control#what-connected-devices-see) |
 | `OAuth token revoked` / `OAuth token has expired` | [Authentication](#oauth-token-revoked-or-expired) |
 | `Failed to authenticate: OAuth token revoked` | [Authentication](#oauth-token-revoked-or-expired) |
 | `Your account does not have access to Claude. Please login again or contact your administrator.` | [Authentication](#oauth-token-revoked-or-expired) |
@@ -29843,7 +29854,7 @@ Before v2.1.248, opening such a row re-ran the session's original prompt instead
 
 ### Worktree has commits that are not pushed anywhere
 
-You tried to delete a [background session](/docs/en/agent-view#what-deleting-a-session-removes) whose worktree holds commits Claude Code can't confirm are saved elsewhere. Claude Code keeps the worktree and the session row rather than destroy the commits unseen. `claude rm` names the branch and the unpushed commits, and says how to proceed:
+You tried to delete a [background session](/docs/en/agent-view#what-deleting-a-session-removes) whose worktree holds commits Claude Code can't confirm are saved elsewhere. `claude rm` says how to proceed:
 
 ```text theme={null}
 kept 7c5dcf5d — its worktree is still at “/home/you/project/.claude/worktrees/fix-login”
@@ -29853,19 +29864,15 @@ kept 7c5dcf5d — its worktree is still at “/home/you/project/.claude/worktree
 
 When Claude Code can't summarize the commits, the detail line reads `The worktree has unpushed commits` instead. In [agent view](/docs/en/agent-view), the session's row shows `not removed` with the same reason.
 
-Commits on a remote don't block the delete. Neither do commits on the local copy of your `origin` remote's default branch, as long as that branch is checked out in your main checkout, the repository directory itself rather than a worktree.
-
 **What to do:**
 
-* To keep the commits, push the worktree's branch, or merge it into the default branch checked out in your main checkout, then delete the session again
-* To discard the commits, run the `claude rm <id> --discard-unpushed` command the message printed, or press `Ctrl+X` twice on the session's row in agent view again. This removes the session and the worktree along with its branch, the unpushed commits, and any uncommitted changes. If the delete is refused again, follow the new message.
-* When the message says the worktree is also recorded by another finished session, deleting again doesn't discard it: push the commits, then delete the session again
+* To keep the commits, push them. Once the push puts them on a remote-tracking branch, such as `origin/claude/fix-login`, try deleting the session again.
+* If the message offers to discard the commits, first make sure you don't need the worktree, the commits or any uncommitted changes. Then take the step the message gives: press `Ctrl+X` twice on the session's row in agent view, or run the `claude rm <id> --discard-unpushed <commit>@<worktree-id>` command that `claude rm` printed. If Claude Code refuses again, follow the new message.
+* When the message says the worktree is also recorded by another finished session, deleting again doesn't discard it: push the commits, then try deleting the session again
 
 Before v2.1.268, `claude rm` put the commit summary on the `kept` line itself. When `claude rm` couldn't summarize the commits, the `kept` line read `worktree has commits that are not pushed anywhere` in place of the summary.
 
 Before v2.1.260, the message didn't name the branch or commits, and there was no discard route. You can still delete the session, losing uncommitted changes but keeping the branch and commits. Run `git worktree remove --force --force <path>` with the path the refusal printed, then `claude rm <id>`. Git needs `--force` twice for a locked worktree.
-
-Before v2.1.248, the default branch checked out in your main checkout didn't count: a branch you had already merged there still triggered this refusal until its commits reached a remote.
 
 ### Terminal host process died
 
@@ -33085,7 +33092,7 @@ Unless a background command that the main conversation started is still running,
 The run waits for background work such as background commands, subagents and workflows, Monitor watches, and pending `/loop` wakeups:
 
 * **[Background commands](/docs/en/tools-reference#background-commands)**: for a command that the main conversation started, for example a dev server or a watch build, the run waits until the command exits or reaches its [time limit](/docs/en/tools-reference#time-limit-for-background-commands). Claude then takes one more turn with the outcome. While the command runs, the 10-minute cap doesn't end the wait.
-* **Background [subagents](/docs/en/sub-agents) and workflows**: the run stays open until that work completes, because its result is part of the final output.
+* **Background [subagents](/docs/en/sub-agents) and workflows**: the run stays open until each one finishes or the 10-minute cap ends the wait.
 * **[Monitor](/docs/en/tools-reference#monitor-tool) watches**: the run waits until the watch times out or the 10-minute cap ends the wait, whichever comes first. While it waits, Claude keeps responding to what the watch reports. By default, a watch times out five minutes after Claude starts it.
 * **Pending wakeups**: in a run whose prompt you passed as text rather than with `--input-format stream-json`, when Claude has scheduled a [self-paced `/loop` wakeup](/docs/en/scheduled-tasks#let-claude-choose-the-interval), the run waits for each wakeup to fire and runs its iteration until the [loop ends](/docs/en/scheduled-tasks#stop-a-loop), even past the 10-minute cap.
 
@@ -33094,6 +33101,12 @@ When stderr is a terminal and the run has waited five seconds, Claude Code print
 If the run reaches its [`--max-budget-usd`](/docs/en/cli-reference#cli-flags) cap, Claude Code stops the remaining background work instead of waiting.
 
 When background work starts another turn, the run prints each turn's result with the default `text` output and the last turn's result with `json` output. Before v2.1.295, the run printed only the last turn's result with `text` output too.
+
+#### Give a long subagent command more time
+
+When a subagent's long command [moves to the background](/docs/en/tools-reference#foreground-commands-that-move-to-the-background) at its timeout, it keeps running, but a `claude -p` run can exit with code 0 before the command finishes.
+
+To raise the default timeout above the command's run time, set [`BASH_DEFAULT_TIMEOUT_MS`](/docs/en/env-vars), for example `BASH_DEFAULT_TIMEOUT_MS=300000 claude -p "<prompt>"` for five minutes. For a background subagent's command over 10 minutes, also raise the [10-minute cap](#background-tasks-at-exit).
 
 #### MCP work when a non-interactive run ends
 
@@ -33373,7 +33386,7 @@ The `--allowedTools` flag uses [permission rule syntax](/docs/en/settings-refere
 > * User-invoked [skills](/docs/en/skills) and custom commands work. Include `/skill-name` in the prompt string and Claude Code expands it before running.
 > * Built-in commands that only run in the terminal interface, such as `/login`, aren't available.
 > * `/model`, `/effort`, `/fast`, `/color`, and `/rename` accept the value as an argument, for example `/model sonnet`, and `/mcp` with no argument prints a text summary of server status. These forms follow each command's [availability notes](/docs/en/commands#all-commands).
-> * To change a setting, pass `key=value` to `/config`, for example `/config thinking=false`.
+> * To change a setting, pass `key=value` to `/config`, for example `/config verbose=true`.
 > * `/output-style <style>` switches [output styles](/docs/en/output-styles) and `/output-style` alone lists them. Requires Claude Code v2.1.269 or later.
 
 ### Customize the system prompt
@@ -33663,7 +33676,7 @@ To reformat a specific file however it changes, including when a `Bash` command 
 
 ### Block edits to protected files
 
-Prevent Claude from modifying sensitive files like `.env`, `package-lock.json`, or anything in `.git/`. Claude receives feedback explaining why the edit was blocked, so it can adjust its approach.
+Stop Claude's `Edit` and `Write` tools from modifying sensitive files like `.env`, `package-lock.json`, or anything in `.git/`. Claude receives feedback explaining why the edit was blocked, so it can adjust its approach.
 
 This example uses a separate script file that the hook calls. The script checks the target file path against a list of protected patterns and exits with code 2 to block the edit.
 
@@ -33726,6 +33739,10 @@ Add a `PreToolUse` hook to `.claude/settings.json` that runs the script before a
 **4. Test the hook**
 
 Ask Claude to add a comment to your `.env` file. Claude Code blocks the edit before it runs and passes the script's `Blocked:` message to Claude as feedback.
+
+Claude can still change the protected files with shell commands. To block some of those commands, add an [`Edit` deny rule](/docs/en/permissions#what-read-and-edit-rules-cover) per path under `permissions.deny` in `.claude/settings.json`, like `Edit(/.env)` for the project root's `.env`.
+
+Even with those rules, Claude can change `.env` in other ways. To limit which files commands can write to, see [Configure sandboxing](/docs/en/sandboxing#configure-sandboxing).
 
 ### Re-inject context after compaction
 
@@ -35944,7 +35961,9 @@ The result goes to Claude, not into the transcript, so ask Claude for it. If Cla
 
 #### Answer a question from an MCP task
 
-A running task can open an [elicitation dialog](#respond-to-mcp-elicitation-requests) to ask you for input. While `/tasks` is open, the dialog stays hidden, so close `/tasks` to answer. Declining or pressing `Esc` is an answer to the server, which then decides whether the task goes on.
+A running task can open an [elicitation dialog](#respond-to-mcp-elicitation-requests) to ask you for input. While `/tasks` is open, the dialog stays hidden, so close `/tasks` to answer. Declining is an answer to the server, which then decides whether the task goes on.
+
+Unless you've set Claude to [wait for the result](#make-claude-wait-for-the-result-of-an-mcp-task), press `Esc` in the dialog to answer later. To reopen the question, run `/tasks`, open the task's details, and press `Enter`. Answering later requires Claude Code v2.1.324 or later.
 
 In a [non-interactive](/docs/en/headless) session, Claude Code asks the server to cancel a task that requests input, without running your [`Elicitation` hooks](/docs/en/hooks#elicitation) or calling the Agent SDK's `onElicitation` callback.
 
@@ -43895,9 +43914,37 @@ Check what `backdrop` takes, what the call's result tells you, and what other mo
 
 ### Change the colors of the Desktop app
 
-To change the colors of the Desktop app's Code tab, start a local session there, [ask Claude for a mod](/docs/en/plugins/mods/create#ask-claude-for-a-mod), and describe the colors you want. For example, ask for `a mod that makes the app cream in light mode and dark brown in dark mode`. Asking for colors requires Claude Code v2.1.324 or later, so [check your version](/docs/en/plugins/mods/overview#turn-mods-on-or-off) first. Claude Code in the terminal keeps its own colors.
+To change the colors of the Desktop app's Code tab with a mod, [ask Claude for one](#ask-claude-for-a-colors-mod) or [write one yourself](#write-a-colors-mod-yourself). Both ways require Claude Code v2.1.324 or later in the Code tab, so [check the version there](/docs/en/desktop#claude-code-version-in-the-code-tab) first. Claude Code in the terminal keeps its own colors.
 
-To set the colors in a mod you write, pass them to `$.theme.set` as `colors`, which requires Claude Code v2.1.321 or later. Build that value from a few hex colors with `makeColors`. To get it, ask Claude to copy `make-colors.js` and `make-colors.d.ts` from its `plugin-authoring` skill into your mod's `hooks/` directory, which requires v2.1.324 or later. This `hooks/register.js` sets colors for light mode and dark mode when a session starts:
+#### Ask Claude for a colors mod
+
+**1. Describe the colors**
+
+Start a local session in the Code tab and tell Claude which colors you want. For example, enter `make a mod that makes the app cream in light mode and dark brown in dark mode`. Claude writes the mod's files.
+
+**2. Approve the mod**
+
+Answer the questions Claude Code asks about the mod's files and hot reloading. For what each answer does, see [Ask Claude for a mod](/docs/en/plugins/mods/create#ask-claude-for-a-mod).
+
+**3. Check the colors**
+
+The Code tab changes color when the mod loads. To adjust a color, tell Claude what to change. If nothing changes, see [Fix missing mod colors](#fix-missing-mod-colors-in-the-desktop-app).
+
+#### Write a colors mod yourself
+
+`makeColors` is a function that builds a theme from a few hex colors. These steps create a mod named `paper` that uses it.
+
+**1. Have Claude copy makeColors**
+
+Start a local session in the Code tab, and enter `copy make-colors.js and make-colors.d.ts from your plugin-authoring skill into ~/.claude/skills/paper/hooks/`. Check that both files are in that directory.
+
+**2. Save the manifest and hooks.json**
+
+From [Write a mod yourself](/docs/en/plugins/mods/create#write-a-mod-yourself), save `.claude-plugin/plugin.json` and `hooks/hooks.json` in `~/.claude/skills/paper/`, and change `first-mod` to `paper` in both files. A mod [under `~/.claude/skills/`](/docs/en/plugins/create#scaffold-a-plugin-that-loads-every-session) loads when you start a session.
+
+**3. Write the code**
+
+Save this file as `~/.claude/skills/paper/hooks/register.js`. When a session starts, the code calls `$.theme.set` with the colors for light mode and dark mode:
 
 ```javascript theme={null}
 import { makeColors } from './make-colors.js'
@@ -43921,13 +43968,38 @@ export function register(on) {
 }
 ```
 
-To try the example, [put the mod's directory under `~/.claude/skills/`](/docs/en/plugins/create#scaffold-a-plugin-that-loads-every-session), then start a local session in the Code tab. The background is cream in light mode and dark brown in dark mode.
+To use your own colors, replace the hex values with other six-digit hex colors.
 
-Here's what to do if the colors don't change, disappear, or stay when you no longer want them:
+**4. Check the colors**
 
-* **The colors don't change**: one cause is a theme that `makeColors` or the app refuses. Ask Claude to run the mod's `makeColors` call. Have Claude fix any error the call throws, and any entry in the `problems` list it returns that starts `Desktop won't paint this theme`.
-* **The colors or the [backdrop](#put-a-backdrop-behind-the-conversation) disappear**: pass `colors` and `backdrop` in the same `$.theme.set` call, and use one mod at a time that sets a theme.
-* **The colors stay when you no longer want them**: move the mod's directory out of `~/.claude/skills/`, or out of the [session's mods folder](/docs/en/plugins/mods/create#ask-claude-for-a-mod) if Claude wrote the mod. Start a new local session in the Code tab. If the colors are still there, go to **Settings > Appearance** or **Settings > Claude Code**, and select **Remove colors**.
+Start a new local session in the Code tab. With the example's values, the background is cream in light mode and dark brown in dark mode. If nothing changes, see [Fix missing mod colors](#fix-missing-mod-colors-in-the-desktop-app).
+
+### Fix missing mod colors in the Desktop app
+
+If you use a [third-party provider](/docs/en/third-party-integrations) instead of a Claude account in [Claude Desktop v5.11492.5 or earlier](/docs/en/desktop#check-your-version), the Code tab keeps its own colors, so skip these checks. Otherwise, if a mod's colors don't appear in the Code tab, or if they disappear, check for these causes:
+
+* **Old version**: [update the Desktop app](/docs/en/desktop#claude-code-version-in-the-code-tab), restart it, and start a new local session in the Code tab. If Claude wrote the mod, ask for it again there.
+* **Mod not loaded**: if Claude wrote the mod, see when it loads in [Ask Claude for a mod](/docs/en/plugins/mods/create#ask-claude-for-a-mod). If you wrote it, compare your files and their paths with [Write a colors mod yourself](#write-a-colors-mod-yourself).
+* **Refused theme**: ask Claude to run the mod's [`makeColors`](#write-a-colors-mod-yourself) call. If the call throws an error, or its `problems` list has an entry that starts `Desktop won't paint this theme`, have Claude fix the theme. If you installed the mod, send what Claude finds to its author.
+* **Another `$.theme` call**: when any mod in the session calls `$.theme.set` or `$.theme.clear()`, the colors and [backdrop](#put-a-backdrop-behind-the-conversation) from an earlier call disappear. In your own mod, pass `colors` and `backdrop` in the same `$.theme.set` call. Use one mod at a time that sets a theme.
+
+### Remove mod colors from the Desktop app
+
+To take a mod's colors off the Code tab, turn off the mod first. A mod that's still on can set its colors again.
+
+**1. Turn off the mod**
+
+* **Claude wrote the mod**: move its directory out of the [mods folder](/docs/en/plugins/mods/create#ask-claude-for-a-mod) of the session where Claude wrote it.
+* **You put the mod under `~/.claude/skills/`**: move its directory, such as `~/.claude/skills/paper/`, to a place outside `~/.claude/skills/`.
+* **You installed the mod**: in the Desktop app, [disable or uninstall its plugin](/docs/en/desktop#install-plugins) from **Manage plugins**. If you don't see **Manage plugins** and you have [the CLI](/docs/en/quickstart), you can [disable or uninstall a marketplace plugin from your shell](/docs/en/plugins/install#manage-plugins-from-your-shell).
+
+**2. Start a new session**
+
+Start a new local session in the Code tab.
+
+**3. Remove colors that stay**
+
+If the colors are still there, open **Settings** from the Code tab, and search there for `code appearance`. Open the result, and select **Remove colors**.
 
 ## Build a tree from elements
 
@@ -44166,7 +44238,7 @@ A collapsed band hides everything the mods draw there and shows one dim row inst
 
 The same keys, or in fullscreen rendering a click on the row, expand the band again. Until then, nothing presses a button in it: no hotkey, no digit typed into an empty prompt, and no keybinding for a button's [`action`](/docs/en/plugins/mods/reference#elements). If the band has keyboard focus when the user collapses it, the focus returns to the prompt, and Ctrl+X then Tab skips the band while it's collapsed.
 
-The band stays collapsed until the user expands it, even after `/clear`, and is expanded again the next time Claude Code starts. Your mod can't expand it or tell that it's collapsed: the `ui.render` hook keeps running, and nothing in `e.props` says so. Don't make the band the only place your mod shows something the user has to answer.
+The band stays collapsed until the user expands it, even after `/clear`, and is expanded again the next time Claude Code starts. Your mod can't expand it. Don't make the band the only place your mod shows something the user has to answer. To show that elsewhere only while the band is collapsed, read `e.props.isCollapsed` in your `ui.render` hook, which keeps running. `isCollapsed` requires Claude Code v2.1.321 or later.
 
 ### Take typed input and draw a row for each item
 
@@ -44939,6 +45011,19 @@ Every [mods API method](#mods-api-methods) is also an event, named for its names
 
 Some of these events also fire for Claude Code's own actions, so check whether `next.origin.plugin` is `engine` before you refuse one.
 
+#### Fields on Claude Code's own `http.fetch` requests
+
+In an `http.fetch` hook, a [`next.origin`](#the-hook-function) of `{ plugin: 'engine', tier: 'core' }` marks one of Claude Code's own requests, such as a model request, not a mod's `$.http.fetch` call. Where the [built-in guard](/docs/en/plugins/mods/admin#know-what-happens-by-default) is loaded, your hook doesn't get these events unless your mod [counts as your organization's](/docs/en/plugins/mods/admin#install-your-organizations-mods).
+
+On these events, `e.init` and the `value` that `next(e)` resolves to can hold these fields, among others:
+
+| Field | What it means |
+| :- | :- |
+| `e.init.compress` | Set when Claude Code compresses the body after your hook. `e.init.body` holds the uncompressed body. To send the body uncompressed, call `next({ ...e, init: { ...e.init, compress: undefined } })`. |
+| `value.isStreaming` | Set to `true` because Claude Code reads the response body itself, so `value.text` is empty. Read `value.status` and `value.headers` instead. To answer with your own `text`, return a `value` without `isStreaming`. |
+
+These events and fields require Claude Code v2.1.321 or later.
+
 ## Mods API methods
 
 The mods API is the `$` argument every hook receives. Its methods are grouped in namespaces, such as `$.ui`. This table lists each namespace's methods by name, so `open` in the `$.ui` row is the call `$.ui.open(...)`. The guides show the common ones in use, and [the types for your build](/docs/en/plugins/mods/create#get-the-types-for-your-build) document every method with an example.
@@ -44949,7 +45034,7 @@ The mods API is the `$` argument every hook receives. Its methods are grouped in
 | [`$.ui`](/docs/en/plugins/mods/interface#pick-where-to-draw) | `resolve`, `invalidate`, `open`, `close`, `panes`, [`place`](/docs/en/plugins/mods/interface#place-a-row-in-the-transcript), `focus`, `scroll`, `toast`, `notify`, `status`, `log`, `notice`, `ask`, `copy`, `selection`, `blit`, `view`. `view` requires Claude Code v2.1.300 or later and `place` v2.1.314 or later. |
 | [`$.theme`](/docs/en/plugins/mods/interface#put-a-backdrop-behind-the-conversation) | `set`, `clear`: set a backdrop for the Desktop or mobile app to draw, and take the backdrop off. Requires Claude Code v2.1.319 or later. |
 | [`$.command`](/docs/en/plugins/mods/api#add-a-command) | `register`, `run`, `list` |
-| [`$.tool`](/docs/en/plugins/mods/api#add-a-tool) | `register`, `call`, `check`, `list` |
+| [`$.tool`](/docs/en/plugins/mods/api#add-a-tool) | `register`, `call`, `check`, `list`. When a `call` needs a person's approval, such as one a hook or your organization answers with `ask`, it resolves with `{ deny: "<tool> wasn't run: this call needs a person's approval, and a mod's own call can't ask for it." }`, where `<tool>` is the tool's name. |
 | `$.agent` | `register`, `spawn`, `list`. `list()` returns this session's subagents and teammates, each with a `status` of `pending`, `running`, `waiting`, `idle`, `completed`, `failed`, or `killed`, where `idle` and `waiting` require Claude Code v2.1.289 or later. |
 | [`$.model`](/docs/en/plugins/mods/api#call-a-model) | `complete`, `fork`, `classify` |
 | [`$.prompt`](/docs/en/plugins/mods/api#start-a-turn-from-a-background-job) | `submit`, `read`, `fill`, `suggest`, `compose`. Claude reads text from `submit({ text })` after a sentence that names your mod as the sender. `submit({ text, asUser: true })` sends the text as the user's own words, without that sentence. |
@@ -44977,7 +45062,7 @@ Rendering in the VS Code extension requires extension version 2.1.299 or later. 
 | Site | `e.props` | `e.requestId` | Rendered on |
 | :- | :- | :- | :- |
 | [`Pane`](/docs/en/plugins/mods/interface#pick-where-to-draw) | `title`, `isFocused`, `bodyColumns`, `placement`, `scroll`, `view` | The pane's `id` | Terminal, Desktop, VS Code |
-| [`AbovePrompt`](/docs/en/plugins/mods/interface#pick-where-to-draw) | `hasSurvey`, `isWorking`, `maxRows`, `bodyColumns`, `scroll`, `view` | One instance | Terminal, Desktop |
+| [`AbovePrompt`](/docs/en/plugins/mods/interface#pick-where-to-draw) | `hasSurvey`, [`isCollapsed`](/docs/en/plugins/mods/interface#when-the-user-collapses-the-band), `isWorking`, `maxRows`, `bodyColumns`, `scroll`, `view` | One instance | Terminal, Desktop |
 | `AbovePromptList`, the stack of `AbovePrompt` rows | `rows`, a list with one `{ plugin, tree }` for each mod's row, plus the `AbovePrompt` props | One instance | Terminal, Desktop. Requires Claude Code v2.1.323 or later. |
 | [`Placed`](/docs/en/plugins/mods/interface#place-a-row-in-the-transcript) | `id`, `plugin`, `onScreen` | The `requestId` that `$.ui.place` returned | Terminal |
 | [`Backdrop`](/docs/en/plugins/mods/interface#put-a-backdrop-behind-the-conversation) | `scene`, `plugin`, `glass`, `overrideColorScheme`. Before v2.1.323, `scene` was `id` and `overrideColorScheme` was `colorScheme`. | `backdrop` | `desktop` and `mobile` surfaces. Your hook runs when the Desktop or mobile app asks to draw a backdrop. |
@@ -45293,8 +45378,6 @@ The kit also exports ready-made mocks for the clock, the store, environment vari
 
 ### Follow the test kit's rules
 
-The test kit has a few rules of its own, and breaking one produces the errors new test authors hit first:
-
 * **Register every stub before the test's first call on `$`.** Calling `on` after that throws an error such as `on("ui.render") after the test first called $`.
 
 * **[`session.start`](/docs/en/plugins/mods/reference#session) doesn't run by itself.** Each test starts with your module freshly loaded and none of its hooks called, so module-level variables hold their initial values. If a hook depends on what `session.start` sets up, fire it first:
@@ -45310,14 +45393,14 @@ The test kit has a few rules of its own, and breaking one produces the errors ne
 
   The second stub answers the `$.command.register` call that a `session.start` hook such as the [tutorial's](/docs/en/plugins/mods/create#write-a-mod-yourself) makes. Without it, that call rejects with `no implementation for command.register` and the kit skips your hook, so nothing after the call in the hook runs. The test doesn't fail at that point. The skipped hook is listed under `the engine reported:` only if a later check fails.
 
-* **A hook that returns `next(e)` needs a stub to answer.** When your [`ui.render`](/docs/en/plugins/mods/reference#interface) hook returns `next(e)`, for example to draw nothing while Claude is idle, [mounting it](#test-a-drawing) fails with `no implementation for ui.render`. Register a stub that returns an element as plain data:
+* **Register a `ui.render` stub to choose what `next(e)` returns.** When your [`ui.render`](/docs/en/plugins/mods/reference#interface) hook returns `next(e)`, for example to draw nothing while Claude is idle, the [mount](#test-a-drawing) succeeds with no stub. To make `next(e)` return an element you pick, register a stub that returns it as plain data:
 
   ```typescript theme={null}
   // Stands for what Claude Code would draw at the site
   on('ui.render', () => ({ type: 'Text', props: {}, children: ['drawn by Claude Code'] }))
   ```
 
-  With the stub registered, the mount succeeds, and `ui.find({ type: 'Text' })` returns that element whenever your hook returned `next(e)`. On v2.1.323 or later, for the band, pass your mod's name as the second argument to `on`, as in `{ plugin: 'my-mod' }`. Without it, the stub doesn't answer your `next(e)`.
+  Where the site [can draw that element](/docs/en/plugins/mods/interface#change-what-claude-code-already-draws), `ui.find({ type: 'Text' })` returns it when your hook returned `next(e)`. On v2.1.323 or later, for the band, pass your mod's name as the second argument to `on`, as in `{ plugin: 'my-mod' }`. Without it, the stub doesn't answer your `next(e)`. Before v2.1.321, the mount fails with `no implementation for ui.render` unless you register the stub.
 
 * **A stub for `turn.step` is an async generator**, and the test reads the stream to its end to get the result:
 
@@ -45494,6 +45577,7 @@ The handle that `$.ui.mount` returns has these methods, which address elements b
 | `press({ key: 'more' })` | Presses the `Button` with that key |
 | `input({ key: 'new-note', text: 'buy milk' })` | Types the text into the `Input` with that key and presses Enter. Add `kind: 'change'` to type without submitting. For a field with `rows`, the text can hold `\n`. |
 | `select({ key: 'size', value: 'large' })` | Picks the option with that value in the `Select` with that key |
+| `keepsBeneath()` | In a test with no `ui.render` stub, it resolves to `true` when the drawing includes what `next(e)` returned, and `false` when your hook left it out. In a test that registers one, use `find` to look for what the stub drew. Requires Claude Code v2.1.321 or later. |
 | `find({ key: 'more' })` or `find({ type: 'Text', text: 'Count: 2' })` | Returns the first matching element as `{ type, props, children }`, or `undefined`. `text` can be a string or a regular expression. |
 | `unmount()` | Removes the drawing |
 
@@ -46454,7 +46538,7 @@ The details pane you open from the **Discover** or **Marketplaces** tab in `/plu
 The warning reads the same whatever marketplace the plugin comes from:
 
 ```text theme={null}
-Make sure you trust a plugin before installing, updating, or using it. Anthropic does not control what MCP servers, files, or other software are included in plugins and cannot verify that they will work as intended or that they won't change. See each plugin's homepage for more information.
+Plugins can run code on your computer, with access to your files and shell. Make sure you trust a plugin before installing, updating, or using it. Anthropic does not control what MCP servers, files, or other software are included in plugins and cannot verify that they will work as intended or that they won't change. See each plugin's homepage for more information.
 ```
 
 If your organization sets `pluginTrustMessage` in [managed settings](/docs/en/plugins/org), Claude Code appends that text to the warning.
@@ -47444,6 +47528,7 @@ If you don't have the Claude app yet, run `/mobile` inside Claude Code to show a
 A connected device shows the conversation in your terminal as it happens. These cases go beyond ordinary messages:
 
 * **Compaction and `/clear`**: while Claude Code [compacts the conversation](/docs/en/context-window#what-survives-compaction), connected devices show the progress and then where the conversation was compacted. When you run `/clear`, the conversation resets on connected devices too.
+* **Disconnecting after `/resume` or `/teleport`**: if the connected session has a [share link](/docs/en/claude-code-on-the-web#share-sessions), or Claude Code can't check for one, Remote Control disconnects when either command opens another conversation. People with the link would otherwise see that conversation. To connect the new conversation, run `/remote-control` in your terminal. The share link check requires Claude Code v2.1.324 or later.
 * **Switching conversations with `/resume`**: the connected device doesn't receive the switched-to conversation's title or earlier history, but new messages in both directions go to and from whichever conversation is open in your terminal. To work on the original conversation from the device again, run `/resume` in your terminal and switch back to it.
 * **Pulling a session with `/teleport`**: when you pull a [cloud session](/docs/en/claude-code-on-the-web#from-cloud-to-terminal) into your terminal with `/teleport`, the connected device doesn't receive the pulled conversation's earlier history. New messages in both directions go to and from the pulled conversation, which is now the one open in your terminal.
 * **Messages from your other sessions**: with [cross-session messaging](/docs/en/cross-session-messaging), the same connection carries messages between your own sessions on different machines.
@@ -49952,7 +50037,7 @@ Outside [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode),
 
 * **Deny and ask rules**: a command that one of them matches still aborts. To find the rule, see [Manage permissions](/docs/en/permissions#manage-permissions).
 * **Managed-only rules**: if `/status` in the session lists the skill under `allowed-tools ignored this session`, see [When only managed permission rules apply](#when-only-managed-permission-rules-apply).
-* **Unverified Git folders**: where a `HEAD` or `.git` file may not be yours, Claude Code ignores `allowed-tools` for a Bash command that contains `git` or that Claude Code can't parse. If you trust the folder, for example your own bare repository's worktree, allow the command with [`/permissions`](/docs/en/permissions#manage-permissions) in the session.
+* **Bare repository folders**: a folder looks bare when it holds a `HEAD` file directly beside `refs` or `commondir`. When the closest repository at or above the working directory looks bare, Claude Code ignores `allowed-tools` for a Bash command that contains `git` or that Claude Code can't parse. If you trust that folder, allow the command with [`/permissions`](/docs/en/permissions#manage-permissions) in the session.
 
 In auto mode, a command that would otherwise need your approval doesn't abort the invocation. The skill loads with an instruction telling Claude to run the command first, and Claude's own call then goes through [auto mode's usual checks](/docs/en/permission-modes#how-the-classifier-evaluates-actions). The invocation still aborts in a [forked skill](#run-skills-in-a-subagent) that sets `agent`, and in a session where Claude doesn't have the [shell tool that runs injected commands](#how-injected-commands-run).
 
@@ -50711,9 +50796,9 @@ Explore and Plan start without your CLAUDE.md files and the git status snapshot 
 >
 > A fast, read-only agent optimized for searching and analyzing codebases.
 >
-> * **Model**: the main conversation's model. When the main conversation runs Fable, Explore's model depends on how you connect:
+> * **Model**: the [parent conversation's](#which-model-a-nested-subagent-runs-on) model. When the parent conversation runs Fable, Explore runs on Opus or stays on Fable, based on how you connect.
 >   * With a Claude subscription, an Anthropic Console account, or an [LLM gateway](/docs/en/llm-gateway) reached through `ANTHROPIC_BASE_URL`, Explore runs on the Opus model that the [`opus` alias](/docs/en/model-config#model-aliases) resolves to.
->   * On Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, [Claude Platform on AWS](/docs/en/claude-platform-on-aws), or a [Claude apps gateway](/docs/en/claude-apps-gateway), Explore stays on the main conversation's model.
+>   * On Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, [Claude Platform on AWS](/docs/en/claude-platform-on-aws), or a [Claude apps gateway](/docs/en/claude-apps-gateway), Explore stays on Fable.
 > * **Tools**: read-only tools; Write and Edit are denied
 > * **Purpose**: file discovery, code search, codebase exploration
 >
@@ -50727,7 +50812,7 @@ Explore and Plan start without your CLAUDE.md files and the git status snapshot 
 >
 > A research agent used during [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode) to gather context before presenting a plan.
 >
-> * **Model**: inherits from the main conversation, unless you set `CLAUDE_CODE_SUBAGENT_MODEL` and [force it onto every subagent](#run-every-subagent-on-one-model)
+> * **Model**: inherits from the [parent conversation](#which-model-a-nested-subagent-runs-on), unless you set `CLAUDE_CODE_SUBAGENT_MODEL` and [force it onto every subagent](#run-every-subagent-on-one-model)
 > * **Tools**: read-only tools; Write and Edit are denied
 > * **Purpose**: codebase research for planning
 >
@@ -50737,7 +50822,7 @@ Explore and Plan start without your CLAUDE.md files and the git status snapshot 
 >
 > A capable agent for complex, multi-step tasks that require both exploration and action.
 >
-> * **Model**: the [`CLAUDE_CODE_SUBAGENT_MODEL`](#choose-a-model) model if you set one and nothing assigns a model another way, otherwise the main conversation's model; [Choose a model](#choose-a-model) states the full order, and [Run every subagent on one model](#run-every-subagent-on-one-model) shows how to make the variable override those sources
+> * **Model**: the parent conversation's model by default, following the [model order](#choose-a-model)
 > * **Tools**: every tool [available to subagents](#available-tools)
 > * **Purpose**: complex research, multi-step operations, code modifications
 >
@@ -51021,51 +51106,42 @@ To find files in an `agents` directory whose frontmatter doesn't parse, run `cla
 
 ### Choose a model
 
-The `model` field controls which model the subagent uses:
+By default, a subagent you define runs on the same model as the conversation that starts it. To choose its model yourself, set the [`model`](#supported-frontmatter-fields) field in its definition to one of these values:
 
-* **Model alias**: use one of the available aliases: `sonnet`, `opus`, `haiku`, or `fable`
-* **Full model ID**: use a full model ID such as `claude-opus-5-5` or `claude-sonnet-5`. Accepts the same values as the `--model` flag
-* **inherit**: use the same model as the main conversation
+* **Model alias**: `sonnet`, `opus`, `haiku`, or `fable`
+* **Full model ID**: a value the [`--model`](/docs/en/cli-reference#cli-flags) flag accepts, such as `claude-opus-5-5` or `claude-sonnet-5`
+* **`inherit`**: the main conversation's model, or the spawning subagent's model for a [nested subagent](#which-model-a-nested-subagent-runs-on)
 
-When Claude invokes a subagent, it can also pass a `model` parameter for that specific invocation. On an Agent tool call, that parameter takes a model alias: `sonnet`, `opus`, `haiku`, or `fable`. Claude can't pass a full model ID or `inherit` on that call. Claude Code resolves the subagent's model in this order:
+When more than one source sets a model, Claude Code uses the first in this order:
 
-1. The per-invocation `model` parameter
-2. The subagent definition's `model` frontmatter, where `inherit` selects the main conversation's model
-3. The [`CLAUDE_CODE_SUBAGENT_MODEL`](/docs/en/model-config#environment-variables) environment variable, when you set it to a model alias or model ID
-4. The main conversation's model
+1. The per-invocation `model` parameter, which Claude can pass when it starts the subagent. On an Agent tool call, the parameter takes a model alias, not a full model ID or `inherit`.
+2. The `model` field in the subagent's definition, including `inherit`
+3. The [`CLAUDE_CODE_SUBAGENT_MODEL`](/docs/en/model-config#environment-variables) environment variable
+4. The main conversation's model, or the spawning subagent's model for a nested subagent
 
-If an installed [mod](/docs/en/plugins/mods/overview) sets a model in its [`agent.spawn`](/docs/en/plugins/mods/reference#subagents) hook, Claude Code uses that model in place of the per-invocation parameter.
-
-In two cases, a family alias such as `opus` in the per-invocation parameter or the frontmatter resolves to the main conversation's model instead of the [version the alias points to](/docs/en/model-config#model-aliases):
-
-* **The main conversation's model belongs to that family**: the subagent runs on the main conversation's exact model, including any `[1m]` suffix, so it gets the same [extended context](/docs/en/model-config#extended-context) window as the main conversation.
-* **Claude Code can't tell the main conversation's model family, on [a provider other than the Anthropic API](/docs/en/third-party-integrations)**: this can happen with an [application inference profile ARN](/docs/en/amazon-bedrock#iam-configuration) on Amazon Bedrock that Claude Code hasn't resolved to a backing model. This case covers only the `opus` alias, and doesn't apply when you set [`ANTHROPIC_DEFAULT_OPUS_MODEL`](/docs/en/model-config#environment-variables), since `opus` then resolves to the model you set.
-
-An alias in `CLAUDE_CODE_SUBAGENT_MODEL` always resolves to the version the alias points to, even when it names the main conversation's family. Setting the variable to `inherit` is the same as leaving it unset.
+If Claude passed an alias, the subagent keeps that alias when it [resumes or receives a follow-up message](#resume-subagents). If an installed [mod](/docs/en/plugins/mods/overview) sets a model in its [`agent.spawn`](/docs/en/plugins/mods/reference#subagents) hook, Claude Code uses that model in place of the per-invocation parameter.
 
 Setting `CLAUDE_CODE_SUBAGENT_MODEL` by itself doesn't change the model the built-in Explore and Plan subagents run on. To change it, see [Run every subagent on one model](#run-every-subagent-on-one-model).
 
-Before v2.1.251, `CLAUDE_CODE_SUBAGENT_MODEL` came first in this order and overrode both the per-invocation parameter and the frontmatter, including `model: inherit`.
+#### Which model a nested subagent runs on
 
-Claude Code checks the per-invocation parameter, frontmatter, and environment variable values against your organization's [`availableModels`](/docs/en/model-config#restrict-model-selection) allowlist. For a blocked value, it substitutes another model:
+By default, a [nested subagent](#let-subagents-spawn-their-own-subagents) you define runs on the model of its parent, the subagent that spawned it. To run the nested subagent on another model, set its `model` field to that model.
 
-* When the blocked value is a family alias such as `opus`, Claude Code runs the subagent on the newest version of that family the allowlist permits, following the same [substitution rules and provider scope](/docs/en/model-config#restrict-model-selection) as `/model`. Before v2.1.222, Claude Code ran the subagent on the inherited model for a blocked family alias as well.
-* For any other blocked value, on providers where that substitution doesn't operate, or when the allowlist permits no version of the family, Claude Code runs the subagent on the inherited model instead. If you set `CLAUDE_CODE_SUBAGENT_MODEL`, Claude Code tries that model first, under these same rules.
+For example, suppose your main conversation runs on Opus and starts a reviewer subagent on Haiku. By default, these subagents run on Haiku, not Opus, when the reviewer spawns them:
 
-In interactive sessions, Claude Code shows a warning naming the requested model and the model the subagent runs on, for either substitution.
+* A subagent with `model: inherit` or no `model` field
+* The built-in Explore, Plan, and general-purpose subagents
+* A [fork](#fork-the-current-conversation)
+
+In plan mode, these subagents run on Opus if you set your session's model to [`opusplan`](/docs/en/model-config#opusplan-model-setting), or on Sonnet if you set it to `haiku`.
+
+#### Check a subagent's model
 
 To check which model a subagent is running on, run [`/tasks`](/docs/en/commands). Claude Code names the model on the subagent's row, and adds the [effort level](/docs/en/model-config#adjust-effort-level) set for that subagent, if any. Requires Claude Code v2.1.242 or later.
 
-A per-invocation `model` parameter also applies when the subagent is [resumed or sent a follow-up message](#resume-subagents), so the subagent stays on that model.
-
-As of v2.1.198, subagents also inherit the main conversation's [extended thinking](/docs/en/model-config#extended-thinking) configuration: if thinking is on in your session, it's on for the subagent, and if it's off, it stays off. There is no per-subagent thinking setting. Before v2.1.198, subagents ran with extended thinking disabled regardless of the main conversation's setting.
-
 #### Run every subagent on one model
 
-`CLAUDE_CODE_SUBAGENT_MODEL` is a default, so a subagent's definition or a model Claude passes still takes precedence over it. To apply one model to every subagent, [teammate](/docs/en/agent-teams#specify-teammates-and-models), and [workflow agent](/docs/en/workflows), also set `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` to `1`. Requires Claude Code v2.1.257 or later.
-
-* If you set both variables, subagents run on the model in `CLAUDE_CODE_SUBAGENT_MODEL`.
-* If you set only `CLAUDE_CODE_SUBAGENT_MODEL_FORCE`, subagents run on the main conversation's model, except that the built-in Explore subagent runs on the [model listed for it under Built-in subagents](#built-in-subagents).
+To apply one model to every subagent, [teammate](/docs/en/agent-teams#specify-teammates-and-models), and [workflow agent](/docs/en/workflows), set `CLAUDE_CODE_SUBAGENT_MODEL` to that model and `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` to `1`. Requires Claude Code v2.1.257 or later.
 
 For example, to run every subagent on Haiku, set both variables in the `env` block of a [settings file](/docs/en/settings):
 
@@ -51080,10 +51156,33 @@ For example, to run every subagent on Haiku, set both variables in the `env` blo
 
 To check that the setting took effect, run [`/tasks`](/docs/en/commands) while a subagent is running. The subagent's row shows the model it runs on.
 
-While `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` is [on](/docs/en/env-vars), Claude Code ignores the `model` field in subagent definitions, and Claude can't pass a model when it starts a subagent. These subagents still run on the main conversation's model:
+While `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` is [on](/docs/en/env-vars), Claude Code ignores the `model` field in subagent definitions, and Claude can't pass a model when it starts a subagent. The following subagents still run on their parent conversation's model:
 
 * A [fork](#fork-the-current-conversation)
 * A [skill that runs in a subagent](/docs/en/skills#run-skills-in-a-subagent) with `model: inherit`
+
+If you set only `CLAUDE_CODE_SUBAGENT_MODEL_FORCE`, subagents run on the main conversation's model, except that the built-in Explore subagent runs on the [model listed for it under Built-in subagents](#built-in-subagents).
+
+#### Which version a model alias selects
+
+By default, a subagent with a model alias runs on the [version the alias points to](/docs/en/model-config#model-aliases). With a family alias such as `opus` in the `model` field or per-invocation parameter, the subagent runs on its parent conversation's model in two cases:
+
+* **Same family**: for example, if your main conversation runs on `claude-opus-4-7`, a subagent with `model: opus` runs on that version too. To run another version, set a full model ID in the `model` field.
+* **Unknown family**: Claude Code can't tell the parent model's family, such as with an Amazon Bedrock ARN it [can't look up](/docs/en/amazon-bedrock#iam-configuration). This case applies only to the `opus` alias on [a provider other than the Anthropic API](/docs/en/third-party-integrations). To choose the Opus version, set [`ANTHROPIC_DEFAULT_OPUS_MODEL`](/docs/en/model-config#environment-variables).
+
+#### When an allowlist blocks a subagent model
+
+If your organization's [`availableModels`](/docs/en/model-config#restrict-model-selection) allowlist blocks the model set for a subagent, the subagent runs on the first of these that applies:
+
+1. For a blocked family alias, the newest permitted version in that family, on [providers that support this substitution](/docs/en/model-config#restrict-model-selection)
+2. The model in `CLAUDE_CODE_SUBAGENT_MODEL`, if you set it, under these same rules
+3. The main conversation's model, or the spawning subagent's model for a nested subagent
+
+For a top-level subagent in an interactive session, a warning names the requested model and its replacement. To run a particular model, change the blocked value to one the allowlist permits.
+
+### Extended thinking in subagents
+
+Subagents inherit your main conversation's [extended thinking](/docs/en/model-config#extended-thinking) configuration. There is no per-subagent thinking setting.
 
 ### Choose an effort level
 
@@ -51101,7 +51200,9 @@ You can control what subagents can do through tool access, permission modes, and
 
 #### Available tools
 
-Subagents inherit the [built-in tools](/docs/en/tools-reference) and MCP tools available in the main conversation, narrowed by two filters: the first removes a short list of tools from every subagent, and the second reduces the built-in tool set for subagents that run in the [background](#run-subagents-in-foreground-or-background), which is the default. On macOS, Linux, and WSL, a subagent can also receive the Glob and Grep tools when the main conversation doesn't have them, as described under [Glob tool behavior](/docs/en/tools-reference#glob-tool-behavior). [Forks](#fork-the-current-conversation) skip both filters and receive the main conversation's exact tool pool. The first filter removes these tools, even when listed in the `tools` field:
+Subagents inherit the [built-in tools](/docs/en/tools-reference) and MCP tools available in the main conversation, narrowed by two filters. The first removes a short list of tools from every subagent. The second reduces the built-in tool set for subagents that run in the [background](#run-subagents-in-foreground-or-background), which is the default.
+
+On macOS, Linux, and WSL, a subagent can also receive the Glob and Grep tools when the main conversation doesn't have them, as described under [Glob tool behavior](/docs/en/tools-reference#glob-tool-behavior). [Forks](#fork-the-current-conversation) skip both filters and receive their parent conversation's exact tool pool. The first filter removes these tools, even when listed in the `tools` field:
 
 * `Agent`, when the subagent is at the [depth limit](#let-subagents-spawn-their-own-subagents); in a [fork](#fork-the-current-conversation) the tool stays listed but returns an error instead of spawning
 * `AskUserQuestion`
@@ -51752,7 +51853,7 @@ To change the limit, set [`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`](/docs/en/env-v
 
 With this value, your subagents can delegate to a second layer of their own, and that second layer can't delegate further. Set `1` to turn nesting off.
 
-A nested subagent is configured the same way as a top-level one and resolves from the same [scopes](#choose-the-subagent-scope). To keep one subagent from spawning while nesting is on, such as a reviewer that should stay read-only, omit `Agent` from its [`tools`](#available-tools) list or add it to `disallowedTools`.
+Define a nested subagent in the same [scopes](#choose-the-subagent-scope) as a top-level one. By default, a nested subagent you define runs on the [spawning subagent's model](#which-model-a-nested-subagent-runs-on). To keep one subagent from spawning while nesting is on, such as a reviewer that should stay read-only, omit `Agent` from its [`tools`](#available-tools) list or add it to `disallowedTools`.
 
 In the terminal, Claude Code shows nested subagents as a tree in the subagent panel below the prompt input and marks each row that still has descendants in the panel with a `(+N)` count of them. Open a row to see that subagent's siblings and direct children with a path back to `main`.
 
@@ -51896,7 +51997,10 @@ If the value is in range and you still see no change, check for these causes:
 >
 > When [agent view is turned off](/docs/en/agent-view#turn-off-agent-view), `/subtask` isn't available and `/fork` starts the forked subagent instead; otherwise `/fork` copies the whole session into a new [background session](/docs/en/agent-view#from-inside-a-session).
 
-A fork is a subagent that inherits the entire conversation so far instead of starting fresh. This drops the input isolation that subagents otherwise provide: a fork sees the same system prompt, tools, model, and message history as the main session, so you can hand it a side task without re-explaining the situation. The fork's own tool calls still stay out of your conversation and only its final result comes back, so your main context window stays clean. Use a fork when any other subagent would need too much background to be useful, or when you want to try several approaches in parallel from the same starting point.
+A fork is a subagent that inherits the entire conversation so far instead of starting fresh. Use a fork when any other subagent would need too much background to be useful, or when you want to try several approaches in parallel from the same starting point.
+
+* **Input**: a fork sees the same system prompt, tools, [model](#which-model-a-nested-subagent-runs-on), and message history as its parent conversation
+* **Output**: the fork's own tool calls stay out of its parent conversation and only its final result comes back
 
 Claude can start a fork on its own while fork mode is on, as it is by default. To stop forks, see [Turn fork mode off](#turn-fork-mode-on-or-off).
 
@@ -51932,14 +52036,12 @@ To have the viewed agent read your message before the work it's waiting on finis
 
 ### How forks differ from other subagents
 
-A fork inherits everything the main session has at the moment it spawns. Any other subagent starts fresh from its definition.
-
 | | Fork | Non-fork subagent |
 | :- | :- | :- |
 | Context | Full conversation history | Fresh context with the prompt you pass |
-| System prompt and tools | Same as main session | From the subagent's [definition file](#write-subagent-files), [filtered for background runs](#available-tools) |
-| Model | Same as main session | From the subagent's `model` field |
-| Prompt cache | Shared with main session | Separate cache |
+| System prompt and tools | Same as the parent conversation | From the subagent's [definition file](#write-subagent-files), [filtered for background runs](#available-tools) |
+| Model | Same as the [parent conversation](#which-model-a-nested-subagent-runs-on) | Follows the [subagent model order](#choose-a-model) |
+| Prompt cache | Shared with the parent conversation | Separate cache |
 
 Because a fork's system prompt and tool definitions are identical to the parent, its first request reuses the parent's [prompt cache](/docs/en/prompt-caching#subagents-and-the-cache). Because of that reuse, a fork costs less than a fresh subagent for tasks that need the same context.
 
@@ -55769,7 +55871,7 @@ To control the model cost:
 * Check `/model` before a large run if you usually switch to a smaller model for routine work
 * Ask Claude to use a smaller model for stages that don't need the strongest one when you describe the task
 
-When your organization's [`availableModels` allowlist](/docs/en/model-config#restrict-model-selection) blocks a model the script requests for an agent, that agent runs on a substituted model instead, following the same [substitution rules as subagents](/docs/en/sub-agents#choose-a-model).
+When your organization's [`availableModels` allowlist](/docs/en/model-config#restrict-model-selection) blocks a model the script requests for an agent, that agent runs on a substituted model instead, following the same [substitution rules as subagents](/docs/en/sub-agents#when-an-allowlist-blocks-a-subagent-model).
 
 ### Set a size guideline
 
@@ -59543,7 +59645,7 @@ Source: https://code.claude.com/docs/en/checkpointing
 
 Track, rewind, and summarize Claude's edits and conversation to manage session state.
 
-Claude Code automatically tracks Claude's file edits as you work, allowing you to quickly undo changes and rewind to previous states if anything gets off track.
+Claude Code automatically tracks Claude's file edits as you work. To undo edits, run `/rewind` or its alias `/undo` in your session to open the [rewind menu](#rewind-and-summarize).
 
 ## How checkpoints work
 
@@ -64029,7 +64131,7 @@ You can start sessions, pipe content, resume conversations, and manage updates w
 | `claude purge [path]` | Delete all local Claude Code state for a project: transcripts, task lists, debug logs, file-edit history, prompt history lines, and the project's entry in `~/.claude.json`. Omit `[path]` to pick from an interactive list. Flags: `--dry-run` to preview, `-y`/`--yes` to skip confirmation, `-i`/`--interactive` to confirm each item, `--all` for every project. See [Clear local data](/docs/en/claude-directory#clear-local-data) | `claude purge ~/work/repo --dry-run` |
 | `claude remote-control` | Start a [Remote Control](/docs/en/remote-control) server to control Claude Code from claude.ai or the Claude app. Alias: `claude rc`. Runs in server mode (no local interactive session). See [Server mode flags](/docs/en/remote-control#start-a-remote-control-session). After you stop the server, you can bring back the sessions it was serving. See [Resume sessions after stopping the server](/docs/en/remote-control#resume-sessions-after-stopping-the-server) | `claude remote-control --name "My Project"` |
 | `claude respawn <id>` | Restart a [background session](/docs/en/agent-view#manage-sessions-from-the-shell), running or stopped, with its conversation intact. Use `--all` to restart every running session, e.g. to pick up an updated Claude Code binary | `claude respawn 7c5dcf5d` |
-| `claude rm <id>` | Remove a [background session](/docs/en/agent-view#manage-sessions-from-the-shell) from the list. When the removal is [refused over the session's worktree](/docs/en/agent-view#what-deleting-a-session-removes) and a second `claude rm` can resolve it, the refusal prints the exact flag and value to pass: `--discard-unpushed <commit>@<worktree-id>` discards a worktree that has unpushed commits along with those commits, and `--force-remove-worktree <worktree-id>` deletes a worktree directory that git or the `WorktreeRemove` hook couldn't remove. `--discard-unpushed` requires Claude Code v2.1.260 or later, and `--force-remove-worktree` requires v2.1.268 or later. The conversation transcript stays on your local machine, available through `claude --resume` | `claude rm 7c5dcf5d` |
+| `claude rm <id>` | Remove a [background session](/docs/en/agent-view#manage-sessions-from-the-shell) from the list. If Claude Code refuses to delete the session because of its worktree, see [Delete a session after Claude Code refuses](/docs/en/agent-view#delete-a-session-after-claude-code-refuses). The conversation transcript stays on your local machine, available through `claude --resume` | `claude rm 7c5dcf5d` |
 | `claude self-hosted-runner` | Start a runner process that registers this machine or container with a [self-hosted environment](/docs/en/self-hosted-environments) and hosts Claude Code cloud sessions on your infrastructure. Run `claude self-hosted-runner setup` for a guided operator walkthrough, `claude self-hosted-runner doctor` to [diagnose a deployed runner](/docs/en/self-hosted-environments-deploy#troubleshooting), and `claude self-hosted-runner orchestrator` to spawn [on-demand runners](/docs/en/self-hosted-environments-configuration#on-demand-runners). Requires Claude Code v2.1.224 or later | `claude self-hosted-runner setup` |
 | `claude setup-token` | Generate a long-lived OAuth token for CI and scripts. Prints the token to the terminal without saving it. Requires a Claude subscription. See [Generate a long-lived token](/docs/en/authentication#generate-a-long-lived-token) | `claude setup-token` |
 | `claude stop <id>` | Stop a [background session](/docs/en/agent-view#manage-sessions-from-the-shell). Also accepts `claude kill` | `claude stop 7c5dcf5d` |
@@ -67084,7 +67186,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_DISABLE_FILE_MENTIONS` | Set to `1` to stop Claude Code from expanding [`@` mentions](/docs/en/common-workflows#reference-files-and-directories) of files and directories. Claude instead gets the mentioned paths with a note to read them using its file tools. Ignored in [project and local settings](/docs/en/settings-reference#variables-claude-code-ignores-in-env). Requires Claude Code v2.1.299 or later |
 | `CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS` | Set to `1` to remove built-in commit and PR workflow instructions and the git status snapshot from Claude's context. Useful when using your own git workflow skills. Takes precedence over the [`includeGitInstructions`](/docs/en/settings-reference#includegitinstructions) setting when set |
 | `CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT` | Set to `1` to stop Claude Code from reading scripts passed to a shell with `-c`, such as `bash -c 'rm -rf ~'`, for [critical-path](/docs/en/permission-modes#removals-inside-nested-commands-and-inline-scripts) removals. Claude Code still checks the shell variable and positional parameter targets in those scripts, and the other critical-path checks keep running. Set it in the environment that launches Claude Code, since Claude Code ignores a copy delivered through a settings `env` block. Requires Claude Code v2.1.288 or later |
-| `CLAUDE_CODE_DISABLE_LEGACY_MODEL_REMAP` | Set to `1` to prevent automatic remapping of Opus 4 and Opus 4.1 to the current Opus version on the Anthropic API. Use when you intentionally want to pin an older model. The remap does not run on Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry |
+| `CLAUDE_CODE_DISABLE_LEGACY_MODEL_REMAP` | Set to `1` to prevent automatic remapping of Opus 4 and Opus 4.1 to the current Opus version on the Anthropic API. The remap doesn't run on Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry |
 | `CLAUDE_CODE_DISABLE_MCP_TASK_BACKGROUND` | Set to `1` so that Claude waits for the result of an [MCP task](/docs/en/mcp#make-claude-wait-for-the-result-of-an-mcp-task) in an interactive session. While [automatic backgrounding](/docs/en/mcp#automatic-backgrounding-of-long-tool-calls) is on, it still moves the call to the background after two minutes by default. Requires Claude Code v2.1.304 or later |
 | `CLAUDE_CODE_DISABLE_MODEL_ACCESS_FALLBACK` | Set to `1` to stop Claude Code on [Amazon Bedrock](/docs/en/amazon-bedrock#when-a-model-is-disabled-mid-session) and [Google Cloud's Agent Platform](/docs/en/google-vertex-ai#when-a-model-is-disabled-mid-session) from switching to an older model when your account loses access to a session's model mid-session; the refused request fails at once instead. A [fallback model chain](/docs/en/model-config#fallback-model-chains) you configure still switches on that refusal, and the [startup model checks](/docs/en/amazon-bedrock#startup-model-checks) still fall back at launch. Requires Claude Code v2.1.285 or later |
 | `CLAUDE_CODE_DISABLE_MOUNTED_DRIVE_RM_PROMPT` | Set to `1` to turn off the [mounted drive prompt](/docs/en/permission-modes#the-mounted-drive-prompt) for paths such as `/Volumes/USB`. [Set it in the environment that launches Claude Code](#set-variables-in-your-shell), because Claude Code [ignores it in a settings `env` block](/docs/en/settings-reference#variables-claude-code-ignores-in-env). Requires Claude Code v2.1.304 or later |
@@ -67743,7 +67845,7 @@ These work on every provider:
 These have provider-specific differences:
 
 * **MCP servers**: [connectors from claude.ai](/docs/en/mcp#use-mcp-servers-from-claude-ai) load only when your claude.ai subscription is the active authentication method. [Tool search](/docs/en/mcp#configure-tool-search) isn't supported on Microsoft Foundry [deployments hosted on Azure](https://platform.claude.com/docs/en/build-with-claude/claude-in-microsoft-foundry#hosting-options). On Google Cloud's Agent Platform, tool search isn't supported on models earlier than Claude Opus 4.5, Claude Sonnet 4.5, and Claude Haiku 4.5
-* **Subagents**: when the main conversation runs Fable, the built-in [Explore subagent](/docs/en/sub-agents#built-in-subagents) runs on Opus with a Claude subscription, an Anthropic Console account, or an [LLM gateway](/docs/en/llm-gateway) reached through `ANTHROPIC_BASE_URL`. On other providers, including Claude Platform on AWS, it runs on Fable
+* **Subagents**: when the parent conversation runs Fable, the built-in [Explore subagent](/docs/en/sub-agents#built-in-subagents) runs on Opus with a Claude subscription, an Anthropic Console account, or an [LLM gateway](/docs/en/llm-gateway) reached through `ANTHROPIC_BASE_URL`. On other providers, including Claude Platform on AWS, it runs on Fable
 * **[Commands](/docs/en/commands#all-commands)**:
   * `/design-sync` and `/import` with its `claude import` subcommand form are unavailable on Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, and Claude Platform on AWS, and through a [Claude apps gateway](/docs/en/claude-apps-gateway#availability-and-limitations)
   * `/voice` requires a claude.ai account
@@ -68736,7 +68838,7 @@ Learn more: [Organize rules with `.claude/rules/`](/docs/en/memory#organize-rule
 
 ### Sandboxing
 
-OS-level filesystem and network isolation for the Bash tool. Commands run inside a boundary you define upfront, so Claude can work freely within it without per-command approval prompts. Sandboxing is a separate layer from [permission rules](#permission-rule).
+OS-level filesystem and network isolation for the Bash tool. Commands run inside a boundary you define upfront. Sandboxing is a separate layer from [permission rules](#permission-rule).
 
 Learn more: [Sandboxing](/docs/en/sandboxing)
 
@@ -73201,8 +73303,6 @@ This output declines a request:
 }
 ```
 
-In the dialog, selecting **Decline** sends `decline` and pressing `Esc` sends `cancel`, so return the one you want the server to see.
-
 For a URL-mode request, a hook that returns `accept` skips the dialog, so the URL never opens.
 
 Claude Code discards `reason`, `systemMessage`, and `continue` from an Elicitation hook's JSON output, whichever `action` you return.
@@ -76261,6 +76361,7 @@ The variable doesn't strip every `anthropic-beta` value. What it leaves in place
 * The top-level `output_config.effort` field. [Automatic retry and error forwarding](#automatic-retry-and-error-forwarding) covers an upstream that rejects it
 * The adaptive reasoning `thinking` field, which has no beta header
 * The `role: "system"` entries that carry [mid-conversation system messages](#feature-pass-through)
+* The `anthropic-beta` value and `safeguards` field for auto mode's [server-side classifier review](/docs/en/permission-modes#server-side-classifier-review), in sessions where that review stays on, such as when `/status` shows **Auto mode server** as `Enabled`. To turn the review off, set `CLAUDE_CODE_AUTO_MODE_SERVER=0` before starting the session. In the terminal, `/status` then shows **Auto mode server** as `Disabled`.
 * The OAuth `anthropic-beta` value that subscription authentication requires
 * Header values and body fields developers add themselves through [`ANTHROPIC_BETAS`](/docs/en/env-vars) or [`CLAUDE_CODE_EXTRA_BODY`](/docs/en/env-vars)
 
@@ -78113,9 +78214,9 @@ Claude Code handles any other blocked selection according to where the model was
 * **`/model`**: Claude Code rejects the switch with an error
 * **`--model` flag, `ANTHROPIC_MODEL`, or the `model` setting**: Claude Code replaces the value at startup with a warning naming both the requested and substituted models, and the session starts on the default model
 * **[`ANTHROPIC_DEFAULT_MODEL`](#set-a-default-model-for-new-sessions)**: Claude Code ignores the variable
-* **Subagent or teammate override**: Claude Code runs the subagent or teammate on a fallback model rather than failing the request. See [Choose a model](/docs/en/sub-agents#choose-a-model) for the subagent fallback and [Specify teammates and models](/docs/en/agent-teams#specify-teammates-and-models) for the teammate fallback.
+* **Subagent or teammate override**: Claude Code runs the subagent or teammate on a fallback model rather than failing the request. See [When an allowlist blocks a subagent model](/docs/en/sub-agents#when-an-allowlist-blocks-a-subagent-model) for the subagent fallback and [Specify teammates and models](/docs/en/agent-teams#specify-teammates-and-models) for the teammate fallback.
 
-  In interactive sessions, Claude Code warns you when it substitutes a subagent's model, by this fallback or by the newest-permitted-version substitution above, naming the requested and substituted models; it doesn't report a teammate's fallback.
+  In interactive sessions, Claude Code warns you when it substitutes a top-level subagent's model. It doesn't report a teammate's fallback.
 
   Where the newest-permitted-version substitution above operates, a blocked family alias follows it instead. Before v2.1.222, an alias fell back like any other blocked value on every provider
 * **Skill or command override**: Claude Code ignores the override, including a blocked family alias, and the skill or command runs on the session model. A skill or command that [runs in a subagent](/docs/en/skills#run-skills-in-a-subagent) follows the subagent behavior above instead
@@ -78765,15 +78866,13 @@ Once Claude Code recognizes the ID or uses the window you gave it, the warning n
 
 On an [LLM gateway](/docs/en/llm-gateway) or other custom deployment, Claude Code can assume a context window for the model ID that differs from the model's real window, whether or not it resolves the ID to a Claude model. Set [`CLAUDE_CODE_MAX_CONTEXT_TOKENS`](/docs/en/env-vars) to the window Claude Code should assume instead.
 
-How the variable applies depends on the ID. Claude Code treats an ID as a provider or custom spelling when it doesn't start with `claude-`, in any casing, or when it carries a suffix that Claude Code strips when reading the ID, such as the `@YYYYMMDD` date used on Google Cloud's Agent Platform. Before v2.1.259, Claude Code didn't count a stripped suffix, so an unrecognized `claude-` ID with a date suffix was treated as a bare `claude-` name.
+The variable works differently for an unrecognized ID, an unrecognized ID with `[1m]`, and an ID that Claude Code recognizes:
 
-An unrecognized provider or custom spelling, the same spelling with `[1m]`, and every other ID are three separate cases:
-
-* If Claude Code can't resolve a provider or custom spelling to a model it recognizes and the ID doesn't contain `[1m]`, the variable applies directly and proactive compaction continues at the declared window.
-* If Claude Code can't resolve a provider or custom spelling to a model it recognizes and the ID contains `[1m]`, in any casing, Claude Code assumes a 1M window for it and the variable doesn't apply on its own. To correct the window while keeping proactive compaction, also set [`CLAUDE_CODE_DISABLE_1M_CONTEXT=1`](/docs/en/env-vars). With that variable set, Claude Code sizes the ID like the same spelling without `[1m]`, so `CLAUDE_CODE_MAX_CONTEXT_TOKENS` applies when it would apply to that untagged spelling.
+* If Claude Code doesn't recognize the ID and the ID doesn't contain `[1m]`, the variable applies on its own and proactive compaction continues at the declared window. For an ID such as `claude-sonnet-latest`, this requires Claude Code v2.1.324 or later.
+* If Claude Code doesn't recognize the ID and the ID contains `[1m]`, in any casing, Claude Code assumes a 1M window for it. A value under 1M in the variable doesn't apply on its own. To correct the window while keeping proactive compaction, also set [`CLAUDE_CODE_DISABLE_1M_CONTEXT=1`](/docs/en/env-vars). With that variable set, Claude Code sizes the ID like the same ID without `[1m]`, so `CLAUDE_CODE_MAX_CONTEXT_TOKENS` applies.
 
   With a declared window above 200K, the warning that [the 200K limit isn't enforced](/docs/en/errors#the-200k-limit-isnt-enforced) is expected in this configuration.
-* If the ID resolves to a model Claude Code recognizes, or the ID is a bare `claude-` name with no suffix for Claude Code to strip, in any casing, the variable takes effect only when you also set [`DISABLE_COMPACT`](/docs/en/env-vars), which disables all compaction.
+* If the ID resolves to a model Claude Code recognizes, the variable takes effect only when you also set [`DISABLE_COMPACT`](/docs/en/env-vars), which disables all compaction.
 
   For example, an ID that contains a Claude model name that Claude Code knows, such as `anthropic/claude-opus-4-8`, `us.anthropic.claude-…-v1:0`, or the dated `claude-sonnet-4-5@20250929`, resolves to that model. This includes IDs that also contain `[1m]`: Claude Code resolves `claude-opus-4-8[1m]` to Opus 4.8 even with `CLAUDE_CODE_DISABLE_1M_CONTEXT` set.
 
@@ -79691,12 +79790,12 @@ The `agent.name`, `skill.name`, `plugin.name`, `mcp_server.name`, and `mcp_tool.
 
 * All [standard attributes](#standard-attributes)
 * `model`: Model identifier (for example, "claude-sonnet-5")
-* `query_source`: Category of the subsystem that issued the request. One of `"main"`, `"subagent"`, or `"auxiliary"`
+* `query_source`: Category of the subsystem that issued the request. One of `"main"`, `"subagent"`, `"auxiliary"`, `"plugin_model_complete"`, or `"plugin_model_classify"`. The last two mark the requests a [mod](/docs/en/plugins/mods/overview) makes with `$.model.complete` or `$.model.classify`. Claude Code counts those requests from v2.1.324, so totals can step up after you upgrade.
 * `speed`: `"fast"` when the request used fast mode. Absent otherwise
 * `effort`: [Effort level](/docs/en/model-config#adjust-effort-level) applied to the request: `"low"`, `"medium"`, `"high"`, `"xhigh"`, or `"max"`. Absent when Claude Code sends no effort level, for example on a model that doesn't support effort.
 * `agent.name`: Subagent type that issued the request. Built-in agent names and agents from official-marketplace plugins appear verbatim. Other user-defined agent names are replaced with `"custom"`. Absent when the request was not issued by a named subagent type.
 * `skill.name`: Skill active for the request, set by the Skill tool or a `/` command, or inherited by a spawned subagent. Built-in, bundled, user-defined, and official-marketplace plugin skill names appear verbatim. Third-party plugin skill names are replaced with `"third-party"`. Absent when no skill is active.
-* `plugin.name`: Owning plugin when the active skill or subagent is provided by a plugin. Official-marketplace plugin names appear verbatim. Third-party plugin names are replaced with `"third-party"`. Absent when neither the skill nor the subagent has an owning plugin.
+* `plugin.name`: Owning plugin when the active skill or subagent is provided by a plugin, or the plugin whose `$.model` call made the request. Official-marketplace plugin names appear verbatim. Third-party plugin names are replaced with `"third-party"`. Absent for other requests.
 * `marketplace.name`: Marketplace the owning plugin was installed from. Only emitted for official-marketplace plugins, even with `OTEL_LOG_TOOL_DETAILS=1` set. Absent otherwise.
 * `mcp_server.name`: MCP server whose tool result this request consumed. Built-in, claude.ai-proxied, and official-registry server names appear verbatim. User-configured server names are replaced with `"custom"`. Absent when the request consumed no MCP tool result. Before v2.1.222, Claude Code set this attribute on every request after an MCP tool call, not only on requests that consumed a tool result, so dashboards that aggregate it show a step down after you upgrade.
   * From v2.1.312, the name of a remote server with a fixed URL that a plugin from Anthropic's official marketplace declares also appears verbatim, as `plugin_<plugin>_<server>`. That name is replaced with `"custom"` when the plugin's marketplace copy didn't come from Anthropic's registered source, such as one mounted from a seed directory in a cloud session.
@@ -79711,7 +79810,7 @@ Incremented after each API request.
 * All [standard attributes](#standard-attributes)
 * `type`: (`"input"`, `"output"`, `"cacheRead"`, `"cacheCreation"`). The `"input"` type excludes tokens read from or written to the prompt cache, which are counted under `"cacheRead"` and `"cacheCreation"`. The `"cacheCreation"` type counts cache writes with the five-minute and one-hour [cache lifetimes](/docs/en/prompt-caching#cache-lifetime) together.
 * `model`: Model identifier (for example, "claude-sonnet-5")
-* `query_source`: Category of the subsystem that issued the request. One of `"main"`, `"subagent"`, or `"auxiliary"`
+* `query_source`: Category of the subsystem that issued the request. See [Cost counter](#cost-counter) for the values.
 * `speed`: `"fast"` when the request used fast mode. Absent otherwise
 * `effort`: [Effort level](/docs/en/model-config#adjust-effort-level) applied to the request. See [Cost counter](#cost-counter) for details.
 * `agent.name`, `skill.name`, `plugin.name`, `marketplace.name`, `mcp_server.name`, `mcp_tool.name`: Skill, plugin, agent, and MCP attribution for the request. See [Cost counter](#cost-counter) for definitions and redaction behavior.
@@ -80838,13 +80937,15 @@ Source: https://code.claude.com/docs/en/network-config
 
 Configure Claude Code for enterprise environments with proxy servers, custom Certificate Authorities (CA), and mutual Transport Layer Security (mTLS) authentication.
 
-Claude Code supports various enterprise network and security configurations through environment variables. This includes routing traffic through corporate proxy servers, trusting custom Certificate Authorities (CA), and authenticating with mutual Transport Layer Security (mTLS) certificates for enhanced security.
+Claude Code supports various enterprise network and security configurations through environment variables.
 
 Set these environment variables before you launch Claude Code. Variables exported in your shell are read once at startup, so a running session doesn't pick up later changes to your shell environment.
 
 > [!NOTE]
 >
 > All environment variables shown on this page can also be configured in [`settings.json`](/docs/en/settings).
+
+When you [sign in to a remote MCP server](/docs/en/mcp#authenticate-with-remote-mcp-servers), Claude Code applies your [proxy](#proxy-configuration), [CA](#custom-ca-certificates), and [client certificate](#mtls-authentication) variables to the sign-in requests it sends. For [`claude mcp login`](/docs/en/mcp#authenticate-from-the-command-line), set the variables in your shell, `~/.claude/settings.json`, or a [managed settings file](/docs/en/managed-settings#deploy-a-managed-settings-file), not in project or local settings.
 
 ## Proxy configuration
 
@@ -81374,7 +81475,7 @@ Permission modes decide whether Claude asks before an action, and the [Bash sand
 | You want to | Start with | Isolation needed | Notes |
 | :- | :- | :- | :- |
 | Review every action yourself | Manual mode: `claude --permission-mode default` | None | Sensitive work, unfamiliar code |
-| Iterate locally with fewer prompts, without a classifier | Manual mode plus the Bash sandbox in [auto-allow mode](/docs/en/sandboxing#sandbox-modes): `claude --permission-mode default`, then run `/sandbox` and select auto-allow | The built-in Bash sandbox, on macOS, Linux, and WSL2 | Deny rules still apply, and ask rules that name a command, such as `Bash(git push *)`, still prompt. [Auto-allow mode](/docs/en/sandboxing#auto-allow-mode) covers other commands that can prompt. To turn the sandbox on from a settings file instead, set [`sandbox.enabled`](/docs/en/settings-reference#sandbox-enabled) to `true` |
+| Iterate locally with fewer prompts, without a classifier | Manual mode plus the Bash sandbox in [auto-allow mode](/docs/en/sandboxing#sandbox-modes): `claude --permission-mode default`, then run `/sandbox` and select auto-allow | The built-in Bash sandbox, on macOS, Linux, and WSL2 | Deny rules still apply, and ask rules that name a command, such as `Bash(git push *)`, still prompt. [Auto-allow mode](/docs/en/sandboxing#auto-allow-mode) covers other commands that can prompt. To turn the sandbox on from a settings file instead, set [`sandbox.enabled`](/docs/en/settings-reference#sandbox-enabled) and [`sandbox.autoAllowBashIfSandboxed`](/docs/en/settings-reference#sandbox-autoallowbashifsandboxed) to `true` |
 | Explore before changing anything | `claude --permission-mode plan` | None | Claude Code blocks edits until you [approve a plan](#review-and-approve-a-plan) |
 | Work hands-off in auto mode | `claude --permission-mode auto`, the [built-in starting permission mode](#which-mode-a-session-starts-in) with v2.1.283 or later | None; a sandbox or container adds defense in depth | Requires a [supported model](#eliminate-prompts-with-auto-mode), and your organization can [turn auto mode off](#eliminate-prompts-with-auto-mode) |
 | Run in CI with an exact allowlist | `claude -p "run the test suite" --permission-mode dontAsk --allowedTools "Bash(npm test)" "Read"` | None beyond what your CI runner provides | [Cloud sessions](/docs/en/claude-code-on-the-web) ignore `dontAsk` from settings files |
@@ -83122,7 +83223,7 @@ Permissions and [sandboxing](/docs/en/sandboxing) are complementary security lay
 
 Use both for defense-in-depth, since sandbox restrictions still apply even if a prompt injection bypasses Claude's decision-making. Paths and domains from both sandbox settings and permission rules are [merged into the final sandbox configuration](/docs/en/sandboxing#permission-rules).
 
-When you enable sandboxing and leave `autoAllowBashIfSandboxed` at its default of `true`, sandboxed Bash commands run without prompting even if your permissions include a bare `Bash` ask rule, or the [equivalent `Bash(*)` form](#match-all-uses-of-a-tool): the sandbox boundary substitutes for that whole-tool prompt.
+When you enable sandboxing and set [`sandbox.autoAllowBashIfSandboxed`](/docs/en/settings-reference#sandbox-autoallowbashifsandboxed) to `true`, sandboxed Bash commands run without prompting. That holds even with a bare `Bash` ask rule or the [equivalent `Bash(*)` form](#match-all-uses-of-a-tool): the sandbox boundary substitutes for that whole-tool prompt.
 
 In [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode), Claude Code skips this substitution. Without an ask rule, the [built-in read-only commands](#read-only-commands) still run without prompting, and any other shell command goes through the regular permission flow while you are still planning; see [plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode) for how Claude Code gates commands there. With a bare `Bash` ask rule, every Bash command prompts, including sandboxed read-only commands, the same as outside sandboxing.
 
@@ -83992,7 +84093,7 @@ With `--json`, Claude Code prints an array with one object per marketplace, carr
 | `repo` | `owner/repo`. `github` sources only |
 | `url` | The clone or fetch URL. `git` and `url` sources only |
 | `path` | The local path. `directory` and `file` sources only |
-| `ref` | The pinned branch or tag. `github` and `git` sources, only when pinned |
+| `ref` | The pinned branch, tag, or commit SHA. `github` and `git` sources, only when pinned |
 | `installLocation` | Where Claude Code cached the marketplace |
 
 An added [claude.ai marketplace](/docs/en/plugins/install#add-from-claude-ai) has no local clone, so its entry carries its claude.ai identifiers, `marketplaceId` and `organizationUuid`, in place of `installLocation`. It also carries `scope` when one is recorded, and `status`.
@@ -85805,6 +85906,7 @@ Claude Code keeps plugin files and state records under one plugins root, which i
 | `cache/<marketplace>/<plugin>/<version>/` | One directory per installed version of a marketplace plugin. `<plugin>` is the marketplace entry name and `<version>` is the [resolved version](#versions-and-updates). `${CLAUDE_PLUGIN_ROOT}` points at this directory |
 | `data/<plugin-id>/` | The plugin's persistent directory, exposed as `${CLAUDE_PLUGIN_DATA}`. For how `<plugin-id>` is formed, see [Path variables and persistent data](/docs/en/plugins/components#path-variables-and-persistent-data). Claude Code creates it when a plugin component first uses it and keeps it across updates. By default, Claude Code deletes it when you uninstall the plugin from its last scope. For `--keep-data` and the other cases where it stays, see [plugin uninstall](/docs/en/plugins/cli-reference#plugin-uninstall) |
 | `marketplaces/<name>/` | The clone or download of a marketplace added from GitHub, another Git host, or a URL. A marketplace added from a local `file` or `directory` source has no copy here, and its `installLocation` in `known_marketplaces.json` is the path you gave |
+| `mcpb/` | The files Claude Code extracts from the [MCP bundles](/docs/en/plugins/components#include-a-packaged-mcpb-server) that plugins declare. Requires Claude Code v2.1.324 or later |
 | `synced/` | The plugins Claude Code [synced from your claude.ai account](#synced-plugins) |
 | `.trash/` | Plugins that the claude.ai sync removed, such as after you turn one off on claude.ai or stop syncing |
 | `installed_plugins.json` and `known_marketplaces.json` | The records of what Claude Code has installed and which marketplaces it has fetched, described under [Check which stage a plugin reached](#check-which-stage-a-plugin-reached). A [marketplace hosted on claude.ai](/docs/en/plugins/install#add-from-claude-ai) is recorded in `known_marketplaces_claudeai.json` instead |
@@ -86330,8 +86432,8 @@ An `mcpServers` value takes one of these shapes:
 | Shape | Example value | What Claude Code does |
 | :- | :- | :- |
 | `.json` file path | `"./mcp/servers.json"` | Reads the file as an `mcpServers` map |
-| MCP bundle path | `"./bundle.mcpb"` | Extracts the `.mcpb` or `.dxt` bundle into `.mcpb-cache/` under the plugin root and reads its server config |
-| MCP bundle URL | `"https://example.com/server.mcpb"` | Downloads the bundle into `.mcpb-cache/`, then reads it |
+| MCP bundle path | `"./bundle.mcpb"` | Extracts the `.mcpb` or `.dxt` bundle into `mcpb/` under the [plugins root](/docs/en/plugins/loading#find-plugins-on-disk) and reads its server config |
+| MCP bundle URL | `"https://example.com/server.mcpb"` | Downloads the bundle, then extracts and reads it the same way |
 | Inline map | `{ "deploy-api": { "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/server.js"] } }` | Uses the map as server configs keyed by name |
 
 A bundle path or URL must end in `.mcpb` or `.dxt`. Any other extension fails validation.
@@ -86760,7 +86862,6 @@ You can't give your marketplace any of the following names:
 * **Names that impersonate an official marketplace**: names such as `official-claude-plugins` or `claude-plugins-v2`, and any name containing a non-ASCII character. The error is `Marketplace name impersonates an official Anthropic/Claude marketplace`. A control or bidirectional-formatting character in a name also reports `Marketplace name cannot contain control or bidirectional-formatting characters`. A marketplace already registered under such a name stops loading, along with its plugins.
 * **Another spelling of a reserved name**: a name that differs from a reserved name only by a trailing dot, or by a symbol other than an underscore in place of a hyphen, so `claude.code.plugins` counts as `claude-code-plugins`. Adding the marketplace fails with [`is another spelling of "<reserved>", a reserved marketplace name`](/docs/en/errors#marketplace-name-is-another-spelling-of-a-reserved-name), and a marketplace already registered under one stops loading. This check requires Claude Code v2.1.280 or later.
 * **Names Claude Code uses for plugins that don't come from a marketplace**: `inline` for plugins loaded with [`--plugin-dir`](/docs/en/cli-reference), `builtin` for built-in plugins, `skills-dir` for plugins auto-loaded from [`.claude/skills/`](/docs/en/skills), and `synced` for plugins synced from your claude.ai account. `claude-plugin-test` is also reserved. `skills-dir` also appears as `{"source": "skills-dir"}` in `strictKnownMarketplaces` and `blockedMarketplaces`, described under [Source values valid only in policy lists](#source-values-valid-only-in-policy-lists).
-* **`npm`, `pip`, `uv`, `cargo`, `github`, and `gh`**: reserved in any casing. This check requires Claude Code v2.1.275 or later.
 * **Member names that every JavaScript object has**: `constructor`, `hasOwnProperty`, `isPrototypeOf`, `propertyIsEnumerable`, `toLocaleString`, `toString`, and `valueOf`. `claude plugin marketplace add` refuses a marketplace that uses one with [`Claude Code reserves this name and cannot register a marketplace under it`](/docs/en/plugins/troubleshooting#claude-code-reserves-this-name). This check requires Claude Code v2.1.296 or later.
 * **Names starting with `claudeai-`**: reserved for marketplaces hosted on claude.ai. `claude plugin marketplace add` refuses any other marketplace that uses one with `Cannot add marketplace "<name>": names starting with "claudeai-" are reserved for marketplaces hosted on claude.ai`.
 * **The download folder of a registered GitHub marketplace, `<owner>-<repo>`**: Claude Code downloads a marketplace added from a `github` source such as `acme/x-tools` through a folder named `acme-x-tools`, whatever that marketplace's own `name` is. While that marketplace is registered under a name other than `acme-x-tools`, `claude plugin marketplace add` refuses a different marketplace named `acme-x-tools` after downloading it, and reports `Can't use the marketplace name "acme-x-tools"`. This check requires Claude Code v2.1.290 or later.
@@ -87119,7 +87220,7 @@ The table lists each marketplace source field that has a default, a constraint, 
 | `headers` | `url` | Map of HTTP headers Claude Code sends with the fetch, for authenticated hosts |
 | `headersHelper` | `url` | Command that prints headers whose values are too short-lived to list in `headers`. Requires Claude Code v2.1.238 or later. See [Authenticate archive downloads](/docs/en/plugins/host-marketplace#authenticate-archive-downloads) |
 | `repo` | `github` | In `marketplace add` and `extraKnownMarketplaces`, `repo` must name one repository. `marketplace add` rejects `owner/*` as not a valid `owner/repo` shorthand; in `extraKnownMarketplaces` Claude Code takes it literally and the clone fails |
-| `ref` | `github`, `git` | Branch or tag. Defaults to the repository's default branch |
+| `ref` | `github`, `git` | Branch, tag, or the full lowercase SHA of a commit on a branch or tag. Defaults to the repository's default branch. A SHA requires Claude Code v2.1.324 or later and is refused for a marketplace with a [reserved name](#reserved-names), such as `claude-plugins-official` |
 | `path` | `github`, `git` | The marketplace file's path inside the repository. Defaults to `.claude-plugin/marketplace.json` |
 | `path` | `file` | The marketplace file itself. Claude Code reads it in place and takes the directory two levels up as the marketplace root, so keep the file at `<root>/.claude-plugin/marketplace.json` |
 | `path` | `directory` | The marketplace root, the directory that contains `.claude-plugin/marketplace.json` |
@@ -87127,6 +87228,14 @@ The table lists each marketplace source field that has a default, a constraint, 
 | `skipLfs` | `github`, `git` | Accepted and has no effect. See [Keep plugin files out of Git LFS](/docs/en/plugins/host-marketplace#keep-plugin-files-out-of-git-lfs) |
 | `name` | `settings` | Must equal the `extraKnownMarketplaces` key and can't be a [reserved name](#reserved-names) |
 | `plugins` | `settings` | The inline catalog, with no hosted file. Each item takes `name`, `source`, `description`, `version`, `strict`, `headers`, and `headersHelper`. Write each item's `source` as an object type, because a relative path has no repository to resolve against |
+
+To keep refreshes and auto-updates from moving a `github` or `git` marketplace off a commit you've reviewed, set `ref` to that commit's full SHA, as in this source:
+
+```json theme={null}
+{ "source": "github", "repo": "acme-corp/plugins", "ref": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0" }
+```
+
+Update Claude Code on every machine first, because versions before v2.1.324 can't load a marketplace pinned this way. A plugin entry with its own remote source can still update, so pin that entry too, such as with [`sha`](#plugin-sources) on a `github`, `url`, or `git-subdir` source.
 
 ### Source values valid only in policy lists
 
@@ -87186,7 +87295,7 @@ The table maps marketplace-level messages to the field each is about.
 | `Marketplace name cannot contain path separators (/ or \), ".." sequences, or be "."` | Error | `name` |
 | `Marketplace name impersonates an official Anthropic/Claude marketplace` | Error | `name`. See [Reserved names](#reserved-names) |
 | `Marketplace name cannot contain control or bidirectional-formatting characters` | Error | `name` contains a control character, such as an escape or a newline, or a Unicode bidirectional-formatting character |
-| `Marketplace name "inline" is reserved for --plugin-dir session plugins`, and the `builtin`, `skills-dir`, `synced`, `claude-plugin-test`, `npm`, `pip`, `uv`, `cargo`, `github`, and `gh` variants | Error | `name` |
+| `Marketplace name "inline" is reserved for --plugin-dir session plugins`, and the `builtin`, `skills-dir`, `synced`, and `claude-plugin-test` variants | Error | `name` |
 | `Author name cannot be empty` | Error | `owner.name` |
 | `Plugin name cannot contain spaces. Use kebab-case (e.g., "my-plugin")` | Error | `plugins[i].name` |
 | `Plugin name cannot contain control or bidirectional-formatting characters` | Error | `plugins[i].name` |
@@ -87280,7 +87389,7 @@ To keep every mod your users bring from running its hooks, set the `allowManaged
 With the option set in managed settings:
 
 * **No mod a user brings runs its hooks**: that covers a mod in a plugin the user installed, a mod loaded with `--plugin-dir`, and a mod [Claude wrote during a session](/docs/en/plugins/mods/create#ask-claude-for-a-mod)
-* **Your organization's mods still run**: a mod that [counts as your organization's](#install-your-organizations-mods) isn't checked. Every other mod counts as a user's and is refused. That includes a mod in a plugin you enable from a GitHub or other remote marketplace, and one your organization turns on for its members on claude.ai. If none counts as yours, no installed mod runs its hooks.
+* **Your organization's mods still run**: a mod that [counts as your organization's](#install-your-organizations-mods) isn't checked. Every other mod counts as a user's and is refused. That includes a mod your organization turns on for its members on claude.ai. If none counts as yours, no installed mod runs its hooks.
 * **Users can't undo it**: the guard reads the option from managed settings only, so the same entry in a user, project, or local settings file, or in a file passed with `--settings`, changes nothing
 * **A file or MDM policy covers every provider**: when you deliver the option as a file or through MDM, it works the same way on Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry. For delivery from the claude.ai admin console, see [Platform availability](/docs/en/server-managed-settings#platform-availability)
 * **Users' other customizations keep working**: their [hooks in settings files](/docs/en/hooks) and in plugins' `hooks/hooks.json`, status lines, and `/goal` aren't affected
@@ -87366,7 +87475,7 @@ Only a plugin that counts as your organization's own runs hooks on these events.
 
 To let these hooks run, change managed settings in one of two ways:
 
-* **Run the mod as your organization's**: [install the mod so that it counts as yours](#install-your-organizations-mods). Its hooks on these events then run, and the guard stays loaded for every other mod. The mod turns on for everyone who receives these settings, and it has to sit in a directory you place on each machine. If you list it in `prependPlugins`, keep `sec-default@builtin` in the list.
+* **Run the mod as your organization's**: [install the mod so that it counts as yours](#install-your-organizations-mods). Its hooks on these events then run, and the guard stays loaded for every other mod. The mod turns on for everyone who receives these settings. If you list it in `prependPlugins`, keep `sec-default@builtin` in the list.
 * **Remove the guard**: leave `sec-default@builtin` out of `prependPlugins`. An empty list, `"prependPlugins": []`, is enough. You lose the whole guard, not only these events. A user's mod can then do what [the guard otherwise stops it from doing](#know-what-happens-by-default), and [the guard's options](#set-options-on-the-built-in-guard) don't apply.
 
 If you deliver a list without the guard through [server-managed settings](/docs/en/server-managed-settings#fetch-and-caching-behavior), the guard stays loaded until the server confirms the settings for the session. To confirm either change on a machine that runs v2.1.299 or later, open `/plugin` in a session there and check that the note is gone.
@@ -87493,7 +87602,7 @@ A mod is a plugin, so the ways you [manage plugins for your organization](/docs/
 * **Give one group a different policy, such as a pilot**: [Plan for what managed settings can't enforce](/docs/en/plugins/org#plan-for-what-managed-settings-can’t-enforce)
 * **Check which apps and session kinds apply the plugin keys**: [When each surface applies the plugin keys](/docs/en/plugins/org#when-each-surface-applies-the-plugin-keys)
 * **Set up CI and containers**: [Seed containers and CI](/docs/en/plugins/org#seed-containers-and-ci)
-* **Offer mods your users may install**: [Host a marketplace](/docs/en/plugins/host-marketplace). A mod that Claude Code copies from a GitHub, git, URL, or npm source counts as a user's, not as [your organization's](#install-your-organizations-mods).
+* **Offer mods your users may install**: [Host a marketplace](/docs/en/plugins/host-marketplace). A mod that Claude Code copies from a GitHub, git, URL, or npm source counts as a user's unless you [install it as your organization's](#install-your-organizations-mods).
 
 ### Set options on the built-in guard
 
@@ -87521,7 +87630,15 @@ You can deploy mods of your own to every user, choose where they run relative to
 
 ### Install your organization's mods and set the order
 
-Your organization's mods load where users' mods don't and can run ahead of them, so Claude Code has to be able to tell that a mod came from you. It treats a mod as your organization's only when all of these are true:
+Your organization's mods load where users' mods don't and can run ahead of them, so Claude Code has to be able to tell that a mod came from you.
+
+To make a mod from a remote marketplace, such as a GitHub repository, count as yours on v2.1.324 or later, do all of these in managed settings:
+
+* Set the mod's plugin to `true` in `enabledPlugins`
+* Declare the marketplace in `extraKnownMarketplaces`. To control when the mod's code changes, [pin the marketplace and the mod's entry](/docs/en/plugins/marketplace-reference#fields-by-type).
+* List the mod's id, such as `acme-guard@acme-tools`, in [`prependPlugins`](/docs/en/settings-reference#prependplugins) or [`appendPlugins`](/docs/en/settings-reference#appendplugins). With `prependPlugins`, also list `sec-default@builtin` to keep the built-in guard.
+
+A mod in a directory on the user's machine counts as yours only when all of these are true:
 
 * Managed `enabledPlugins` sets the mod's plugin to `true`
 * Managed settings name the plugin's [marketplace](/docs/en/plugins/create-marketplace) as a directory on the user's machine, by absolute path. An `extraKnownMarketplaces` entry does that and registers the marketplace for the user too.
@@ -87556,9 +87673,9 @@ The manifest lists the plugin by its path relative to that directory:
 }
 ```
 
-A plugin that Claude Code copies into its cache counts as a user's, even when managed `enabledPlugins` enables it. That covers every plugin from a GitHub, git, URL, or npm source. Its mod runs among users' mods, `prependPlugins` and `appendPlugins` skip it, `allowManagedModsOnly` refuses it, and `allowManagedHooksOnly` keeps it from loading. The user's debug log has a line that starts with the plugin's id and `is enabled by managed settings, but`.
+An installed plugin that meets neither set of conditions counts as a user's, even when managed `enabledPlugins` enables it. Its mod runs among users' mods, `prependPlugins` and `appendPlugins` skip it, `allowManagedModsOnly` refuses it, and `allowManagedHooksOnly` keeps it from loading. When managed settings enable it, the user's debug log has a line that starts with the plugin's id and `is enabled by managed settings, but`.
 
-Claude Code fires an event each time it's about to act, such as run a tool, and passes it to each mod in turn. A mod that counts as yours [runs before users' mods](/docs/en/plugins/mods/events#the-order-mods-run-in) even when you list it nowhere. To set its place, list its id in one of two settings. The id is the plugin's name, `@`, and the marketplace's name, such as `acme-guard@acme-tools`.
+Claude Code fires an event each time it's about to act, such as run a tool, and passes it to each mod in turn. A mod that meets the directory conditions [runs before users' mods](/docs/en/plugins/mods/events#the-order-mods-run-in) even when you list it nowhere. To set its place, list its id in one of two settings. The id is the plugin's name, `@`, and the marketplace's name, such as `acme-guard@acme-tools`.
 
 * **`prependPlugins`**: your mod sees an event before any user's mod, and the event's result after them. It can change the event, refuse it, or skip the users' mods. On v2.1.323 or later, check that your hooks still [reach other mods' controls and drawings](/docs/en/plugins/mods/events#hook-other-mods-drawings-and-controls).
 * **`appendPlugins`**: your mod runs after every user's mod, so it sees only the events those mods pass on, in the form they pass them
@@ -89819,7 +89936,7 @@ Match your goal to a row below, then read the detail section that follows.
 
 | You want to | Start with |
 | :- | :- |
-| Reduce permission prompts during everyday work on your own machine | The [sandboxed Bash tool](/docs/en/sandboxing), configured with `/sandbox` |
+| Reduce permission prompts during everyday work on your own machine | The [sandboxed Bash tool](/docs/en/sandboxing) in auto-allow mode, configured with `/sandbox` |
 | Let Claude work unattended with `--dangerously-skip-permissions` or auto mode | The preconfigured [dev container](/docs/en/devcontainer), any container or VM, or the [sandbox runtime](#sandbox-runtime) |
 | Isolate MCP servers and hooks as well as Bash, without Docker | The sandbox runtime |
 | Standardize a sandboxed environment across a team | The preconfigured [dev container](/docs/en/devcontainer), copied into your repository |
@@ -89973,7 +90090,7 @@ Source: https://code.claude.com/docs/en/sandboxing
 
 Restrict the files and network hosts Claude Code's shell commands can reach with the built-in sandbox. Turn it on, set the boundary, and fix what it breaks.
 
-The Bash sandbox is a boundary that the operating system enforces around the shell commands Claude runs on your machine. You set which files and network domains those commands can reach, and the limits apply to Bash, PowerShell, and Monitor commands and the processes they start. Because the operating system applies the limits while a command runs, Claude Code can [run sandboxed commands without asking you](#sandbox-modes) to approve each one.
+The Bash sandbox is a boundary that the operating system enforces around the shell commands Claude runs on your machine. You set which files and network domains those commands can reach, and the limits apply to Bash, PowerShell, and Monitor commands and the processes they start. Sandboxed commands still go through the regular permission flow unless you choose [auto-allow mode](#sandbox-modes), which can run them without asking you.
 
 The sandbox covers shell commands only. Claude's file tools, MCP servers, and hooks [run outside it](#what-runs-outside-the-sandbox).
 
@@ -90361,12 +90478,9 @@ Setting `filesystem.disabled` lifts the protections the filesystem layer itself 
 | `credentials.envVars` `deny` and `mask` entries | Enforced. Environment variable scrubbing is independent of the filesystem layer |
 | [`credentials.files` `mask` entries](#mask-credential-files) applied as masks | Enforced: masking is independent of the filesystem layer. An entry that [fell back to `deny`](#mask-credential-files) is not enforced, like any `deny` entry |
 
-Two other things change:
+Sandboxed commands also inherit your shell's `$TMPDIR` instead of the per-user temp directory, because every temp directory is writable and Claude Code no longer redirects commands to the per-user one.
 
-* Sandboxed commands inherit your shell's `$TMPDIR` instead of the per-user temp directory, because every temp directory is writable and Claude Code no longer redirects commands to the per-user one.
-
-  On Linux the variable is often unset in the parent shell. The Bash tool guidance tells Claude to create scratch directories with `mktemp -d` instead of relying on `$TMPDIR`.
-* [`autoAllowBashIfSandboxed`](/docs/en/settings-reference#sandbox-autoallowbashifsandboxed) still defaults to `true`, so sandboxed commands keep running without prompts. Set it to `false` to prompt for sandboxed commands.
+On Linux the variable is often unset in the parent shell. The Bash tool guidance tells Claude to create scratch directories with `mktemp -d` instead of relying on `$TMPDIR`.
 
 ### Protect credentials
 
@@ -91062,7 +91176,7 @@ If no writable project folder is available to you, turn the sandbox on from your
 }
 ```
 
-This turns on [auto-allow mode](#sandbox-modes). For regular permissions mode, also set [`sandbox.autoAllowBashIfSandboxed`](/docs/en/settings-reference#sandbox-autoallowbashifsandboxed) to `false`. The change takes effect in your running session at the next shell command Claude runs, and the **Mode** tab of `/sandbox` then marks the mode in effect.
+This turns on [regular permissions mode](#sandbox-modes). For auto-allow mode, also set [`sandbox.autoAllowBashIfSandboxed`](/docs/en/settings-reference#sandbox-autoallowbashifsandboxed) to `true`. The change takes effect in your running session at the next shell command Claude runs, and the **Mode** tab of `/sandbox` then marks the mode in effect.
 
 ## Limitations
 
@@ -91130,7 +91244,7 @@ You and your organization configure these permissions directly. For detailed per
 
 To mitigate risks in agentic systems:
 
-* **Sandboxed bash tool**: [Sandbox](/docs/en/sandboxing) bash commands with filesystem and network isolation, reducing permission prompts while maintaining security. Configure with `/sandbox` to define boundaries where Claude Code can work autonomously
+* **Sandboxed Bash tool**: [Sandbox](/docs/en/sandboxing) Bash commands with filesystem and network isolation. Configure with `/sandbox`
 * **Working directory boundary**: In Manual mode, Claude Code asks you before its file tools read or write outside the folder where it was started and its subfolders. The boundary is a permission prompt, so a Bash command you approve can still write anywhere your user account can
   * To read a folder without the prompt, add it as an [additional directory](/docs/en/permissions#working-directories)
   * To restrict Bash commands at the operating system level, turn on [sandboxing](/docs/en/sandboxing#filesystem-isolation)
@@ -91167,7 +91281,7 @@ For full details, please review our [Commercial Terms of Service](https://www.an
 * **Trust verification**: In an interactive session, Claude Code shows the workspace trust dialog when you start it in a folder you haven't trusted. Servers in a project's `.mcp.json` have their own approval prompt, and [Project scope](/docs/en/mcp#project-scope) lists the sessions that skip it
   * Note: A `-p` session shows neither prompt. [What runs before you trust a folder](/docs/en/permissions#what-runs-before-you-trust-a-folder) lists what a repository's files can run there
   * Note: When you start Claude Code directly in your home directory, trust acceptance is held for the current session only and is not written to disk, so the prompt reappears on each launch. There is no setting to persist it. Start Claude Code from a project subdirectory instead, where trust acceptance is saved per directory
-* **Command injection detection**: In Manual mode, Claude Code asks before running a Bash command it can't fully analyze. An allow rule for part of a command, such as `Bash(git *)`, doesn't skip that prompt. [Sandboxed commands](/docs/en/permissions#how-permissions-interact-with-sandboxing) can run without it
+* **Command injection detection**: In Manual mode, Claude Code asks before running a Bash command it can't fully analyze. An allow rule for part of a command, such as `Bash(git *)`, doesn't skip that prompt. [Sandboxed commands](/docs/en/permissions#how-permissions-interact-with-sandboxing) in [auto-allow mode](/docs/en/sandboxing#auto-allow-mode) can run without it
 * **Fail-closed matching**: In Manual mode, unmatched commands require approval by default
 * **Secure credential storage**: API keys and tokens are stored in the macOS Keychain when available. On Linux they're stored in a file with mode `0600`, and on Windows in a file that inherits the access controls of your user profile directory. See [Credential Management](/docs/en/authentication#credential-management)
 
@@ -97053,21 +97167,21 @@ See [Enforce sandboxing with managed settings](/docs/en/sandboxing#enforce-sandb
 
 ### `sandbox.autoAllowBashIfSandboxed`
 
-Let Claude Code run sandboxed Bash commands without a permission prompt. Commands that can't run in the sandbox still go through the regular permission flow, and `deny` rules and content-scoped `ask` rules such as `Bash(git push *)` still apply; a bare `Bash` ask rule is skipped for sandboxed commands. Set it to `false` to send sandboxed commands through the regular permission flow too, which the `/sandbox` **Mode** tab calls regular permissions mode.
+Let Claude Code run sandboxed Bash commands without a permission prompt. Commands that can't run in the sandbox still go through the regular permission flow. `deny` rules and content-scoped `ask` rules such as `Bash(git push *)` still apply, but a bare `Bash` ask rule is skipped for sandboxed commands. To set it to `true` in managed settings, add it to the `sandbox` block of your [highest-ranked managed source](/docs/en/managed-settings#how-claude-code-combines-managed-sources).
 
 * **Scope**: [`Any file`](#scopes)
 * **Type**: Boolean
   * `true`: Claude Code runs sandboxed Bash commands without a permission prompt, except in the cases that [Auto-allow mode](/docs/en/sandboxing#auto-allow-mode) describes; `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` turns auto-allow off
   * `false`: sandboxed commands go through the regular permission flow, so your allow rules and permission mode decide. The `/sandbox` **Mode** tab calls this regular permissions mode
-* **Default**: `true`
+* **Default**: `false`. Before v2.1.324, the default was `true`
 
-This keeps the sandbox on and sends sandboxed commands through the regular permission flow:
+To keep the sandbox on and run sandboxed commands without a permission prompt, set both keys in your `sandbox` block:
 
 ```json settings.json theme={null}
 {
   "sandbox": {
     "enabled": true,
-    "autoAllowBashIfSandboxed": false
+    "autoAllowBashIfSandboxed": true
   }
 }
 ```
@@ -97351,7 +97465,7 @@ This leaves the filesystem open and confines network egress to GitHub and npm:
 }
 ```
 
-With the layer off, Claude Code doesn't enforce `denyRead` or `credentials.files` `deny` entries, while `credentials.envVars` entries and applied `mask` entries keep working. [`autoAllowBashIfSandboxed`](#sandbox-autoallowbashifsandboxed) still defaults to `true`, so set it to `false` to keep prompting. See [Disable filesystem isolation](/docs/en/sandboxing#disable-filesystem-isolation) for the full list of sources that can set it and what changes when isolation is off.
+With the layer off, Claude Code doesn't enforce `denyRead` or `credentials.files` `deny` entries, while `credentials.envVars` entries and applied `mask` entries keep working. See [Disable filesystem isolation](/docs/en/sandboxing#disable-filesystem-isolation) for the full list of sources that can set it and what changes when isolation is off.
 
 ### `sandbox.ignoreViolations`
 
@@ -99741,7 +99855,7 @@ Each entry below shows one allowlist entry per source type and the fields it acc
 
 | Source | Example entry | Fields |
 | :- | :- | :- |
-| `github` | `{ "source": "github", "repo": "acme-corp/plugins", "ref": "main", "path": "marketplace" }` | `repo` required; `ref` is a branch or tag; `path` is a subdirectory |
+| `github` | `{ "source": "github", "repo": "acme-corp/plugins", "ref": "main", "path": "marketplace" }` | `repo` required; `ref` is a branch, tag, or commit SHA; `path` is a subdirectory |
 | `git` | `{ "source": "git", "url": "https://gitlab.example.com/tools/plugins.git", "ref": "production" }` | `url` required; `ref` and `path` as for `github` |
 | `url` | `{ "source": "url", "url": "https://plugins.example.com/marketplace.json", "headers": { "Authorization": "Bearer ${TOKEN}" } }` | `url` required; `headers` adds HTTP headers for authenticated access |
 | `file` | `{ "source": "file", "path": "/opt/acme-corp/plugins/marketplace.json" }` | `path` required, the absolute path to a `marketplace.json` file |
@@ -104417,7 +104531,7 @@ The time limit counts from the moment the command enters the background:
 * A command that Claude starts in the background gets 30 minutes, or the `timeout` Claude passes with `run_in_background`, up to a maximum of 2 hours
 * A command that starts in the foreground and then moves to the background at its timeout gets 30 minutes from the move
 
-In a run with the `-p` flag whose prompt you pass as text rather than with `--input-format stream-json`, both defaults are 10 minutes instead of 30, because the run [waits for background commands after its result](/docs/en/headless#background-tasks-at-exit).
+In a run with the `-p` flag whose prompt you pass as text rather than with `--input-format stream-json`, both defaults are 10 minutes instead of 30.
 
 When a background command reaches its time limit, Claude Code stops it and tells Claude why, and Claude can start the command again with a longer `timeout` if the work still needs it. The stop notice reads `Background command "<description>" was stopped after reaching its background time limit`.
 
@@ -104479,6 +104593,10 @@ A file that changed on disk after Claude last read it can still be edited when `
 Claude can also edit a file without a separate Read after viewing it with a Bash command such as `cat` or `grep`. Those commands are `cat`, `nl`, `bat`, `batcat`, `head`, `tail`, `sed -n 'X,Yp'`, `grep`, `egrep`, `fgrep`, and `rg`, each run on one file with no pipes or redirects. If the command printed none of the file's text, as when a search matches nothing, the read-before-edit check still applies.
 
 When Claude views a file this way, Claude Code also loads any [subdirectory `CLAUDE.md`](/docs/en/memory#how-claude-md-files-load) and [path-scoped rules](/docs/en/memory#path-specific-rules) that apply to that file. See [Read and Edit permission rules](/docs/en/permissions#read-and-edit) for which Bash commands your `Read` and `Edit` deny rules cover.
+
+### Protect read-only files in Perforce
+
+To keep Edit, Write, and NotebookEdit from overwriting read-only files in a Perforce workspace, set [`CLAUDE_CODE_PERFORCE_MODE`](/docs/en/env-vars#variables) to `1`. Those tools then refuse to change read-only files and tell Claude to run `p4 edit` first.
 
 ### Non-UTF-8 files
 
@@ -107113,7 +107231,7 @@ To remove a built-in from Claude's context, omit it from `tools` or list its bar
 
 ### Require approval for specific tools
 
-Set a tool's `permission_policy` to `always_ask`, and `allowedTools` stops approving that tool's calls, so they can reach your [`canUseTool`](/docs/en/agent-sdk/user-input) callback even though the tool is listed. Set `always_deny` instead, and [a call to the tool is denied](/docs/en/agent-sdk/permissions#how-permissions-are-evaluated), but a [mod](/docs/en/plugins/mods/overview) in a plugin you load [can still approve it](/docs/en/permissions#precedence-among-rules-hooks-and-mods). The field is TypeScript-only and requires Agent SDK v0.3.301 or later.
+Set a tool's `permission_policy` to `always_ask`, and `allowedTools` stops approving that tool's calls, so they can reach your [`canUseTool`](/docs/en/agent-sdk/user-input) callback even though the tool is listed. Set `always_deny` instead to [block the tool](/docs/en/agent-sdk/typescript#permission-policy-values). The field is TypeScript-only and requires Agent SDK v0.3.301 or later.
 
 Put the policy entry in a `tools` array on the config object `createSdkMcpServer()` returns, not in the `tools` option you pass into that function. This example spreads `weatherServer` from the [weather tool example](#weather-tool-example) and adds a `tools` array giving `get_temperature` the `always_ask` policy:
 
@@ -111572,8 +111690,6 @@ A `PreToolUse` hook that returns `allow` also can't approve an `rm` or `rmdir` c
 
 If a deny rule from `disallowed_tools` or from a [settings file the SDK loads](#rules-in-settings-files) matches, the call is denied and [`canUseTool`](/docs/en/agent-sdk/user-input) isn't called. The call is denied this way even in [`bypassPermissions`](#bypass-permissions-mode-bypasspermissions) mode and when a hook returned `allow`.
 
-In the TypeScript SDK, if you set the `permission_policy` of a [custom tool](/docs/en/agent-sdk/custom-tools#require-approval-for-specific-tools) to [`always_deny`](/docs/en/agent-sdk/typescript#mcpservertoolpolicy), a call to that tool is denied at this step.
-
 **3. Ask rules**
 
 Check `ask` rules from [settings.json](/docs/en/settings-reference#permission-settings). If an ask rule matches, the call falls through to your [`canUseTool` callback](/docs/en/agent-sdk/user-input) for confirmation, even in `bypassPermissions` mode.
@@ -113507,7 +113623,7 @@ class ToolPermissionContext:
 | Field | Type | Description |
 | :- | :- | :- |
 | `signal` | `Any \| None` | Reserved for future abort signal support |
-| `suggestions` | `list[PermissionUpdate]` | Permission update suggestions from the CLI. Bash prompts include a suggestion with the `localSettings` destination, so returning it in `updated_permissions` writes the rule to `.claude/settings.local.json` and persists across sessions. |
+| `suggestions` | `list[PermissionUpdate]` | Permission update suggestions from the CLI. Bash prompts can include a suggestion with the `localSettings` destination, so returning it in `updated_permissions` writes the rule to `.claude/settings.local.json` and persists across sessions. |
 | `tool_use_id` | `str \| None` | Identifier of the specific tool call this prompt is for. Always populated when delivered to `can_use_tool` |
 | `agent_id` | `str \| None` | Sub-agent ID when the call originates from a subagent; `None` for the main agent |
 | `blocked_path` | `str \| None` | File path that triggered the permission request, when applicable. For example, when a Bash command tries to access a path outside allowed directories |
@@ -115846,7 +115962,7 @@ class SandboxSettings(TypedDict, total=False):
 | Property | Type | Default | Description |
 | :- | :- | :- | :- |
 | `enabled` | `bool` | `False` | Enable sandbox mode for command execution |
-| `autoAllowBashIfSandboxed` | `bool` | `True` | Auto-approve bash commands when sandbox is enabled |
+| [`autoAllowBashIfSandboxed`](/docs/en/settings-reference#sandbox-autoallowbashifsandboxed) | `bool` | `False` | Auto-approve Bash commands when sandbox is enabled. The `False` default requires Python SDK v0.2.182 or later |
 | `excludedCommands` | `list[str]` | `[]` | Commands that bypass sandbox restrictions, such as `["docker *"]`. These run unsandboxed automatically without model involvement; [`sandbox.excludedCommands`](/docs/en/settings-reference#sandbox-excludedcommands) covers when an entry applies |
 | `allowUnsandboxedCommands` | `bool` | `True` | Allow the model to request running commands outside the sandbox. When `True`, the model can set `dangerouslyDisableSandbox` in tool input, which falls back to the [permissions system](#permissions-fallback-for-unsandboxed-commands) |
 | `network` | [`SandboxNetworkConfig`](#sandboxnetworkconfig) | `None` | Network-specific sandbox configuration |
@@ -119252,7 +119368,7 @@ Focus on:
 | `prompt` | `string` | Yes | The agent's system prompt defining its role and behavior |
 | `tools` | `string[]` | No | Array of allowed tool names. If omitted, inherits every [tool available to subagents](/docs/en/sub-agents#available-tools) |
 | `disallowedTools` | `string[]` | No | Array of tool names to remove from the agent's tool set. MCP server-level patterns are also accepted: `mcp__server` or `mcp__server__*` removes every tool from that server, and `mcp__*` removes every MCP tool from any server |
-| `model` | `string` | No | Model override for this agent. Accepts an alias such as `'fable'`, `'opus'`, `'sonnet'`, `'haiku'`, `'inherit'`, or a full model ID. `'inherit'` uses the main model. When you omit it, Claude Code picks the model in the [subagent model order](/docs/en/sub-agents#choose-a-model) |
+| `model` | `string` | No | Model override for this agent. Accepts an alias such as `'fable'`, `'opus'`, `'sonnet'`, `'haiku'`, `'inherit'`, or a full model ID. `'inherit'` uses the model of the agent that spawned this one. When you omit `model`, Claude Code picks the model in the [subagent model order](/docs/en/sub-agents#choose-a-model) |
 | `skills` | `string[]` | No | List of skill names to preload into the agent's context at startup. At most the [first 32 distinct names](/docs/en/sub-agents#preload-skills-into-subagents) in the list are preloaded. Unlisted skills remain invocable through the Skill tool |
 | `memory` | `'user' \| 'project' \| 'local'` | No | Memory source for this agent |
 | `mcpServers` | `(string \| object)[]` | No | MCP servers available to this agent, by name or inline config |
@@ -121834,7 +121950,7 @@ type AgentDefinition = {
 | `tools` | No | Array of allowed tool names. If omitted, inherits every [tool available to subagents](/docs/en/sub-agents#available-tools). To preload Skills into the agent's context, use the `skills` field rather than listing `'Skill'` here |
 | `disallowedTools` | No | Array of tool names to explicitly disallow for this agent. MCP server-level patterns are also accepted: `mcp__server` or `mcp__server__*` removes every tool from that server, and `mcp__*` removes every MCP tool from any server |
 | `prompt` | Yes | The agent's system prompt |
-| `model` | No | Model override for this agent. Accepts an alias such as `'fable'`, `'opus'`, `'sonnet'`, `'haiku'`, `'inherit'`, or a full model ID. `'inherit'` uses the main model. When you omit it, Claude Code picks the model in the [subagent model order](/docs/en/sub-agents#choose-a-model) |
+| `model` | No | Model override for this agent. Accepts an alias such as `'fable'`, `'opus'`, `'sonnet'`, `'haiku'`, `'inherit'`, or a full model ID. `'inherit'` uses the model of the agent that spawned this one. When you omit `model`, Claude Code picks the model in the [subagent model order](/docs/en/sub-agents#choose-a-model) |
 | `mcpServers` | No | MCP server specifications for this agent |
 | `skills` | No | Array of skill names to preload into the agent context |
 | `initialPrompt` | No | Auto-submitted as the first user turn when this agent runs as the main thread agent |
@@ -121962,7 +122078,7 @@ type CanUseTool = (
 | Option | Type | Description |
 | :- | :- | :- |
 | `signal` | `AbortSignal` | Signaled if the operation should be aborted |
-| `suggestions` | [`PermissionUpdate`](#permissionupdate)`[]` | Suggested permission updates so the user is not prompted again for this tool. Bash prompts include a suggestion with the `localSettings` [destination](#permissionupdatedestination), so returning it in `updatedPermissions` writes the rule to `.claude/settings.local.json` and persists across sessions. |
+| `suggestions` | [`PermissionUpdate`](#permissionupdate)`[]` | Suggested permission updates so the user is not prompted again for this tool. Bash prompts can include a suggestion with the `localSettings` [destination](#permissionupdatedestination), so returning it in `updatedPermissions` writes the rule to `.claude/settings.local.json` and persists across sessions. |
 | `blockedPath` | `string` | The file path that triggered the permission request, if applicable |
 | `mcpServer` | `{ name: string; source: string }` | For an `mcp__*` tool, the MCP server that serves it and where that server's definition came from, with the fields of [`McpServerProvenance`](#mcpserverprovenance). Absent for other tools. Requires Agent SDK v0.3.274 or later |
 | `decisionReason` | `string` | Explains why this permission request was triggered |
@@ -122145,7 +122261,7 @@ type McpServerToolPolicy = {
 Choose `always_ask` to approve each call yourself, or `always_deny` to block the tool outright:
 
 * **`always_ask`**: each call to the tool [needs approval](/docs/en/agent-sdk/permissions#how-permissions-are-evaluated), even if an `allowedTools` entry or allow rule covers it. The call goes to your `canUseTool` callback or [`permissionPromptToolName`](#options) tool, unless it's settled first. A [mod](/docs/en/plugins/mods/overview) in a plugin you load [can approve it first](/docs/en/permissions#precedence-among-rules-hooks-and-mods). Otherwise, in `dontAsk` mode it's denied, and in [`auto`, `plan`, and `bypassPermissions` mode](#permission-modes-that-can-approve-an-always_ask-call) it can be approved before it reaches your callback
-* **`always_deny`**: a call to the tool [is denied](/docs/en/agent-sdk/permissions#how-permissions-are-evaluated) in every permission mode, including `bypassPermissions`, but a mod in a plugin you load [can still approve it](/docs/en/permissions#precedence-among-rules-hooks-and-mods)
+* **`always_deny`**: Claude Code removes the tool from Claude's context in every permission mode, including `bypassPermissions`. Removal requires Claude Code v2.1.324 or later
 
 If you pass neither `canUseTool` nor `permissionPromptToolName`, or set [`permissionPrompts`](#options) to `'none'`, an `always_ask` call that isn't settled first is denied unless a [`PermissionRequest` hook](/docs/en/hooks#permissionrequest) allows it.
 
@@ -126638,7 +126754,7 @@ type SandboxSettings = {
 | :- | :- | :- | :- |
 | `enabled` | `boolean` | `false` | Enable sandbox mode for command execution |
 | `failIfUnavailable` | `boolean` | `true` | Stop at startup if `enabled` is `true` but the sandbox can't start. Set `false` to fall back to unsandboxed execution with a warning on stderr |
-| `autoAllowBashIfSandboxed` | `boolean` | `true` | Auto-approve Bash commands when sandbox is enabled |
+| [`autoAllowBashIfSandboxed`](/docs/en/settings-reference#sandbox-autoallowbashifsandboxed) | `boolean` | `false` | Auto-approve Bash commands when sandbox is enabled. The `false` default requires Agent SDK v0.3.324 or later |
 | `excludedCommands` | `string[]` | `[]` | Commands that bypass sandbox restrictions, such as `['docker *']`. These run unsandboxed automatically without model involvement; [`sandbox.excludedCommands`](/docs/en/settings-reference#sandbox-excludedcommands) covers when an entry applies |
 | `allowUnsandboxedCommands` | `boolean` | `true` | Allow the model to request running commands outside the sandbox. When `true`, the model can set `dangerouslyDisableSandbox` in tool input, which falls back to the [permissions system](#permissions-fallback-for-unsandboxed-commands) |
 | `network` | [`SandboxNetworkConfig`](#sandboxnetworkconfig) | `undefined` | Network-specific sandbox configuration |
