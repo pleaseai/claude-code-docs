@@ -47083,7 +47083,7 @@ If you publish through your own marketplace and your `plugin.json` sets `version
 
 ### Tag a release
 
-Tag the release in git when other plugins declare a version range on yours, because those ranges resolve against tags. Otherwise you don't need a tag.
+Tag the release in git when other plugins declare a version range on yours, because those ranges resolve against tags.
 
 To tag, run `claude plugin tag` in your shell from the plugin directory. It creates a `{name}--v{version}` tag. Add `--push` to send the tag to `origin`. The [`plugin tag` reference](/docs/en/plugins/cli-reference#plugin-tag) lists its flags.
 
@@ -85968,7 +85968,7 @@ Don't set `version` in both `plugin.json` and the marketplace entry. If you do, 
 
 ### Hold users on one version
 
-One marketplace serves one version of each plugin at a time, so you hold users on a version by choosing what each entry points at:
+To hold users on a version, choose which ref, commit, or tag they get:
 
 * **`ref` and `sha` on the plugin entry**: `ref` names a branch or tag and `sha` names a commit for a `github`, `url`, or `git-subdir` source. See [Plugin sources](/docs/en/plugins/marketplace-reference#plugin-sources).
 * **`#<ref>` on the add command**: users who add `your-org/your-marketplace#stable` get that branch or tag of the catalog. For two release lines at once, see [Run release channels](#run-release-channels).
@@ -85989,7 +85989,7 @@ Tell users to run the `claude plugin update` command that entry shows, in a term
 
 ## Run release channels
 
-To offer stable and early-access tracks, host two marketplaces whose entries point at different refs of the same plugin, and let each user add the one they want. Claude Code has no release-channel concept, and one marketplace serves one version of each plugin at a time.
+To offer stable and early-access tracks, host two marketplaces whose entries point at different refs of the same plugin, and let each user add the one they want.
 
 Give the two `marketplace.json` files different `name` values. Claude Code identifies a marketplace by its `name`, so a user can't have two marketplaces with the same name registered at once.
 
@@ -87167,6 +87167,7 @@ For component keys such as `commands` and `hooks`, [Component path forms](#compo
 | [`privacyPolicyUrl`](#directory-listing-fields) | String | Privacy policy link for the plugin's listing in Anthropic's directory. Claude Code doesn't read it |
 | [`termsOfServiceUrl`](#directory-listing-fields) | String | Terms of service link for the plugin's listing in Anthropic's directory. Claude Code doesn't read it |
 | [`defaultEnabled`](#defaultenabled) | Boolean | Whether the plugin starts enabled when the user hasn't set it. Defaults to `true` |
+| `engines` | Object | The Claude Code versions that the plugin works on, as a [semver range](https://github.com/npm/node-semver#ranges) under the `claude-code` key, such as `"engines": { "claude-code": ">=2.1.400" }`. Requires Claude Code v2.1.323 or later. To keep the plugin working on v2.0.15 through v2.1.75, omit `engines`. Those versions reject the manifest with an `Unrecognized key` error when it has the field |
 | [`dependencies`](#dependencies) | Array of strings or objects | Plugins that must be enabled for this one to work |
 | [`userConfig`](#user-configuration) | Object | Values Claude Code prompts the user for when the plugin is enabled |
 | `types` | Path | A `.d.ts` file that declares the `$.state` values and `$` nouns of a [mod](/docs/en/plugins/mods/reference#files) |
@@ -87808,6 +87809,7 @@ The table lists the entry's own fields and the manifest fields whose meaning cha
 | `strict` | boolean | Default `true`. Whether `plugin.json` is the definitive source for the plugin's components. See [Strict mode](#strict-mode) |
 | `relevance` | object | Signals that tell Claude Code when to suggest the plugin. See [Recommend plugins for your org](/docs/en/plugins/relevance) |
 | `dependencies` | array | Plugins that must be enabled for this one to work. Each item is `"name"`, `"name@marketplace"`, or an object. See [Plugin dependencies](/docs/en/plugins/dependencies) |
+| `engines` | object | The Claude Code versions that the plugin works on, as a [semver range](https://github.com/npm/node-semver#ranges) under the `claude-code` key, such as `"engines": { "claude-code": ">=2.1.400" }`. Requires Claude Code v2.1.323 or later. To keep the marketplace working on v2.0.15 through v2.1.75, omit `engines` from every entry. Those versions reject the whole `marketplace.json` when any entry has the field |
 | `defaultEnabled` | boolean | Default `true`. Whether the plugin starts enabled when the user hasn't set it in [`enabledPlugins`](/docs/en/settings-reference#enabledplugins). The entry value takes precedence over `plugin.json` |
 | `displayName` | string | Human-readable name shown in the UI. When neither the entry nor the plugin's `plugin.json` sets one, users see the plugin's `name` |
 | `metadata` | object | Free-form object for your own fields. Claude Code doesn't read it |
@@ -88205,6 +88207,7 @@ The table maps marketplace-level messages to the field each is about.
 | `Claude Code cannot install plugins from marketplace "x". Each part of a plugin id (plugin@marketplace) may use only the letters a-z and A-Z, digits, ".", "_" and "-", and must start with a letter or digit. Change the marketplace's "name".` | Error | `name` |
 | `Claude Code cannot install plugin "x". Each part of a plugin id (plugin@marketplace) may use only the letters a-z and A-Z, digits, ".", "_" and "-", and must start with a letter or digit. Change this entry's "name".` | Error | `plugins[i].name` |
 | `Duplicate plugin name "x" found in marketplace` | Error | Two entries share a `name` |
+| `Must be a version range such as ">=2.1.0"; got "<value>". It will be ignored at load time.` | Error | `plugins[i].engines.claude-code` |
 | `plugins.i.source: Invalid input` | Error | The entry's `source` matches no type. See [Invalid input on a source](#invalid-input-on-a-source) |
 | `plugins.i.source: Invalid string: must start with "./"` | Error | A relative-path `source` without the leading `./`. Before v2.1.285, this mistake printed `Invalid input` instead |
 | `plugins[i].source: Path contains "..": <path>` | Error | A relative `source` that escapes the marketplace root |
@@ -88213,6 +88216,7 @@ The table maps marketplace-level messages to the field each is about.
 | `chain does not resolve (<reason>) — target must be a name in plugins[], a key in renames, or null` | Error | `renames.<old>` |
 | `target "x" is not a valid plugin name (PluginIdSchema)` | Error | `renames.<old>` |
 | `Unknown field 'x'. Claude Code ignores it at load time.` | Warning | The named key at the top level, under `metadata`, in an entry, or under an entry's `relevance` |
+| `'engines' must be an object such as { "claude-code": ">=2.1.0" }; got <type>. It will be ignored at load time.` | Warning | `plugins[i].engines` |
 | `Marketplace has no plugins defined` | Warning | `plugins` is empty |
 | `Plugin "x" sets headers/headersHelper, which only apply to "archive" sources; they have no effect on this entry.` | Warning | `plugins[i].headers` or `plugins[i].headersHelper`, on an entry whose `source` isn't `archive` |
 | `Plugin "x" fetches its archive with a headersHelper but sets no sha256 pin` | Warning | `plugins[i].source.sha256` |
@@ -90676,6 +90680,7 @@ The table covers the messages that stop validation and two warnings, `No frontma
 | `Path is a file; skills entries must be directories containing SKILL.md` | A `skills` entry points at `SKILL.md` instead of its directory. | Point at the parent directory, or `.` for a root-level `SKILL.md`. |
 | `No frontmatter block found` or `YAML frontmatter failed to parse: <error>` | A skill, agent, or command file has missing or invalid YAML frontmatter. | Add or fix the frontmatter between `---` delimiters. Reported when validating a plugin directory. |
 | `Plugin name "<name>" is reserved: it passes as one of Anthropic's own` | The plugin's `name` is one of the [reserved names](/docs/en/plugins/manifest-reference#name). | Rename the plugin for what it does. |
+| `Must be a version range such as ">=2.1.0"; got "<value>". It will be ignored at load time.` | Claude Code can't read the `claude-code` value under `engines` as a semver range. | Set the value to a range of Claude Code versions, such as `">=2.1.0"`. See the [`engines` field](/docs/en/plugins/manifest-reference#fields). |
 | `Unknown field '<key>'` | The manifest has a field the schema doesn't define. | Remove it, or use the name the message suggests. Claude Code ignores unknown fields at load time. For `privacyPolicyUrl` and the other directory listing fields in `plugin.json`, see [Directory listing fields](/docs/en/plugins/manifest-reference#directory-listing-fields). |
 
 Run the command again after each fix until it prints no errors.
