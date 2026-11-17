@@ -2052,25 +2052,21 @@ Claude treats your design system as higher precedence than its own choices, and 
 
 For typography, Claude can load a typeface from Google Fonts, the one external font source an artifact page can load from. Claude inlines any other typeface as a `@font-face` data URI and gives every typeface a fallback stack, so the page still renders if a font doesn't load. To use a specific typeface, name it in your prompt or your design system.
 
-## Start from a Slides, Design, or Docs template
+## Start an artifact from a template
 
-Instead of building a page from scratch, Claude can start an artifact from one of the templates on your claude.ai account: [Claude Slides](https://support.claude.com/en/articles/17153992-what-are-artifacts-and-how-do-i-use-them#h_11d5a9a5fa) for a presentation, [Claude Design](https://support.claude.com/en/articles/14604416-get-started-with-claude-design) for a visual design, or [Claude Docs](https://support.claude.com/en/articles/16923645-get-started-with-claude-docs) for a document other people will read and edit. Each opens in its own editor on claude.ai, where you and your teammates change it directly or ask Claude to, and export it to formats such as PowerPoint, PDF, or Word.
+The [artifact templates](https://support.claude.com/en/articles/17153992-what-are-artifacts-and-how-do-i-use-them#h_11d5a9a5fa) on your claude.ai account also work from Claude Code. For example, use the [Claude Design](https://support.claude.com/en/articles/14604416-get-started-with-claude-design) template for a visual design, or the [Claude Docs](https://support.claude.com/en/articles/16923645-get-started-with-claude-docs) template for a document other people will read and edit. Your account can include others, such as Sheets, Whiteboards, or Data. To see which ones your session has, ask Claude to list the artifact templates available to you.
 
-To start from a template, describe what you want, such as "turn the migration notes into a deck for Thursday's review" or "write this plan up as a doc for the team". Claude picks the matching template, fills it from your request and from what the session already has, and gives you the link. For a deck or a design you can also run `/slides` or `/design` with a brief.
+To use a template from Claude Code, you need:
 
-> [!NOTE]
->
-> Templates are in beta. They're on by default on Pro, Max, Ultra, and Team plans. On Enterprise plans, an Owner [turns each template on](https://support.claude.com/en/articles/16994751-artifacts-admin-guide-for-team-and-enterprise-plans) under **Organization settings > Artifacts**. If your organization has the Slides template turned off, `/slides` doesn't appear; if it has the Design template turned off, `/design` doesn't draft designs. Both commands require Claude Code v2.1.265 or later and a session where [artifacts are available](#availability).
+* A session where [artifacts are available](#availability)
+* On Team and Enterprise plans, the template turned on for your organization. If it's off, ask an Owner to [turn the template on](https://support.claude.com/en/articles/16994751-artifacts-admin-guide-for-team-and-enterprise-plans#h_6e06d8f1a8) under **Organization settings > Artifacts** on claude.ai.
+* On Enterprise plans with custom roles, a role that [includes the template](https://support.claude.com/en/articles/16994751-artifacts-admin-guide-for-team-and-enterprise-plans#h_d830917488)
+* For the Docs and Sheets templates, the [Claude Docs connector](#write-a-document-with-claude-docs), which Claude uses to write the content of both. If you [turned the connector off](/docs/en/mcp#disable-claude-ai-connectors), turn it back on first.
+* Claude Code v2.1.265 or later, if you start the Design template with its [`/design` command](#draft-a-design-canvas)
 
-### Make a slide deck
+To start from a template, name it or describe what you want, such as "write this plan up as a doc for the team" or "make a shared task spreadsheet". Claude picks the matching template, fills it from your request and from what the session already has, and gives you the link. To get a file instead, name the format, such as `.csv`.
 
-Run `/slides` with a brief that says what the deck covers and who it's for:
-
-```text wrap theme={null}
-/slides a quarterly review of the platform team's reliability work, for the engineering all-hands
-```
-
-Claude creates a Claude Slides artifact and gives you the link. Open it in a desktop browser to edit or present the deck. If you run `/slides` without a brief, Claude asks what the deck should be about before creating anything.
+To edit the artifact yourself, open the link, which goes to that template's editor on claude.ai. You can also keep asking Claude for changes from your session. For export formats, see [View and export](https://support.claude.com/en/articles/17153992-what-are-artifacts-and-how-do-i-use-them#h_1403132eb8).
 
 ### Draft a design canvas
 
@@ -2086,7 +2082,7 @@ Open the published artifact in a desktop browser to review the artboards. Select
 
 Claude Docs reaches Claude Code as a claude.ai [connector](/docs/en/mcp#use-mcp-servers-from-claude-ai) rather than a command. When it's connected, `/mcp` lists it as `claude.ai Claude Docs`. A request for a document meant for other people then goes to Claude Docs instead of an artifact page: a spec, a proposal, or a write-up of the plan you worked through in the session. Claude gives you the doc's link when it's drafted.
 
-A document that belongs in the codebase, such as a README, stays a file. To get a file for something Claude would otherwise put in Claude Docs, name the format, such as `.docx` or a Markdown file in the repository. To turn off only the `claude.ai Claude Docs` connector, see [Disable claude.ai connectors](/docs/en/mcp#disable-claude-ai-connectors).
+A document that belongs in the codebase, such as a README, stays a file. To get a file for something Claude would otherwise put in Claude Docs, name the format, such as `.docx` or a Markdown file in the repository. To turn off only the `claude.ai Claude Docs` connector, see [Disable claude.ai connectors](/docs/en/mcp#disable-claude-ai-connectors). Keep the connector on if you use the Sheets template, which needs it too.
 
 ## Page constraints
 
@@ -20900,12 +20896,49 @@ Claude Code's context window holds everything Claude knows about your session: y
 
 ## What the timeline shows
 
-The session walks through a realistic flow with representative token counts:
-
 * **Before you type anything**: CLAUDE.md, auto memory, MCP tool names, and skill descriptions all load into context. [AGENTS.md files](/docs/en/memory#agents-md) can load in place of CLAUDE.md. Your own setup may add more here, like an [output style](/docs/en/output-styles) or text from [`--append-system-prompt`](/docs/en/cli-reference).
 * **As Claude works**: each file read adds to context, [path-scoped rules](/docs/en/memory#path-specific-rules) load automatically alongside matching files, and a [PostToolUse hook](/docs/en/hooks-guide) fires after each edit.
 * **The follow-up prompt**: a [subagent](/docs/en/sub-agents) handles the research in its own separate context window, so the large file reads stay out of yours. Only the summary and a small metadata trailer come back.
-* **At the end of the walkthrough**: you run `/compact`, which replaces the conversation with a structured summary. Most startup content reloads automatically; the table below shows what happens to each mechanism.
+* **At the end of the session**: you run `/compact`, which replaces the conversation with a structured summary. Most startup content reloads automatically. See [what survives compaction](#what-survives-compaction) for what reloads and what gets summarized.
+
+> [accordion] Token counts for each step
+>
+> Compare how many tokens each step adds in the timeline's example session. The counts are illustrative and vary with your CLAUDE.md size, MCP servers, and file lengths. For real numbers, [check your own session](#check-your-own-session).
+>
+> | Phase | What enters context | Example tokens |
+> | :- | :- | -: |
+> | Before you type | System prompt | 4,200 |
+> | Before you type | Auto memory (`MEMORY.md`) | 680 |
+> | Before you type | Environment info | 280 |
+> | Before you type | MCP tool names | 120 |
+> | Before you type | Skill descriptions | 450 |
+> | Before you type | `~/.claude/CLAUDE.md` | 320 |
+> | Before you type | Project CLAUDE.md | 1,800 |
+> | First prompt | Your prompt | 45 |
+> | As Claude works | Read `src/api/auth.ts` | 2,400 |
+> | As Claude works | Read `src/lib/tokens.ts` | 1,100 |
+> | As Claude works | Rule `api-conventions.md` | 380 |
+> | As Claude works | Read `middleware.ts` | 1,800 |
+> | As Claude works | Read `auth.test.ts` | 1,600 |
+> | As Claude works | Rule `testing.md` | 290 |
+> | As Claude works | Search for `refreshToken` | 600 |
+> | As Claude works | Claude's analysis | 800 |
+> | As Claude works | Edit `auth.ts` | 400 |
+> | As Claude works | Prettier hook output | 120 |
+> | As Claude works | Edit `auth.test.ts` | 600 |
+> | As Claude works | Prettier hook output | 100 |
+> | As Claude works | `npm test` output | 1,200 |
+> | As Claude works | Claude's summary of its changes | 400 |
+> | Follow-up prompt | Your follow-up prompt | 40 |
+> | Follow-up prompt | Claude's call to the subagent | 80 |
+> | Follow-up prompt | Subagent's summary | 420 |
+> | Follow-up prompt | Claude's response | 1,200 |
+> | End of the session | `!git status` and its output | 180 |
+> | End of the session | `/commit-push` skill body | 620 |
+>
+> Before `/compact`, 22,225 tokens are in use. The subagent uses another 9,890 tokens in its own context window.
+>
+> After `/compact`, 17,095 tokens are in use: the "Before you type" rows, a 1,725-token conversation summary, the four files read under "As Claude works", and the `/commit-push` skill body.
 
 ## What survives compaction
 
@@ -25387,6 +25420,7 @@ Match the message you see to a section below.
 | `Unable to read managed policy settings` | [Configuration warnings](#unable-to-read-managed-policy-settings) |
 | `Managed settings contain invalid entries, including PreToolUse/PermissionRequest hooks that are NOT loaded; fix or remove each entry:` | [Configuration warnings](#managed-settings-hooks-not-loaded) |
 | `otelHeadersHelper failed; telemetry is not being exported. See /status: ...` | [Configuration warnings](#otelheadershelper-failed) |
+| `apply_flag_settings: nothing in this request was applied and earlier settings stay in force. Fix or remove these invalid settings and send it again` | [`applyFlagSettings()`](/docs/en/agent-sdk/typescript#applyflagsettings) |
 | `"crossSessionInbound" must be one of "accept", "hold", "refuse"` | [Configuration warnings](#crosssessioninbound-must-be-one-of-accept-hold-refuse) |
 | `API Error: ANTHROPIC_FOUNDRY_RESOURCE must be a Foundry resource name` | [Configuration warnings](#anthropic-foundry-resource-must-be-a-foundry-resource-name) |
 | `headersHelper not run — this workspace has no persisted trust` | [Configuration warnings](#headershelper-not-run) |
@@ -37644,7 +37678,7 @@ Some MCP servers declare a tool's input schema as a JSON Schema union, with `any
 Tools with a root-level combinator stay available. Before sending the tool to the API, Claude Code flattens the schema into a single object and prepends a sentence to the tool's description that tells Claude which parameter groups belong together:
 
 * `allOf`: properties from every branch are merged, and each branch's `required` list still applies
-* `anyOf` and `oneOf`: properties from every branch are merged, and each branch's `required` list is described in the tool description instead of enforced by the schema
+* `anyOf` and `oneOf`: properties from every branch are merged, and each branch's `required` list is described in the tool description
 
 Your server receives whichever arguments Claude chose, so keep validating the combination server-side.
 
@@ -39825,7 +39859,20 @@ claude plugin eval . --allow-tools Write Edit "Bash(npm test *)"
 
 When a case asked for a tool you didn't grant, the progress output lists it as `not granted`. Tools on a [mocked](#mock-mcp-servers) MCP server need no grant. Tools on a real plugin MCP server need both the server started, with `--allow-real-servers` or `--mocks off`, and a grant by name, such as `--allow-tools "mcp__plugin_my-plugin_github__*"`; a plugin's MCP tools are named `mcp__plugin_<plugin>_<server>__<tool>`.
 
+#### Shell grants need a sandbox
+
 When you grant `Bash` in any form, every command runs under Claude Code's [OS-level sandbox](/docs/en/sandboxing). Writes are confined to the run's workspace, your home directory and Claude Code configuration are unreadable, and network access is limited to domains you grant with `--allow-tools "WebFetch(domain:example.com)"`. If you grant Bash or PowerShell on a machine with no sandbox backend, Claude Code refuses each run rather than running it unconfined, and the case shows a run error and usually scores 0. Native Windows has no backend, so run shell-granting suites under WSL2; on Linux, install `bubblewrap` and `socat` first. See the [sandboxing prerequisites](/docs/en/sandboxing).
+
+#### Shell grants refused on a managed machine
+
+When shell-granting runs are refused on a machine your organization manages, a `sandbox` key in its [managed settings](/docs/en/managed-settings) can be the cause. The error begins `A shell tool (Bash or PowerShell) was granted but this machine cannot confine it (no sandbox backend on this platform, or it is not installed)`. It names a missing backend even where one is installed.
+
+When a managed key is the cause, the message ends with `this machine's managed settings:` and the key, which the per-run progress line cuts off:
+
+* **Without `--json`**: read it from the summary table's `NOTES` column, as in `sandbox.enabled is false`
+* **Under `--json`**: read it from the [JSON result](#json-result), in the run's `error` field
+
+Ask your administrator whether that setting can change for your machine, or drop the shell grant from that run.
 
 ### Command options
 
@@ -40158,6 +40205,8 @@ Separately, `file_exists` counts only files created during the run, so a file th
 ### Tools are denied, MCP tools are missing, or Bash won't run
 
 Anything beyond the read-only set needs your grant, such as `--allow-tools Bash Write`. Your personal MCP servers never load in a run. The plugin's own servers don't start unless you [opt in](#mock-mcp-servers), and their tools then also need an `--allow-tools "mcp__plugin_<plugin>_<server>__*"` grant; a mocked tool needs neither.
+
+If you granted Bash and the runs are still refused, read the full error, which the per-run progress line cuts short. It is in the summary table's `NOTES` column, or in the run's `error` field under `--json`. See [Shell grants refused on a managed machine](#shell-grants-refused-on-a-managed-machine) when the full error names a managed setting, or [Shell grants need a sandbox](#shell-grants-need-a-sandbox) when it doesn't.
 
 ### The run exits 1 but the results look fine
 
@@ -49635,7 +49684,7 @@ When Claude Code loads a conversation from its transcript, the resumed session r
 
 * Conversation history: the messages, tool calls, and results. If the session was [compacted](/docs/en/context-window#what-survives-compaction), the conversation opens at a `Conversation compacted` row. Claude continues with the last compaction's summary, the messages that compaction left unsummarized, and every message since. The messages that the last compaction summarized aren't loaded again.
 * Interrupted tool calls: a tool that was still running when the previous process ended, for example in a crash, doesn't get rerun when you resume.
-* Model: the session continues on the model it was using, except in the cases in [Setting your model](/docs/en/model-config#setting-your-model).
+* Model: with `claude --resume` or `--continue`, the session continues on the model it was using, except in the cases in [Which model a resumed session uses](/docs/en/model-config#which-model-a-resumed-session-uses).
 * Agent: a session started with [`--agent`](/docs/en/sub-agents#invoke-subagents-explicitly) or the `agent` setting continues as that agent, keeping its tool restrictions and model. Pass `--agent` when resuming to pick a different one; for the system prompt in either case, see [System prompt flags in resumed conversations](/docs/en/cli-reference#system-prompt-flags-in-resumed-conversations). Claude Code looks for the agent in two places: the session's original directory, provided you have [trusted that workspace](/docs/en/permissions#project-allow-rules-and-workspace-trust), and then the directory you resume from, so a project-scoped agent still loads when you resume from another directory. If Claude Code doesn't find the agent in either place, the session resumes with the default tools and shows a [warning naming the agent](/docs/en/errors#session-agent-no-longer-available).
 * Permission mode: if you resume from a terminal with `claude --continue`, `claude --resume <session-id>`, or `claude --resume <name>` when the name matches one session, without `-p`, Claude Code restores the permission mode the session was in, except in the cases in [permission mode on resume](#permission-mode-on-resume), which also covers the session picker, `/resume`, and resuming with `claude -p`. Pass `--permission-mode` or `--dangerously-skip-permissions` to override the restored mode.
 * Active goal: a [goal](/docs/en/goal#resume-with-an-active-goal) that was still active when the session ended carries over; its turn count, timer, and token-spend baseline reset.
@@ -55031,7 +55080,7 @@ For full details on how checkpoints work and their limitations, see [Checkpointi
 
 ## Customize your workflow
 
-You can reposition the Claude panel, run multiple conversations, group or filter the sessions list, or switch to terminal mode.
+You can reposition the Claude panel and change its font. You can also run multiple conversations, group or filter the sessions list, or switch to terminal mode.
 
 ### Choose where Claude lives
 
@@ -55048,6 +55097,19 @@ To stop the extension from locking groups, turn off the [Lock Editor Groups sett
 > [!TIP]
 >
 > Use the sidebar for your main Claude session and open additional tabs for side tasks. Claude remembers your preferred location. The Activity Bar sessions list icon is separate from the Claude panel. The sessions list is always visible in the Activity Bar, while the Claude panel icon only appears there when the panel is docked to the left sidebar.
+
+### Change the font
+
+The Claude panel uses VS Code's chat font settings, the same ones that style VS Code's built-in chat view. Open VS Code settings with `Cmd+,` on Mac or `Ctrl+,` on Windows and Linux, then search for `chat font`.
+
+| Setting | Applies to |
+| - | - |
+| [`chat.fontSize`](vscode://settings/chat.fontSize) | Size of the conversation text and the prompt box, in pixels. Code blocks and tool output scale with it. Requires VS Code 1.104 or later |
+| [`chat.fontFamily`](vscode://settings/chat.fontFamily) | Font of the conversation text and the prompt box. Requires VS Code 1.104 or later |
+| [`chat.editor.fontSize`](vscode://settings/chat.editor.fontSize) | Size of diffs, in pixels. Requires Claude Code v2.1.300 or later |
+| [`chat.editor.fontFamily`](vscode://settings/chat.editor.fontFamily) | Font of code blocks and tool output |
+
+To scale all of VS Code along with the Claude panel, zoom the window with `Cmd+=` on Mac or `Ctrl+=` on Windows and Linux.
 
 ### Continue conversations after a reload
 
@@ -55385,7 +55447,7 @@ The extension also handles `vscode://anthropic.claude-code/install-plugin`, whic
 
 ## Configure settings
 
-You configure the extension in two places, VS Code's extension settings and the Claude Code settings file:
+You configure the extension in VS Code's extension settings and the Claude Code settings file:
 
 * **Extension settings** in VS Code: control the extension's behavior within VS Code. Open with `Cmd+,` (Mac) or `Ctrl+,` (Windows/Linux), then go to **Extensions > Claude Code**. You can also type `/` and select **General config…** to open settings.
 * **Claude Code settings** in `~/.claude/settings.json`: shared between the extension and CLI. Use it for allowed commands, environment variables, hooks, and MCP servers. With Claude Code v2.1.283 or later, you can also use it as one input to the permission mode conversations start in. On earlier versions, you can do this only on Pro, Max, Ultra, and Team plans. [Switch permission modes](/docs/en/permission-modes#switch-permission-modes) lists the order. See [Settings](/docs/en/settings) for details.
@@ -57286,7 +57348,7 @@ Managed settings can lock down tools, sandbox execution, restrict MCP servers an
 If your members sign in through claude.ai or the Anthropic API and you're on a Claude Enterprise plan, you can also govern models from your organization's admin settings without deploying anything:
 
 * [Organization model restrictions](/docs/en/model-config#organization-model-restrictions): disable individual models. Enforced server-side.
-* [Organization default model](/docs/en/model-config#organization-default-model): set which model new sessions start on. Members can still switch models. To return them to your default at launch, turn on the override that section describes. To limit which models they can pick, use [organization model restrictions](/docs/en/model-config#organization-model-restrictions).
+* [Organization default model](/docs/en/model-config#organization-default-model): set which model new sessions start on. Members can still switch models. To return them to your default, turn on the override that section describes. To limit which models they can pick, use [organization model restrictions](/docs/en/model-config#organization-model-restrictions).
 * [Organization effort limits](/docs/en/model-config#organization-effort-limits): cap effort levels per role. Enforced server-side.
 
 None of these controls reach sessions on Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, or [Claude Platform on AWS](/docs/en/claude-platform-on-aws). On those providers, use managed settings instead: `availableModels` for restrictions, `model` for a default, and [`maxEffortLevel`](/docs/en/settings-reference#maxeffortlevel) for an effort cap.
@@ -60843,7 +60905,7 @@ The gateway delivers the [`anthropic-beta`](https://platform.claude.com/docs/en/
 
 | Feature | Status | Notes |
 | - | - | - |
-| Inference forwarding (Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform, Microsoft Foundry, Anthropic) | Available | With per-upstream model translation and failover. The Amazon Bedrock upstream uses the `bedrock-runtime` endpoint and the AWS default credential chain. The [Amazon Bedrock Mantle upstream](/docs/en/claude-apps-gateway-config#amazon-bedrock-mantle-endpoint) requires Claude Code v2.1.283 or later on the gateway server, and the [Claude Platform on AWS upstream](/docs/en/claude-apps-gateway-config#claude-platform-on-aws) requires v2.1.198 or later. |
+| Inference forwarding to Amazon Bedrock, Claude Platform on AWS, Claude Models on Google Cloud (Anthropic managed), Google Cloud's Agent Platform, Microsoft Foundry, and the Anthropic API | Available | With per-upstream model translation and failover. The Amazon Bedrock upstream uses the `bedrock-runtime` endpoint and the AWS default credential chain. The [Amazon Bedrock Mantle upstream](/docs/en/claude-apps-gateway-config#amazon-bedrock-mantle-endpoint) requires Claude Code v2.1.283 or later on the gateway server, and the [Claude Platform on AWS upstream](/docs/en/claude-apps-gateway-config#claude-platform-on-aws) requires v2.1.198 or later. Before you add the [Claude Models on Google Cloud (Anthropic managed) upstream](/docs/en/claude-apps-gateway-config#claude-models-on-google-cloud-anthropic-managed), upgrade the gateway server to v2.1.307 or later. |
 | 1M token context window | Available | Fable models, Sonnet 5 and later, and Opus 4.7 and later run with the 1M window by default; see [Extended context](/docs/en/model-config#extended-context). The 1M default for the Fable and Opus models requires Claude Code v2.1.287 or later on the developer machine |
 | Model access and managed settings by IdP group | Available | Model access is enforced server-side; managed settings are delivered per IdP group and applied by the CLI at the [managed settings tier](/docs/en/settings#settings-precedence) |
 | Claude Desktop | Available with opt-in | Opt a policy in with a [`desktop` key](/docs/en/claude-apps-gateway-config#claude-desktop-overlay). Requires Claude Code v2.1.203 or later on the gateway server. |
@@ -60899,7 +60961,7 @@ Five sections are [required](#required-sections). Every other section is [option
 * [`oidc`](#oidc): your identity provider (IdP), including issuer, client, claim mapping, and who may sign in
 * [`session`](#session): the bearer tokens the gateway mints, with secret and lifetime
 * [`store`](#store): PostgreSQL, for device grants and rate-limit counters
-* [`upstreams`](#upstreams): where inference goes, whether Anthropic, Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform, or Microsoft Foundry
+* [`upstreams`](#upstreams): where inference goes, whether Anthropic, Amazon Bedrock, Claude Platform on AWS, Claude Models on Google Cloud (Anthropic managed), Google Cloud's Agent Platform, or Microsoft Foundry
 
 **Optional sections:**
 
@@ -61052,7 +61114,7 @@ Each row below is one class of outbound request on a gateway with `HTTPS_PROXY` 
 | - | - | - |
 | `provider: anthropic` upstreams, Workload Identity Federation token exchange, `telemetry.forward_to` exports | Resolved and checked locally, then `CONNECT` to the checked IP address through the proxy. A telemetry collector listed in `NO_PROXY` is reached directly instead | Hostname handed to the proxy |
 | IdP discovery, JWKS, token, and userinfo | Direct unless [`oidc.use_proxy: true`](#idp-requests-through-a-forward-proxy), then `CONNECT` to the checked IP address | Hostname handed to the proxy, unless `oidc.use_proxy: false` keeps an internal IdP direct |
-| Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform, and Microsoft Foundry upstreams; Google group lookups | Hostname handed to the proxy | Unchanged |
+| Amazon Bedrock, Claude Platform on AWS, Claude Models on Google Cloud (Anthropic managed), Google Cloud's Agent Platform, and Microsoft Foundry upstreams; Google group lookups | Hostname handed to the proxy | Unchanged |
 
 Proxy-only egress stays off unless the gateway's environment meets all three of these conditions:
 
@@ -61486,6 +61548,24 @@ The platform runs in a separate AWS account from Amazon Bedrock and signs SigV4 
 | `base_url` | No | Override the derived endpoint |
 
 Because the platform resolves first-party model IDs, the built-in catalog routes to it with no [`models:`](#models) block. When you curate a `models:` list, key the entry `anthropicAws:` with the first-party ID.
+
+#### Claude Models on Google Cloud (Anthropic managed)
+
+Claude Models on Google Cloud (Anthropic managed) is the Anthropic-operated Claude API, reached through your Google Cloud project. To send model requests to it, add an upstream with the `anthropicGoogleCloud` provider.
+
+Before you add the upstream, upgrade your gateway replicas to Claude Code v2.1.307 or later and [set up the service in a Google Cloud project](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/anthropic-managed#set-up-your-account). Grant `roles/claude.user` on that project to the identity that the gateway's Google credentials resolve to.
+
+```yaml theme={null}
+upstreams:
+  - provider: anthropicGoogleCloud
+    project_id: example-prod
+    workspace_id: wrkspc_01ABCDEFGHIJKLMN
+    auth: {}                           # Google credentials, not an API key; {} uses Application Default Credentials
+    # OR the path to a service account key file:
+    # auth: { service_account_json: /secrets/sa.json }
+```
+
+Both `project_id` and `workspace_id` are required: `project_id` is the ID of the project where you set up the service, and you can [find the `wrkspc_` ID](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/anthropic-managed#find-your-workspace-id) in the Claude Console.
 
 #### Google Cloud Agent Platform
 
@@ -66189,7 +66269,7 @@ In the table below, `<arg>` indicates a required argument and `[arg]` indicates 
 | `/simplify [target]` | **[Skill](/docs/en/skills#bundled-skills).** Review the changed code for cleanup opportunities and apply the fixes. Four review [agents](/docs/en/sub-agents) run in parallel, covering reuse of existing helpers, simplification, efficiency, and whether the change is at the right level of abstraction. The review doesn't look for correctness bugs. Use `/code-review` to find bugs. Pass a path or PR reference to review a specific target |
 | `/skill-doctor` | Show what each of your [skills](/docs/en/skills) costs in context and how often it gets used, so you can [find skills to turn off](/docs/en/skills#find-unused-skills). Requires Claude Code v2.1.252 or later and [feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) |
 | `/skills` | List available [skills](/docs/en/skills). Type to filter the list by name, description, or source. Press `t` to sort by token count, `Space` or `Enter` to [cycle a skill's visibility to Claude and the `/` menu](/docs/en/skills#override-skill-visibility-from-settings), and `Esc` to save and close. You can't cycle plugin skills, skills whose frontmatter sets `disable-model-invocation: true`, or skills with a `skillOverrides` entry in managed settings or the `--settings` flag |
-| `/slides [brief]` | **[Skill](/docs/en/skills#bundled-skills).** Make a new presentation as a Claude Slides [artifact](/docs/en/artifacts#make-a-slide-deck) filled from your brief, for example `/slides a quarterly review of the platform team`. Requires Claude Code v2.1.265 or later, a session where [artifacts are available](/docs/en/artifacts#availability), and an account where the [Slides template is available](/docs/en/artifacts#start-from-a-slides-design-or-docs-template); otherwise the command doesn't appear. Available on the Anthropic API. On Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, and Claude Platform on AWS, artifacts aren't available, so the command is unavailable there |
+| `/slides [brief]` | **[Skill](/docs/en/skills#bundled-skills).** Make a new presentation as a [Claude Slides](https://support.claude.com/en/articles/17153992-what-are-artifacts-and-how-do-i-use-them#h_11d5a9a5fa) artifact filled from your brief, for example `/slides a quarterly review of the platform team`. Requires Claude Code v2.1.265 or later, a session where [artifacts are available](/docs/en/artifacts#availability), and an account where the [Slides template is available](/docs/en/artifacts#start-from-a-slides-design-or-docs-template); otherwise the command doesn't appear. Available on the Anthropic API. On Amazon Bedrock, Google Cloud's Agent Platform, Microsoft Foundry, and Claude Platform on AWS, artifacts aren't available, so the command is unavailable there |
 | `/stats` | Alias for `/usage`. Opens on the Stats tab |
 | `/status` | Open the Settings interface on the Status tab, showing version, model, account, and connectivity. A `Session kind` row reads `background job · attached` or `background job · unattended` in a [background session](/docs/en/agent-view), depending on whether a terminal is attached, and `interactive` in any other session. Works while Claude is responding |
 | `/statusline` | Configure Claude Code's [status line](/docs/en/statusline). Describe what you want, or run without arguments to auto-configure from your shell prompt |
@@ -68006,7 +68086,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_NONBLOCKING_STDOUT` | Set to `1` to write terminal output through a second non-blocking file descriptor, so a terminal that stops reading, such as a paused tmux control-mode pane or a stalled SSH connection, can't freeze Claude Code mid-session. Applies on macOS, Linux, and WSL when stdout is a terminal. Requires Claude Code v2.1.261 or later |
 | `CLAUDE_CODE_NONSTREAMING_TIMEOUT_RETRIES` | Limit how many times Claude Code re-sends a [non-streaming request](/docs/en/errors#streaming-response-ended-before-any-complete-data-was-received) that times out. With `0`, the request fails on the first timeout. See [Tune retry behavior](/docs/en/errors#tune-retry-behavior) for the timeout. Requires Claude Code v2.1.285 or later |
 | `CLAUDE_CODE_NO_FLICKER` | Set to `1` to enable [fullscreen rendering](/docs/en/fullscreen), a research preview that reduces flicker and keeps memory flat in long conversations. Overrides the [`tui`](/docs/en/settings-reference#tui) setting; you can also switch with `/tui fullscreen` |
-| `CLAUDE_CODE_OAUTH_REFRESH_TOKEN` | OAuth refresh token for claude.ai authentication. When set, `claude auth login` exchanges this token directly instead of opening a browser. Requires `CLAUDE_CODE_OAUTH_SCOPES`. Useful for provisioning authentication in automated environments. Ignored in [project and local settings](/docs/en/settings-reference#variables-claude-code-ignores-in-env) |
+| `CLAUDE_CODE_OAUTH_REFRESH_TOKEN` | OAuth refresh token for claude.ai authentication. When set, `claude auth login` exchanges this token directly instead of opening a browser. Requires `CLAUDE_CODE_OAUTH_SCOPES`. A refresh token works once, because the exchange replaces it. Ignored in [project and local settings](/docs/en/settings-reference#variables-claude-code-ignores-in-env) |
 | `CLAUDE_CODE_OAUTH_SCOPES` | Space-separated OAuth scopes the refresh token was issued with, such as `"user:profile user:inference user:sessions:claude_code"`. Required when `CLAUDE_CODE_OAUTH_REFRESH_TOKEN` is set. Ignored in [project and local settings](/docs/en/settings-reference#variables-claude-code-ignores-in-env) |
 | `CLAUDE_CODE_OAUTH_TOKEN` | OAuth access token for claude.ai authentication. Alternative to `/login` for SDK and automated environments. Ignored in [project and local settings](/docs/en/settings-reference#variables-claude-code-ignores-in-env). Takes precedence over keychain-stored credentials. Generate one with [`claude setup-token`](/docs/en/authentication#generate-a-long-lived-token). Unless you run [`/login`](/docs/en/authentication#authentication-precedence), Claude Code uses the token you set for the whole session. To replace an expired token, generate a new one and restart |
 | `CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE` | Removed in v2.1.160 and now a no-op. Previously pinned [fast mode](/docs/en/fast-mode) to Claude Opus 4.6 instead of the current default. Opus 4.6 no longer supports fast mode |
@@ -78868,21 +78948,13 @@ On an Enterprise plan, when you're logged in with your claude.ai account and sav
 
 If you switch models with `/model`, the switch also reaches [subagents that inherit the main conversation's model](/docs/en/sub-agents#choose-a-model), because Claude Code resolves their model from the one your session is using when Claude starts them. Switch to Opus before Claude delegates research or test runs to one of them, and that work runs on Opus too. To keep a custom subagent on a smaller model, set `model` in its definition.
 
-If you set a model with `/model` in [non-interactive mode](/docs/en/headless), with the `-p` flag, your choice applies to the current session only and isn't saved as your default; `/model` in that mode requires Claude Code v2.1.205 or later. Project and managed settings still take precedence and reapply on the next launch. An [organization default model](#organization-default-model) that your admin has configured to override user selection also reapplies on the next launch.
+If you set a model with `/model` in [non-interactive mode](/docs/en/headless), with the `-p` flag, your choice applies to the current session only and isn't saved as your default. `/model` in that mode requires Claude Code v2.1.205 or later.
 
 In v2.1.144 through v2.1.152, `/model` applied to the current session only and `d` in the picker saved a default.
 
 The `--model` flag and `ANTHROPIC_MODEL` environment variable apply only to the session you launch with them. To run different models in different terminals at the same time, launch each one with its own `--model` flag rather than switching with `/model`.
 
 Prices in the `/model` picker appear when Claude Code talks to the Anthropic API, directly or through an [LLM gateway](/docs/en/llm-gateway) that proxies it, and the price on a row is the price of the model that row selects. On [third-party providers](/docs/en/third-party-integrations) such as Amazon Bedrock and on the [Claude apps gateway](/docs/en/claude-apps-gateway), your provider or gateway determines what you pay, so picker rows show no price. The price is a display label only; it doesn't affect which model a row selects or what your provider bills. Before v2.1.206, [Claude Platform on AWS](/docs/en/claude-platform-on-aws) and gateway sessions showed Anthropic list prices, and a row could show the price of a different model than the one it selected.
-
-Resumed sessions started with `claude --resume`, `--continue`, or the `/resume` picker keep the model they were using when the transcript was saved. If the restored model has been retired or is excluded by [`availableModels`](#restrict-model-selection), the session falls through to the normal precedence order. On providers that use provider-specific deployment IDs rather than Anthropic model IDs, such as Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry, the transcript model isn't restored at all and the session resolves its model through the normal precedence order.
-
-If your `model` setting is `haiku`, a session saved on a Haiku model resumes on the model that `haiku` resolves to now. For example, once `haiku` resolves to Haiku 5.5, a session saved on Haiku 4.5 resumes on Haiku 5.5.
-
-A model you pick for the new launch with `--model` or `ANTHROPIC_MODEL` still takes precedence over the restored model. As of v2.1.195, so does an [`ANTHROPIC_DEFAULT_OPUS_MODEL`](#environment-variables) family variable. [`ANTHROPIC_DEFAULT_MODEL`](#set-a-default-model-for-new-sessions) can too, under the conditions listed in its section.
-
-When the active model at startup comes from project or managed settings rather than your own selection, the startup header shows which settings file set it. Run `/model` to override; the project or managed setting reapplies on the next launch. On platforms that embed Claude Code and set [`CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST`](/docs/en/env-vars), the host's model configuration takes precedence over managed model settings, while a managed `availableModels` allowlist stays in force unless the host supplies its own; [Exceptions to managed settings precedence](/docs/en/settings#exceptions-to-managed-settings-precedence) says which keys and variables the host overrides.
 
 If you or your organization configure [PreModelSwitch hooks](/docs/en/hooks#premodelswitch), they run before a requested switch applies and can block it or ask you to confirm. To find out why a hook blocked a switch and what to do, see [Model switch was blocked by a PreModelSwitch hook](/docs/en/errors#model-switch-was-blocked-by-a-premodelswitch-hook).
 
@@ -78928,6 +79000,22 @@ Example settings file:
 }
 ```
 
+When the active model at startup comes from project or managed settings rather than your own selection, the startup header shows which settings file set it. Run `/model` to override; the project or managed setting reapplies in new sessions.
+
+On platforms that embed Claude Code and set [`CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST`](/docs/en/env-vars), the host's model configuration takes precedence over managed model settings. A managed `availableModels` allowlist stays in force unless the host supplies its own. [Exceptions to managed settings precedence](/docs/en/settings#exceptions-to-managed-settings-precedence) says which keys and variables the host overrides.
+
+#### Which model a resumed session uses
+
+A session you resume with `claude --resume` or `--continue` keeps the model it was saved on, except in cases such as these, where it follows the [priority order](#setting-your-model) instead:
+
+* You set an alias variable such as [`ANTHROPIC_DEFAULT_OPUS_MODEL`](#environment-variables), or [`ANTHROPIC_DEFAULT_MODEL`](#set-a-default-model-for-new-sessions) under the conditions listed in its section
+* The saved model has been retired or is excluded by [`availableModels`](#restrict-model-selection)
+* Your provider uses provider-specific deployment IDs rather than Anthropic model IDs, as Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry do
+* Your `model` setting is `haiku` and the session was saved on a Haiku or Sonnet model. For example, once `haiku` resolves to Haiku 5.5, a session saved on Haiku 4.5 resumes on Haiku 5.5.
+* Your `model` setting is `opusplan` and the session was saved on an Opus or Sonnet model
+
+To resume on a model you choose, pass `--model` or set `ANTHROPIC_MODEL`.
+
 #### Fix a mistyped model name
 
 Either of these warnings means Claude Code doesn't recognize the model ID you set, and the ID nearly spells a model name or alias it does recognize:
@@ -78962,16 +79050,16 @@ Claude Code ignores the variable in these cases, and the Default option resolves
 * Your organization's [model restrictions](#restrict-model-selection) exclude the model
 * The model isn't available to your account
 
-When a new session would start on the variable's model, a session you resume with `claude --resume`, `--continue`, or the `/resume` picker starts on it too. Claude Code doesn't restore the model saved in that session's transcript. Otherwise Claude Code doesn't use the variable when you [resume a session](#setting-your-model).
+When a new session would start on the variable's model, a session you resume with `claude --resume`, `--continue`, or the `/resume` picker starts on it too. Claude Code doesn't restore the model saved in that session's transcript. Otherwise Claude Code doesn't use the variable when you [resume a session](#which-model-a-resumed-session-uses).
 
 #### A new session starts on a different model than you picked
 
 When you pick a model with `/model` and your next session starts on something else, these are the usual causes:
 
 * **You chose it for one session.** Pressing `s` in the picker, launching with `--model`, and running `/model` in non-interactive mode all apply to the current session and leave your saved default alone.
-* **Something with higher priority sets the model.** A `model` value in project or managed settings, `ANTHROPIC_MODEL` in your shell, or an [organization default](#organization-default-model) your admin set to override user choices applies again at every launch. Your `/model` choice is still saved; it's outranked. When project or managed settings set the model, the startup header names the file.
+* **Something with higher priority sets the model.** A `model` value in project or managed settings, `ANTHROPIC_MODEL` in your shell, or an [organization default](#organization-default-model) your admin set to override user choices applies again at every new-session launch. Your `/model` choice is still saved; it's outranked. When project or managed settings set the model, the startup header names the file.
 * **Claude Code couldn't save your choice.** `/model` writes `model` to `~/.claude/settings.json`. If you can't write to that file, for example because another tool generates it or links it to a read-only copy, the model you chose lasts for the session and the next launch reads the old value. Set `model` in the tool that generates the file, or make the file writable. See [A change you made in Claude Code is lost in new sessions](/docs/en/settings#a-change-you-made-in-claude-code-is-lost-in-new-sessions).
-* **You resumed a session.** A session you resume with `claude --resume` or `--continue` usually [keeps the model it was using](#setting-your-model) rather than your current default.
+* **You resumed a session.** A session you resume with `claude --resume` or `--continue` usually [keeps the model it was using](#which-model-a-resumed-session-uses) rather than your current default.
 
 ## Restrict model selection
 
@@ -79174,9 +79262,9 @@ The organization default is a starting point, not a restriction. These selection
 * a `model` value in [managed settings](/docs/en/managed-settings) or supplied through `--settings`
 * a `model` value in your user, project, or local settings, including a model you save with `/model`
 
-Admins can also configure the organization default to override user selection. With override on, it takes precedence over the `model` value in user, project, and local settings, so a model you save with `/model` applies for the current session and the organization default returns on the next launch. When your selection differs, `/model` shows `Your organization's default (<model>) applies on restart`. The `--model` flag, `ANTHROPIC_MODEL`, managed settings, and `--settings` still take precedence even with override on.
+Admins can also configure the organization default to override user selection. With override on, it takes precedence over the `model` value in user, project, and local settings. A model you save with `/model` then applies for the current session, and the organization default returns in new sessions. When your selection differs, `/model` shows `Your organization's default (<model>) applies on restart`.
 
-To limit which models members can select, use [organization model restrictions](#organization-model-restrictions) or [`availableModels`](#restrict-model-selection) instead.
+The `--model` flag, `ANTHROPIC_MODEL`, managed settings, and `--settings` still take precedence even with override on. To limit which models members can select, use [organization model restrictions](#organization-model-restrictions) or [`availableModels`](#restrict-model-selection) instead.
 
 Claude Code reads the organization default once at startup, so a default the admin changes mid-session takes effect on the next launch.
 
@@ -79184,7 +79272,7 @@ When the organization default doesn't override user selection, the first interac
 
 The organization default passes through these restriction checks before it is adopted:
 
-* With the default prefix matching, [`availableModels`](#restrict-model-selection) on its own doesn't apply to the organization default, so an organization default outside the allowlist still applies. When [`enforceAvailableModels`](#enforce-the-allowlist-for-the-default-model) is also set, an organization default outside the allowlist is remapped to the first allowlist entry as well
+* with the default prefix matching and [`enforceAvailableModels`](#enforce-the-allowlist-for-the-default-model) set, an organization default outside the [`availableModels`](#restrict-model-selection) allowlist is remapped to a model on that list
 * an organization default that [organization model restrictions](#organization-model-restrictions) deny for your account is replaced by the newest allowed model in its family, or a lower-cost family when every version of it is restricted
 * for an organization default that `deniedModels` or an `"exact"` list blocks, see [Block specific models or versions](#block-specific-models-or-versions)
 * an organization default that isn't available to your account at all is skipped, and the Default option resolves as it would [without an organization default](#default-model-setting)
@@ -84304,7 +84392,7 @@ If the failure line continues with `"formatter" was not uninstalled:` and names 
 
 #### What an uninstall deletes and keeps
 
-When you uninstall a plugin from the last scope it's installed at, Claude Code also deletes the plugin's stored [options and secrets](/docs/en/plugins/manifest-reference#user-configuration) and its data directory, `~/.claude/plugins/data/<id>/`. There are three exceptions:
+When you uninstall a plugin from the last scope it's installed at, Claude Code also deletes the plugin's stored [options and secrets](/docs/en/plugins/manifest-reference#user-configuration) and its data directory, `~/.claude/plugins/data/<id>/`. Some or all of them can stay, such as in these cases:
 
 * With `--keep-data`, the data directory stays
 * When another installed plugin uses the same folder, such as one whose ID differs from this one only in letter case, the data directory stays
@@ -95418,7 +95506,7 @@ On the driver side, run anything that accepts the POST and holds the reply until
 
 ## Authenticate from CI
 
-Both `claude -p ... --environment` and `claude -p ... --cloud` authenticate with a claude.ai OAuth token; API keys, such as `sk-ant-xxxxx`, aren't accepted for either call. Two approaches make a token available in CI.
+Both `claude -p ... --environment` and `claude -p ... --cloud` authenticate with a claude.ai OAuth token; API keys, such as `sk-ant-xxxxx`, aren't accepted for either call.
 
 ### Long-lived CI host
 
@@ -95430,7 +95518,7 @@ The CLI refreshes the short-lived access token automatically on each invocation,
 
 There is no long-lived CI token for this today. The scope that grants cloud-session control, `user:sessions:claude_code`, is capped server-side at 30 days, so `claude setup-token`, which mints a one-year inference-only token, doesn't cover it. The [environment secret](/docs/en/self-hosted-environments-quickstart#set-up-an-environment-and-runner) isn't accepted either, since it only authorizes a runner to register with the environment, not to create sessions.
 
-To provision a stored login onto an ephemeral runner, set [`CLAUDE_CODE_OAUTH_REFRESH_TOKEN` and `CLAUDE_CODE_OAUTH_SCOPES`](/docs/en/env-vars#variables) so `claude auth login` exchanges the token without a browser; the same 30-day cap applies to the refresh grant. Contact your Anthropic account team if you need a machine-identity path that isn't bound to a human account.
+Run `claude -p` from a [long-lived CI host](#long-lived-ci-host) instead. Contact your Anthropic account team if you need a machine-identity path that isn't bound to a human account.
 
 ## Create a dedicated test environment
 
