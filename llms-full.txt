@@ -21343,13 +21343,13 @@ A session's row in [the listing](#see-which-sessions-claude-can-reach) can show 
 
 A session inside a container and a session on the host can't reach each other. Two sessions inside the same container can still message each other, including on a [self-hosted runner](/docs/en/self-hosted-environments). A session inside WSL 2 and a native Windows session on the same computer can't reach each other either.
 
-To require your approval before any message goes beyond this machine, set [`isolatePeerMachines`](#require-approval-for-cross-machine-messages).
+To require your approval before Claude's messages go beyond this machine, set [`isolatePeerMachines`](#require-approval-for-cross-machine-messages).
 
 #### Replies from other machines and cloud sessions
 
 A [cloud session](/docs/en/claude-code-on-the-web), including one on a [self-hosted runner](/docs/en/self-hosted-environments), can't use `SendMessage` to answer a message from another machine, even when the message carries a [reply address](#what-a-message-looks-like). The message still arrives. Read the cloud session's response in its transcript at [claude.ai/code](https://claude.ai/code).
 
-If this session isn't connected to Remote Control when Claude sends to a session beyond this machine, the message still goes through, but without a [reply address](#what-a-message-looks-like). The receiving Claude can't answer it.
+To receive a reply from a session on another of your machines, connect your session to Remote Control before Claude sends. Otherwise the message carries no [reply address](#what-a-message-looks-like), and the receiving Claude can't answer it.
 
 ## How a session treats an incoming message
 
@@ -21462,11 +21462,11 @@ Claude Code runs messages arriving on the socket through the same [inbound contr
 
 ## Restrict cross-session messaging
 
-Beyond the per-message defaults, you can narrow messaging in two ways. Require your approval before any message leaves the machine, or turn messaging off for a session or an organization.
+Beyond the per-message defaults, you can narrow messaging in two ways. Require your approval before Claude's messages leave the machine, or turn messaging off for a session or an organization.
 
 ### Require approval for cross-machine messages
 
-Set [`isolatePeerMachines`](/docs/en/settings-reference#isolatepeermachines) to `true` to require your explicit approval before any `SendMessage` reaches a session beyond this machine:
+Set [`isolatePeerMachines`](/docs/en/settings-reference#isolatepeermachines) to `true` to require your explicit approval before Claude's `SendMessage` reaches a session beyond this machine:
 
 ```json theme={null}
 {
@@ -37722,7 +37722,7 @@ Which settings govern a claude.ai connector depends on where your session runs, 
 
 Your organization can set per-tool controls on [claude.ai connectors](https://claude.com/docs/connectors). Claude Code reads these settings at startup and enforces them locally, except in the desktop app's [local and SSH sessions](#how-connectors-reach-claude-code). There, the desktop app withholds `blocked` tools before it delivers a connector, and the `ask` setting doesn't reach Claude Code, so it applies the session's ordinary [permission rules](/docs/en/permissions) to those tools instead of prompting on every call. In sessions where Claude Code fetches connectors itself, run `/mcp` to see which setting applies to each tool on a connector.
 
-* **Tool set to `ask`**: Claude Code prompts on every call with the reason `Your organization requires approval for this tool`. The prompt appears even in `acceptEdits`, `auto`, and `bypassPermissions` [permission modes](/docs/en/permissions#permission-modes). In the terminal, the prompt has no option to remember your choice. [Allow rules](/docs/en/permissions) that match the tool don't skip the prompt either. In `dontAsk` mode, which never prompts, Claude Code denies the call instead.
+* **Tool set to `ask`**: Claude Code prompts on every call Claude makes, with the reason `Your organization requires approval for this tool`. The prompt appears even in `acceptEdits`, `auto`, and `bypassPermissions` [permission modes](/docs/en/permissions#permission-modes). In the terminal, you can't save your choice. Matching [allow rules](/docs/en/permissions) don't skip the prompt. In `dontAsk` mode, or a `-p` run with nothing to answer the prompt, Claude Code denies the call instead.
 * **Tool set to `blocked`**: Claude Code filters the tool out before Claude sees it, so it never appears in Claude's tool list. In sessions where Claude Code fetches connectors itself, the `/mcp` tool list still shows the tool, marked `disabled by your organization`.
 
 The desktop app and claude.ai chat apply the same `blocked` setting, so Claude can't use a blocked tool there either, and you can't withhold a tool from the desktop app's sessions while keeping it available in chat. The desktop app skips a connector whose tools are all blocked.
@@ -37925,15 +37925,15 @@ For the message that names the tool and the ways to shorten its full name, see [
 
 ## Require approval for a specific tool
 
-If you're building an MCP server, you can mark a tool as requiring explicit approval on every call by setting `_meta["anthropic/requiresUserInteraction"]` to `true` in the tool's `tools/list` response entry. The value must be the JSON Boolean `true`; any other value is ignored.
+If you're building an MCP server, you can mark a tool as requiring explicit approval by setting `_meta["anthropic/requiresUserInteraction"]` to `true` in the tool's `tools/list` response entry. The value must be the JSON Boolean `true`; any other value is ignored.
 
-Claude Code shows that tool's permission prompt on every call, even in `acceptEdits`, `auto`, and `bypassPermissions` [permission modes](/docs/en/permissions#permission-modes), and doesn't offer a "don't ask again" option for it. [Allow rules](/docs/en/permissions#permission-rule-syntax) that match the tool don't skip the prompt either. In `dontAsk` mode, which never prompts, Claude Code denies the call instead.
+Claude Code shows that tool's permission prompt on every call Claude makes, even in `acceptEdits`, `auto`, and `bypassPermissions` [permission modes](/docs/en/permissions#permission-modes), and doesn't offer a "don't ask again" option for it. [Allow rules](/docs/en/permissions#permission-rule-syntax) that match the tool don't skip the prompt either. In `dontAsk` mode, or a `-p` run with nothing to answer the prompt, Claude Code denies the call instead.
 
 The prompt has to reach a person. In non-interactive mode with [`--permission-prompt-tool`](/docs/en/cli-reference#cli-flags), an `allow` result from the prompt tool for a flagged tool is converted to a deny with the message `MCP tool requires user interaction; not supported via --permission-prompt-tool`. The Agent SDK's [`canUseTool` callback](/docs/en/agent-sdk/permissions) does receive these calls and can approve them, because your SDK application is expected to show them to a user.
 
 Use this for tools whose permission prompt is itself the point, such as a consent or access-grant step where auto-approval would mean no human ever agreed. Other tools from the same server keep their normal permission behavior.
 
-The following `tools/list` entry marks one tool as always requiring approval.
+The following `tools/list` entry marks one tool:
 
 ```json theme={null}
 {
@@ -42656,9 +42656,13 @@ on('command.run', { command: 'standup' }, async ($, e) => {
 
 After the session starts, `/standup` appears with its description in the list you see when you type `/`. The `argumentHint` shows in the prompt after you type the command and a space, as in `/standup [days]`. When you run `/standup 3`, the second hook returns `Summary for the last 3 day(s): ...`, and the transcript shows that text after the plugin's name. The hook never calls `next`, because the command has no behavior other than yours.
 
-The `text` you return prints in the transcript and Claude reads it. To print nothing, as a command that only opens a [pane](/docs/en/plugins/mods/interface#pick-where-to-draw) does, return `{}`. To let the command run while Claude is working, add `immediate: true` to the registration.
+The `text` you return prints in the transcript and Claude reads it, unless you [hide it from Claude](#hide-command-text-from-claude). To print nothing, as a command that only opens a [pane](/docs/en/plugins/mods/interface#pick-where-to-draw) does, return `{}`. To let the command run while Claude is working, add `immediate: true` to the registration.
 
 Pick a name that no built-in command uses. Type `/` in a session to see them. `$.command.register` throws for a taken name, with a message such as `"/focus" refused: it is the built-in /focus`. A hook that throws is skipped, so the rest of your `session.start` hook doesn't run either. Register commands last in that hook, or wrap the call in `try` and `catch`.
+
+#### Hide command text from Claude
+
+To print a command's text without Claude reading it, return `{ text, isTextDisplayOnly: true }` from a hook that doesn't call [`next`](/docs/en/plugins/mods/reference#the-hook-function), and leave `immediate` off the registration. Otherwise, or before v2.1.326, Claude can read the text.
 
 ### Add a tool
 
@@ -45918,8 +45922,8 @@ The mods API is the `$` argument every hook receives. Its methods are grouped in
 | [`$.ui`](/docs/en/plugins/mods/interface#pick-where-to-draw) | `resolve`, `invalidate`, `open`, `close`, `panes`, [`place`](/docs/en/plugins/mods/interface#place-a-row-in-the-transcript), `focus`, `scroll`, `toast`, `notify`, `status`, `log`, `notice`, `ask`, `copy`, `selection`, `blit`, `view`. `view` requires Claude Code v2.1.300 or later and `place` v2.1.314 or later. |
 | [`$.theme`](/docs/en/plugins/mods/interface#put-a-backdrop-behind-the-conversation) | `set`, `clear`: set a backdrop for the Desktop or mobile app to draw, and take the backdrop off. Requires Claude Code v2.1.319 or later. |
 | [`$.command`](/docs/en/plugins/mods/api#add-a-command) | `register`, `run`, `list` |
-| [`$.tool`](/docs/en/plugins/mods/api#add-a-tool) | `register`, `call`, `check`, `list`. When a `call` needs a person's approval, such as one a hook or your organization answers with `ask`, it resolves with `{ deny: "<tool> wasn't run: this call needs a person's approval, and a mod's own call can't ask for it." }`, where `<tool>` is the tool's name. |
-| `$.agent` | `register`, `spawn`, `list`. `list()` returns this session's subagents and teammates, each with a `status` of `pending`, `running`, `waiting`, `idle`, `completed`, `failed`, or `killed`, where `idle` and `waiting` require Claude Code v2.1.289 or later. |
+| [`$.tool`](/docs/en/plugins/mods/api#add-a-tool) | `register`, `call`, `check`, `list` |
+| `$.agent` | `register`, `spawn`, `call`, `list`, `limits`. `call` and `limits` require Claude Code v2.1.326 or later. `list()` returns this session's subagents and teammates, each with a `status` of `pending`, `running`, `waiting`, `idle`, `completed`, `failed`, or `killed`, where `idle` and `waiting` require Claude Code v2.1.289 or later. |
 | [`$.model`](/docs/en/plugins/mods/api#call-a-model) | `complete`, `fork`, `classify` |
 | [`$.prompt`](/docs/en/plugins/mods/api#start-a-turn-from-a-background-job) | `submit`, `read`, `fill`, `suggest`, `compose`. Claude reads text from `submit({ text })` after a sentence that names your mod as the sender. `submit({ text, asUser: true })` sends the text as the user's own words, without that sentence. |
 | `$.turn` | `abort` |
@@ -56306,7 +56310,7 @@ If `/web-setup` says your GitHub CLI token doesn't have the `workflow` scope, yo
 
 `/web-setup` runs inside the Claude Code CLI, not your shell. Launch `claude` first, then type `/web-setup` at the prompt.
 
-If you typed it inside Claude Code and the command menu shows `No commands match "/web-setup"`, or submitting it returns `Unknown command: /web-setup`, the command is hidden because a requirement isn't met. The cause is usually that you're authenticated with an API key or third-party provider instead of a claude.ai subscription. Run `/login` to sign in with your claude.ai account.
+If Claude Code's command menu shows `No commands match "/web-setup"`, or submitting `/web-setup` returns `Unknown command: /web-setup` or says it's unavailable, the command is hidden because a requirement isn't met. The cause is usually that you're authenticated with an API key or third-party provider instead of a claude.ai subscription. Run `/login` to sign in with your claude.ai account.
 
 On Team and Enterprise plans, the command is hidden by default: the [Quick setup toggle](/docs/en/claude-code-on-the-web#quick-setup-for-team-and-enterprise) is off until an Owner turns it on. While it's off, [connect GitHub from the browser](#connect-github) instead.
 
@@ -59155,7 +59159,7 @@ Entries from each scope are combined. A developer can extend `environment`, `all
 
 > [!NOTE]
 >
-> The classifier is a second gate that runs after the [permissions system](/docs/en/permissions). For actions that must never run regardless of user intent or classifier configuration, use `permissions.deny` in managed settings, which blocks the action before the classifier is consulted and can't be overridden.
+> The classifier is a second gate that runs after the [permissions system](/docs/en/permissions). To block Claude's [matching calls](/docs/en/permissions#bash-rule-limits) before the classifier runs, use `permissions.deny` in managed settings.
 
 ## Define trusted infrastructure
 
@@ -83646,7 +83650,7 @@ You can attach a note to Claude when you approve or deny a single action. On mos
 With the field open, type the comment and then press one of these keys:
 
 * `Enter`: submits your answer with the comment attached. If you leave the field empty, Claude Code submits the answer without a comment.
-* `Tab`: closes the field without answering. Claude Code keeps the text you typed and still sends it if you answer with that option.
+* `Tab`: closes the field without answering. To send the text you typed, press `Tab` again before you answer.
 * `Shift+Tab`: on a file prompt, such as an Edit or Write prompt, closes the field the same as `Tab`. Before v2.1.235, pressing `Shift+Tab` inside the field instead selected the option that allows the action for the rest of the session, so Claude Code approved the action for the rest of the session and discarded the comment.
 
 Claude Code delivers the comment differently depending on how you answered:
@@ -83686,7 +83690,7 @@ Claude Code supports several permission modes that control how it approves tool 
 | `acceptEdits` | Automatically accepts file edits and common filesystem commands such as `mkdir`, `touch`, `mv`, and `cp` for paths in the working directory or `additionalDirectories` |
 | `plan` | Claude reads files and runs read-only shell commands to explore but doesn't edit your source files; with [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) available, classifier-approved commands also run. Labeled Plan in the CLI and the VS Code extension |
 | `auto` | Runs without routine prompts; before actions such as shell commands and network requests run, a background [classifier](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) checks that they align with your request |
-| `dontAsk` | Auto-denies every call that would otherwise prompt, though a [mod](/docs/en/plugins/mods/overview) you installed can still approve some of those calls. File reads in your working directories and other actions that need no approval still run, as do tools pre-approved via `/permissions` or `permissions.allow` rules. `AskUserQuestion`, MCP tools marked [`requiresUserInteraction`](/docs/en/mcp#require-approval-for-a-specific-tool), [reads from network paths](#network-paths), and connector tools [your organization set to `ask`](/docs/en/mcp#organization-controls-on-connector-tools) in sessions where that setting reaches Claude Code are denied even if you've allowed them |
+| `dontAsk` | Auto-denies every call that would otherwise prompt, though in [some setups](#precedence-among-rules-hooks-and-mods) a [mod](/docs/en/plugins/mods/overview) you installed can still approve some of those calls. File reads in your working directories and other actions that need no approval still run, as do tools pre-approved via `/permissions` or `permissions.allow` rules. `AskUserQuestion` and [some other calls](/docs/en/permission-modes#allow-only-pre-approved-tools-with-dontask-mode) are denied even if you've allowed them |
 | `bypassPermissions` | Skips permission prompts, except for the [actions no mode auto-approves](/docs/en/permission-modes#actions-no-mode-auto-approves) |
 
 > [!WARNING]
@@ -83699,7 +83703,7 @@ To deny calls that would wait on a permission prompt, so an unattended session k
 
 ## Permission rule syntax
 
-Permission rules follow the format `Tool` or `Tool(specifier)`. Parentheses inside the specifier are literal, so a command or path that contains them needs no escaping.
+Permission rules follow the format `Tool` or `Tool(specifier)`.
 
 ### Match all uses of a tool
 
@@ -84198,7 +84202,9 @@ For `<server>`, write the server's name the way it appears in that server's tool
 
   As a deny or ask rule, though, each of those two names also covers every tool of the `reports__v2` server. To cover a server named `reports` alone, write one rule per tool in the `mcp__reports__<tool>` form, or rename one of the servers.
 
-If your organization has set a [claude.ai connector](/docs/en/mcp#organization-controls-on-connector-tools) tool to `ask` and that setting reaches Claude Code in your session, allow rules for that tool don't take effect: Claude Code prompts on every call, even in `auto` and `bypassPermissions` modes. In `dontAsk` mode, which never prompts, Claude Code denies the call instead. Tools from connectors Claude Code fetches itself appear as `mcp__claude_ai_<server>__<tool>`.
+If your organization has set a [claude.ai connector](/docs/en/mcp#organization-controls-on-connector-tools) tool to `ask` and that setting reaches Claude Code in your session, allow rules for that tool don't take effect. Claude Code prompts each time Claude calls that tool, even in `auto` and `bypassPermissions` modes. In `dontAsk` mode, or a `-p` run with nothing to answer the prompt, Claude Code denies the call instead.
+
+Tools from connectors Claude Code fetches itself appear as `mcp__claude_ai_<server>__<tool>`.
 
 In a [Cowork](https://claude.com/docs/cowork/overview) session in the Claude Desktop app, Claude runs shell commands through Cowork's `mcp__workspace__bash` tool rather than the built-in `Bash` tool, and Cowork likewise provides `mcp__workspace__web_fetch` for web fetches. Claude Code also applies deny rules that name the whole `Bash` or `WebFetch` tool to these Cowork tools, so a managed `Bash` deny rule stops Claude from running shell commands in Cowork. When Claude Code blocks such a call, the message names the Cowork tool: `Permission to use mcp__workspace__bash has been denied.` Allow rules don't carry over: Claude Code never applies a `Bash` allow rule to `mcp__workspace__bash`.
 
@@ -84244,7 +84250,7 @@ Path patterns share the `//`, `~/`, and `/` anchors from [Read and Edit rules](#
 
 PreToolUse hook decisions don't bypass permission rules. Claude Code evaluates deny and ask rules regardless of what a PreToolUse hook returns: a matching deny rule blocks the call, and a matching ask rule still prompts even when the hook returned `"allow"` or `"ask"`. This preserves the deny-first precedence described in [Manage permissions](#manage-permissions), including deny rules set in managed settings.
 
-That precedence covers hooks in settings files and in a plugin's `hooks/hooks.json`. A [mod](/docs/en/plugins/mods/overview) you install that handles the [`tool.check`](/docs/en/plugins/mods/events#approve-or-refuse-a-tool-call-before-the-user-is-asked) event gives its answer after the `PreToolUse` hooks have run. With [managed settings](/docs/en/settings#check-what-your-organization-enforces) or a [`managed-mcp.json` file](/docs/en/managed-mcp#deploy-managed-mcp-json), or a Team or Enterprise [`/login`](/docs/en/authentication#authentication-precedence) as the session's credential, these outcomes stay in place by default when the mod approves a call:
+That precedence covers hooks in settings files and in a plugin's `hooks/hooks.json`. A [mod](/docs/en/plugins/mods/overview) you install that handles the [`tool.check`](/docs/en/plugins/mods/events#approve-or-refuse-a-tool-call-before-the-user-is-asked) event answers after the `PreToolUse` hooks have run. With [managed settings](/docs/en/settings#check-what-your-organization-enforces) or a [`managed-mcp.json` file](/docs/en/managed-mcp#deploy-managed-mcp-json), or a Team or Enterprise [`/login`](/docs/en/authentication#authentication-precedence) as the session's credential, the [built-in guard](/docs/en/plugins/mods/admin#know-what-happens-by-default) loads by default. These outcomes then hold by default when Claude's call is approved by a mod that isn't [your organization's](/docs/en/plugins/mods/admin#install-your-organizations-mods):
 
 * A call that a deny rule refuses stays refused.
 * A call that an ask rule would prompt for still prompts you.
@@ -84252,11 +84258,11 @@ That precedence covers hooks in settings files and in a plugin's `hooks/hooks.js
 * A call that a `PreToolUse` hook blocked stays blocked, whichever settings file the hook comes from.
 * A call that your [`--permission-prompt-tool`](/docs/en/cli-reference#cli-flags) or Agent SDK [`canUseTool` callback](/docs/en/agent-sdk/user-input#handle-tool-approval-requests) would be asked about is still put to that tool or callback.
 
-Your setup might lack managed settings, a `managed-mcp.json` file, and a Team or Enterprise `/login` as the session's credential. In that setup, the mod can approve a call that a deny rule refuses or a `PreToolUse` hook blocked. A session that runs on an API key or a long-lived [`CLAUDE_CODE_OAUTH_TOKEN`](/docs/en/authentication#generate-a-long-lived-token) instead isn't using that login, even when that login is stored.
+Your setup might lack managed settings, a `managed-mcp.json` file, and a Team or Enterprise `/login` as the session's credential. In that setup, the mod can approve a call that a `PreToolUse` hook blocked, and some calls that a deny rule refuses. A session that runs on an API key or a long-lived [`CLAUDE_CODE_OAUTH_TOKEN`](/docs/en/authentication#generate-a-long-lived-token) instead isn't using that login, even when that login is stored.
 
-In that setup you aren't prompted when the mod approves a call that an ask rule, a `PreToolUse` hook, or `permissions.blockReadsOutsideWorkingDirectories` would prompt for. Your `--permission-prompt-tool` or `canUseTool` callback isn't asked about a call the mod approves, either. Auto mode, plan mode, and `dontAsk` mode each add an outcome of their own in every setup:
+In that setup, a call the mod approves can skip the prompt from an ask rule, a `PreToolUse` hook, or `permissions.blockReadsOutsideWorkingDirectories`. It can also skip your `--permission-prompt-tool` or `canUseTool` callback. Auto mode, plan mode, and `dontAsk` mode each add an outcome of their own in that setup:
 
-* **[Auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode)**: a call the mod approves runs without a classifier check, except where the mod can't bypass your permission prompt tool or Agent SDK permission callback. There the classifier checks the call first.
+* **[Auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode)**: a call the mod approves can run without a classifier check.
 * **[Plan mode](#hook-approvals-in-plan-mode)**: the mod can't approve a call that isn't read-only, such as a file edit or a shell command that writes.
 * **[`dontAsk` mode](/docs/en/permission-modes#allow-only-pre-approved-tools-with-dontask-mode)**: the mod can approve a call that nothing but the mode would deny.
 
@@ -84330,7 +84336,7 @@ The following configuration types are loaded from `--add-dir` directories:
 | [Settings](/docs/en/settings) in `.claude/settings.json` and `.claude/settings.local.json` | `enabledPlugins` and [`extraKnownMarketplaces`](/docs/en/settings-reference#extraknownmarketplaces) keys only |
 | [CLAUDE.md](/docs/en/memory) files, `.claude/rules/`, and `CLAUDE.local.md` | Only when `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` is set. `CLAUDE.local.md` additionally requires the `local` setting source, which is enabled by default |
 
-To load the skills, commands, and subagents from a subdirectory of your [primary working directory](#working-directories) mid-session, run `/add-dir` with that subdirectory's path. Claude Code loads them for the rest of the session without prompting you or adding a working directory, because the subdirectory is already readable. This requires Claude Code v2.1.257 or later.
+To load the skills, commands, and subagents from a subdirectory of your [primary working directory](#working-directories) mid-session, run `/add-dir` with that subdirectory's path. Claude Code loads them for the rest of the session without adding a working directory. This requires Claude Code v2.1.257 or later.
 
 #### Where output styles, hooks, and local settings load from
 
@@ -88546,22 +88552,30 @@ With no mod settings of your own, this is what your users get:
   * The session runs on [`/login` credentials](/docs/en/authentication#authentication-precedence) for a Team or Enterprise plan
 
   A user with an API key, or on Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry, gets the guard only on a machine with managed settings or `managed-mcp.json`. A session that runs on a long-lived [`CLAUDE_CODE_OAUTH_TOKEN`](/docs/en/authentication#generate-a-long-lived-token) doesn't count as that login either, even when a Team or Enterprise login is stored on the machine.
-* **The guard protects what you manage.** A user's mod can't change what your managed hooks receive or decide, the system prompt, or your managed `CLAUDE.md` and other managed instructions. It also can't change what any mod reads as settings, or the tools and descriptions of your managed MCP servers once they connect.
+* **When the guard loads, it blocks a user's mod from rewriting:**
+  * The system prompt
+  * Your managed `CLAUDE.md` and other managed instructions
+  * The answer a mod gets when it reads settings
+  * The tool list and tool descriptions of a managed MCP server that has connected
 * **On v2.1.323 or later, a user's mod can keep a managed MCP server from connecting.** In that user's session, `/mcp` lists the server as held by that mod. To prevent it, [stop user-installed mods from loading](#stop-user-installed-mods-from-loading).
-* **Outside what you manage, a user's mod acts as that user.** The mod keeps that user's permissions: it can still read and write files, start processes, and make network requests. It can also rewrite tool calls and prompts, deny a tool call, add or remove tools, and draw in the interface.
-* **Permission rules and `PreToolUse` hooks take precedence over a user's mod.** With the guard loaded, by default a user's mod can't approve a call that a `deny` rule refuses or an `ask` rule prompts for, whichever settings file holds the rule. The mod can't approve a call that any `PreToolUse` hook blocked, either.
-
-  Permission rules and `PreToolUse` hooks apply to Claude's tool calls, not to a mod's [`$.fs` and `$.process` calls](/docs/en/plugins/mods/api#reach-files-processes-and-the-network). With `Read(.env)` denied, a mod can still read that file with `$.fs.read` or start a program that does. To limit a mod's own `$.fs` and `$.process` calls, [keep the mod from loading](#stop-user-installed-mods-from-loading) or handle them in a [policy mod](#enforce-a-policy-with-a-mod-of-your-own).
-* **A user's mod can still skip some prompts.** In [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), a call the mod approves runs without a classifier check, unless the guard is loaded and the session runs with [`--permission-prompt-tool`](/docs/en/cli-reference#cli-flags) or an Agent SDK [`canUseTool` callback](/docs/en/agent-sdk/user-input#handle-tool-approval-requests). There the classifier checks the call first. For the prompts a mod's approval doesn't skip, see [Extend permissions with hooks](/docs/en/permissions#precedence-among-rules-hooks-and-mods).
+* **Apart from what the guard blocks, a user's mod acts as that user.** The mod keeps that user's permissions: it can still read and write files, start processes, and make network requests. It can also rewrite tool calls and the user's prompts, deny a tool call, add or remove tools, and draw in the interface.
+* **When a user's mod approves Claude's call** with the guard loaded, these outcomes hold [by default](#set-options-on-the-built-in-guard), whichever settings file has the rule or hook:
+  * A call that a `deny` rule refuses stays refused
+  * A call that an `ask` rule would prompt for still prompts
+  * A call that a `PreToolUse` hook blocked stays blocked
+* **A mod's own calls can skip your checks.** To limit a user's mod, [keep it from loading](#stop-user-installed-mods-from-loading) or handle its calls in a [policy mod](#enforce-a-policy-with-a-mod-of-your-own).
+  * **Files and programs**: [`$.fs` and `$.process` calls](/docs/en/plugins/mods/api#reach-files-processes-and-the-network) can skip permission rules and `PreToolUse` hooks. With `Read(.env)` denied, a mod can still read that file with `$.fs.read` or start a program that does.
+  * **Tools**: calls such as [`$.tool.call` and `$.mcp.call`](/docs/en/plugins/mods/reference#mods-api-methods) can skip permission rules, permission prompts, a hook's `ask`, and the [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) classifier.
+* **Without the guard, a user's mod can skip more checks.** See [what it can skip](/docs/en/permissions#precedence-among-rules-hooks-and-mods).
 
 The guard's source is public in the [`mods/sec-default` directory of the Claude Code repository](https://github.com/anthropics/claude-code/tree/main/mods/sec-default).
 
 ### Know which controls still apply
 
-Mods don't replace the controls you already have:
+Your existing controls cover mods within these limits:
 
-* **Settings hooks keep working.** Command, HTTP, prompt, and agent hooks in settings files and in plugins' `hooks/hooks.json` run as before, alongside mods.
-* **Deny rules take precedence where the guard loads.** A user's mod can't approve a call that a `deny` rule refuses, unless you set [`allowModsToOverrideDenyRules`](#set-options-on-the-built-in-guard).
+* **Hooks in settings files run alongside mods.** See [where settings hooks run in the order](/docs/en/plugins/mods/events#where-settings-hooks-run-in-the-order).
+* **For Claude's calls, deny rules take precedence over a user's mod where the [guard](#know-what-happens-by-default) loads.** To let a user's mod approve some calls that a `deny` rule refuses, set [`allowModsToOverrideDenyRules`](#set-options-on-the-built-in-guard).
 * **Managed hooks run first.** A `PreToolUse` hook in managed settings runs before any mod's [`tool.call`](/docs/en/plugins/mods/reference#tools) hook, and when that managed hook blocks a tool call, no mod's `tool.call` hook runs for that call. If the call goes ahead and a mod rewrites it, your managed hooks run again on the rewritten call, so by default they can still block it.
 
   `PreToolUse` hooks from other settings files and from plugins run after the last mod. If a mod answers the tool call itself, the tool never runs and neither do those hooks. See [The order mods run in](/docs/en/plugins/mods/events#the-order-mods-run-in).
@@ -88575,7 +88589,7 @@ Mods don't replace the controls you already have:
 
   None of these covers a program the mod starts with `$.process.run`, which reaches the network with the user's own access.
 * **Plugin controls cover mods.** A mod is a plugin, so the [settings that restrict what users can install](/docs/en/plugins/org#restrict-what-users-can-install), such as `strictKnownMarketplaces`, decide whether it can be installed at all.
-* **Mods can't change the permission prompt.** A mod can restyle much of Claude Code's interface, but not the permission prompt, so it can't change what a prompt shows. A mod can still approve or deny a tool call before the prompt appears, as [Know what happens by default](#know-what-happens-by-default) describes.
+* **The permission prompt appears as Claude Code draws it.** For what a mod can redraw, see [Change what Claude Code already draws](/docs/en/plugins/mods/interface#change-what-claude-code-already-draws).
 * **Trust prompts come first.** In an interactive session in a directory the user hasn't trusted yet, no mod loads until they answer the trust prompt.
 * **`--safe-mode` turns installed mods off, yours included.** Start a session with `claude --safe-mode` to check whether a mod caused a problem.
 
@@ -88663,7 +88677,7 @@ Don't approve a mod that fails this command, because some failures don't stop it
 | `$.http.fetch` | Makes network requests |
 | `$.env.get`, `$.settings.read` | Reads environment variables and settings, which can hold API keys. An `env reads:` line in the output names each variable. |
 | `$.env.set` | Sets an environment variable for Claude Code and for every command and MCP server it starts afterward, which can change what those programs run. An `env writes:` line names each variable. |
-| `$.mcp.call` | Calls a tool on a connected MCP server, with no permission prompt. Claude Code refuses the call under a deny rule or a managed ask rule. It also refuses a call to a tool marked [`requiresUserInteraction`](/docs/en/mcp#require-approval-for-a-specific-tool), or to one your organization [set to `ask`](/docs/en/mcp#organization-controls-on-connector-tools) where that setting reaches Claude Code. |
+| `$.mcp.call` | Calls a tool on a connected MCP server, with no permission prompt |
 | `$.model.complete` | Uses the user's plan or API key for model calls |
 | `$.prompt.submit` | Submits a prompt, and can send it as the user's own words |
 | `$.session.send` | Sends a message that another session's, subagent's, or [teammate's](/docs/en/agent-teams) Claude reads |
@@ -105019,7 +105033,7 @@ To make Claude Code send the bell character whatever the terminal or profile, se
 }
 ```
 
-Over SSH from a terminal running outside tmux, set [`preferredNotifChannel`](/docs/en/settings-reference#preferrednotifchannel) to your local terminal's value, `"iterm2"`, `"kitty"`, or `"ghostty"`, on the machine running Claude Code. The desktop notification then reaches your local machine. Ghostty and Kitty forward it to your OS notification center without further setup. iTerm2 requires you to enable forwarding:
+To receive the desktop notification in Ghostty, Kitty, or iTerm2 over SSH outside tmux, keep `preferredNotifChannel` at its default, `"auto"`. Before v2.1.326, set it to `"iterm2"`, `"kitty"`, or `"ghostty"` on the machine running Claude Code. iTerm2 requires you to enable forwarding:
 
 **1. Open iTerm2 notification settings**
 
@@ -105073,7 +105087,7 @@ set -s extended-keys on
 set -as terminal-features 'xterm*:extkeys'
 ```
 
-To use Shift+Enter, keep the last two lines, then detach from tmux, attach again, and restart Claude Code. To send notifications from a visible pane to the outer terminal, keep the `allow-passthrough` line and set [`preferredNotifChannel`](/docs/en/settings-reference#preferrednotifchannel) to `"iterm2"`, `"kitty"`, or `"ghostty"`. With this sample, a pane in a window you aren't viewing sends none.
+To use Shift+Enter, keep the last two lines, then detach from tmux, attach again, and restart Claude Code. To send notifications from a visible pane to Ghostty, Kitty, or iTerm2, keep the `allow-passthrough` line and restart Claude Code. With this sample, a pane in a window you aren't viewing sends none. Before v2.1.326 or inside tmux older than 3.3, which has no `allow-passthrough`, set [`preferredNotifChannel`](/docs/en/settings-reference#preferrednotifchannel) to `"iterm2"`, `"kitty"`, or `"ghostty"`.
 
 A [mod's `Image`](/docs/en/plugins/mods/reference#elements) needs the `allow-passthrough` and `focus-events` lines, along with the other [requirements for drawing inside tmux](/docs/en/plugins/mods/gallery#draw-an-image-inside-tmux). After you add the lines, also detach from tmux, attach again, and restart Claude Code.
 
