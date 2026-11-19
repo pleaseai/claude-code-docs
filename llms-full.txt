@@ -19933,7 +19933,7 @@ An Owner controls [when reviews run](/docs/en/code-review-setup#set-when-reviews
 
 ## Severity levels
 
-Claude posts each finding as an inline comment on the lines concerned and marks it with one of three severity levels:
+Claude marks each finding with one of three severity levels:
 
 | Marker | Severity | Meaning |
 | :- | :- | :- |
@@ -19941,7 +19941,7 @@ Claude posts each finding as an inline comment on the lines concerned and marks 
 | 🟡 | Nit | A minor issue, worth fixing but not blocking |
 | 🟣 | Pre-existing | A bug that exists in the codebase but wasn't introduced by this PR |
 
-When the review recorded its reasoning, the finding has a collapsed **Why this was flagged** section. Expand it to read why Claude flagged the issue and how it verified the problem.
+When the review recorded its reasoning, a finding has a collapsed **Why this was flagged** section. Expand it to read why Claude flagged the issue and how it verified the problem.
 
 To change what Claude flags in your repository or how it ranks severity, see [Customize Code Review](/docs/en/code-review-customize).
 
@@ -20323,7 +20323,8 @@ If the check run title says issues were found but you don't see inline review co
 
 * **Check run Details**: click **Details** next to the **Claude Code Review** check in the **Checks** tab. The severity table lists findings with their file, line, and summary regardless of whether the inline comment was accepted.
 * **Files changed annotations**: open the **Files changed** tab on the PR. A finding that has a line but wasn't posted as an inline comment appears there as an annotation on the lines concerned.
-* **Review body**: findings that have no inline location, or that fall outside the current diff, appear under an **Additional findings** heading in the review body.
+* **Whole-file comments**: open the **Conversation** tab on the PR and look for a comment from Claude on a whole file instead of on a line
+* **Review body**: in the **Conversation** tab, look for an **Additional findings** heading in Claude's review
 
 ## The check run mentions REVIEW\.md
 
@@ -25242,6 +25243,7 @@ Match the message you see to a section below.
 | `Artifacts need a claude.ai login` | [Authentication](#artifacts-need-a-claude-ai-login) |
 | `Not signed in to the Cloud gateway — run /login.` | [Authentication](#administrator-policy-requires-a-cloud-gateway-sign-in) |
 | `Administrator policy requires a Cloud gateway sign-in on this machine` | [Authentication](#administrator-policy-requires-a-cloud-gateway-sign-in) |
+| `Managed settings on this machine configure a Cloud gateway sign-in; run interactive /login to authenticate.` | [`claude auth login`](/docs/en/cli-reference#cli-commands) |
 | `Failed to authenticate: OAuth session expired and could not be refreshed` | [Authentication](#login-expired) |
 | `Login reached its time limit · Please run /login` / `Failed to authenticate: this login reached its time limit` | [Authentication](#login-expired) |
 | `Failed to authenticate: your claude.ai login expired` | [After the login expires](/docs/en/authentication#after-the-login-expires) |
@@ -25375,6 +25377,8 @@ Match the message you see to a section below.
 | `--bg and --print conflict` | [Command-line errors](#conflict-between-bg-and-print) |
 | `Couldn't tell whether --bg is a flag or text here, so nothing was started` | [Command-line errors](#couldnt-tell-whether-bg-is-a-flag-or-text) |
 | `Error: Cannot use both --append-subagent-system-prompt and --append-subagent-system-prompt-file. Please use only one.` | [Command-line errors](#conflict-between-a-system-prompt-flag-and-its-file-form) |
+| `Error: bypassPermissions not supported in restricted mode` | [Restricted mode](/docs/en/permission-modes#restricted-mode-refuses-bypasspermissions) |
+| `Session was started with bypass permissions, so plan mode won't ask before most edits or commands` | [Plan mode](/docs/en/permission-modes#analyze-before-you-edit-with-plan-mode) |
 | `Cloud sessions cannot be created from a --restricted session` | [Command-line errors](#cloud-sessions-cannot-be-created-from-a-restricted-session) |
 | `Cloud sessions are disabled by your organization's policy` | [Command-line errors](#cloud-sessions-are-disabled-by-your-organizations-policy) |
 | `Cloud sessions use your claude.ai login`, at the end of a policy denial that names a credential | [Command-line errors](#cloud-sessions-use-your-claude-ai-login) |
@@ -28661,7 +28665,7 @@ If you answer `n` or press Enter at the [`Trust <directory>?` question](/docs/en
 
 **What to do:**
 
-* Trust the directory from a terminal first: run `claude rc` there and answer `y`, or run `claude` there and accept the [workspace trust dialog](/docs/en/permissions#project-allow-rules-and-workspace-trust), then run your original command again
+* Trust the directory from a terminal first: run `claude` there and accept the [workspace trust dialog](/docs/en/permissions#project-allow-rules-and-workspace-trust), then run your original command again
 * In your home directory, change to a project directory and start Remote Control there
 
 Before v2.1.284, the command never asked, even in a terminal.
@@ -28680,6 +28684,8 @@ For example, the subcommand can't ask when its standard input or standard output
 
 * In a script or CI job, append `--trust-workspace` to trust the folder for that run: `claude ultrareview --trust-workspace`. Append it only for code you trust, because git and Claude Code can then run programs named in the folder's git configuration and project settings. For a pull request whose code you don't trust, [run the review from a branch you trust](/docs/en/ultrareview#trust-the-folder-before-the-review-runs).
 * On your own machine, run `claude` in that folder and accept the [workspace trust dialog](/docs/en/permissions#project-allow-rules-and-workspace-trust), then run your original command again
+
+In a session, `/ultrareview` and `/code-review ultra` can stop with `Ultrareview did not start: "<folder>" is not trusted, and this session started without asking whether you trust it`. Start `claude` in that folder without [`IS_DEMO`](/docs/en/env-vars#variables) set, accept the workspace trust dialog, and run the command in the new session.
 
 Each of these messages from `claude ultrareview` means that no review started and the exit code is 1:
 
@@ -36703,9 +36709,13 @@ Claude Code reconnects a remote server that drops mid-session and retries an HTT
 
 Claude Code first tries to reconnect a dropped remote server up to five times with exponential backoff, starting at a one-second delay and doubling it each time:
 
-* **In an interactive session**: `/mcp` shows the server as pending while Claude Code reconnects. After five failed attempts, Claude Code marks the server as failed, or as needing authentication when the server needs authorizing again. When it marks the server as failed, you see an `MCP server "<name>" disconnected · open /mcp to reconnect` notification. You can retry manually from `/mcp`.
+* **In an interactive session**: `/mcp` shows the server as pending while Claude Code reconnects. After five failed attempts, Claude Code marks the server as failed, or as needing authentication when the server needs authorizing again. When it marks the server as failed, a notification tells you whether Claude Code is still retrying:
+  * `MCP server "<name>" disconnected · still retrying · open /mcp to reconnect now`: Claude Code can keep retrying the server for up to about a day. In `/mcp`, the failed server shows as `retrying`. You can wait, or reconnect it from `/mcp`. To stop the retries, [disable the server for the project](#disable-a-server-without-removing-it) from `/mcp`.
+  * `MCP server "<name>" disconnected · open /mcp to reconnect`: Claude Code isn't retrying the server in the background. Reconnect it from `/mcp`.
 * **In [`claude -p`](/docs/en/headless) runs and [Agent SDK](/docs/en/agent-sdk/overview) sessions**: Claude Code makes the same five attempts, with no `/mcp` panel to show them. If all five fail, the run continues without the server's tools:
-  * **After a transient error, such as a 5xx response or a timeout**: Claude Code keeps retrying an HTTP or SSE server in the background. Retries last up to about half an hour, and the server's tools become available again when one connects. Until then, an Agent SDK session reports the [status](/docs/en/agent-sdk/mcp#error-handling) `failed`, and your code can [reconnect the server](/docs/en/agent-sdk/mcp#error-handling). To reconnect it in `claude -p`, start the run again.
+  * **After a transient error, such as a 5xx response or a timeout**: Claude Code keeps retrying an HTTP or SSE server in the background. Retries last up to about half an hour, or about a day for some servers, and the server's tools become available again when one connects.
+
+    Until then, an Agent SDK session reports the [status](/docs/en/agent-sdk/mcp#error-handling) `failed`, and your code can [reconnect the server](/docs/en/agent-sdk/mcp#error-handling). To reconnect it in `claude -p`, start the run again.
   * **When the server [needs you to sign in again](#authenticate-with-remote-mcp-servers)**: Claude Code stops retrying, and an Agent SDK session reports the server's status as `needs-auth`. Sign in with [`claude mcp login <name>`](#authenticate-from-the-command-line) in your shell. Then start the run again or, in an Agent SDK session, [reconnect the server](/docs/en/agent-sdk/mcp#error-handling) instead.
 
 #### Failed first connections
@@ -40066,7 +40076,7 @@ When you grant `Bash` in any form, every command runs under Claude Code's [OS-le
 
 #### Shell grants refused on a managed machine
 
-When shell-granting runs are refused on a machine your organization manages, a `sandbox` key in its [managed settings](/docs/en/managed-settings) can be the cause. The error begins `A shell tool (Bash or PowerShell) was granted but this machine cannot confine it (no sandbox backend on this platform, or it is not installed)`. It names a missing backend even where one is installed.
+When shell-granting runs are refused on a machine your organization manages, a `sandbox` key in its [managed settings](/docs/en/managed-settings) can be the cause. The error begins `A shell tool (Bash or PowerShell) was granted but this machine cannot confine it (no sandbox backend on this platform, or it is not installed)`.
 
 When a managed key is the cause, the message ends with `this machine's managed settings:` and the key, which the per-run progress line cuts off:
 
@@ -48509,8 +48519,6 @@ To turn Remote Control off entirely, use the [`disableRemoteControl`](/docs/en/s
 
 > [!NOTE]
 >
-> Trusted Devices is currently in beta. Features and functionality may evolve as the experience is refined.
->
 > Trusted Devices is available on Pro, Max, Ultra, Team, and Enterprise plans and is off by default. On Team and Enterprise plans, an Owner turns it on for the organization. On Pro, Max, and Ultra plans, you turn on **Require trusted devices** yourself in your settings, on the Cowork or Account page.
 
 Trusted Devices requires a verified device before you can view or steer Remote Control sessions from claude.ai, the Claude mobile apps, or Claude Desktop. The requirement applies to each member of your organization, or you alone on a Pro, Max, or Ultra plan. It ties Remote Control access to a known device and a recent authentication, not just a signed-in account.
@@ -49793,7 +49801,7 @@ To remove it from your user scope:
 /plugin uninstall security-guidance@claude-plugins-official
 ```
 
-If the plugin was enabled through a project's `.claude/settings.json`, uninstalling it from `/plugin` writes an override to your `.claude/settings.local.json` rather than editing the checked-in file, so the plugin stays off for you while teammates are unaffected. The same dialog also offers to uninstall the plugin for everyone by removing it from the shared `.claude/settings.json`. If it was enabled through [managed settings](/docs/en/admin-setup), only an administrator can disable it.
+If the plugin was enabled through a project's `.claude/settings.json`, uninstalling it from `/plugin` writes an override to your `.claude/settings.local.json` rather than editing the checked-in file. The plugin stays off for you while teammates are unaffected. The same dialog also offers to uninstall the plugin for everyone by removing it from the shared `.claude/settings.json`. If it was enabled through [managed settings](/docs/en/admin-setup), `/plugin` refuses **Disable plugin** and **Uninstall**.
 
 ## How the plugin integrates with Claude Code
 
@@ -51976,7 +51984,7 @@ Multi-word field names use camelCase, such as `maxTurns` and `disallowedTools`, 
 | `model` | No | [Model](#choose-a-model) to use: `sonnet`, `opus`, `haiku`, `fable`, a full model ID such as `claude-opus-5-5`, or `inherit`. When you omit it, Claude Code picks the model in the [subagent model order](#choose-a-model) |
 | `permissionMode` | No | [Permission mode](#permission-modes): `default`, `acceptEdits`, `auto`, `dontAsk`, `bypassPermissions`, `plan`, or `manual` as an alias for `default`. Ignored for [plugin subagents](#choose-the-subagent-scope) |
 | `maxTurns` | No | Maximum number of agentic turns before the subagent stops. When the subagent reaches the limit, Claude Code returns its output marked as partial, and Claude can [resume it](#resume-subagents) to continue. The partial marking requires Claude Code v2.1.246 or later |
-| `autoCompactWindow` | No | Lower the [auto-compact window](#subagent-auto-compact-window) for this subagent to a token count from `100000` to `1000000`. Requires Claude Code v2.1.296 or later |
+| `autoCompactWindow` | No | Lower the [auto-compact window](#subagent-auto-compact-window) for this subagent to a token count of `100000` or more. Requires Claude Code v2.1.296 or later |
 | `skills` | No | [Skills](/docs/en/skills) to preload into the subagent's context at startup. The full skill content is injected, not only the description. Subagents can still invoke unlisted project, user, and plugin skills through the Skill tool |
 | `mcpServers` | No | [MCP servers](/docs/en/mcp) available to this subagent. Each entry is either a server name referencing an already-configured server (e.g., `"slack"`) or an inline definition with the server name as key and a full [MCP server config](/docs/en/mcp#installing-mcp-servers) as value. Ignored for [plugin subagents](#choose-the-subagent-scope) |
 | `hooks` | No | [Lifecycle hooks](#define-hooks-for-subagents) scoped to this subagent. Ignored for [plugin subagents](#choose-the-subagent-scope) |
@@ -52886,7 +52894,7 @@ The `preTokens` value shows how many tokens were used before compaction occurred
 
 ##### Set the auto-compact window for one subagent
 
-To make one subagent compact earlier than it otherwise would, set `autoCompactWindow` in its [frontmatter](#supported-frontmatter-fields) to a token count from `100000` to `1000000`. If you set [`CLAUDE_CODE_AUTO_COMPACT_WINDOW`](/docs/en/env-vars#variables), the subagent uses that variable's window instead and the field has no effect, unless Claude Code [ignores the variable's value](/docs/en/model-config#claude_code_auto_compact_window-values). Requires Claude Code v2.1.296 or later.
+To make one subagent compact earlier than it otherwise would, set `autoCompactWindow` in its [frontmatter](#supported-frontmatter-fields) to a token count of `100000` or more. Requires Claude Code v2.1.296 or later.
 
 This frontmatter sets `autoCompactWindow` to 200,000 tokens for a subagent that reads long log files:
 
@@ -52898,12 +52906,14 @@ autoCompactWindow: 200000
 ---
 ```
 
-Write the value as a plain integer such as `200000`, because in frontmatter Claude Code reads `200k` as 200, which is outside the allowed range. The subagent still loads and compacts as if the field were absent. To check whether Claude Code ignored your value, run `claude --debug` in your shell and search the [debug log](#supported-frontmatter-fields) for `invalid autoCompactWindow`.
+Write the value as a plain integer such as `200000`, because in frontmatter Claude Code reads `200k` as 200, which is below the minimum. The subagent still loads and compacts as if the field were absent. To check whether Claude Code ignored your value, run `claude --debug` in your shell and search the [debug log](#supported-frontmatter-fields) for `invalid autoCompactWindow`.
 
-If the value is in range and you still see no change, check for these causes:
+If the value is `100000` or more and you still see no change, check for these causes:
 
 * **The value isn't below the [auto-compact window](/docs/en/model-config#context-window-and-auto-compaction) the subagent would otherwise inherit**: to compact earlier, set a value below that window.
 * **You run the whole session as this subagent with `--agent` or the `agent` setting**: the field has no effect there. To set the session's window, see [Set the auto-compact window](/docs/en/model-config#set-the-auto-compact-window).
+
+If you also set [`CLAUDE_CODE_AUTO_COMPACT_WINDOW`](/docs/en/env-vars#variables), the subagent uses the lowest of the `autoCompactWindow` value, the model's context window, and the window the variable sets. Before v2.1.312, the field had no effect while the variable set the window.
 
 ## Fork the current conversation
 
@@ -54930,7 +54940,7 @@ With the extension, you can:
 Before installing, make sure you have:
 
 * VS Code 1.94.0 or later
-* An Anthropic account: any paid Claude subscription (Pro, Max, Ultra, Team, or Enterprise) or a Claude Console account works, and no API key is required. You'll [sign in](/docs/en/authentication#log-in-to-claude-code) with this account when you first open the extension. If you access Claude through a third-party provider like Amazon Bedrock or Google Cloud's Agent Platform, see [Use third-party providers](#use-third-party-providers) for setup instructions.
+* An Anthropic account: any paid Claude subscription (Pro, Max, Ultra, Team, or Enterprise) or a Claude Console account works, and no API key is required. You'll [sign in](/docs/en/authentication#log-in-to-claude-code) with this account when you first open the extension. For a provider like Amazon Bedrock or Google Cloud's Agent Platform, see [Use third-party providers](#use-third-party-providers). For a Claude apps gateway, see [Sign in to a Claude apps gateway](#sign-in-to-a-claude-apps-gateway).
 
 > [!TIP]
 >
@@ -55715,6 +55725,17 @@ On a third-party provider, the extension doesn't offer features that require a c
 
 A claude.ai sign-in left over from an earlier `/login` stays unused: the extension doesn't send it with any request.
 
+## Sign in to a Claude apps gateway
+
+Once your machine's settings [name the gateway](/docs/en/claude-apps-gateway#set-the-gateway-url), you can sign in to a [Claude apps gateway](/docs/en/claude-apps-gateway) from the Claude Code panel. Requires Claude Code v2.1.316 or later.
+
+1. If the panel opens on a chat, type `/` in the prompt box and select **Sign in to Cloud gateway**. If that isn't listed, select **Switch account**.
+2. On the sign-in screen, click **Cloud gateway**.
+3. Compare the gateway URL and any certificate fingerprint you're shown with what your administrator published. If either differs, click **Cancel sign-in** and tell your administrator. Otherwise, click **Sign in** for the URL and **Yes, trust this gateway** for the fingerprint.
+4. On the page that opens in your browser, check that the code matches the one in the panel. If it does, continue and sign in with your work account. If it doesn't, close the page and tell your administrator.
+
+If the screen says `Login is managed by your organization and must be completed in the terminal.`, update the extension. To sign in without updating, [install the CLI](/docs/en/setup), click **Run `claude` in terminal**, and run `/login` there.
+
 ## Use a screen reader
 
 The extension's chat panel works with screen readers. You don't need to turn anything on: the extension announces conversation activity for every user, with no visual change. This is separate from the CLI's opt-in [screen reader mode](/docs/en/accessibility), which adapts the terminal interface.
@@ -55876,6 +55897,7 @@ Sign-in, network, and launch errors have their own entries on the install troubl
 | - | - |
 | `API Error: 403 Request not allowed` after you sign in | [403 Forbidden after login](/docs/en/troubleshoot-install#403-forbidden-after-login) |
 | You're asked to sign in again after you already signed in | [Not logged in or token expired](/docs/en/troubleshoot-install#not-logged-in-or-token-expired) |
+| `Login is managed by your organization and must be completed in the terminal.` | [Sign in to a Claude apps gateway](#sign-in-to-a-claude-apps-gateway) |
 | Cloud provider credentials work in your terminal but not in the extension | [Bedrock, Agent Platform, or Foundry credentials not loading](/docs/en/troubleshoot-install#bedrock-agent-platform-or-foundry-credentials-not-loading) |
 | `SSL certificate verification failed` or `Self-signed certificate detected` | [SSL certificate errors](/docs/en/errors#ssl-certificate-errors) |
 | `Dictation error: WebSocket error:` followed by a certificate error such as `unable to get local issuer certificate`, or `Remote server is not connected` on the Web tab | [Dictation or the Web tab fails behind a TLS-inspecting proxy](#dictation-or-the-web-tab-fails-behind-a-tls-inspecting-proxy) |
@@ -58721,7 +58743,7 @@ You can authenticate with any of these account types:
 * **Claude for Teams or Enterprise**: log in with the claude.ai account your team admin invited you to.
 * **Claude Console**: log in with your Console credentials. Your admin must have [invited you](#claude-console-authentication) first. You can sign in with or without [creating an API key](#sign-in-without-an-api-key).
 * **Cloud providers**: if your organization uses [Amazon Bedrock](/docs/en/amazon-bedrock), [Google Cloud's Agent Platform](/docs/en/google-vertex-ai), or [Microsoft Foundry](/docs/en/microsoft-foundry), set the required environment variables before running `claude`, or select **3rd-party platform** at the login prompt, which launches an interactive setup wizard for Bedrock and Vertex AI. No browser login is needed.
-* **Cloud gateway**: if your organization runs a self-hosted [Claude apps gateway](/docs/en/claude-apps-gateway), sign in with corporate SSO through `/login`. The gateway-issued token is the session's only credential.
+* **Cloud gateway**: if your organization runs a self-hosted [Claude apps gateway](/docs/en/claude-apps-gateway), sign in with corporate SSO through `/login` or [from VS Code](/docs/en/vs-code#sign-in-to-a-claude-apps-gateway). The gateway-issued token is the session's only credential.
 
 Admins can direct which login method developers use and require claude.ai logins to belong to a specific organization; see [Restrict login to your organization](#restrict-login-to-your-organization).
 
@@ -58966,15 +58988,15 @@ Run `unset ANTHROPIC_API_KEY` to fall back to your subscription, and check `/sta
 
 A profile is a named credential configuration file in your [Anthropic configuration directory](https://platform.claude.com/docs/en/manage-claude/wif-reference#configuration-directory), by default `~/.config/anthropic` on macOS and Linux or `%APPDATA%\Anthropic` on Windows. A profile's auth mode is `oidc_federation` when you set it up for [Workload Identity Federation (WIF)](https://platform.claude.com/docs/en/manage-claude/workload-identity-federation) or `user_oauth` when [`ant auth login`](https://platform.claude.com/docs/en/cli-sdks-libraries/cli/authentication) wrote it or you [signed in to a Console account without an API key](#sign-in-without-an-api-key).
 
-Claude Code doesn't read profiles or federation variables in [bare mode](/docs/en/headless#start-faster-with-bare-mode), in Claude Desktop, or in cloud sessions. In those sessions, `/status` shows no `Profile` row.
+Claude Code doesn't read profiles or federation variables in [bare mode](/docs/en/headless#start-faster-with-bare-mode), in Claude Desktop, or in cloud sessions. In those sessions, `/status` shows no `Profile` row. Where it does read them, Claude Code checks three sources in this order and stops at the first one that is set.
 
-Claude Code checks three sources in this order and stops at the first one that is set. The table shows what sets each source and where it ranks against your `/login` credential.
-
-| Source | Set by | Rank against `/login` |
+| Source | Set by | Against a claude.ai login |
 | :- | :- | :- |
 | Named profile | `ANTHROPIC_PROFILE` | Above, whichever auth mode the profile has |
 | Federation variables | `ANTHROPIC_FEDERATION_RULE_ID` and `ANTHROPIC_ORGANIZATION_ID`, both set | Above |
-| Active profile | The [`active_config` file](https://platform.claude.com/docs/en/manage-claude/wif-reference#active-profile) in your configuration directory, or a profile named `default` | Above when its auth mode is `oidc_federation`; below a working `/login` credential when its auth mode is `user_oauth` |
+| Active profile | The [`active_config` file](https://platform.claude.com/docs/en/manage-claude/wif-reference#active-profile) in your configuration directory, or a profile named `default` | Above when its auth mode is `oidc_federation`; below a claude.ai login that still works when its auth mode is `user_oauth` |
+
+If `/login` saved an API key and `CI` isn't set, Claude Code uses that key instead of any of these sources. To remove it, [run `/logout`](/docs/en/troubleshoot-install#not-logged-in-or-token-expired).
 
 For the federation variables, Claude Code also reads the other variables in the [WIF reference](https://platform.claude.com/docs/en/manage-claude/wif-reference#environment-variables), such as `ANTHROPIC_IDENTITY_TOKEN_FILE`, when it exchanges your identity token. For the profile file format, see the [WIF reference](https://platform.claude.com/docs/en/manage-claude/wif-reference#profile-configuration-file).
 
@@ -59412,7 +59434,8 @@ Both `defaults` and `config` print the four rule lists as a single JSON object, 
     ...
   ],
   "soft_deny": [
-    "Git Destructive [named+specifics — **must name:** the destructive operation and its target]: Force pushing (`git push --force`), deleting remote branches, tags, or releases, or rewriting remote history. Also `git commit --amend` when the commit being rewritten is not the agent's own unpushed work: either no prior `git commit` is visible (HEAD pre-dates the session), or a `git push` of the current branch is visible after the most recent commit (it has been pushed). Clears when the user asked to amend/reword/fixup, or when it is a message-only reword (`--amend -m …`, nothing newly staged) of a commit the agent visibly created this session.",
+    ...
+    "Production Deploy [named+specifics — **must name:** the production target]: Deploying to production/a production service or running production database migrations",
     ...
   ],
   "hard_deny": [...],
@@ -60896,7 +60919,7 @@ Three keys go in the per-OS [managed settings file](/docs/en/managed-settings#de
 
 The developer presses Enter to connect. The [first-connect TLS fingerprint prompt](#connect-developers) still appears. Once the file is on a machine, a developer who hasn't completed the gateway sign-in sees one of the messages described under [Administrator policy requires a Cloud gateway sign-in](/docs/en/errors#administrator-policy-requires-a-cloud-gateway-sign-in). Developers who select a cloud provider through an environment variable such as `CLAUDE_CODE_USE_BEDROCK` don't need the gateway sign-in.
 
-The login picker has no gateway option, and in managed settings `forceLoginMethod` alone, without a URL, leaves the developer at a "Contact your IT administrator" message. The login keys belong in the file you push to machines, not in the gateway's `managed.policies[].cli` block, which only reaches clients that are already connected.
+The terminal's login picker has no gateway option, and in managed settings `forceLoginMethod` alone, without a URL, leaves the developer at a "Contact your IT administrator" message. The login keys belong in the file you push to machines, because the gateway's `managed.policies[].cli` block only reaches clients that are already connected.
 
 #### Set the gateway URL in user settings
 
@@ -65137,7 +65160,7 @@ You can start sessions, pipe content, resume conversations, and manage updates w
 | `claude update` | Update to latest version | `claude update` |
 | `claude gateway` | Start the self-hosted [Claude apps gateway](/docs/en/claude-apps-gateway) server, for administrators deploying SSO and policy in front of Claude Code on Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry. Requires `--config` pointing at a [`gateway.yaml`](/docs/en/claude-apps-gateway-config). | `claude gateway --config gateway.yaml` |
 | `claude install [version]` | Install or reinstall the native binary. Accepts a version like `2.1.118`, or `stable` or `latest`. See [Install a specific version](/docs/en/setup#install-a-specific-version) | `claude install stable` |
-| `claude auth login` | Sign in to your Anthropic account. Use `--email` to pre-fill your email address, `--sso` to force SSO authentication, and `--console` to sign in with Anthropic Console for API usage billing instead of a Claude subscription | `claude auth login --console` |
+| `claude auth login` | Sign in to your Anthropic account. Use `--email` to pre-fill your email address, `--sso` to force SSO authentication, and `--console` to sign in with Anthropic Console for API usage billing instead of a Claude subscription. If managed settings require a [Claude apps gateway](/docs/en/claude-apps-gateway) sign-in, run the command with no flags in a terminal, on v2.1.316 or later. If the command points you to `/login`, run that inside `claude` | `claude auth login --console` |
 | `claude auth logout` | Log out from your Anthropic account | `claude auth logout` |
 | `claude auth status` | Show authentication status as JSON. Use `--text` for human-readable output. Exits with code 0 if logged in, 1 if not. The JSON includes a `configDirectory` field naming the [configuration directory](/docs/en/claude-directory) the CLI uses. The field requires Claude Code v2.1.268 or later. The JSON's `authMethod` field is one of `none`, `claude.ai`, `oauth_token`, `api_key`, `api_key_helper`, or `third_party` | `claude auth status` |
 | `claude agents` | Open [agent view](/docs/en/agent-view) to monitor and dispatch parallel background sessions. Use `--cwd <path>` to show only sessions started under that directory, or `--json` to print active sessions as a JSON array for scripting (`--json --all` also includes completed background sessions). Pass `--permission-mode`, `--model`, `--effort`, or `--agent` to set [defaults for dispatched sessions](/docs/en/agent-view#permission-mode-model-and-effort). Accepts `--settings`, `--add-dir`, `--plugin-dir`, and `--mcp-config` like the top-level `claude` command. Opening agent view requires an interactive terminal | `claude agents --json` |
@@ -68125,7 +68148,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `ANTHROPIC_DEFAULT_SONNET_MODEL_DESCRIPTION` | Display description for the pinned Sonnet model in the `/model` picker. When not set, the row shows a default description that begins `Custom Sonnet model`. See [Model configuration](/docs/en/model-config#customize-pinned-model-display-and-capabilities) |
 | `ANTHROPIC_DEFAULT_SONNET_MODEL_NAME` | Display name for the pinned Sonnet model in the `/model` picker. When not set, the row shows the model's name if Claude Code recognizes the pinned ID, and the pinned ID otherwise. See [Model configuration](/docs/en/model-config#customize-pinned-model-display-and-capabilities) |
 | `ANTHROPIC_DEFAULT_SONNET_MODEL_SUPPORTED_CAPABILITIES` | Comma-separated list of [capabilities](/docs/en/model-config#customize-pinned-model-display-and-capabilities) the pinned Sonnet model supports, for example `effort,thinking`. See [Model configuration](/docs/en/model-config#customize-pinned-model-display-and-capabilities) |
-| `ANTHROPIC_FEDERATION_RULE_ID` | Federation rule ID for [Workload Identity Federation](https://platform.claude.com/docs/en/manage-claude/workload-identity-federation). When you set it together with `ANTHROPIC_ORGANIZATION_ID`, Claude Code selects federation credentials, which rank above your `/login` credential. See [authentication precedence](/docs/en/authentication#authentication-precedence) |
+| `ANTHROPIC_FEDERATION_RULE_ID` | Federation rule ID for [Workload Identity Federation](https://platform.claude.com/docs/en/manage-claude/workload-identity-federation). Set it together with `ANTHROPIC_ORGANIZATION_ID`. See [authentication precedence](/docs/en/authentication#authentication-precedence) |
 | `ANTHROPIC_FOUNDRY_API_KEY` | API key for Microsoft Foundry authentication (see [Microsoft Foundry](/docs/en/microsoft-foundry)) |
 | `ANTHROPIC_FOUNDRY_AUTH_TOKEN` | Bearer token for Microsoft Foundry authentication, such as a Microsoft Entra access token. Claude Code sends it as the `Authorization: Bearer` header. Takes precedence over `ANTHROPIC_FOUNDRY_API_KEY` and over the Azure default credential chain. See [Microsoft Foundry](/docs/en/microsoft-foundry). Requires Claude Code v2.1.203 or later |
 | `ANTHROPIC_FOUNDRY_BASE_URL` | Full base URL for the Microsoft Foundry resource (for example, `https://my-resource.services.ai.azure.com/anthropic`). Alternative to `ANTHROPIC_FOUNDRY_RESOURCE` (see [Microsoft Foundry](/docs/en/microsoft-foundry)) |
@@ -68173,7 +68196,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_ARTIFACT_PUBLISH_EDITS` | Set to `0` to stop Claude from [applying small changes](/docs/en/artifacts#turn-off-one-step-artifact-updates) to an artifact's file as part of publishing it. Claude then edits the file with its file-editing tools and publishes it as a separate step. Requires Claude Code v2.1.300 or later |
 | `CLAUDE_CODE_ATTRIBUTION_HEADER` | Set to `0` to omit the [attribution block](/docs/en/llm-gateway-protocol#system-prompt-attribution-block), which carries the client version and a prompt fingerprint, from the start of the system prompt. Caching on a direct connection to the Anthropic API is unaffected either way. In some direct-connection setups, Claude Code keeps the block on [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) classifier requests even when you set `0`. In [System prompt attribution block](/docs/en/llm-gateway-protocol#system-prompt-attribution-block), check which connections and credentials this covers. Before v2.1.181 the block included a per-request token on custom base URLs and Microsoft Foundry connections, so on those versions set it to `0` when your LLM gateway caches on the request body or forwards requests to a third-party provider, or when you connect to Microsoft Foundry directly |
 | `CLAUDE_CODE_AUTO_BACKGROUND_WORKER_CHECKIN_SECONDS` | Removed in v2.1.283. Use `CLAUDE_CODE_WORKER_CHECKIN_SCHEDULE` instead |
-| `CLAUDE_CODE_AUTO_COMPACT_WINDOW` | Set the auto-compact window, how full the context gets before compaction, from `100000` to `1000000` tokens. Suffixed values such as `200k` require v2.1.304 or later. For precedence over the other ways to set the window and the effect on the status line's `used_percentage`, see [Set the auto-compact window](/docs/en/model-config#set-the-auto-compact-window) |
+| `CLAUDE_CODE_AUTO_COMPACT_WINDOW` | Set the auto-compact window, which is how full the context gets before compaction, to a token count of `100000` or more. Suffixed values such as `200k` require v2.1.304 or later. For precedence over the other ways to set the window and the effect on the status line's `used_percentage`, see [Set the auto-compact window](/docs/en/model-config#set-the-auto-compact-window) |
 | `CLAUDE_CODE_AUTO_CONNECT_IDE` | Override automatic [IDE connection](/docs/en/vs-code). By default, Claude Code connects automatically when launched inside a supported IDE's integrated terminal. Set to `false` to prevent this. Set to `true` to force a connection attempt when auto-detection fails, such as when tmux obscures the parent terminal. Takes precedence over the [`autoConnectIde`](/docs/en/settings-reference#autoconnectide) global config setting |
 | `CLAUDE_CODE_AUTO_MODE_MODEL` | Sets the model for the classifier requests Claude Code sends in [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode). Use a full model ID such as `claude-sonnet-4-6`. For the cases where Claude Code ignores it, see [Choose the classifier model](/docs/en/permission-modes#choose-the-classifier-model). Requires Claude Code v2.1.302 or later |
 | `CLAUDE_CODE_AUTO_MODE_SERVER` | Controls whether Claude Code asks the server to [review auto mode actions](/docs/en/permission-modes#server-side-classifier-review). Set to `0` to use Claude Code's own classifier requests instead. On a direct connection to the Anthropic API, requires v2.1.281 or later. The linked section lists which sessions ask the server when the variable is unset, and from which version. Requires Claude Code v2.1.271 or later |
@@ -68235,12 +68258,13 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_DISABLE_PERMISSION_PROMPT_NOTIFY_HOOKS` | Set to `1` to stop Claude Code from running your [`Notification` hooks for unanswered permission requests](/docs/en/hooks#notification) in sessions where Claude Code sends them to the Agent SDK's `canUseTool` callback, which is how Claude Desktop and the VS Code extension host Claude Code. Has no effect in terminal sessions. Requires Claude Code v2.1.233 or later |
 | `CLAUDE_CODE_DISABLE_POLICY_SKILLS` | Set to `1` to skip loading skills from the system-wide managed skills directory. Useful for container or CI sessions that should not load operator-provisioned skills |
 | `CLAUDE_CODE_DISABLE_POWERSHELL_CMD_RM_DENY` | Set to `1` to turn off the [PowerShell tool](/docs/en/tools-reference#powershell-tool) check that denies the `cmd` built-ins `rd`, `rmdir`, `del`, and `erase` on a [system path](/docs/en/permission-modes#remove-item-in-powershell), such as a drive root or your home directory. Claude Code ignores this variable in a settings file's `env` block. Requires Claude Code v2.1.283 or later |
+| `CLAUDE_CODE_DISABLE_PROXY_SCHEME_REPAIR` | Set to `1` to have Claude Code stop at startup on a plain `host:port` in `HTTPS_PROXY` or `https_proxy` even when it starts with no terminal. Claude Code ignores it in project and local settings. Requires Claude Code v2.1.327 or later |
 | `CLAUDE_CODE_DISABLE_REFUSAL_FALLBACK` | Set to `1` to turn off the [automatic model switch when a safety classifier flags a request](/docs/en/model-config#automatic-model-fallback), the behavior the [`switchModelsOnFlag`](/docs/en/settings-reference#switchmodelsonflag) setting controls |
 | `CLAUDE_CODE_DISABLE_STRUCTURED_OUTPUTS` | Set to `1` to stop Claude Code from sending the structured-output `output_config.format` field and the `anthropic-beta` value that pairs with it, for an [LLM gateway](/docs/en/llm-gateway-protocol#feature-pass-through) whose upstream rejects them. This leaves on the other pre-release capabilities that [`CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS`](/docs/en/llm-gateway-protocol#disable-pre-release-capabilities) turns off. Requires Claude Code v2.1.288 or later |
 | `CLAUDE_CODE_DISABLE_SUBSTITUTION_RM_PROMPT` | Set to `1` to turn off the [critical-path](/docs/en/permission-modes#critical-paths) check for a recursive `rm` whose target is entirely the output of a command substitution, such as `rm -rf "$(pwd)"`. The other critical-path checks keep running. Set it in the environment that launches Claude Code, since Claude Code ignores a copy delivered through a settings `env` block. Requires Claude Code v2.1.281 or later |
 | `CLAUDE_CODE_DISABLE_TERMINAL_TITLE` | Set to `1` to disable automatic terminal title updates based on conversation context. This also skips the background small/fast-model request that [generates a session title](/docs/en/sessions#name-your-sessions), and turns off [status reports to your terminal](/docs/en/terminal-config#see-session-status-in-your-terminal) |
 | `CLAUDE_CODE_DISABLE_THINKING` | Set to `1` to omit the `thinking` parameter from API requests entirely. This is a compatibility option for proxies and gateways that reject the parameter. On models that think by default, omitting the parameter means the model may still think. To explicitly disable [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) on the Anthropic API, use `MAX_THINKING_TOKENS=0` instead. Neither variable turns thinking off on Opus 5.5, Sonnet 5.5, Haiku 5.5, or the Fable models, which can't have thinking turned off. On [third-party providers](/docs/en/third-party-integrations), `MAX_THINKING_TOKENS=0` likewise omits the parameter, so the two variables behave the same there |
-| `CLAUDE_CODE_DISABLE_ULTRAREVIEW_TRUST_CHECK` | Set to `1` so that [`claude ultrareview`](/docs/en/ultrareview#trust-the-folder-before-the-review-runs) doesn't exit with `Error: Workspace not trusted` in a folder you haven't trusted when it can't ask you to trust it, such as in CI. Set it in the environment that launches Claude Code, not a settings `env` block, and only where every such run starts in a folder you trust. Runs that can ask still ask. Requires Claude Code v2.1.309 or later |
+| `CLAUDE_CODE_DISABLE_ULTRAREVIEW_TRUST_CHECK` | Set to `1` so [`claude ultrareview`](/docs/en/ultrareview#trust-the-folder-before-the-review-runs) doesn't exit with `Error: Workspace not trusted` when run without a terminal or with `CI=true`. `claude ultrareview` still asks when it can. From v2.1.314, the variable also skips the trust check in `/ultrareview` and `/code-review ultra`. Set it in the launch environment, not a settings `env` block, and only where every review starts in a folder you trust. Requires Claude Code v2.1.309 or later |
 | `CLAUDE_CODE_DISABLE_ULTRATHINK` | Set to `1` to turn the [`ultrathink`](/docs/en/model-config#use-ultrathink-for-one-off-deep-reasoning) keyword off. Requires Claude Code v2.1.316 or later |
 | `CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT` | Set to `1` to skip proactive [auto-compaction](/docs/en/costs#reduce-token-usage) when Claude Code doesn't recognize the model ID, such as an [LLM gateway](/docs/en/llm-gateway) alias. Without this variable, Claude Code compacts at the context window it assumes for the ID. `CLAUDE_CODE_MAX_CONTEXT_TOKENS` can correct the assumed window instead; see [Correct the window for a gateway or custom model ID](/docs/en/model-config#correct-the-window-for-a-gateway-or-custom-model-id) for when each variable applies. Requires Claude Code v2.1.223 or later |
 | `CLAUDE_CODE_DISABLE_VIRTUAL_SCROLL` | Set to `1` to disable virtual scrolling in [fullscreen rendering](/docs/en/fullscreen) and render every message in the transcript. Use this if scrolling in fullscreen mode shows blank regions where messages should appear |
@@ -68370,6 +68394,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_SKIP_VERTEX_AUTH` | Skip Google authentication for Google Cloud's Agent Platform (for example, when using an LLM gateway) |
 | `CLAUDE_CODE_STARTUP_FAILURE_RESULTS` | Set to `1` to have a session started with `--output-format stream-json` write a [result message naming why Claude Code refused to start](/docs/en/agent-sdk/typescript#startup_failure_reason) for startup failures that otherwise end with stderr alone. Requires Claude Code v2.1.274 or later |
 | `CLAUDE_CODE_STOP_HOOK_BLOCK_CAP` | Maximum number of consecutive times a [Stop](/docs/en/hooks#stop) or [SubagentStop](/docs/en/hooks#subagentstop) hook may block the turn from ending before Claude Code overrides it and ends the turn anyway (default: 8). Set to `0` to disable the cap. Raise this if your hook legitimately needs more iterations to resolve |
+| `CLAUDE_CODE_STRICT_INLINE_SHELL_RM_PROMPT` | Set to `1` to flag more of the [`-c` scripts](/docs/en/permission-modes#removals-inside-nested-commands-and-inline-scripts) that Claude Code can't check, including ones that name neither `rm` nor `rmdir`. Set it in the environment that launches Claude Code, not a settings `env` block. Has no effect when `CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT` is `1`. Requires Claude Code v2.1.299 or later |
 | `CLAUDE_CODE_SUBAGENT_MODEL` | The default model for [subagents](/docs/en/sub-agents#choose-a-model), [agent team](/docs/en/agent-teams#specify-teammates-and-models) teammates, and [workflow](/docs/en/workflows) agents that aren't assigned a model another way. Accepts an alias such as `haiku` or a full model name. Two sources take precedence over it: a model Claude passes when it spawns the agent, and a `model` field in the agent's definition, including `inherit`. To change that, set [`CLAUDE_CODE_SUBAGENT_MODEL_FORCE`](/docs/en/sub-agents#run-every-subagent-on-one-model). See [Choose a model](/docs/en/sub-agents#choose-a-model) for the full order. Setting it to `inherit` is the same as leaving it unset. Before v2.1.251, this variable overrode both the per-invocation model and the definition's `model` field |
 | `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` | Set to `1` to force one model onto subagents, teammates, and workflow agents. [Run every subagent on one model](/docs/en/sub-agents#run-every-subagent-on-one-model) says which model that is. Requires Claude Code v2.1.257 or later |
 | `CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL` | Set `5m` or `1h`, the only values Claude Code accepts, to choose the [prompt cache TTL](/docs/en/prompt-caching#cache-lifetime) for requests outside the main conversation, such as [subagents](/docs/en/sub-agents), workflows, and background work. Takes precedence over the `subagentPromptCacheTtl` setting and over `ENABLE_PROMPT_CACHING_1H`, and `FORCE_PROMPT_CACHING_5M` overrides it. The API bills 1-hour cache writes at a higher rate. Requires Claude Code v2.1.242 or later |
@@ -68481,6 +68506,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `OTEL_METRICS_INCLUDE_RESOURCE_ATTRIBUTES` | As of v2.1.161, Claude Code attaches `OTEL_RESOURCE_ATTRIBUTES` keys to metric datapoint labels. Set to `false` to exclude them (default: included). See [Monitoring](/docs/en/monitoring-usage#multi-team-organization-support) |
 | `OTEL_METRICS_INCLUDE_SESSION_ID` | Set to `false` to exclude session ID from metric and event attributes (default: included). See [Monitoring](/docs/en/monitoring-usage) |
 | `OTEL_METRICS_INCLUDE_VERSION` | Set to `true` to include Claude Code version in metric and event attributes (default: excluded). See [Monitoring](/docs/en/monitoring-usage) |
+| `OTEL_RESOURCE_INCLUDE_HOST` | Set to `1` to add the machine's name and ID to OpenTelemetry resource attributes as `host.name` and `host.id` (default: excluded). Set it in your shell, user settings, or managed settings. Ignored in [project and local settings](/docs/en/settings-reference#variables-claude-code-ignores-in-env). Requires Claude Code v2.1.326 or later. See [Identify the machine a session ran on](/docs/en/monitoring-usage#identify-the-machine-a-session-ran-on) |
 | `SLASH_COMMAND_TOOL_CHAR_BUDGET` | Override the character budget for skill metadata shown to the [Skill tool](/docs/en/skills#control-who-invokes-a-skill). The budget scales dynamically at 1% of the context window, with a fallback of 8,000 characters. Legacy name kept for backwards compatibility |
 | `TASK_MAX_OUTPUT_LENGTH` | Removed in v2.1.277 and now a no-op, together with the `TaskOutput` tool it sized. Previously set the maximum number of characters of a [background task's](/docs/en/tools-reference#background-commands) output that the `TaskOutput` tool kept. Claude reads a background task's output file with `Read` instead |
 | `USE_BUILTIN_RIPGREP` | Set to `0` to use system-installed `rg` instead of `rg` included with Claude Code |
@@ -72799,7 +72825,7 @@ PreToolUse hooks run before every tool call, whether or not it needs permission.
 
 | Field | Description |
 | :- | :- |
-| `behavior` | `"allow"` grants the permission, `"deny"` denies it. [Deny and ask rules](/docs/en/permissions#manage-permissions) are still evaluated, so a hook returning `"allow"` doesn't override a matching deny rule |
+| `behavior` | `"allow"` grants the permission, `"deny"` denies it. The hook can't approve what a deny rule refuses, unless a mod overrides the rule: see [Precedence among rules, hooks, and mods](/docs/en/permissions#precedence-among-rules-hooks-and-mods) |
 | `updatedInput` | For `"allow"` only: modifies the tool's input parameters before execution. Replaces the entire input object, so include unchanged fields alongside modified ones. The modified input is re-evaluated against deny and ask rules. `AskUserQuestion` and `ExitPlanMode` [need this field](#allow-with-updatedinput) |
 | `updatedPermissions` | For `"allow"` only: array of [permission update entries](#permission-update-entries) to apply, such as adding an allow rule or changing the session permission mode |
 | `message` | For `"deny"` only: tells Claude why the permission was denied |
@@ -79929,7 +79955,7 @@ You can set the auto-compact window in these places:
 * **In scripts and cloud environments**: set [`CLAUDE_CODE_AUTO_COMPACT_WINDOW`](/docs/en/env-vars) to a token count such as `200000`. Unless Claude Code [ignores the value](#claude_code_auto_compact_window-values), the variable takes precedence over the command, the flag, and the `autoCompactWindow` setting. `/autocompact` then reports the override without saving. The status line's `used_percentage` measures against the model's full context window, so while the variable is set, that percentage doesn't indicate when compaction will run.
 * **For one subagent**: see [Set the auto-compact window for one subagent](/docs/en/sub-agents#subagent-auto-compact-window).
 
-The command and the flag accept a window size from 100K to 1M tokens, in any of these forms:
+The command and the flag accept a window size of 100K tokens or more, in any of these forms:
 
 * A plain token count, such as `200000`
 * A `k` or `M` suffix, such as `500k` or `1M`
@@ -79939,7 +79965,7 @@ Whichever way you set the window, Claude Code caps it at the model's context win
 
 #### Values and warnings for `CLAUDE_CODE_AUTO_COMPACT_WINDOW`
 
-A warning that quotes your `CLAUDE_CODE_AUTO_COMPACT_WINDOW` value means the value falls outside 100,000 to 1,000,000 or isn't a token count. To stop the warning, set a number in that range, such as `CLAUDE_CODE_AUTO_COMPACT_WINDOW=200000`. On Claude Code v2.1.304 or later, you can also write the number with `k` for thousands or `M` for millions, as in `200k` or `1M`.
+A warning that quotes your `CLAUDE_CODE_AUTO_COMPACT_WINDOW` value means your session isn't using the value as you set it. To stop the warning, set a number such as `CLAUDE_CODE_AUTO_COMPACT_WINDOW=200000`. On Claude Code v2.1.304 or later, you can also write the number with `k` for thousands or `M` for millions, as in `200k` or `1M`.
 
 Find your warning's wording in the first column, then read across for the window your session uses and what to change:
 
@@ -80340,6 +80366,7 @@ On machines with managed settings, see [How managed settings lock the OTLP desti
 | `OTEL_LOG_MANAGED_SETTINGS` | Add the redacted managed settings, and a SHA-256 digest of the settings before redaction, to [managed settings resolved](#managed-settings-resolved-event) events (default: disabled). A value in project or local settings doesn't turn it on. Requires Claude Code v2.1.274 or later | `1` to enable |
 | `OTEL_LOG_RAW_API_BODIES` | Emit the full Anthropic Messages API request and response JSON as `api_request_body` / `api_response_body` log events (default: disabled). Bodies include the entire conversation history. Enabling this implies consent to everything `OTEL_LOG_USER_PROMPTS`, `OTEL_LOG_TOOL_DETAILS`, and `OTEL_LOG_TOOL_CONTENT` would reveal | `1` for inline bodies truncated at the content limit (60 KB by default), or `file:<dir>` for untruncated bodies on disk with a `body_ref` pointer in the event |
 | `CLAUDE_CODE_OTEL_CONTENT_MAX_LENGTH` | Content limit: the maximum length of content-bearing attributes such as model responses, tool content, system prompts, and raw API bodies, truncation marker included, in UTF-16 code units (default: 61440, i.e. 60 KB). The default is sized for backends that cap attribute values at 64 KB; raise it only if your backend accepts larger values, or lower it to cut telemetry volume. When an OpenTelemetry SDK attribute limit, `OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT` or one of its logrecord and span variants, is set lower, Claude Code truncates at that smaller value so the `[TRUNCATED ...]` marker stays within the SDK limit | `262144` |
+| `OTEL_RESOURCE_INCLUDE_HOST` | Add the machine's name and ID to the resource attributes of metrics, events, and traces (default: disabled). See [Identify the machine a session ran on](#identify-the-machine-a-session-ran-on). Requires Claude Code v2.1.326 or later | `1` to enable |
 | `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` | Metrics temporality preference (default: `delta`). Set to `cumulative` if your backend expects cumulative temporality | `delta`, `cumulative` |
 | `CLAUDE_CODE_OTEL_HEADERS_HELPER_DEBOUNCE_MS` | Interval for refreshing dynamic headers (default: 1740000ms / 29 minutes) | `900000` |
 
@@ -80370,6 +80397,41 @@ The following environment variables control which attributes are included in met
 | `OTEL_METRICS_INCLUDE_REPOSITORY` | Include `vcs.*` [repository identity attributes](#repository-attributes) on metrics and events. Requires Claude Code v2.1.269 or later | `false` | `true` |
 
 Lower cardinality generally means better performance and lower storage costs but less granular data for analysis.
+
+### Identify the machine a session ran on
+
+To see which machine each session ran on, set `OTEL_RESOURCE_INCLUDE_HOST=1` on Claude Code v2.1.326 or later. Set it under `env` in [managed settings](/docs/en/managed-settings) or user settings, or in the shell you start `claude` from, not in [project or local settings](/docs/en/settings-reference#variables-claude-code-ignores-in-env).
+
+The following example sets it in a settings file:
+
+```json theme={null}
+{
+  "env": {
+    "OTEL_RESOURCE_INCLUDE_HOST": "1"
+  }
+}
+```
+
+The attributes `host.name` and `host.id` then appear in the resource block of metrics, events, and traces, not on metric datapoints:
+
+* `host.name`: the machine's host name
+* `host.id`: the operating system's machine ID, not hashed. That's the contents of `/etc/machine-id` on Linux, `IOPlatformUUID` on macOS, and the `MachineGuid` registry value on Windows. It's left out when Claude Code can't read one, for example in a container whose image has no machine ID.
+
+Both attributes name the machine that Claude Code runs on. In a Desktop SSH session that's the remote machine, so set the variable there: see [Attribute telemetry to Desktop SSH sessions](#attribute-telemetry-to-desktop-ssh-sessions). In a container, `host.name` is the container's own host name, so to name the machine that runs the container, declare the name yourself in [`OTEL_RESOURCE_ATTRIBUTES`](#multi-team-organization-support).
+
+#### Troubleshoot missing host attributes
+
+If `host.name` and `host.id` are missing, check where and when you set `OTEL_RESOURCE_INCLUDE_HOST` and what started the session. Then check your exporter and endpoint variables and how your backend shows resource attributes:
+
+* **The session's Claude Code is older than v2.1.326**: update it
+* **You set the variable only in project or local settings**: set it in managed settings, user settings, or your shell. Run `/status` to see which variables Claude Code ignored.
+* **The variable is `0` in a managed or user settings file**: if you set `1` [in your shell or in a lower-precedence file](/docs/en/settings-reference#how-env-values-interact-with-your-shell), the `0` still applies. Change the `0`, or ask your administrator if it's in managed settings.
+* **You set the variable after the session started**: start a new session, because Claude Code reads it once at startup
+* **The desktop app started the session**: a local session gets some variables from your shell profile, but not this one, so set it in managed or user settings. For a Desktop SSH session, set it on the remote machine: see [Attribute telemetry to Desktop SSH sessions](#attribute-telemetry-to-desktop-ssh-sessions).
+* **The session is a cloud session in an Anthropic-hosted environment**: the attributes aren't added there. To tell cloud sessions apart, see [Attribute telemetry to cloud sessions](#attribute-telemetry-to-cloud-sessions).
+* **Any exporter variable lists `console`**: remove `console` from `OTEL_METRICS_EXPORTER`, `OTEL_LOGS_EXPORTER`, and `OTEL_TRACES_EXPORTER`, and the attributes arrive at your other exporters
+* **A per-signal endpoint variable, such as `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, isn't a URL**: write a bare `10.0.0.1:4317` as a URL, such as `http://10.0.0.1:4317`
+* **Your metrics backend doesn't surface resource attributes**: with the `prometheus` exporter, look for the `host_name` and `host_id` labels of the `target_info` metric. Otherwise, look in the resource block of events and traces, or declare the name yourself in [`OTEL_RESOURCE_ATTRIBUTES`](#multi-team-organization-support), which by default also reaches metric datapoints.
 
 ### Traces (beta)
 
@@ -80662,7 +80724,11 @@ Each custom key becomes a label on every metric series, so high-cardinality valu
 
 ### Attribute telemetry to Desktop SSH sessions
 
-To see which remote machine a [Desktop SSH session](/docs/en/desktop#ssh-sessions) ran on, name each machine in a custom attribute. Metrics and events don't name the machine a session ran on.
+To see which remote machine a [Desktop SSH session](/docs/en/desktop#ssh-sessions) ran on, either set [`OTEL_RESOURCE_INCLUDE_HOST=1`](#identify-the-machine-a-session-ran-on) or [name each machine in a custom attribute](#name-each-remote-machine-in-a-custom-attribute). Choose the custom attribute if you need the name on metric datapoints: with `OTEL_RESOURCE_INCLUDE_HOST=1`, `host.name` appears in the resource block only.
+
+Set `OTEL_RESOURCE_INCLUDE_HOST` on the remote machine, in the `env` block that turns telemetry on, in the [managed settings file the session reads](/docs/en/desktop#managed-settings). The [copy of Claude Code that the session runs](/docs/en/desktop#files-and-processes-on-the-remote-machine) must be v2.1.326 or later. If `host.name` and `host.id` don't arrive, see [Troubleshoot missing host attributes](#troubleshoot-missing-host-attributes).
+
+#### Name each remote machine in a custom attribute
 
 On each remote machine, add [`OTEL_RESOURCE_ATTRIBUTES`](#multi-team-organization-support) to the `env` block that turns telemetry on, in the [managed settings file the session reads](/docs/en/desktop#managed-settings). Write the name out in each machine's file. Claude Code doesn't expand the value, so `host.name=$(hostname)` arrives as those characters.
 
@@ -80681,9 +80747,9 @@ The following example names the machine `build-7`:
 }
 ```
 
-When nothing else sets the variable, `host.name` arrives in the resource block, in Desktop SSH sessions and in the CLI on that machine. For where else custom attributes appear, see [Multi-team organization support](#multi-team-organization-support).
+`host.name` arrives in the resource block and, by default, on metric datapoints and events. Desktop SSH sessions and the CLI on that machine both send it. To keep it off datapoints, see [Multi-team organization support](#multi-team-organization-support).
 
-If the name doesn't arrive, check for one of these causes:
+If the name that you set in `OTEL_RESOURCE_ATTRIBUTES` doesn't arrive, check for one of these causes:
 
 * **You set it on the computer that runs Desktop**: Desktop doesn't pass a value you set there to the SSH session
 * **You exported it in `/etc/profile` or another file that only login shells read**: the name arrives when you run `claude` from a login shell, but not in a Desktop SSH session. Desktop doesn't start Claude Code through a login shell. Set the variable under `env` in the [managed settings file](/docs/en/desktop#managed-settings) on the remote machine instead.
@@ -82006,6 +82072,7 @@ All metrics and events are exported with the following resource attributes:
 * `os.type`: Operating system type (for example, `linux`, `darwin`, `windows`)
 * `os.version`: Operating system version string
 * `host.arch`: Host architecture (for example, `amd64`, `arm64`)
+* `host.name`, `host.id`: The machine's name and ID, off by default. See [Identify the machine a session ran on](#identify-the-machine-a-session-ran-on).
 * `wsl.version`: WSL version number (only present when running on Windows Subsystem for Linux)
 * Meter Name: `com.anthropic.claude_code`
 
@@ -82051,6 +82118,7 @@ For a comprehensive guide on measuring return on investment for Claude Code, inc
   * With `=file:<dir>`, Claude Code writes untruncated bodies to `.request.json` and `.response.json` files under that directory, and the events carry a `body_ref` path instead of the inline body. Ship the directory with a log collector or sidecar rather than through the telemetry stream.
 
     For each successful response, Claude Code also appends one line to `index.jsonl` in that directory, linking the response file to the request file that produced it and to the transcript message it became. Each line holds no message content, and the [API response body event](#api-response-body-event) section lists its fields. The index file requires Claude Code v2.1.274 or later
+* The machine's name and ID aren't included by default. To include them as `host.name` and `host.id`, set [`OTEL_RESOURCE_INCLUDE_HOST=1`](#identify-the-machine-a-session-ran-on). A host name often contains a person's name, and `host.id` is a lasting identifier for the machine. If you set the variable in managed settings, tell the people who use those machines, because Claude Code shows them no notice.
 
 ## Monitor Claude Code on Amazon Bedrock
 
@@ -82205,6 +82273,8 @@ When the session's launch environment already sets a variable, Claude Code [igno
 ## Verify your configuration
 
 You usually find out about a wrong proxy address or a bad certificate path from a [connection or certificate error](/docs/en/errors#network-and-connection-errors) on a later request, since Claude Code doesn't validate most of these settings when it reads them. The one setting it checks at startup is the proxy URL: when it can't parse the value, such as one missing the `http://` scheme, Claude Code stops launch with an error naming the variable to fix.
+
+With Claude Code v2.1.327 or later, some starts go ahead on an `HTTPS_PROXY` value that lacks `http://`, where neither standard input nor standard output is a terminal. That is so when Claude Desktop, an SDK, or cron starts Claude Code. Write the proxy value as a complete URL, such as `http://proxy.example.com:8080`, even if a plain `host:port` works in some of your sessions.
 
 To confirm your configuration loaded before you send a request, start Claude Code with debug logging:
 
@@ -83166,7 +83236,9 @@ The following sections cover the order Claude Code evaluates an action in, how t
 >
 > Narrow rules like `Bash(npm test)` stay in effect. Claude Code restores the dropped rules when you leave auto mode. Before v2.1.236, Claude Code left `Monitor` allow rules in effect in auto mode, so a rule that matched the whole tool approved Monitor commands without classifier review.
 >
-> Claude Code also runs `git status` itself before a command that would discard uncommitted work, such as `git reset --hard` or `rm -rf`, and shows the classifier whether staged, modified, or untracked work is present. Claude Code reports untracked files in that check even when the repository's git configuration sets `status.showUntrackedFiles=no`.
+> Claude Code can also run `git status` itself before a command that would discard uncommitted work, such as `git reset --hard` or `rm -rf`, and show the classifier whether staged, modified, or untracked work is present. Claude Code reports untracked files in that check even when the repository's git configuration sets `status.showUntrackedFiles=no`.
+>
+> Under [server-side classifier review](#server-side-classifier-review), `git reset --hard` can be blocked on a clean working tree, because Claude Code can skip `git status` unless auto mode recently blocked an action. After the block, the classifier can see the clean status and allow Claude's retry.
 >
 > In the classifier requests sent by Claude Code itself, the classifier sees user messages, tool calls other than read-only lookups such as file reads and searches, and your CLAUDE.md content. Tool results are stripped from those requests, so hostile content in a file or web page can't manipulate the classifier directly.
 >
@@ -83240,8 +83312,6 @@ claude --permission-mode bypassPermissions
 
 The `--dangerously-skip-permissions` flag is equivalent.
 
-Claude Code refuses `bypassPermissions` in a session you start with [`--restricted`](/docs/en/cli-reference#cli-flags). `--restricted` requires Claude Code v2.1.248 or later.
-
 The first time you start an interactive session with this mode enabled, Claude Code shows a warning dialog asking you to accept responsibility for actions taken without permission checks:
 
 * **If you accept**: Claude Code sets `skipDangerousModePermissionPrompt` to `true` in `~/.claude/settings.json`, so later sessions skip the dialog. To see the dialog again, remove the key from that file or set it to `false`. The [`skipDangerousModePermissionPrompt` reference](/docs/en/settings-reference#skipdangerousmodepermissionprompt) lists the other settings files where you or your organization can set it.
@@ -83274,6 +83344,10 @@ The check is skipped automatically inside a recognized sandbox. To run autonomou
 > [!WARNING]
 >
 > `bypassPermissions` offers no protection against prompt injection or unintended actions. For background safety checks with far fewer permission prompts, use [auto mode](#eliminate-prompts-with-auto-mode) instead. Administrators can block this mode by setting `permissions.disableBypassPermissionsMode` to `"disable"` in [managed settings](/docs/en/managed-settings).
+
+### Restricted mode refuses bypassPermissions
+
+Claude Code refuses `bypassPermissions` in a session you start with [`--restricted`](/docs/en/cli-reference#cli-flags). `--restricted` requires Claude Code v2.1.248 or later. If you see `Error: bypassPermissions not supported in restricted mode`, remove the flag or setting that enables `bypassPermissions`, such as `--dangerously-skip-permissions`. To keep `bypassPermissions`, start without `--restricted` or [`CLAUDE_CODE_RESTRICTED`](/docs/en/env-vars#variables) instead.
 
 ### Bypass permissions ignored in a background session
 
@@ -83406,6 +83480,7 @@ Claude Code also looks inside these constructs:
 * **Inline scripts**: a script passed to `sh`, `bash`, `zsh`, or a similar POSIX shell with `-c`, as in `bash -c 'rm -rf ~'`.
   * When the script is double-quoted, the invoking shell expands its variables before the inner shell receives the script. In `find . -name '*.tmp' -exec sh -c "rm -rf \"$1\"/*" _ {} \;`, the command expands to a removal from the filesystem root once per match, and Claude Code treats it as a critical-path removal.
   * A single-quoted script that binds `$1` to a real value, as `sh -c 'rm -rf "$1"/*' _ {}` does, isn't flagged.
+  * If you see `This shell -c script runs rm and could not be checked`, read the script before you approve it. The command counts as a [critical-path removal](#critical-path-removals-in-each-permission-mode).
 
 To turn off the check on a critical path typed directly in a `-c` script, such as `~`, set [`CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT=1`](/docs/en/env-vars#variables) in the environment that launches Claude Code.
 
@@ -97123,7 +97198,7 @@ Every key below links to its entry. Scope lists the [files](/docs/en/settings#se
 | [`permissions`](#permissions) | Set allow, ask, and deny rules and the default [permission mode](/docs/en/permission-modes) | Permission settings | Any file |
 | [`permissions.additionalDirectories`](#permissions-additionaldirectories) | Give Claude file access to [directories outside the current one](/docs/en/permissions#working-directories) | Permission settings | Any file |
 | [`permissions.allow`](#permissions-allow) | Approve listed [tool uses](/docs/en/permissions#permission-rule-syntax) without a prompt | Permission settings | Any file |
-| [`permissions.ask`](#permissions-ask) | Always prompt before listed [tool uses](/docs/en/permissions#permission-rule-syntax) | Permission settings | Any file |
+| [`permissions.ask`](#permissions-ask) | Prompt before listed [tool uses](/docs/en/permissions#permission-rule-syntax) | Permission settings | Any file |
 | [`permissions.blockReadsOutsideWorkingDirectories`](#permissions-blockreadsoutsideworkingdirectories) | Make the file tools refuse reads outside the [working directories](/docs/en/permissions#working-directories) in every permission mode | Permission settings | Any file |
 | [`permissions.blockWritesOutsideWorkingDirectories`](#permissions-blockwritesoutsideworkingdirectories) | Make the `Write`, `Edit`, and `NotebookEdit` tools refuse paths outside the [working directories](/docs/en/permissions#working-directories) in every permission mode, apart from [some of Claude Code's own files](#what-the-write-block-refuses-and-what-stays-writable) | Permission settings | Any file |
 | [`permissions.defaultMode`](#permissions-defaultmode) | Set the default [permission mode](/docs/en/permission-modes#which-mode-a-session-starts-in) for new sessions | Permission settings | Any file |
@@ -97650,7 +97725,7 @@ To cap one model's effort rather than set its level, add a [`maxEffortLevel`](#m
 * **Type**: object mapping a model name to an object with any of these fields:
   * `effortLevel`: one of `"low"`, `"medium"`, `"high"`, or `"xhigh"`
   * [`maxEffortLevel`](#maxeffortlevel): the highest effort level the model may run at
-  * `autoCompactWindow`: a number of tokens from `100000` to `1000000`, or `"auto"` for the window tuned for the model. [`/autocompact`](/docs/en/model-config#set-the-auto-compact-window) saves here. For that model, the value takes precedence over a top-level [`autoCompactWindow`](#autocompactwindow) in the same settings file. Requires Claude Code v2.1.288 or later
+  * `autoCompactWindow`: a token count of `100000` or more, or `"auto"` for the window tuned for the model. [`/autocompact`](/docs/en/model-config#set-the-auto-compact-window) saves here. For that model, the value takes precedence over a top-level [`autoCompactWindow`](#autocompactwindow) in the same settings file. Requires Claude Code v2.1.288 or later
 * **Default**: unset
 
 Claude Code writes each entry under the model's canonical name, such as `claude-opus-5-5`, and matches that model's alias, date-suffixed, `[1m]`, and recognized provider-specific IDs to the same entry.
@@ -97959,6 +98034,8 @@ For the complete rule syntax, including wildcard behavior, tool-specific pattern
 ### `permissions.ask`
 
 List the tool uses that prompt you for confirmation even in a permission mode that would otherwise approve them, such as `acceptEdits` or `bypassPermissions`. In `dontAsk` mode Claude Code denies a matching tool use instead of prompting.
+
+A matching tool use can still run without your approval if a [`PermissionRequest` hook](/docs/en/hooks#permissionrequest) or a [mod](/docs/en/plugins/mods/overview#what-a-mod-can-reach) allows it. With [sandbox auto-allow](/docs/en/permissions#how-permissions-interact-with-sandboxing), sandboxed commands can skip a bare `Bash` ask rule.
 
 * **Scope**: [`Any file`](#scopes)
 * **Type**: array of permission rule strings
@@ -99318,7 +99395,7 @@ The manual `/compact` command keeps working while auto-compact is off. If you tu
 Set how full the context window gets before Claude Code [compacts automatically](/docs/en/context-window#when-your-context-fills-up).
 
 * **Scope**: [`Any file`](#scopes)
-* **Type**: number of tokens, from `100000` to `1000000`. Claude Code caps the value at your model's context window; the [models overview](https://platform.claude.com/docs/en/about-claude/models/overview) lists each model's window
+* **Type**: number of tokens, at least `100000`. Claude Code caps the value at your model's context window; the [models overview](https://platform.claude.com/docs/en/about-claude/models/overview) lists each model's window
 * **Default**: unset, so Claude Code picks a window tuned for your model
 * **Per-session overrides**: [`--autocompact`](/docs/en/cli-reference#cli-flags) takes precedence over this key for one session, and [`CLAUDE_CODE_AUTO_COMPACT_WINDOW`](/docs/en/env-vars) takes precedence over both unless Claude Code [ignores the variable's value](/docs/en/model-config#claude_code_auto_compact_window-values)
 
@@ -99461,6 +99538,7 @@ This example turns off automatic compaction and routes API requests through a pr
     * The content variables `OTEL_LOG_USER_PROMPTS`, `OTEL_LOG_ASSISTANT_RESPONSES`, `OTEL_LOG_TOOL_CONTENT`, and `OTEL_LOG_TOOL_DETAILS`
     * `OTEL_EXPORTER_OTLP_*` variables whose names end in `_ENDPOINT`, `_HEADERS`, `_PROTOCOL`, `_CERTIFICATE`, `_CLIENT_KEY`, or `_INSECURE`, in the generic and per-signal forms, such as `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_METRICS_HEADERS`
     * `OTEL_EXPORTER_PROMETHEUS_HOST` and `OTEL_EXPORTER_PROMETHEUS_PORT`
+    * `OTEL_RESOURCE_INCLUDE_HOST`, which [adds the machine's name and ID](/docs/en/monitoring-usage#identify-the-machine-a-session-ran-on)
 
     Only these values still apply from project and local settings, because they turn something off: `none` for the three exporter selectors, and an off value such as `0` for `OTEL_LOG_USER_PROMPTS`, `OTEL_LOG_TOOL_CONTENT`, and `OTEL_LOG_TOOL_DETAILS`. Such a value overrides the same variable in your user settings, but not one that the environment you start Claude Code from, a `--settings` file, or managed settings sets.
 
@@ -99481,7 +99559,7 @@ This example turns off automatic compaction and routes API requests through a pr
 * [`CLAUDE_CODE_PROJECT_DIR_NAME`](/docs/en/sessions#name-the-project-directory-yourself), which Claude Code reads from the launch environment only, is ignored from every file; requires v2.1.234 or later.
 * [`CLAUDE_CODE_RESTRICTED`](/docs/en/env-vars#variables), which Claude Code reads from the launch environment only, is ignored from every file.
 * [`CLAUDE_CODE_DISABLE_POWERSHELL_CMD_RM_DENY`](/docs/en/env-vars#variables), which Claude Code reads from the launch environment only, is ignored from every file. The variable requires Claude Code v2.1.283 or later.
-* [`CLAUDE_CODE_DISABLE_DANGEROUS_RM_TIMEOUT`, `CLAUDE_CODE_DISABLE_SUBSTITUTION_RM_PROMPT`, `CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT`, and `CLAUDE_CODE_DISABLE_MOUNTED_DRIVE_RM_PROMPT`](/docs/en/env-vars#variables), which Claude Code reads from the launch environment only, are ignored from every file.
+* [`CLAUDE_CODE_DISABLE_DANGEROUS_RM_TIMEOUT`, `CLAUDE_CODE_DISABLE_SUBSTITUTION_RM_PROMPT`, `CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT`, `CLAUDE_CODE_STRICT_INLINE_SHELL_RM_PROMPT`, `CLAUDE_CODE_DISABLE_MOUNTED_DRIVE_RM_PROMPT`, and `CLAUDE_CODE_DISABLE_ULTRAREVIEW_TRUST_CHECK`](/docs/en/env-vars#variables), which Claude Code reads from the launch environment only, are ignored from every file.
 * [`CLAUDE_CODE_EVEN_MORE_DANGEROUSLY_SKIP_PERMISSIONS`](/docs/en/env-vars#variables), which Claude Code reads from the launch environment only, is ignored from every file.
 * [`CLAUDE_CODE_WARN_DISK_FREE_GIB` and `CLAUDE_CODE_WARN_MEMORY_FREE_GIB`](/docs/en/env-vars#variables), which Claude Code reads from the launch environment only, are ignored from every file. The variables require Claude Code v2.1.304 or later.
 
@@ -101023,7 +101101,7 @@ Each entry below shows one allowlist entry per source type and the fields it acc
 
 | Source | Example entry | Fields |
 | :- | :- | :- |
-| `github` | `{ "source": "github", "repo": "acme-corp/plugins", "ref": "main", "path": "marketplace" }` | `repo` required; `ref` is a branch, tag, or commit SHA; `path` is a subdirectory |
+| `github` | `{ "source": "github", "repo": "acme-corp/plugins", "ref": "main", "path": ".claude-plugin/marketplace.json" }` | `repo` required; `ref` is a branch, tag, or commit SHA; `path` is the [marketplace file's path](/docs/en/plugins/marketplace-reference#fields-by-type) in the repository |
 | `git` | `{ "source": "git", "url": "https://gitlab.example.com/tools/plugins.git", "ref": "production" }` | `url` required; `ref` and `path` as for `github` |
 | `url` | `{ "source": "url", "url": "https://plugins.example.com/marketplace.json", "headers": { "Authorization": "Bearer ${TOKEN}" } }` | `url` required; `headers` adds HTTP headers for authenticated access |
 | `file` | `{ "source": "file", "path": "/opt/acme-corp/plugins/marketplace.json" }` | `path` required, the absolute path to a `marketplace.json` file |
@@ -101081,7 +101159,7 @@ For every source type except owner-wildcard `github` entries and the regex-match
 For example, Claude Code treats each pair below as two different sources:
 
 * `{ "source": "github", "repo": "acme-corp/plugins" }` and `{ "source": "github", "repo": "acme-corp/plugins", "ref": "main" }`
-* `{ "source": "github", "repo": "acme-corp/plugins", "path": "marketplace" }` and `{ "source": "github", "repo": "acme-corp/plugins" }`
+* `{ "source": "github", "repo": "acme-corp/plugins", "path": ".claude-plugin/marketplace.json" }` and `{ "source": "github", "repo": "acme-corp/plugins" }`
 
 #### Allow only the official marketplace
 
@@ -110492,6 +110570,7 @@ If your callback needs more time, set a higher `timeout` on its `HookMatcher`. I
 * Check all `PreToolUse` hooks for `permissionDecision: 'deny'` returns
 * Add logging to your hooks to see what `permissionDecisionReason` they're returning
 * Verify matcher patterns aren't too broad: an empty matcher matches all tools
+* If the tool result says a hook `returned updatedInput that failed schema validation` or `returned updatedInput that the tool refused`, fix that hook's `updatedInput`. Include the unchanged `tool_input` fields, as in [Modify tool input](#modify-tool-input), because `updatedInput` replaces the whole input.
 
 ### Modified input not applied
 
@@ -120714,7 +120793,7 @@ Focus on:
 | `mcpServers` | `(string \| object)[]` | No | MCP servers available to this agent, by name or inline config |
 | `initialPrompt` | `string` | No | Auto-submitted as the first user turn when this agent runs as the main thread agent. Ignored when the agent is invoked as a subagent |
 | `maxTurns` | `number` | No | Maximum number of agentic turns before the agent stops. When the agent reaches the limit, Claude Code returns its output marked as partial, and you can [resume the agent](#resume-subagents) to continue. The partial marking requires Claude Code v2.1.246 or later |
-| `autoCompactWindow` | `number` | No | Lower the [auto-compact window](/docs/en/sub-agents#subagent-auto-compact-window) for this agent when it runs as a subagent, to a token count from `100000` to `1000000`. Requires TypeScript Agent SDK v0.3.296 or later. The Python SDK's [`AgentDefinition`](/docs/en/agent-sdk/python#agentdefinition) doesn't have this field |
+| `autoCompactWindow` | `number` | No | Lower the [auto-compact window](/docs/en/sub-agents#subagent-auto-compact-window) for this agent when it runs as a subagent, to a token count of `100000` or more. Requires TypeScript Agent SDK v0.3.296 or later. The Python SDK's [`AgentDefinition`](/docs/en/agent-sdk/python#agentdefinition) doesn't have this field |
 | `background` | `boolean` | No | Run this agent as a non-blocking background task when invoked |
 | `omitClaudeMd` | `boolean` | No | Leave the user, project, and local CLAUDE.md files out of this agent's initial context; managed policy files still load. Ignored when the agent runs as the main thread agent. Requires TypeScript Agent SDK v0.3.271 or later. The Python SDK's [`AgentDefinition`](/docs/en/agent-sdk/python#agentdefinition) doesn't have this field |
 | `effort` | `'low' \| 'medium' \| 'high' \| 'xhigh' \| 'max' \| number` | No | Reasoning effort level for this agent |
@@ -123370,7 +123449,7 @@ type AgentDefinition = {
 | `skills` | No | Array of skill names to preload into the agent context |
 | `initialPrompt` | No | Auto-submitted as the first user turn when this agent runs as the main thread agent |
 | `maxTurns` | No | Maximum number of agentic turns (API round-trips) before stopping |
-| `autoCompactWindow` | No | Lower the [auto-compact window](/docs/en/sub-agents#subagent-auto-compact-window) for this agent when it runs as a subagent, to a token count from `100000` to `1000000`. Requires TypeScript Agent SDK v0.3.296 or later |
+| `autoCompactWindow` | No | Lower the [auto-compact window](/docs/en/sub-agents#subagent-auto-compact-window) for this agent when it runs as a subagent, to a token count of `100000` or more. Requires TypeScript Agent SDK v0.3.296 or later |
 | `background` | No | Run this agent as a non-blocking background task when invoked |
 | `omitClaudeMd` | No | Leave the user, project, and local CLAUDE.md files out of this agent's initial context; managed policy files still load. Use it for agents that take everything they need from the Agent tool prompt. Ignored when this agent runs as the main thread agent. Requires TypeScript Agent SDK v0.3.271 or later |
 | `memory` | No | Memory source for this agent: `'user'`, `'project'`, or `'local'` |
