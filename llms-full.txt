@@ -52260,7 +52260,7 @@ Those descriptions take up context, so keep them short. When the combined descri
 
 Claude Code includes built-in subagents that Claude automatically uses when appropriate. Each inherits the parent conversation's permission rules; most run with a restricted tool set.
 
-Explore and Plan start without your CLAUDE.md files and the git status snapshot to keep research fast and inexpensive. Other built-in and [custom subagents](#configure-subagents) load both, unless you set [`omitClaudeMd`](#supported-frontmatter-fields) in a custom subagent's definition to start it without the user, project, and local CLAUDE.md files. For the full breakdown of what reaches a subagent, see [what loads at startup](#what-loads-at-startup).
+Explore and Plan start without your CLAUDE.md files and the git status snapshot to keep research fast and inexpensive. For the full breakdown of what reaches a subagent, see [what loads at startup](#what-loads-at-startup).
 
 > [tab] Explore
 >
@@ -52300,13 +52300,14 @@ Explore and Plan start without your CLAUDE.md files and the git status snapshot 
 
 > [tab] Other
 >
-> Claude Code includes additional helper agents for specific tasks. These are typically invoked automatically, so you don't need to use them directly.
+> Claude Code includes additional helper agents for specific tasks.
 >
 > | Agent | Model | When Claude uses it |
 > | :- | :- | :- |
 > | claude | None of its own; follows the [model order](#choose-a-model) when Claude spawns it as a subagent | When a task doesn't fit a more specialized agent. A catch-all with every tool [available to subagents](#available-tools). Also the default agent for a dispatched [background session](/docs/en/agent-view); [which permission mode it starts in](/docs/en/agent-view#permission-mode-model-and-effort) depends on how the session was started |
 > | statusline-setup | Sonnet | When you run `/statusline` to configure your status line |
 > | claude-code-guide | Haiku | When you ask questions about Claude Code features |
+> | web-fetch | Haiku, or the model of the conversation that starts it [when it can't use Haiku](/docs/en/tools-reference#which-model-the-web-fetch-subagent-runs-on) | When Claude reads a web page in a [session that uses this subagent](/docs/en/tools-reference#web-fetch-subagent) |
 
 Built-in subagents are registered by default in interactive sessions. To restrict them:
 
@@ -52317,7 +52318,7 @@ Built-in subagents are registered by default in interactive sessions. To restric
 
 An Agent tool call that omits `subagent_type` fails with [`subagent_type is required`](/docs/en/errors#subagent-type-is-required) when the session has no `general-purpose` subagent to fall back on.
 
-Beyond these built-in subagents, you can create your own with custom prompts, tool restrictions, permission modes, hooks, and skills. The following sections show how to get started and customize subagents.
+Beyond these built-in subagents, you can create your own with custom prompts, tool restrictions, permission modes, hooks, and skills.
 
 ## Quickstart: create your first subagent
 
@@ -52370,8 +52371,6 @@ If Claude can't find the new subagent, restart Claude Code and try again.
 
 You now have a subagent you can use in any project on your machine to analyze codebases and suggest improvements.
 
-You can also write subagent files by hand, define them via CLI flags, or distribute them through plugins. The following sections cover all configuration options.
-
 > [!NOTE]
 >
 > Running `/agents` prints a reminder to ask Claude or edit `.claude/agents/` and `~/.claude/agents/` directly.
@@ -52379,7 +52378,7 @@ You can also write subagent files by hand, define them via CLI flags, or distrib
 
 ## Configure subagents
 
-A subagent's file location determines who it's available to, and its frontmatter determines what it can do. This section covers where subagent files live and every field they support.
+A subagent's file location determines who it's available to, and its frontmatter determines what it can do.
 
 ### Choose the subagent scope
 
@@ -52538,7 +52537,7 @@ Multi-word field names use camelCase, such as `maxTurns` and `disallowedTools`, 
 | `mcpServers` | No | [MCP servers](/docs/en/mcp) available to this subagent. Each entry is either a server name referencing an already-configured server (e.g., `"slack"`) or an inline definition with the server name as key and a full [MCP server config](/docs/en/mcp#installing-mcp-servers) as value. Ignored for [plugin subagents](#choose-the-subagent-scope) |
 | `hooks` | No | [Lifecycle hooks](#define-hooks-for-subagents) scoped to this subagent. Ignored for [plugin subagents](#choose-the-subagent-scope) |
 | `memory` | No | [Persistent memory scope](#enable-persistent-memory): `user`, `project`, or `local`. Enables cross-session learning |
-| `background` | No | Set to `true` to keep this subagent in the background even when Claude asks to wait for it. By default, subagents Claude spawns from the main conversation already [start in the background](#run-subagents-in-foreground-or-background) |
+| `background` | No | Set to `true` to keep this subagent in the background even when Claude asks to wait for it. By default, custom subagents Claude spawns from the main conversation already [start in the background](#run-subagents-in-foreground-or-background) |
 | `omitClaudeMd` | No | Set to `true` to start this subagent without the user, project, and local CLAUDE.md files in its [initial context](#what-loads-at-startup); [managed policy files](/docs/en/memory#how-claude-md-files-load) still load, except for [managed subagents](#choose-the-subagent-scope). Use it for subagents that take everything they need from the delegation prompt. Ignored when the agent runs as the main session agent via `--agent` or the `agent` setting. Requires Claude Code v2.1.271 or later |
 | `effort` | No | Effort level when this subagent is active. Overrides the session effort level, but not the [`CLAUDE_CODE_EFFORT_LEVEL`](/docs/en/env-vars#variables) environment variable. Options: `low`, `medium`, `high`, `xhigh`, `max`; available levels depend on the model. See [Choose an effort level](#choose-an-effort-level) |
 | `isolation` | No | Set to `worktree` to run the subagent in a temporary [git worktree](/docs/en/worktrees), giving it an isolated copy of the repository branched by default from your [default branch](/docs/en/worktrees#choose-the-base-branch) rather than the parent session's `HEAD`. The worktree is automatically cleaned up if the subagent makes no changes |
@@ -52641,7 +52640,7 @@ By default, a subagent with a model alias runs on the [version the alias points 
 
 #### When an allowlist blocks a subagent model
 
-If your organization's [`availableModels`](/docs/en/model-config#restrict-model-selection) allowlist blocks the model set for a subagent, the subagent runs on the first of these that applies:
+If your organization's [`availableModels`](/docs/en/model-config#restrict-model-selection) allowlist blocks the model set for a subagent other than [`web-fetch`](/docs/en/tools-reference#which-model-the-web-fetch-subagent-runs-on), the subagent runs on the first of these that applies:
 
 1. For a blocked family alias, the newest permitted version in that family, on [providers that support this substitution](/docs/en/model-config#restrict-model-selection)
 2. The model in `CLAUDE_CODE_SUBAGENT_MODEL`, if you set it, under these same rules
@@ -52699,11 +52698,15 @@ Before v2.1.280, background subagents couldn't use `LSP`.
 
 Teammates in [agent teams](/docs/en/agent-teams) additionally keep the task tools and cron tools: `TaskCreate`, `TaskGet`, `TaskList`, `TaskUpdate`, `CronCreate`, `CronDelete`, and `CronList`. In a [session without the Task tools](/docs/en/tools-reference#task-tool-availability), Claude Code doesn't provide the task tools to subagents either, even when the subagent runs a different model. An in-process teammate follows your session the same way. To find out whether a split-pane teammate has the task tools, see [Task tool availability](/docs/en/tools-reference#task-tool-availability).
 
+> [!NOTE]
+>
+> In a session where Claude reads web pages through the built-in [`web-fetch` subagent](/docs/en/tools-reference#web-fetch-subagent), the main conversation has no `WebFetch` tool of its own, and neither do [forks](#fork-the-current-conversation) or [teammates](/docs/en/agent-teams). Other subagents that Claude starts with the Agent tool can still call `WebFetch` themselves.
+
 #### Restrict which tools a subagent can use
 
 To restrict tools, use the `tools` field as an allowlist or the `disallowedTools` field as a denylist. If both are set, `disallowedTools` is applied first, then `tools` is resolved against the remaining pool. A tool listed in both is removed.
 
-This example uses `tools` to allow only Read, Grep, Glob, and Bash. The subagent can't edit files, write files, or use any MCP tools:
+This example uses `tools` to allow only Read, Grep, Glob, and Bash. The subagent has no Edit, Write, or MCP tools but can still change files through Bash:
 
 ```yaml theme={null}
 ---
@@ -52814,7 +52817,7 @@ Use the Playwright tools to navigate, screenshot, and interact with pages.
 
 Inline definitions use the same schema as `.mcp.json` server entries, keyed by the server name, and support the `stdio`, `http`, `sse`, and `ws` types.
 
-To keep an MCP server out of the main conversation entirely and avoid its tool descriptions consuming context there, define it inline here rather than in `.mcp.json`. The subagent gets the tools; the parent conversation doesn't.
+To keep an MCP server out of the main conversation entirely and avoid its tool descriptions consuming context there, define it inline here rather than in `.mcp.json`.
 
 The MCP restrictions that apply to the main session also cover servers declared in subagent frontmatter:
 
@@ -52845,7 +52848,9 @@ Set `permissionMode` to choose the permission mode a subagent runs in. Use the m
 
 The main conversation's permission mode decides whether Claude Code uses the value you set:
 
-* When the main conversation is in `bypassPermissions`, `acceptEdits`, or [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), the subagent runs in that same mode and Claude Code ignores the `permissionMode` you set. Under auto mode, the classifier evaluates the subagent's tool calls with the main conversation's block and allow rules. When the subagent finishes, the classifier also reviews its work and its final report before the report is delivered, as [How auto mode handles subagents](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) describes.
+* When the main conversation is in `bypassPermissions`, `acceptEdits`, or [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), your subagent runs in that same mode and Claude Code ignores the `permissionMode` you set.
+
+  Under auto mode, the classifier evaluates your subagent's tool calls with the main conversation's block and allow rules. When a subagent that Claude started with the Agent tool finishes, the classifier also reviews its work and its final report before the report is delivered. This review runs for a subagent other than an [agent team](/docs/en/agent-teams) teammate. See [How auto mode handles subagents](/docs/en/permission-modes#eliminate-prompts-with-auto-mode).
 
   If a subagent asks for permission while the main conversation is in `bypassPermissions`, check whether its tool call is one of the [actions no mode auto-approves](/docs/en/permission-modes#actions-no-mode-auto-approves).
 * When the main conversation is in `plan` mode, the subagent stays in plan mode whichever `permissionMode` you set, unless it runs as an [agent team teammate](#subagent-names) under the [agent teams rules](/docs/en/agent-teams#have-teammates-plan-before-implementing). If you set `dontAsk`, the subagent also doesn't prompt you: an action that plan mode would ask you to approve is denied instead.
@@ -52925,7 +52930,7 @@ When memory is enabled:
 
 * `project` is the recommended default scope. It makes subagent knowledge shareable via version control.
 * Ask the subagent to consult its memory before starting work: "Review this PR, and check your memory for patterns you've seen before."
-* Ask the subagent to update its memory after completing a task: "Now that you're done, save what you learned to your memory." Over time, this builds a knowledge base that makes the subagent more effective.
+* Ask the subagent to update its memory after completing a task: "Now that you're done, save what you learned to your memory."
 * Include memory instructions directly in the subagent's markdown file so it proactively maintains its own knowledge base:
 
   ```markdown theme={null}
@@ -53008,13 +53013,13 @@ See [Permissions documentation](/docs/en/permissions#tool-specific-permission-ru
 Subagents can define [hooks](/docs/en/hooks) that run during the subagent's lifecycle. There are two ways to configure hooks:
 
 * **In the subagent's frontmatter**: define hooks that run only while that subagent is active
-* **In `settings.json`**: define session-wide hooks that also fire inside subagents. Tool events such as `PreToolUse` and `PostToolUse` fire for the subagent's tool calls the same way they do in the main conversation, and `SubagentStart` and `SubagentStop` fire when a subagent starts or finishes
+* **In `settings.json`**: define session-wide hooks that also fire inside subagents. Tool events such as `PreToolUse` and `PostToolUse` fire for the subagent's tool calls the same way they do in the main conversation
 
-Hooks from [settings files, managed policy settings, and plugins](/docs/en/hooks#hook-locations) all apply inside subagents, so a `PreToolUse` hook in `settings.json` also runs before every tool a subagent uses.
+Hooks on tool events from [settings files, managed policy settings, and plugins](/docs/en/hooks#hook-locations) all apply inside subagents.
 
 #### Hooks in subagent frontmatter
 
-Define hooks directly in the subagent's markdown file. These hooks only run while that specific subagent is active and are cleaned up when it finishes.
+Define hooks directly in the subagent's markdown file.
 
 > [!NOTE]
 >
@@ -53052,8 +53057,6 @@ hooks:
 ---
 ```
 
-When the agent is invoked as a subagent, `Stop` hooks in frontmatter are automatically converted to `SubagentStop` events.
-
 #### Project-level hooks for subagent events
 
 Configure hooks in `settings.json` that respond to subagent lifecycle events in the main session.
@@ -53065,7 +53068,7 @@ Configure hooks in `settings.json` that respond to subagent lifecycle events in 
 
 Both events support matchers to target specific agent types by name. The matcher value is the agent's frontmatter `name` for project-level and user-level subagents, or the plugin-scoped identifier such as `my-plugin:db-agent` for [plugin subagents](/docs/en/plugins/components#agents). A scoped name contains a colon, so it is evaluated as an [unanchored regular expression](/docs/en/hooks#matcher-patterns); anchor it with `^` and `$`, as in `^my-plugin:db-agent$`, to match only that agent.
 
-This example runs a setup script only when the `db-agent` subagent starts, and a cleanup script when any subagent stops:
+This example runs a setup script only when the `db-agent` subagent starts, and a cleanup script when subagents stop:
 
 ```json theme={null}
 {
@@ -53089,7 +53092,7 @@ This example runs a setup script only when the `db-agent` subagent starts, and a
 }
 ```
 
-See [Hooks](/docs/en/hooks) for the complete hook configuration format.
+See [Hooks](/docs/en/hooks) for the complete hook configuration format, and [the `web-fetch` subagent](/docs/en/tools-reference#web-fetch-subagent) for an exception.
 
 ## Work with subagents
 
@@ -53173,7 +53176,7 @@ Subagents can run in the foreground or the background:
 
 #### Which subagents run in the background
 
-With nothing configured, a subagent that Claude spawns from your main conversation starts in the background.
+With nothing configured, a subagent other than [`web-fetch`](/docs/en/tools-reference#web-fetch-subagent) that Claude spawns from your main conversation starts in the background.
 
 * **`claude -p` and the Agent SDK**: Claude can wait, on its own judgment or when you ask.
 * **Interactive terminal session, VS Code, and desktop app sessions on your machine**: to let Claude wait for a subagent, [turn off fork mode](#let-claude-wait-for-a-subagent), which is [on by default](#turn-fork-mode-on-or-off).
@@ -53229,8 +53232,6 @@ In an interactive session with [agent teams](/docs/en/agent-teams) enabled, a su
 
 ### API errors in subagents
 
-When something [cuts off a subagent's response mid-stream](/docs/en/errors#the-response-above-may-be-incomplete), and the partial response contains text but no tool calls, Claude Code prompts the subagent to continue rather than ending the run. This happens in interactive sessions too. The run ends on the error only once those continuations are used up.
-
 A subagent whose run ends on an API error, such as a usage limit or a repeated server error, reports that failure back to Claude. What Claude receives depends on where the subagent ran:
 
 * **Foreground**: if a rate limit, overload, or server error cuts off a subagent that already produced text output, the Agent tool returns that partial output with a note that the subagent was cut off and didn't finish its task. A subagent that produced nothing, or whose only output was tool calls, fails with [`Agent terminated early due to an API error`](/docs/en/errors#agent-terminated-early-due-to-an-api-error), followed by the error detail.
@@ -53277,7 +53278,7 @@ For independent investigations, spawn multiple subagents to work simultaneously:
 Research the authentication, database, and API modules in parallel using separate subagents
 ```
 
-Each subagent explores its area independently, then Claude synthesizes the findings. This works best when the research paths don't depend on each other.
+Each subagent explores its area independently, then Claude synthesizes the findings.
 
 > [!WARNING]
 >
@@ -53339,8 +53340,6 @@ In the terminal, Claude Code shows nested subagents as a tree in the subagent pa
 
 ### Concurrent subagent limit
 
-Two limits control subagent use, each with its own variable: this one stops Claude from spawning more subagents while too many are running, and the [depth limit](#let-subagents-spawn-their-own-subagents) caps how deeply subagents nest. There's no limit on the total number of subagents Claude can spawn over a session.
-
 By default, when 20 subagents are running in a session, spawning another with the Agent tool fails with `Concurrent subagent limit reached`, and the error tells Claude not to retry. Spawning succeeds again when the running count drops below the limit. To change the limit, set [`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`](/docs/en/env-vars) to any positive whole number. Sessions with [ultracode](/docs/en/model-config#adjust-effort-level) active are exempt: the limit isn't enforced there. Requires Claude Code v2.1.217 or later.
 
 The limit blocks only subagents Claude spawns with the Agent tool, but other runs occupy the same slots:
@@ -53350,6 +53349,8 @@ The limit blocks only subagents Claude spawns with the Agent tool, but other run
 
 Agents that other features run, such as [workflow](/docs/en/workflows) agents and [agent team](/docs/en/agent-teams) teammates, follow their own limits instead.
 
+There's no limit on the total number of subagents Claude can spawn over a session.
+
 ### Manage subagent context
 
 #### What loads at startup
@@ -53358,9 +53359,9 @@ Each subagent starts with a fresh, isolated context window. It doesn't see your 
 
 A non-fork subagent's initial context contains:
 
-* **System prompt**: the agent's own prompt plus environment details that Claude Code appends, not the Claude Code system prompt. Custom subagents define theirs in the [markdown body](#write-subagent-files) or `prompt` field. Built-in agents have predefined prompts.
+* **System prompt**: the agent's own prompt plus environment details that Claude Code appends, not the Claude Code system prompt. Custom subagents define theirs in the [markdown body](#write-subagent-files) or `prompt` field.
 * **Task message**: the delegation prompt Claude writes when it hands off the work.
-* **CLAUDE.md files**: every level of the [CLAUDE.md hierarchy](/docs/en/memory#how-claude-md-files-load) the main conversation loads, including `~/.claude/CLAUDE.md`, project rules, `CLAUDE.local.md`, managed policy files, and any [`AGENTS.md` files](/docs/en/memory#agents-md) loaded as project instructions. The built-in Explore and Plan agents skip this. A subagent whose definition sets [`omitClaudeMd`](#supported-frontmatter-fields) loads only the managed policy files, or none at all when the definition comes from [managed settings](#choose-the-subagent-scope).
+* **CLAUDE.md files**: every level of the [CLAUDE.md hierarchy](/docs/en/memory#how-claude-md-files-load) the main conversation loads, including `~/.claude/CLAUDE.md`, project rules, `CLAUDE.local.md`, managed policy files, and any [`AGENTS.md` files](/docs/en/memory#agents-md) loaded as project instructions. The built-in Explore, Plan, and [`web-fetch`](/docs/en/tools-reference#web-fetch-subagent) agents skip this. A subagent whose definition sets [`omitClaudeMd`](#supported-frontmatter-fields) loads only the managed policy files, or none at all when the definition comes from [managed settings](#choose-the-subagent-scope).
 * **Git status**: a snapshot Claude Code reads from your repository when the subagent starts. For a subagent in [its own worktree](/docs/en/worktrees#isolate-subagents-with-worktrees) of that repository, the snapshot shows the worktree's branch, status, and recent commits. Absent outside a Git repository or whenever the snapshot is turned off; see [`includeGitInstructions`](/docs/en/settings-reference#includegitinstructions). Explore and Plan skip it regardless.
 * **Preloaded skills**: full content of any skill named in the agent's [`skills` field](#preload-skills-into-subagents). Built-in agents don't preload skills.
 * **Sibling roster**: a [system reminder](/docs/en/glossary#system-reminder) listing `main` and every other named agent in the session, each a valid `to` value for [`SendMessage`](#resume-subagents). The roster appears only when the subagent's tools include `SendMessage` and at least one other agent has a name, whether Claude named it when spawning it or it runs as an [agent team](/docs/en/agent-teams) teammate. It is a snapshot taken when the subagent starts, so agents named later don't appear.
@@ -53369,7 +53370,7 @@ To launch one of your own subagents without the user, project, and local CLAUDE.
 
 The main conversation still has your full CLAUDE.md when it reads these subagents' results, so most rules don't need to reach the subagent itself. If a rule must, such as "ignore the `vendor/` directory," restate it in the prompt you give Claude when delegating.
 
-You can't change which subagents receive git status. Only Explore and Plan skip it.
+You can't change which subagents receive git status.
 
 Some main-conversation state never reaches a non-fork subagent:
 
@@ -53492,7 +53493,7 @@ You can start a fork yourself with `/subtask` followed by a task, whether or not
 /subtask draft unit tests for the parser changes so far
 ```
 
-The fork appears in a panel below your prompt and runs in the background while you keep working. When it finishes, its result arrives as a message in your main conversation. The next section covers the panel controls for watching and steering forks while they run.
+The fork appears in a panel below your prompt and runs in the background while you keep working. When it finishes, its result arrives as a message in your main conversation.
 
 ### Observe and steer running forks
 
@@ -53536,7 +53537,7 @@ Fork mode lets Claude start a fork on its own. To stop Claude from starting fork
 * **Stop forks only**: add `"Agent(fork)"` to `permissions.deny` in your [settings](#disable-specific-subagents).
 * **Turn fork mode off**: set `CLAUDE_CODE_FORK_SUBAGENT` to `0`, following the steps in [Let Claude wait for a subagent](#let-claude-wait-for-a-subagent).
 
-While fork mode is on, Claude also can't [wait for a subagent](#run-subagents-in-foreground-or-background) in interactive terminal, VS Code, or desktop sessions on your machine. Fork mode is on by default from Claude Code v2.1.302, and in an interactive terminal session from v2.1.232.
+While fork mode is on, Claude also can't [wait for a subagent](#run-subagents-in-foreground-or-background) other than [`web-fetch`](/docs/en/tools-reference#web-fetch-subagent) in interactive terminal, VS Code, or desktop sessions on your machine. Fork mode is on by default from Claude Code v2.1.302, and in an interactive terminal session from v2.1.232.
 
 ## Example subagents
 
@@ -53553,7 +53554,7 @@ These examples demonstrate effective patterns for building subagents. Use them a
 
 ### Code reviewer
 
-A read-only subagent that reviews code without modifying it. This example shows how to design a focused subagent with limited tool access that excludes Edit and Write, and a detailed prompt that specifies exactly what to look for and how to format output.
+A subagent that reviews code without the Edit and Write tools. It can still change files through Bash.
 
 ```markdown theme={null}
 ---
@@ -53590,7 +53591,7 @@ Include specific examples of how to fix issues.
 
 ### Debugger
 
-A subagent that can both analyze and fix issues. Unlike the code reviewer, this one includes Edit because fixing bugs requires modifying code. The prompt provides a clear workflow from diagnosis to verification.
+A subagent that can both analyze and fix issues. Unlike the code reviewer, this one includes Edit because fixing bugs requires modifying code.
 
 ```markdown theme={null}
 ---
@@ -53627,7 +53628,7 @@ Focus on fixing the underlying issue, not the symptoms.
 
 ### Data scientist
 
-A domain-specific subagent for data analysis work. This example shows how to create subagents for specialized workflows outside of typical coding tasks. It explicitly sets `model: sonnet` for more capable analysis.
+A domain-specific subagent for data analysis work. It explicitly sets `model: sonnet` for more capable analysis.
 
 ```markdown theme={null}
 ---
@@ -53724,7 +53725,7 @@ chmod +x ./scripts/validate-readonly-query.sh
 
 On Windows, write the validation script in PowerShell and add `shell: powershell` to the hook entry. See [running hooks in PowerShell](/docs/en/hooks#windows-powershell-tool).
 
-The hook receives JSON via stdin with the Bash command in `tool_input.command`. Exit code 2 blocks the operation and feeds the error message back to Claude. See [Hooks](/docs/en/hooks#exit-code-output) for details on exit codes and [Hook input](/docs/en/hooks#pretooluse-input) for the complete input schema.
+See [Hooks](/docs/en/hooks#exit-code-output) for details on exit codes and [Hook input](/docs/en/hooks#pretooluse-input) for the complete input schema.
 
 The system prompt tells the subagent to refuse write requests, so the hook is a backstop: if the subagent attempts a write anyway, Claude Code blocks the command and the subagent sees the `Blocked: Write operations not allowed. Use SELECT queries only.` message.
 
@@ -56127,7 +56128,7 @@ To check on the task or stop it in the meantime, type `/tasks` in the prompt box
 
 #### The Run in background action is missing under a subagent
 
-By default in VS Code, subagents don't show this action. To see why for one subagent, open its card in the [agent map](#use-the-prompt-box) and read the `Spawned by` line:
+By default in VS Code, most subagents don't show this action. To see why for one subagent, open its card in the [agent map](#use-the-prompt-box) and read the `Spawned by` line:
 
 * **`Spawned by the main agent`**: the subagent started in the background, so Claude isn't waiting for it and you don't need to do anything. To have Claude wait for subagents instead, see [Let Claude wait for a subagent](/docs/en/sub-agents#let-claude-wait-for-a-subagent).
 * **`Spawned by` names another subagent**: the action appears only for subagents the main agent spawned, not a [nested subagent](/docs/en/sub-agents#let-subagents-spawn-their-own-subagents) another subagent waits for. To end the nested subagent early, click **Stop agent** on its card. The waiting subagent then carries on without that result.
@@ -69046,7 +69047,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_FORCE_STRIKETHROUGH` | Set to `1` to force strikethrough rendering for `~~text~~` in Claude's responses when your terminal supports it but is not auto-detected, such as over SSH without `TERM_PROGRAM` forwarded. Without this, undetected terminals show the literal `~~` markers instead of rendering the text as strikethrough. Requires Claude Code v2.1.186 or later |
 | `CLAUDE_CODE_FORCE_SYNC_OUTPUT` | Set to `1` to force-enable DEC private mode 2026 [synchronized output](https://gist.github.com/christianparpart/d8a62cc1ab659194337d73e399004036) when your terminal supports it but is not auto-detected. Useful for emulators such as Emacs `eat` that implement BSU/ESU but do not reply to the capability probe. Has no effect under tmux. Unlike `CLAUDE_CODE_NO_FLICKER`, which switches to [fullscreen rendering](/docs/en/fullscreen), this doesn't change the renderer |
 | `CLAUDE_CODE_FORCE_TERMINAL_IMAGES` | Set to `1` to draw [mod `Image` elements](/docs/en/plugins/mods/reference#elements) as pictures when your terminal draws kitty graphics protocol images with Unicode placeholders and you still see an `Image`'s dimmed `alt` text. See [which terminals draw an `Image` and where not to set this variable](/docs/en/plugins/mods/gallery#image-and-client) |
-| `CLAUDE_CODE_FORK_SUBAGENT` | Controls fork mode, which is on by default and lets Claude start [forks](/docs/en/sub-agents#fork-the-current-conversation) on its own. While fork mode is on, Claude also can't [wait for a subagent](/docs/en/sub-agents#run-subagents-in-foreground-or-background) in interactive terminal, VS Code, or desktop sessions on your machine. Set to `0` to turn fork mode off. For versions, see [Turn fork mode off](/docs/en/sub-agents#turn-fork-mode-on-or-off) |
+| `CLAUDE_CODE_FORK_SUBAGENT` | Controls fork mode, which is on by default and lets Claude start [forks](/docs/en/sub-agents#fork-the-current-conversation) on its own. Set to `0` to turn fork mode off, for example to [let Claude wait for a subagent](/docs/en/sub-agents#let-claude-wait-for-a-subagent). For versions, see [Turn fork mode off](/docs/en/sub-agents#turn-fork-mode-on-or-off) |
 | `CLAUDE_CODE_FORWARD_SUBAGENT_TEXT` | Set to `1` to emit [subagent](/docs/en/sub-agents) text and thinking blocks in `claude -p --output-format stream-json` output, the same behavior as the [`--forward-subagent-text`](/docs/en/cli-reference#cli-flags) flag. Use the variable when a harness invokes `claude` and can't pass the flag itself. Unlike the flag, which exits with an error outside non-interactive mode with stream-json output, the variable is ignored there so that nested invocations keep working when it's set process-wide. Requires Claude Code v2.1.211 or later |
 | `CLAUDE_CODE_FULL_SIGN_IN_LINK` | Set to `1` to print the full claude.ai login URL instead of a short one. Use it when the short URL shows an error or your script reads values from the URL. Set it in your shell or user settings. Requires Claude Code v2.1.330 or later |
 | `CLAUDE_CODE_GATEWAY_HINT_HEADERS` | Set to `1` to send the [gateway hint headers](/docs/en/llm-gateway-protocol#gateway-hint-headers), such as `x-claude-code-request-class` and `x-claude-code-compaction`, on a custom proxy or a third-party provider such as Amazon Bedrock or Claude Platform on AWS. Set to `0` to stop sending them on every connection, including a direct connection to the Anthropic API, where Claude Code sends them by default. Requires Claude Code v2.1.273 or later |
@@ -69174,7 +69175,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_USE_VERTEX` | Use [Google Cloud's Agent Platform](/docs/en/google-vertex-ai) |
 | `CLAUDE_CODE_WARN_DISK_FREE_GIB` | Set to a whole number of GiB, such as `10`, to have Claude Code warn Claude when free space on the working directory's filesystem falls below that amount. The warning is a system reminder saying how much is free. The reminder is off when the variable is unset, `0`, or not plain digits. Set it in the environment that launches Claude Code, since Claude Code ignores a copy delivered through a settings `env` block. Requires Claude Code v2.1.304 or later |
 | `CLAUDE_CODE_WARN_MEMORY_FREE_GIB` | On Linux and WSL, set to a whole number of GiB such as `4` to have Claude Code warn Claude when available memory falls below that amount. The warning is a system reminder saying how much is available. The reminder is off when the variable is unset, `0`, or not plain digits. Set it in the environment that launches Claude Code, since Claude Code ignores a copy delivered through a settings `env` block. Requires Claude Code v2.1.304 or later |
-| `CLAUDE_CODE_WEBFETCH_CACHE_TTL_MS` | Set to the number of milliseconds [WebFetch](/docs/en/tools-reference#webfetch-tool-behavior) keeps each fetched URL's response cached. The default is `900000`, which is 15 minutes. Takes plain digits only; `0`, a decimal, or any other spelling keeps the default. Claude Code reads the value once per launch, so a change in a settings `env` block applies when you next launch `claude`. Requires Claude Code v2.1.233 or later |
+| `CLAUDE_CODE_WEBFETCH_CACHE_TTL_MS` | Set to the number of milliseconds [WebFetch](/docs/en/tools-reference#webfetch-tool-behavior) keeps each fetched page cached. The default is `900000`, which is 15 minutes. Takes plain digits only; `0`, a decimal, or any other spelling keeps the default. Claude Code reads the value once per launch, so a change in a settings `env` block applies when you next launch `claude`. Requires Claude Code v2.1.233 or later |
 | `CLAUDE_CODE_WEBFETCH_DEADLINE_MS` | Upper bound in milliseconds on how long [WebFetch](/docs/en/tools-reference#webfetch-tool-behavior) waits for a page to download, including any redirects it follows. A download that hasn't completed by then fails with a deadline error. The default is `300000`, which is five minutes. Set to `0` to remove the limit. Takes plain digits only; a decimal or any other spelling keeps the default. Requires Claude Code v2.1.268 or later |
 | `CLAUDE_CODE_WEB_SEARCH_REFILLS_PER_HOUR` | Rate at which a session's [WebSearch limit](/docs/en/tools-reference#session-search-limit) refills, in calls per hour. The default is `100` in an interactive terminal session. In a [non-interactive](/docs/en/headless) session the default is `0`, which turns refill off. Takes plain digits only; any other spelling reads as unset. Requires Claude Code v2.1.290 or later |
 | `CLAUDE_CODE_WORKER_CHECKIN_SCHEDULE` | When `CLAUDE_AUTO_BACKGROUND_TASKS` is set to `1`, how long Claude Code waits before each reminder to Claude to check on [background subagents](/docs/en/sub-agents#run-subagents-in-foreground-or-background) that are still running. Takes one or more comma-separated waits in whole seconds from `1` to `86400`, such as `600` or `600,1800,3600`. Each value is the wait before the next reminder, and the last value repeats. Takes plain digits only; any other value or spelling reads as unset. When unset, there are no reminders. Requires Claude Code v2.1.283 or later |
@@ -73968,9 +73969,9 @@ In terminal sessions, `permission_prompt` for a sandboxed command's network requ
 >
 > * Expect `permission_prompt` once you haven't typed for about six seconds. The timer starts when the permission prompt appears, and each keystroke defers it. To run a hook immediately when Claude asks for permission to use a tool, use [PermissionRequest](#permissionrequest) instead.
 > * Expect `idle_prompt` about 60 seconds after Claude finishes responding, and only if you haven't typed since and no background agent, such as a background [subagent](/docs/en/sub-agents), is still running. Claude Code doesn't send `idle_prompt` while it waits for a claude.ai usage limit to reset. When the wait ends on its own, one of the `quota_auto_resume_*` types fires instead.
-> * Expect `elicitation_dialog` for an elicitation form, or `elicitation_url_dialog` for a browser URL request, once you haven't typed for about six seconds. Both share the same six-second gate as `permission_prompt`: the timer starts when the dialog appears, and each keystroke defers it.
+> * Expect `elicitation_dialog` for an elicitation form, or `elicitation_url_dialog` for a browser URL request, once you haven't typed for about six seconds.
 >
-> A permission request or elicitation that arrives while another dialog is on screen keeps the same six-second gate, timed from when the request arrives. Its notification can reach you while the request still waits behind the open dialog.
+> A permission request or elicitation that arrives while another dialog is on screen keeps the same six-second timing, timed from when the request arrives. Its notification can reach you while the request still waits behind the open dialog.
 
 Claude Code times `permission_prompt` differently in sessions where it sends permission requests to the Agent SDK's [`canUseTool` callback](/docs/en/agent-sdk/user-input), which is how Claude Desktop and the VS Code extension host Claude Code:
 
@@ -74024,13 +74025,17 @@ In addition to the [common input fields](#common-input-fields), Notification hoo
 }
 ```
 
-Notification hooks can't block or modify notifications. Claude Code discards their `systemMessage` and `continue` fields but still emits [`terminalSequence`](#emit-terminal-notifications), which is what the desktop notification example relies on. Notification hooks are intended for side effects such as forwarding the notification to an external service.
+Notification hooks can't block or modify notifications. Claude Code discards their `systemMessage` and `continue` fields but still emits [`terminalSequence`](#emit-terminal-notifications).
 
 ### SubagentStart
 
 Runs when Claude spawns a subagent with the Agent tool, when Claude [resumes a subagent](/docs/en/sub-agents#resume-subagents), and each time an in-process [agent team](/docs/en/agent-teams) teammate handles a new message. Supports matchers to filter by agent type name. For built-in agents, this is the agent name like `general-purpose`, `Explore`, or `Plan`. For [custom subagents](/docs/en/sub-agents), this is the `name` field from the agent's frontmatter, not the filename.
 
 For subagents shipped by a [plugin](/docs/en/plugins/overview), the agent type is the plugin-scoped identifier such as `my-plugin:reviewer`, not the bare frontmatter name. The colon places a plugin-scoped name on the regular-expression path, so anchor the matcher with `^` and `$` for an exact match: `^my-plugin:reviewer$`.
+
+> [!NOTE]
+>
+> For the built-in [`web-fetch` subagent](/docs/en/tools-reference#web-fetch-subagent), Claude Code runs `SubagentStart` hooks from managed settings only. For a hook set anywhere else, match `WebFetch` in a `PreToolUse` hook instead.
 
 #### SubagentStart input
 
@@ -74062,17 +74067,21 @@ SubagentStart hooks can't block subagent creation, but they can inject context i
 }
 ```
 
-When the hook runs again for the same subagent, Claude Code injects the returned context only when the subagent's context doesn't already hold the copy from an earlier run. The copy injected at launch stays in place, leaving the subagent's [prompt cache](/docs/en/prompt-caching#subagents-and-the-cache) intact. After [auto-compaction](/docs/en/sub-agents#auto-compaction) discards that copy, Claude Code injects the next run's context again.
+When the hook runs again for the same subagent, Claude Code injects the returned context only when the subagent's context doesn't already hold the copy from an earlier run. After [auto-compaction](/docs/en/sub-agents#auto-compaction) discards that copy, Claude Code injects the next run's context again.
 
 ### SubagentStop
 
 Runs when a Claude Code subagent has finished responding. Matches on agent type, same values as SubagentStart.
 
+> [!NOTE]
+>
+> For the built-in [`web-fetch` subagent](/docs/en/tools-reference#web-fetch-subagent), Claude Code runs `SubagentStop` hooks from managed settings only. For a hook set anywhere else, match `WebFetch` in a `PostToolUse` hook instead.
+
 #### SubagentStop input
 
-In addition to the [common input fields](#common-input-fields), SubagentStop hooks receive `stop_hook_active`, `agent_id`, `agent_type`, `agent_transcript_path`, and `last_assistant_message`. The `agent_type` field is the value used for matcher filtering. The `transcript_path` is the main session's transcript, while `agent_transcript_path` is the subagent's own transcript stored in a nested `subagents/` folder. The `last_assistant_message` field contains the text content of the subagent's final response, so hooks can access it without parsing the transcript file.
+In addition to the [common input fields](#common-input-fields), SubagentStop hooks receive `stop_hook_active`, `agent_id`, `agent_type`, `agent_transcript_path`, and `last_assistant_message`. The `transcript_path` is the main session's transcript, while `agent_transcript_path` is the subagent's own transcript stored in a nested `subagents/` folder. The `last_assistant_message` field contains the text content of the subagent's final response.
 
-Not every SubagentStop event comes from a subagent Claude spawned. Claude Code also runs internal agents for some of its own features, such as [prompt suggestions](/docs/en/interactive-mode#prompt-suggestions) and [`/btw` side questions](/docs/en/interactive-mode#side-questions-with-%2Fbtw), and SubagentStop fires when one of those finishes too. For those events, `agent_type` is the agent name the session itself runs as, such as one set with [`--agent`](/docs/en/cli-reference#cli-flags) or the [`agent` setting](/docs/en/settings-reference#agent), and an empty string when the session runs without one.
+Claude Code runs internal agents for some of its own features, such as [prompt suggestions](/docs/en/interactive-mode#prompt-suggestions) and [`/btw` side questions](/docs/en/interactive-mode#side-questions-with-%2Fbtw), and SubagentStop fires when one of those finishes too. For those events, `agent_type` is the agent name the session itself runs as, such as one set with [`--agent`](/docs/en/cli-reference#cli-flags) or the [`agent` setting](/docs/en/settings-reference#agent), and an empty string when the session runs without one.
 
 A `matcher` that names agent types doesn't match an empty `agent_type`. A hook whose matcher is omitted, `""`, or `"*"`, or is a regular expression that matches an empty string, runs for events with an empty `agent_type` too.
 
@@ -74097,7 +74106,7 @@ SubagentStop hooks also receive the `background_tasks` and `session_crons` array
 }
 ```
 
-SubagentStop hooks use the same decision control format as [Stop hooks](#stop-decision-control), including `hookSpecificOutput.additionalContext` with `hookEventName` set to `"SubagentStop"`, for non-error feedback that keeps the subagent running. Returning `decision: "block"` with a `reason` keeps the subagent running and delivers `reason` to the subagent as its next instruction. A hook that blocks by exiting 2 delivers its stderr message the same way. To inject context into the parent session after a subagent returns, use a [`PostToolUse`](#posttooluse) hook on the `Agent` tool instead.
+SubagentStop hooks use the same decision control format as [Stop hooks](#stop-decision-control), including `hookSpecificOutput.additionalContext` with `hookEventName` set to `"SubagentStop"`, for non-error feedback that keeps the subagent running. Returning `decision: "block"` with a `reason` keeps the subagent running and delivers `reason` to the subagent as its next instruction. To inject context into the parent session after a subagent returns, use a [`PostToolUse`](#posttooluse) hook on the `Agent` tool instead.
 
 ### TaskCreated
 
@@ -74318,7 +74327,7 @@ Use `additionalContext` when the hook is working as designed and giving Claude g
 
 ### StopFailure
 
-Runs instead of [Stop](#stop) when the turn ends due to an API error. Claude Code ignores the hook's output and exit code, apart from [`terminalSequence`](#emit-terminal-notifications). Use this to log failures, send alerts, or take recovery actions when Claude can't complete a response due to rate limits, authentication problems, or other API errors.
+Runs instead of [Stop](#stop) when the turn ends due to an API error. Claude Code ignores the hook's output and exit code, apart from [`terminalSequence`](#emit-terminal-notifications). Use this to log failures, send alerts, or take recovery actions.
 
 #### StopFailure input
 
@@ -74342,7 +74351,7 @@ In addition to the [common input fields](#common-input-fields), StopFailure hook
 }
 ```
 
-StopFailure hooks have no decision control. They run for notification and logging purposes only.
+StopFailure hooks have no decision control.
 
 ### TeammateIdle
 
@@ -74828,7 +74837,7 @@ In addition to the [common input fields](#common-input-fields), PostCompact hook
 }
 ```
 
-PostCompact hooks have no decision control. They can't affect the compaction result but can perform follow-up tasks.
+PostCompact hooks have no decision control.
 
 ### PreModelSwitch
 
@@ -84012,11 +84021,15 @@ The following sections cover the order Claude Code evaluates an action in, how t
 
 > [accordion] How auto mode handles subagents
 >
-> The classifier checks [subagent](/docs/en/sub-agents) work at three points:
+> When Claude starts a [subagent](/docs/en/sub-agents) with the Agent tool, the classifier checks the subagent's work at three points:
 >
 > 1. Before a subagent starts, the delegated task description is evaluated, so a dangerous-looking task is blocked at spawn time.
 > 2. While the subagent runs, each of its actions goes through the same [decision order](#how-the-classifier-evaluates-actions) as in the parent session, with the same block and allow rules. Any `permissionMode` in the subagent's frontmatter is ignored.
-> 3. When the subagent finishes, the classifier reviews its work and its final report before the parent reads the report. When the classifier flags the subagent's work or report, or a separate API safety check refuses the review, the report is still delivered, prepended with a security warning. When the classifier is unavailable for the review, the report arrives with a note to verify the subagent's work before acting on it.
+> 3. When a subagent other than an [agent team](/docs/en/agent-teams) teammate finishes, the classifier reviews its work and its final report before the parent reads the report.
+>
+>    When the classifier flags the subagent's work or report, or a separate API safety check refuses the review, the report is still delivered, prepended with a security warning. When the classifier is unavailable for the review, the report arrives with a note to verify the subagent's work before acting on it.
+>
+> For the [`web-fetch` subagent](/docs/en/tools-reference#web-fetch-subagent), Claude Code can skip the first two checks when your `WebFetch(domain:...)` allow rules or the [preapproved domains](/docs/en/tools-reference#webfetch-tool-behavior) cover every URL in its task. The subagent then starts in [`dontAsk` mode](#allow-only-pre-approved-tools-with-dontask-mode), so any other fetch that needs approval is denied. The third check still runs.
 
 > [accordion] Cost and latency
 >
@@ -106598,7 +106611,7 @@ The Agent tool spawns a subagent in a separate context window. The subagent work
 * **Teammate**: with [agent teams](/docs/en/agent-teams) enabled, a call that carries a `name` can launch a [teammate](/docs/en/agent-teams#how-claude-starts-agent-teams) instead, which reports back through team messages rather than by returning a result
 * **Fork**: wherever [fork mode](/docs/en/sub-agents#turn-fork-mode-on-or-off) is on, the tool can launch a [forked subagent](/docs/en/sub-agents#fork-the-current-conversation), which inherits the full parent conversation instead of starting fresh
 
-To cap how many turns a subagent runs, set `maxTurns` in the [subagent definition](/docs/en/sub-agents#supported-frontmatter-fields). When the subagent reaches the limit, Claude Code marks the returned result as partial output, and Claude can [resume the subagent](/docs/en/sub-agents#resume-subagents) to continue.
+To cap how many turns a subagent runs, set `maxTurns` in the [subagent definition](/docs/en/sub-agents#supported-frontmatter-fields).
 
 Which tools a non-fork subagent can use depends on the `tools` and `disallowedTools` fields in the [subagent definition](/docs/en/sub-agents):
 
@@ -106707,7 +106720,7 @@ Two [environment variables](/docs/en/env-vars) raise these limits, for Bash and 
 
 #### Foreground commands that move to the background
 
-When a foreground command reaches its timeout without finishing, Claude Code moves it to the background instead of stopping it, unless the command starts with `sleep`. A moved command's [time limit](#time-limit-for-background-commands) counts from the move, and a foreground subagent's moved command still stops when that subagent's run ends.
+When a foreground command reaches its timeout without finishing, Claude Code moves it to the background instead of stopping it, unless the command starts with `sleep`.
 
 Setting [`CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`](/docs/en/env-vars#variables) or running in [bare mode](/docs/en/headless#start-faster-with-bare-mode) disables auto-backgrounding, so a command that reaches its timeout stops instead.
 
@@ -106878,8 +106891,6 @@ The Monitor tool lets Claude watch something in the background and react when it
 * Connect to a WebSocket feed and report each message as it arrives
 
 For most watches, Claude writes a small script, runs it in the background, and receives each output line as it arrives. For a server that already pushes events, Claude can open a [WebSocket](#websocket-source) instead of running a script.
-
-You keep working in the same session and Claude interjects when an event arrives.
 
 Every watch Claude starts has a deadline: 5 minutes by default, at most 30 minutes, and at most 10 minutes in a [non-interactive](/docs/en/headless) run given a single prompt with `-p`.
 
@@ -107145,49 +107156,122 @@ Without the Task tools, an agent coordinates with its team through messages inst
 
 ## WebFetch tool behavior
 
-WebFetch takes a URL and a prompt describing what to extract. It fetches the page and converts the response to Markdown when the server returns HTML. For most fetches, it then runs the prompt against the content in a separate model call, and Claude receives the result of that call rather than the raw page. The conversion step is not configurable.
+Claude uses WebFetch to look something up on a web page. The URL can come from you or from Claude, for example from a [WebSearch](#websearch-tool-behavior) result. For most pages, Claude doesn't see the full text. It asks a question about the page, and a separate model call reads the page and returns an answer.
 
-This makes WebFetch lossy by design. The extraction prompt determines what reaches Claude, so a result that says a page doesn't mention something may only mean the prompt didn't ask about it. Ask Claude to fetch again with a more specific prompt, or use `curl` via Bash for the unprocessed page.
+### Allow a domain
 
-A few behaviors shape the response Claude receives:
+Terminal and VS Code sessions [start in auto mode by default](/docs/en/permission-modes#which-mode-a-session-starts-in). In auto mode, you don't see a prompt before a fetch, except for a domain that an `ask` rule matches. The [classifier](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) reviews the fetch instead and can block it. In Manual and `acceptEdits` modes, Claude Code asks for your permission.
 
-* WebFetch refuses `localhost` and any other hostname without a dot, such as a bare intranet name, before making a request. The [error it returns](/docs/en/errors#webfetch-cannot-fetch-localhost) tells Claude to reach local servers with `curl` through Bash instead.
-* HTTP URLs are automatically upgraded to HTTPS.
-* WebFetch reads up to 100,000 characters of a page's content per call. On Claude Code v2.1.290 or later, the result for a longer page tells Claude how much went unread, so Claude can fetch the next part.
-* WebFetch caches each response for 15 minutes by default, so repeated fetches of the same URL return quickly. On Claude Code v2.1.233 or later, set [`CLAUDE_CODE_WEBFETCH_CACHE_TTL_MS`](/docs/en/env-vars#variables) to change how long WebFetch keeps each response.
-* A page that hasn't finished downloading within five minutes, including any redirects WebFetch follows, fails with a deadline error. On Claude Code v2.1.268 or later, set [`CLAUDE_CODE_WEBFETCH_DEADLINE_MS`](/docs/en/env-vars#variables) to change the limit, or to `0` to remove it.
-* When a URL redirects to a different host, WebFetch returns a text result that names the original URL and the redirect target instead of following it. Claude then fetches the new URL with a second WebFetch call.
-* When the extraction step hits an overloaded API, Claude Code retries it with backoff; a fetch that still fails returns an error result.
+To approve a domain ahead of time, add an allow rule to a [settings file](/docs/en/settings), or select **Yes, and don't ask again for `<domain>`** when a prompt offers it. This example allows `example.com`:
 
-In Manual and `acceptEdits` [permission modes](/docs/en/permission-modes), WebFetch prompts before fetching, except for domains your [permission rules](/docs/en/permissions#manage-permissions) already allow or deny and a built-in set of preapproved documentation domains that fetch without a prompt. Whatever your rules allow, a fetch also passes the [WebFetch domain safety check](/docs/en/data-usage#webfetch-domain-safety-check) first; that section covers what the check sends and the setting that skips it. The prompt offers three options:
+```json theme={null}
+{
+  "permissions": {
+    "allow": ["WebFetch(domain:example.com)"]
+  }
+}
+```
 
-* **Yes**: approves this fetch only. The next WebFetch call prompts again, even for the same domain.
-* **Yes, and don't ask again for `<domain>`**: approves the fetch and saves a `WebFetch(domain:...)` allow rule for that domain to `.claude/settings.local.json` for that repository. See [how saved approvals persist](/docs/en/permissions#permission-system). When your organization sets [`allowManagedPermissionRulesOnly`](/docs/en/permissions#managed-only-settings), Claude Code hides this option.
-* **No, and tell Claude what to do differently**: rejects the fetch.
+To confirm, run `/permissions` in a session. The dialog lists the rule. Select it to see which settings it comes from.
 
-To allow a domain in advance without a prompt, add an allow rule like `WebFetch(domain:example.com)`; `WebFetch(domain:*)` allows every domain. The `auto` and `bypassPermissions` [permission modes](/docs/en/permissions#permission-modes) skip the prompt, except for a domain an explicit `ask` rule matches.
+| To allow | Use this rule |
+| :- | :- |
+| One domain | `WebFetch(domain:example.com)` |
+| Its subdomains | `WebFetch(domain:*.example.com)` |
+| Every site | `WebFetch` or `WebFetch(domain:*)`. See [how the two differ](/docs/en/permissions#allow-or-deny-every-fetch). |
 
-An explicit `WebFetch(domain:...)` rule in `deny`, `ask`, or `allow` takes precedence over the preapproved set, so you can block a preapproved domain or require a prompt for it.
+With a `domain:` allow rule, [sandboxed Bash commands](/docs/en/sandboxing#network-isolation) can also reach the domain, unless a [sandbox lock](/docs/en/sandboxing#keep-developers-from-widening-the-policy) makes the sandbox ignore the rule.
 
-When the URL is a claude.ai [artifact](/docs/en/artifacts) link, Claude Code can also ask for approval to read the artifact itself. For the cases where it asks, see [Read an artifact shared with you](/docs/en/artifacts#read-an-artifact-shared-with-you).
+### Block a site or turn WebFetch off
+
+| To | Do this |
+| :- | :- |
+| Block a domain | Add a `WebFetch(domain:...)` rule for it to `deny` |
+| Require a prompt for a domain | Add a `WebFetch(domain:...)` rule for it to `ask` |
+| Turn WebFetch off | Add `WebFetch` to `deny`, or set [`CLAUDE_CODE_DISABLE_WEB_FETCH`](/docs/en/env-vars#variables) to `1` |
+| Do any of these for your organization | Put the rule in [managed settings](/docs/en/managed-settings) |
+
+Outside the sandbox, if Bash is allowed, Claude can still use `curl`, `wget`, or other tools to reach any URL. See [Tool-specific permission rules](/docs/en/permissions#tool-specific-permission-rules).
+
+### When a fetch prompts, fails, or WebFetch is missing
+
+Claude's reply can leave out anything on the page that Claude didn't ask about. In the terminal, press `Ctrl+O` to see what Claude asked and the answer it received.
+
+| What you notice | What to do |
+| :- | :- |
+| Claude says a page doesn't cover something you know is there | Ask Claude to fetch the page again and tell it what to look for. For the raw page, ask it to run `curl` on the URL through the Bash tool. |
+| Claude leaves out the end of a long page, or says part of it wasn't read | Ask Claude to fetch the next part of the page. This requires Claude Code v2.1.290 or later. The [`web-fetch` subagent](#web-fetch-subagent) reads pages of up to about 48,000 characters in full, and WebFetch reads the first 100,000 when Claude calls it. |
+| Claude describes a page as it was before a recent change | WebFetch reuses its copy of a page for 15 minutes. To change how long, set [`CLAUDE_CODE_WEBFETCH_CACHE_TTL_MS`](/docs/en/env-vars#variables). |
+| Claude says the download ran out of time | A download fails after five minutes. To change the limit, set [`CLAUDE_CODE_WEBFETCH_DEADLINE_MS`](/docs/en/env-vars#variables). |
+| Claude reports a redirect and stops there | Ask Claude to fetch the new URL. When a redirect changes the host by more than adding or dropping `www.`, WebFetch returns the new URL and no page content. |
+| Claude can't fetch a local or intranet server | WebFetch [refuses `localhost`](/docs/en/errors#webfetch-cannot-fetch-localhost) and any other hostname without a dot. Ask Claude to reach the server with `curl` through the Bash tool. |
+| In a cloud session, Claude says the network blocks the domain | An allow rule isn't enough there. Also [add the domain](/docs/en/cloud-environments#allow-specific-domains) to the cloud environment's network access. |
+| In auto mode, a fetch is blocked and you see no prompt | Add an allow rule for the domain. If the classifier blocked the fetch, you can also open `/permissions` in the terminal and [approve the fetch](/docs/en/auto-mode-config#review-denials) under the **Recently blocked** tab so Claude can retry. |
+| In `claude -p` or the Agent SDK, a fetch is denied | These runs [start in Manual mode](/docs/en/permission-modes#which-mode-a-non-interactive-run-starts-in), and a call that needs approval is denied. Add an allow rule or start in auto mode. |
+| A fetch fails for a domain you allowed | The URL also has to pass the [WebFetch domain safety check](/docs/en/data-usage#webfetch-domain-safety-check), unless you turn the check off with [`skipWebFetchPreflight`](/docs/en/settings-reference#skipwebfetchpreflight). See [WebFetch domain safety check failed](/docs/en/errors#webfetch-domain-safety-check-failed). |
+| A rule in your own settings file has no effect | If your organization sets [`allowManagedPermissionRulesOnly`](/docs/en/settings-reference#allowmanagedpermissionrulesonly), Claude Code ignores the rule. Ask your administrator to add it to managed settings. |
+| Prompts continue after you add the domain to the sandbox's [`allowedDomains`](/docs/en/settings-reference#sandbox-network-alloweddomains) | WebFetch doesn't read that list, so add a WebFetch allow rule |
+| No prompt for a domain you didn't allow | Claude Code skips the prompt for a built-in set of preapproved documentation domains, and in `auto` and `bypassPermissions` modes. To require the prompt anyway, add an `ask` rule for the domain. Sandboxed Bash commands don't inherit the preapproved set. |
+| A claude.ai artifact link brings another prompt | See [Read an artifact shared with you](/docs/en/artifacts#read-an-artifact-shared-with-you) |
+| Claude can't fetch any page | Run `/status` in the session. If the `Organization configuration` line lists `HIPAA`, WebFetch is off: see [What developers see in Claude Code](/docs/en/hipaa-setup#what-developers-see-in-claude-code). If the `Organization policy` line reports that the policy didn't load and names web fetch, follow any fix the line names. WebFetch becomes available again without a restart once a policy that allows it loads. |
+
+### The web-fetch subagent
+
+`web-fetch` is the [subagent](/docs/en/sub-agents#built-in-subagents) built into Claude Code that reads web pages for Claude. When Claude needs a page, it calls the [Agent tool](#agent-tool-behavior) to pass `web-fetch` the URL and a question about the page. The subagent calls WebFetch, reads the page, and sends Claude the answer.
+
+Your session can use the subagent when you're signed in with a claude.ai account on Claude Code v2.1.287 or later. Without it, Claude calls WebFetch itself, and the model that Claude Code uses for [background tasks](/docs/en/model-config#environment-variables) reads the page. The subagent is off in setups such as these:
+
+* You [turned the subagent off](#turn-off-the-web-fetch-subagent)
+* You connect through an [LLM gateway](/docs/en/llm-gateway) on Claude Code v2.1.330 or later
+* Claude Code [doesn't fetch feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching), such as on Amazon Bedrock or with `DISABLE_TELEMETRY` set
+
+These signs mean the subagent fetched a page:
+
+* **Terminal**: the permission prompt's title is `Fetch · from the web-fetch agent`. The line that starts with `Received` shows only a size, such as `Received 87 bytes`.
+* **VS Code**: the fetch appears as an **Agent** row
+* **Desktop app or claude.ai/code**: the fetch appears as a row that opens a subagent pane
+* **`claude -p` or the Agent SDK**: in the [`system/init` event](/docs/en/headless#read-session-metadata), `agents` lists `web-fetch` and `tools` doesn't list `WebFetch`
+
+#### Which model the web-fetch subagent runs on
+
+By default, the `web-fetch` subagent runs on the model that the `haiku` [model alias](/docs/en/model-config#model-aliases) points to. If the subagent can't use that model, such as when your [`availableModels`](/docs/en/model-config#restrict-model-selection) allowlist leaves it out, it runs on the same model as the conversation that started it. To choose the model yourself, [run every subagent on one model](/docs/en/sub-agents#run-every-subagent-on-one-model).
+
+#### Rules, hooks, and CLAUDE.md with the web-fetch subagent
+
+Your `WebFetch` [permission rules](/docs/en/permissions#webfetch) apply to the pages the `web-fetch` subagent fetches, and so do the `PreToolUse` and `PostToolUse` [hooks](/docs/en/hooks) that match `WebFetch`.
+
+| If you rely on | With the subagent | What to do |
+| :- | :- | :- |
+| CLAUDE.md instructions about which pages to fetch | The subagent starts without your CLAUDE.md files, including your organization's managed one | Restrict fetches with `WebFetch` permission rules |
+| `SubagentStart` or `SubagentStop` hooks | Only the hooks defined in [managed settings](/docs/en/managed-settings) run for this subagent | In any other settings file, use a `PreToolUse` or `PostToolUse` hook that matches `WebFetch` |
+| A `PostToolUse` hook that parses the `WebFetch` result | The result is the page text. When Claude calls WebFetch itself, the result is an answer to Claude's question. | Handle both page text and answers in the hook |
+| A `PreToolUse` hook that blocks `Agent` calls | Claude starts the subagent with the `Agent` tool, so the page isn't fetched | [Turn the subagent off](#turn-off-the-web-fetch-subagent) |
+
+#### Turn off the web-fetch subagent
+
+Turn the `web-fetch` subagent off when your setup depends on Claude calling WebFetch itself, for example when a `PreToolUse` hook blocks every `Agent` call. Add this [deny rule](/docs/en/sub-agents#disable-specific-subagents) to a [settings file](/docs/en/settings), or to managed settings to cover your organization:
+
+```json theme={null}
+{
+  "permissions": {
+    "deny": ["Agent(web-fetch)"]
+  }
+}
+```
+
+To confirm, start a new session, ask Claude to fetch a page, and check that the [signs of the subagent](#web-fetch-subagent) don't appear. In the `system/init` event, `tools` lists `WebFetch` again and `agents` still lists `web-fetch`.
+
+If your organization sets [`allowManagedPermissionRulesOnly`](/docs/en/settings-reference#allowmanagedpermissionrulesonly), Claude Code ignores the deny rule in your own settings files, so ask your administrator to add it to managed settings.
+
+### Identify WebFetch requests to your site
 
 WebFetch sets a `User-Agent` header beginning with `Claude-User`, and an `Accept` header that prefers Markdown over HTML so servers that support content negotiation can return Markdown directly.
-
-Sandboxed commands don't inherit WebFetch's built-in set of preapproved documentation domains. To let a sandboxed command reach a domain without a prompt, add the domain to [`allowedDomains`](/docs/en/settings-reference#sandbox-network-alloweddomains) or allow it with a `WebFetch(domain:...)` rule, which the [sandbox also honors](/docs/en/sandboxing#network-isolation). WebFetch never reads the sandbox allowlist in return, so adding a domain to a sandbox or organization network allowlist doesn't stop WebFetch from prompting for it.
-
-### WebFetch availability
-
-On Claude Code v2.1.285 or later, set [`CLAUDE_CODE_DISABLE_WEB_FETCH`](/docs/en/env-vars#variables) to `1` to turn WebFetch off.
-
-If you sign in with a Team or Enterprise claude.ai account and don't connect through an [LLM gateway](/docs/en/llm-gateway), WebFetch also depends on your organization's policy, which Claude Code requests from `api.anthropic.com` when a session starts. The same goes for a session whose plan Claude Code can't determine, such as one running under a claude.ai token that another app supplied.
-
-If WebFetch is missing from a session, run `/status` in the session. If its `Organization policy` line reports that the policy didn't load and names web fetch among the features that wait for it, Claude Code is withholding WebFetch until it can confirm that your organization allows it. Outside a session, `claude doctor` makes its own request and prints the same line. Once a policy that allows WebFetch loads, the tool returns without a restart.
 
 ## WebSearch tool behavior
 
 WebSearch runs a query against Anthropic's [web search](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool) backend and returns result titles and URLs. It doesn't fetch the result pages. To read a page Claude finds in search results, it follows up with [WebFetch](#webfetch-tool-behavior).
 
-The tool may issue up to eight backend searches per call, refining the search internally before returning results. Claude can scope results with `allowed_domains` to include only certain hosts, or `blocked_domains` to exclude them. The two lists can't be combined in a single call.
+The tool may issue up to eight backend searches per call. Claude can scope results with `allowed_domains` to include only certain hosts, or `blocked_domains` to exclude them. The two lists can't be combined in a single call.
 
 When the search request hits an overloaded API, Claude Code retries it with backoff; a call that still fails returns an error result.
 
@@ -111191,7 +111275,7 @@ const options = {
 
 ### Track subagent activity
 
-Use `SubagentStop` hooks to monitor when subagents finish their work. See the full input type in the [TypeScript](/docs/en/agent-sdk/typescript#hookinput) and [Python](/docs/en/agent-sdk/python#hookinput) SDK references. This example logs a summary each time a subagent completes:
+Use `SubagentStop` hooks to monitor when subagents finish their work. See the full input type in the [TypeScript](/docs/en/agent-sdk/typescript#hookinput) and [Python](/docs/en/agent-sdk/python#hookinput) SDK references. This example logs a summary when a subagent completes:
 
 ```python Python theme={null}
 async def subagent_tracker(input_data, tool_use_id, context):
@@ -117775,7 +117859,7 @@ Grep returns this dict shape in each output mode. Which optional keys are presen
     "bytes": int,  # Size of the fetched content in bytes
     "code": int,  # HTTP response code
     "codeText": str,  # HTTP response code text
-    "result": str,  # Processed result from applying the prompt to the content
+    "result": str,  # Answer to the prompt, or page text
     "durationMs": int,  # Time to fetch and process the content, in milliseconds
     "url": str,  # URL that was fetched
 }
