@@ -1513,17 +1513,15 @@ If the stop command instead printed one of these four messages, the old process 
 | `was not sent SIGKILL` | macOS, Linux | Run the stop command again. If the process remains, check it with `ps -ww -o args= -p <pid>`: Claude Code started with `daemon` is a supervisor, so run `kill -9 <pid>`. Leave anything else; if `claude agents` then can't start a supervisor, delete `~/.claude/daemon.lock`. |
 | `supervisor (pid=<pid>) is still running` | Windows | End the process with `taskkill /PID <pid>` |
 
-### Dispatch fails with `Could not resolve authentication method`
+### A background session shows `Not logged in`
 
-If a background dispatch fails with `Could not resolve authentication method` while interactive sessions authenticate normally, the worker that received the dispatch didn't pick up credentials. Background sessions get their credentials from the [supervisor](#the-supervisor-process), so this error means no stored credential was available to the supervisor process itself. Confirm you have run `/login` or configured an API key, then stop the supervisor:
+If a background session shows [`Not logged in`](/docs/en/errors#not-logged-in) while interactive sessions authenticate normally, confirm you have run `/login` or configured an API key, then stop the [supervisor](#the-supervisor-process):
 
 ```bash theme={null}
 claude daemon stop --any --keep-workers
 ```
 
-Within [about a minute](#the-supervisor-process), run `claude agents` or `claude --bg` in your shell to start a fresh supervisor that reads your stored credentials. If you authenticate with an environment variable such as `ANTHROPIC_API_KEY` rather than `/login`, run that next command from a shell where the variable is set.
-
-See the [error reference](/docs/en/errors#could-not-resolve-authentication-method) for the full list of causes and fixes.
+Within [about a minute](#the-supervisor-process) of stopping it, run `claude agents` in your shell to start a fresh supervisor. If you authenticate with an environment variable such as `CLAUDE_CODE_OAUTH_TOKEN`, run `claude agents` from a shell where the variable is set. Then run [`claude respawn <id>`](#manage-sessions-from-the-shell) to restart the session, and resend your message.
 
 ### A background session shows `No LLM gateway`
 
@@ -17797,7 +17795,7 @@ type "hooks", and tell me what results appear
 
 If Claude Code asks for permission before a browser action, approve it. The dialog starts with `Claude in Chrome wants to` and offers an option to allow all actions on that site for the session. Claude opens a new tab and starts the task.
 
-Run `/chrome` at any time to check the connection status, manage permissions, reconnect the extension, or choose which connected browser to use. The integration is working when the status panel shows "Status: Enabled" and "Extension: Installed".
+Run `/chrome` at any time to check the connection status, manage permissions, reconnect the extension, or choose which connected browser to use.
 
 If more than one browser is connected, you choose which one Claude uses. When a browser action starts before you've chosen, Claude prompts you to pick one. To switch browsers later, run `/chrome` and choose another browser. Claude keeps using your choice even when another browser connects.
 
@@ -19419,7 +19417,6 @@ Cloud threads can load each repository's skills, agents, and commands. A cloud t
 | `CLAUDE.md`, `.claude/CLAUDE.md`, and `.claude/rules/` at the repository root | Loaded from every repository when the thread starts. [Path-specific rules](/docs/en/memory#path-specific-rules) don't load at the start |
 | Skills, agents, and commands under `.claude/` | Loaded from every repository, except in [threads that skip them](#threads-that-skip-repository-skills) |
 | MCP servers in `.mcp.json` | Not loaded. Use the connectors on your claude.ai account instead, as [Get skills, plugins, connectors, and tools into threads](#get-skills-plugins-connectors-and-tools-into-threads) describes |
-| Plugins enabled in `.claude/settings.json` | Not loaded. Add the plugin in **Project settings > Plugins** instead |
 | Permission rules in `.claude/settings.json` | Not applied. Approve tool calls inside the thread, as [Unblock a thread waiting on approval](#unblock-a-thread-waiting-on-approval) describes, or [run the thread on your own computer](#run-a-thread-on-your-own-computer) |
 | Hooks in `.claude/settings.json` | Not run. To use your hooks, [run the thread on your own computer](#run-a-thread-on-your-own-computer) |
 | `env` in `.claude/settings.json` | Not applied. Set environment variables in the [cloud environment](#choose-an-environment-for-threads) |
@@ -19443,7 +19440,7 @@ If cloud threads need to reach an internal API or a private package registry, or
 Cloud threads don't have the skills, MCP servers, plugins, and tools installed only on your machine. A thread that Claude runs on your machine through [Remote Control](/docs/en/remote-control) uses what's installed there. To make each of these available to cloud threads:
 
 * Skills: enable them for your claude.ai account, and cloud threads load the [skills you enable there](/docs/en/skills#skills-in-cowork-and-cloud-sessions), apart from [some threads in a self-hosted environment](/docs/en/self-hosted-environments-configuration#how-each-session’s-config-is-assembled). For skills committed to a repository, see [What threads pick up from your repositories](#what-threads-pick-up-from-your-repositories).
-* Plugins: add them in **Project settings > Plugins**; they load into each new cloud thread. Plugins that a repository declares in its `.claude/settings.json` [don't load in cloud threads](/docs/en/cloud-environments#what-carries-over-from-your-setup).
+* Plugins: add them in **Project settings > Plugins**; they load into each new cloud thread.
 * MCP servers: cloud threads get their MCP tools from the connectors on your claude.ai account, which are MCP servers you connect once at [claude.ai/customize/connectors](https://claude.ai/customize/connectors). Every cloud thread can use all of them with no per-project setup. The project conversation itself has no connectors, so send work that needs one as a task for a cloud thread. [How connectors reach Claude Code](/docs/en/mcp#how-connectors-reach-claude-code) lists the rules for cloud sessions and the settings that turn connectors off.
 * Command-line tools and packages: install them in the environment's [setup script](/docs/en/cloud-environments#setup-scripts).
 
@@ -22909,11 +22906,11 @@ The desktop app sends an OS notification when a Code session finishes a task and
 
 ### Ask a side question without derailing the session
 
-A side chat lets you ask Claude a question that uses your session's context but doesn't add anything back to the main conversation. Use it when you want to understand a piece of code, check an assumption, or explore an idea without steering the session off course.
+A side chat lets you ask Claude a question about your session. Claude's answers in a side chat aren't added to the main conversation automatically. Use a side chat to understand a piece of code, check an assumption, or explore an idea.
 
-Press **Cmd+;** on macOS or **Ctrl+;** on Windows to open a side chat, or type `/btw` in the prompt box. The side chat can read everything in the main thread up to that point. When you're done, close the side chat and continue the main session where you left off.
+Press **Cmd+;** on macOS or **Ctrl+;** on Windows to open a side chat, or type `/btw` in the prompt box. The side chat can read everything in the main thread up to that point. When you're done, close the side chat and return to the main session.
 
-Side chats are available in local, SSH, and WSL sessions. The desktop app doesn't save side chats to disk, so you can't return to one after you close the app.
+Side chats are available in local, SSH, and WSL sessions.
 
 ### Watch background tasks
 
@@ -23065,7 +23062,11 @@ To enable, disable, or uninstall plugins when the **+** menu shows **Plugins**, 
 
 You can scope plugins to your user account, a specific project, or local-only. If your organization manages plugins centrally, those plugins are available in desktop sessions the same way they are in the CLI, except the ones the desktop app [withholds under `disableSideloadFlags`](/docs/en/settings-reference#disablesideloadflags).
 
-The plugin browser is not available in cloud sessions, and plugins you install from the desktop app aren't available for cloud sessions. A cloud session also doesn't install plugins that the repository's `.claude/settings.json` declares, as [What carries over from your setup](/docs/en/cloud-environments#what-carries-over-from-your-setup) explains. Plugins aren't available in WSL sessions. For the full plugin reference including creating your own plugins, see [plugins](/docs/en/plugins/overview).
+> [!NOTE]
+>
+> The plugin browser is not available in cloud sessions, and plugins you install from the desktop app for your user account or as local-only aren't available there. See [What carries over from your setup](/docs/en/cloud-environments#what-carries-over-from-your-setup). Plugins aren't available in WSL sessions.
+
+For the full plugin reference including creating your own plugins, see [plugins](/docs/en/plugins/overview).
 
 ### Configure preview servers
 
@@ -24671,7 +24672,7 @@ Desktop and CLI read the same configuration files, so your setup carries over:
 
 #### MCP servers from the Claude Desktop chat app
 
-The Desktop app loads MCP servers from `claude_desktop_config.json` into local Code tab sessions, alongside servers from `~/.claude.json` and `.mcp.json`. A server you define in `claude_desktop_config.json` is available in both the Desktop chat surface and local Code tab sessions.
+The Desktop app loads MCP servers from `claude_desktop_config.json` into local Code tab sessions, alongside servers from `~/.claude.json` and `.mcp.json`. The servers from `claude_desktop_config.json` also load in a [WSL session](/docs/en/desktop-wsl), unless the session [lacks connectors](/docs/en/desktop-wsl#check-for-the-terminal-and-connectors). In a WSL session, those servers run on Windows.
 
 > [!NOTE]
 >
@@ -26786,13 +26787,13 @@ If you are prompted to log in repeatedly, see [Not logged in or token expired](/
 
 ### Could not resolve authentication method
 
-The session reached the API client without any credential. [Background sessions](/docs/en/agent-view) and cloud sessions show this message when the worker starts without a credential. Interactive, `-p`, and Agent SDK runs report the same condition as [Not logged in](#not-logged-in) and write this string only to their debug log, so if you found it there, follow that entry instead.
+The session reached the API client without any credential. If an interactive, `-p`, or Agent SDK run showed [Not logged in](#not-logged-in) and this string is in its debug log, follow that entry.
 
 ```text theme={null}
 Could not resolve authentication method. Expected one of apiKey, authToken, credentials, config, or profile to be set. Or for one of the "X-Api-Key" or "Authorization" headers to be explicitly omitted
 ```
 
-On current versions the error means no credential was available to the worker process. Before v2.1.174, a background session assigned to an idle pre-initialized worker could fail this way even when valid credentials were configured. Before v2.1.176, a cloud session that sat idle before being claimed could too. Upgrade to recover.
+Before v2.1.174, a background session assigned to an idle pre-initialized worker could fail this way even when valid credentials were configured. Before v2.1.176, a cloud session that sat idle before being claimed could too. Upgrade to recover.
 
 **What to do:**
 
@@ -31624,7 +31625,7 @@ When you fork a session, for example with [`--fork-session`](/docs/en/cli-refere
 **What to do:**
 
 * Undo the changes another way: ask Claude to reverse its edits, or restore the files from version control. When the backups are gone, running `/rewind` again fails the same way.
-* If Claude Code couldn't write or delete a file, fix what blocks the write, such as file permissions, then run `/rewind` again.
+* If Claude Code couldn't write or delete a file after you chose **Restore code**, fix what blocks the write, such as file permissions. Then run `/rewind` again.
 * To keep backups longer in future sessions, raise [`cleanupPeriodDays`](/docs/en/settings-reference#cleanupperioddays).
 
 Before v2.1.260, Claude Code silently skipped files whose backups were missing, and the rewind appeared to succeed.
@@ -37673,7 +37674,7 @@ When the same server is defined in more than one place, Claude Code connects to 
 2. Project scope
 3. User scope
 4. [Plugin-provided servers](/docs/en/plugins/components#mcp-servers)
-5. [claude.ai connectors](#use-mcp-servers-from-claude-ai)
+5. [claude.ai connectors](#use-mcp-servers-from-claude-ai). In `claude -p`, Agent SDK, and VS Code sessions, connectors rank above plugin-provided servers.
 
 Claude Code matches duplicates across the three scopes by name. It matches plugins and connectors by endpoint, so one that points at the same URL or command as an enabled server above counts as a duplicate.
 
@@ -41754,7 +41755,7 @@ A bundle's own manifest can declare settings the server needs from the user in a
 
 Users supply the values in one of two ways:
 
-* **In `/plugin`**: select the plugin on the **Installed** tab and choose **Configure**
+* **In `/plugin`**: for a plugin from a marketplace, select it on the **Installed** tab and choose **Configure**
 * **At install, from the shell**: pass [`--config <server>.<key>=<value>`](/docs/en/plugins/cli-reference#plugin-install) to `claude plugin install`. Requires Claude Code v2.1.285 or later, and works only for a bundle packaged inside the plugin.
 
 For transports and authentication, see [MCP](/docs/en/mcp#plugin-provided-mcp-servers).
@@ -42718,7 +42719,7 @@ Pick the tab for where you run Claude Code.
 
 > [tab] Cloud session
 >
-> A [cloud session](/docs/en/cloud-environments), including [the browser at claude.ai/code](/docs/en/claude-code-on-the-web), has no plugin browser and doesn't load the plugins you installed on your own machine or the ones your repository's `.claude/settings.json` turns on. For plugins your organization distributes through managed settings, see [Manage plugins for your organization](/docs/en/plugins/org).
+> A [cloud session](/docs/en/cloud-environments), including [the browser at claude.ai/code](/docs/en/claude-code-on-the-web), has no plugin browser and doesn't load the plugins you installed at user or local scope. For plugins your organization distributes through managed settings, see [Manage plugins for your organization](/docs/en/plugins/org).
 >
 > See [which parts of your setup are also available in a cloud session](/docs/en/cloud-environments#what-carries-over-from-your-setup) for the rest of your setup.
 
@@ -42875,7 +42876,7 @@ The **Installed** tab in `/plugin` lists your plugins with actions to enable, di
 A plugin's details menu offers **Disable plugin** or **Enable plugin**, **Update now**, and **Uninstall**. Two more items appear for plugins that take settings, and a plugin can show both:
 
 * **Configure options**: shown when the plugin's manifest declares [`userConfig` options](/docs/en/plugins/manifest-reference#user-configuration). Opens the dialog for those options
-* **Configure**: shown when the plugin includes a [bundled MCP server](/docs/en/plugins/components#include-a-packaged-mcpb-server). Sets that server's own `user_config` settings
+* **Configure**: shown when a marketplace plugin includes a [bundled MCP server](/docs/en/plugins/components#include-a-packaged-mcpb-server). Sets that server's own `user_config` settings
 
 The tab can also show plugins at **Managed** scope. Your organization installed those through [managed settings](/docs/en/settings#settings-files), and you can't enable, disable, or uninstall them here.
 
@@ -47630,7 +47631,7 @@ Read [Plugin loading reference](/docs/en/plugins/loading) for the rules at each 
 
 ## Tell Anthropic's marketplaces from third-party ones
 
-A marketplace's name places it in one of three tiers. Claude Code accepts the official and community names only for marketplaces sourced from `github.com/anthropics/` repositories:
+A marketplace's name places it in one of three tiers. Claude Code accepts the official and community names for marketplaces sourced from `github.com/anthropics/` repositories:
 
 * **Official**: marketplaces with one of Anthropic's [official marketplace names](/docs/en/plugins/security#official-marketplace-names), including `claude-plugins-official` and `claude-code-plugins`.
 * **Community**: marketplaces with one of Anthropic's community names, such as `claude-community`. [Identify Anthropic's marketplaces by name](/docs/en/plugins/security#marketplace-tiers) lists them.
@@ -47868,7 +47869,7 @@ Decide whether to trust a plugin before you install it, from what a plugin can d
 
 A Claude Code plugin you install can execute arbitrary code on your machine with your user privileges.
 
-You install a plugin from a marketplace, which is the catalog Claude Code fetches it from. Some marketplace names are [reserved for Anthropic's own marketplaces](#marketplace-tiers), and every other marketplace is third-party. A marketplace's name tells you who publishes the catalog, not what each plugin in it does, so [review a plugin before you install it](#review-a-plugin-before-you-install) whichever marketplace it comes from.
+You install a plugin from a marketplace, which is the catalog Claude Code fetches it from. Some marketplace names are [reserved for Anthropic's own marketplaces](#marketplace-tiers), and every other marketplace is third-party. A marketplace's name doesn't tell you what each plugin in it does, so [review a plugin before you install it](#review-a-plugin-before-you-install) whichever marketplace it comes from.
 
 Read this page if you're deciding whether to install a plugin, or if you review tools before your team can use them.
 
@@ -47905,7 +47906,7 @@ To remove a plugin you no longer trust, see [Remove a plugin you no longer trust
 
 ## Identify Anthropic's marketplaces by name
 
-A marketplace's name places it in one of three tiers: official, community, or third-party. Claude Code accepts the official and community names only for marketplaces sourced from `github.com/anthropics/` repositories, so a third-party marketplace can't present itself as an Anthropic one. A marketplace that a coworker or your organization publishes is third-party.
+A marketplace's name places it in one of three tiers: official, community, or third-party. Claude Code accepts the official and community names for marketplaces sourced from `github.com/anthropics/` repositories. A marketplace that a coworker or your organization publishes is third-party.
 
 The table lists which names fall in each tier:
 
@@ -50184,7 +50185,7 @@ In a terminal Claude Code session, install from the [official Anthropic marketpl
 
 * **Claude desktop app, local or SSH session**: use the **Desktop app** tab under [Install a plugin](/docs/en/plugins/install#install-a-plugin)
 * **VS Code extension**: install from the [**Manage plugins** dialog](/docs/en/vs-code#manage-plugins)
-* **Cloud sessions**: a cloud session doesn't load plugins from your user settings or from the repository's `.claude/settings.json`, as [What carries over from your setup](/docs/en/cloud-environments#what-carries-over-from-your-setup) explains. For plugins your organization distributes through managed settings, see [Manage plugins for your organization](/docs/en/plugins/org)
+* **Cloud sessions**: a cloud session doesn't load plugins from your user settings, as [What carries over from your setup](/docs/en/cloud-environments#what-carries-over-from-your-setup) explains. For plugins your organization distributes through managed settings, see [Manage plugins for your organization](/docs/en/plugins/org)
 
 The terminal install prompts for a scope. Choose user scope to write the plugin to your user settings, so it loads in every new local session you start on this machine.
 
@@ -50643,7 +50644,7 @@ For how compaction interacts with CLAUDE.md, skills, and rules, see the [context
 
 ## Export and locate session data
 
-Run `/export` to open a menu that lets you copy the current conversation to your clipboard or save it as a plain-text file, with messages and tool outputs rendered as readable text. Pass a filename to skip the menu and write directly to that file.
+Run `/export` to open a menu that lets you copy the current conversation to your clipboard or save it as a plain-text file. Pass a filename to skip the menu and write directly to that file. On v2.1.327 or later, that file can't already exist.
 
 ### Access conversations from scripts
 
@@ -50940,7 +50941,7 @@ When two skills share a directory or file name, where each one came from decides
 If a skill exists only in `~/.claude/skills/` on your machine, Claude Code reports that the skill was not found when a [cloud scheduled task](/docs/en/routines) invokes it. This happens because each run starts as a fresh cloud session. To make a personal skill available in these sessions:
 
 * For Cowork sessions, cloud sessions, and cloud threads in a [project](/docs/en/claude-projects#what-threads-pick-up-from-your-repositories), enable the skill for your claude.ai account. [Some sessions in a self-hosted environment](/docs/en/self-hosted-environments-configuration#how-each-session’s-config-is-assembled) don't load your account's skills.
-* For cloud sessions, you can instead commit the skill to the repository's `.claude/skills/`. For a project, check [which threads load it](/docs/en/claude-projects#what-threads-pick-up-from-your-repositories). Plugins declared in the repository's `.claude/settings.json` and plugins enabled only in your user settings [don't load in cloud sessions](/docs/en/cloud-environments#what-carries-over-from-your-setup).
+* For cloud sessions, you can instead commit the skill to the repository's `.claude/skills/`. For a project, check [which threads load it](/docs/en/claude-projects#what-threads-pick-up-from-your-repositories). Plugins enabled only in your user settings [don't load in cloud sessions](/docs/en/cloud-environments#what-carries-over-from-your-setup).
 
 [Desktop scheduled tasks](/docs/en/desktop-scheduled-tasks) run locally on your machine, so they do load `~/.claude/skills/`.
 
@@ -66241,7 +66242,7 @@ Cloud sessions start from a fresh clone of your repository. Anything you commit 
 | Your repo's `.mcp.json` MCP servers | Yes, in a session with one repository | Part of the clone, found from the session's working directory. For a self-hosted environment, see [which repository's settings apply](/docs/en/self-hosted-environments-configuration#repository-settings-in-sessions-with-several-repositories) |
 | Your repo's `.claude/rules/` | Yes | Part of the clone |
 | Your repo's `.claude/skills/`, `.claude/agents/`, `.claude/commands/` | Yes | Part of the clone |
-| Plugins and marketplaces declared in your repo's `.claude/settings.json` | No | A cloud session doesn't install the plugins a repository turns on under [`enabledPlugins`](/docs/en/settings-reference#enabledplugins), including ones from the marketplaces it lists under [`extraKnownMarketplaces`](/docs/en/settings-reference#extraknownmarketplaces) |
+| Marketplaces declared in your repo's `.claude/settings.json` | No, in an Anthropic-hosted environment | The session doesn't add the marketplaces a repository lists under [`extraKnownMarketplaces`](/docs/en/settings-reference#extraknownmarketplaces). For a self-hosted environment, see [which repository's settings apply](/docs/en/self-hosted-environments-configuration#repository-settings-in-sessions-with-several-repositories) |
 | Your organization's [server-managed settings](/docs/en/server-managed-settings) | Yes, except in [Claude Tag](https://claude.com/docs/claude-tag/overview) sessions | Fetched from Anthropic's servers when the session starts. See [Surface coverage](/docs/en/model-config#surface-coverage) for how `availableModels` is enforced in cloud sessions. Settings deployed to your device through MDM or managed settings files don't apply, because the session runs on an Anthropic-managed VM; in a [self-hosted environment](/docs/en/self-hosted-environments), sessions also read the managed settings file in the runner image, per [how Claude Code combines managed sources](/docs/en/managed-settings#how-claude-code-combines-managed-sources) |
 | Your user `~/.claude/CLAUDE.md` | No | Lives on your machine, not in the repo. See [Add personal preferences without committing to the repo](#add-personal-preferences-without-committing-to-the-repo) |
 | Your user `~/.claude/skills/`, `~/.claude/agents/`, `~/.claude/commands/` | No | Live on your machine, not in the repo. Commit them to the repo's `.claude/` directory instead. Cloud sessions automatically load [skills you enable on claude.ai](/docs/en/skills#skills-in-cowork-and-cloud-sessions) |
@@ -67205,7 +67206,7 @@ In the table below, `<arg>` indicates a required argument and `[arg]` indicates 
 | `/doctor [prompt-audit [path]]` | **[Skill](/docs/en/skills#bundled-skills).** Run a setup checkup that diagnoses installation, settings, extension, and `CLAUDE.md` problems and proposes fixes that Claude applies after you confirm. For what the checkup covers, or to audit your instructions with `prompt-audit` instead, see [Check your setup with `/doctor`](/docs/en/skills#check-your-setup-with-/doctor). The `prompt-audit` subcommand requires Claude Code v2.1.283 or later. Alias: `/checkup` |
 | `/effort [level\|auto\|status\|ultracode [on\|off]]` | Set the [effort level](/docs/en/model-config#adjust-effort-level): `low` to `xhigh`, `max`, or `auto`; `status` prints it. `ultracode` or `ultracode on` turns [ultracode](/docs/en/workflows#let-claude-decide-with-ultracode) on for the session, and `ultracode off` turns it off; the [`ultracode`](/docs/en/settings-reference#ultracode) key persists. `max` is session-only. The `on` and `off` arguments require Claude Code v2.1.284 or later. If you run `/effort` while Claude is working, see [when the new level starts](/docs/en/model-config#when-a-new-effort-level-starts). Works in `-p` on v2.1.205 or later |
 | `/exit` | Exit the CLI. In an attached [background session](/docs/en/agent-view#attach-to-a-session), this detaches and the session keeps running. Alias: `/quit` |
-| `/export [filename]` | Export the current conversation as plain text. With a filename, writes directly to that file. Without, opens a dialog to copy to clipboard or save to a file |
+| `/export [filename]` | Export the current conversation as plain text. With a filename, writes directly to that file, and on v2.1.327 or later refuses one that already exists. Without, opens a dialog to copy to clipboard or save to a file |
 | `/fast [on\|off]` | Toggle [fast mode](/docs/en/fast-mode) on or off. Run it while Claude is responding and Claude Code toggles fast mode without waiting for the turn to end, though the running turn finishes at its original speed. Before v2.1.242, Claude Code decided from a feature flag it fetched from Anthropic whether to run the command mid-turn or queue it until the turn finished, and always queued it in a session that doesn't [fetch feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching). Availability in non-interactive mode with `-p` is limited; see [Toggle fast mode](/docs/en/fast-mode#toggle-fast-mode) |
 | `/feedback [report]` | Send product feedback about Claude Code. Opens the same dialog as [`/bug`](#all-commands), with the same consent step, sending rules, and mid-turn behavior. In sessions with [Claude-drafted feedback](/docs/en/tools-reference#sendfeedback-tool-behavior), `/feedback` with no argument opens the drafts queue instead, where you review, edit, send, or discard the drafts Claude queued; the queue includes an option to write a new report in the dialog. With an argument, and for `/bug` always, the dialog opens directly |
 | `/fewer-permission-prompts` | **[Skill](/docs/en/skills#bundled-skills).** Scan your transcripts for common read-only Bash and MCP tool calls, then add a prioritized allowlist to project `.claude/settings.json` to reduce permission prompts |
@@ -68015,10 +68016,10 @@ This page covers Claude Code usage only: how to [track your costs](#track-your-c
 
 Run `/usage` at the Claude Code prompt and look under the **Session** heading for your current session's token usage.
 
-Claude Code computes the dollar figure locally from token counts at list price, unless a [`modelPricing`](/docs/en/settings-reference#modelpricing) table is in effect. An administrator sets one in your organization's managed settings so the figure uses your contracted rates, and while a table is in effect the `Total cost` line carries the note `at your organization's configured rates`. The figure is an estimate, so for authoritative billing see [Manage costs for your organization](#manage-costs-for-your-organization).
+Claude Code computes the dollar figure locally from token counts at list price, unless a [`modelPricing`](/docs/en/settings-reference#modelpricing) table is in effect. An administrator sets one in your organization's managed settings so the figure uses your contracted rates, and while a table is in effect the `Estimated cost` line carries the note `at your organization's configured rates`. The figure is an estimate, so for authoritative billing see [Manage costs for your organization](#manage-costs-for-your-organization).
 
 ```text theme={null}
-Total cost:            $0.55
+Estimated cost:        $0.55
 Total duration (API):  6m 20s
 Total duration (wall): 6h 33m 10s
 Total code changes:    0 lines added, 0 lines removed
@@ -68165,7 +68166,7 @@ Set `multiplier` below 1 for a flat discount or above 1 for a markup, list each 
 
 Deliver it as [managed settings](/docs/en/managed-settings): server-managed settings, an MDM policy, `managed-settings.json`, or a [policy helper](/docs/en/managed-settings#compute-the-policy-with-a-helper-program). Claude Code ignores the key in user, project, and local settings and in `--settings`.
 
-To confirm the rates are in effect, run `/usage` in a session that has [received the managed settings](/docs/en/managed-settings#read-the-source-in-%2Fstatus): the Session block's `Total cost` line carries the note `at your organization's configured rates`. The figures are still estimates, not an invoice. The per-million-token prices in the `/model` picker stay at list price.
+To confirm the rates are in effect, run `/usage` in a session that has [received the managed settings](/docs/en/managed-settings#read-the-source-in-%2Fstatus): the Session block's `Estimated cost` line carries the note `at your organization's configured rates`. The figures are still estimates, not an invoice. The per-million-token prices in the `/model` picker stay at list price.
 
 ### Claude for Teams and Enterprise
 
@@ -69010,6 +69011,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_DISABLE_POWERSHELL_CMD_RM_DENY` | Set to `1` to turn off the [PowerShell tool](/docs/en/tools-reference#powershell-tool) check that denies the `cmd` built-ins `rd`, `rmdir`, `del`, and `erase` on a [system path](/docs/en/permission-modes#remove-item-in-powershell), such as a drive root or your home directory. Claude Code ignores this variable in a settings file's `env` block. Requires Claude Code v2.1.283 or later |
 | `CLAUDE_CODE_DISABLE_PROXY_SCHEME_REPAIR` | Set to `1` to have Claude Code stop at startup on a plain `host:port` in `HTTPS_PROXY` or `https_proxy` even when it starts with no terminal. Claude Code ignores it in project and local settings. Requires Claude Code v2.1.327 or later |
 | `CLAUDE_CODE_DISABLE_REFUSAL_FALLBACK` | Set to `1` to turn off the [automatic model switch when a safety classifier flags a request](/docs/en/model-config#automatic-model-fallback), the behavior the [`switchModelsOnFlag`](/docs/en/settings-reference#switchmodelsonflag) setting controls |
+| `CLAUDE_CODE_DISABLE_SHELL_HEAD_START` | Set to `1` to turn off the head start that can run your shell startup files while Claude writes the session's first Bash command, before that command's permission prompt. Requires Claude Code v2.1.327 or later |
 | `CLAUDE_CODE_DISABLE_STRUCTURED_OUTPUTS` | Set to `1` to stop Claude Code from sending the structured-output `output_config.format` field and the `anthropic-beta` value that pairs with it, for an [LLM gateway](/docs/en/llm-gateway-protocol#feature-pass-through) whose upstream rejects them. This leaves on the other pre-release capabilities that [`CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS`](/docs/en/llm-gateway-protocol#disable-pre-release-capabilities) turns off. Requires Claude Code v2.1.288 or later |
 | `CLAUDE_CODE_DISABLE_SUBSTITUTION_RM_PROMPT` | Set to `1` to turn off the [critical-path](/docs/en/permission-modes#critical-paths) check for a recursive `rm` whose target is entirely the output of a command substitution, such as `rm -rf "$(pwd)"`. The other critical-path checks keep running. Set it in the environment that launches Claude Code, since Claude Code ignores a copy delivered through a settings `env` block. Requires Claude Code v2.1.281 or later |
 | `CLAUDE_CODE_DISABLE_TERMINAL_TITLE` | Set to `1` to disable automatic terminal title updates based on conversation context. This also skips the background small/fast-model request that [generates a session title](/docs/en/sessions#name-your-sessions), and turns off [status reports to your terminal](/docs/en/terminal-config#see-session-status-in-your-terminal) |
@@ -73035,7 +73037,6 @@ Use MessageDisplay to:
 
 * strip markdown for a minimal display
 * transform the text an Agent SDK application shows its users
-* redact API keys or internal hostnames from Claude's responses
 
 Claude Code holds each batch until your hook returns, so keep the hook fast. If the hook fails or times out, Claude Code displays the original text. The default timeout for this event is 10 seconds; if your hook needs more time, set the `timeout` field in the hook entry.
 
@@ -73882,7 +73883,9 @@ Returning `decision: "block"` or `continue: false` stops the agentic loop before
 
 ### PermissionDenied
 
-Runs when [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) denies a tool call, including when it denies without a classifier verdict because [a safety check separate from auto mode refused the classifier's own request](/docs/en/errors#auto-mode-cannot-determine-the-safety-of-an-action) or its response didn't parse. This hook only fires in auto mode: it doesn't run when you manually deny a permission dialog, when a `PreToolUse` hook blocks a call, or when a `deny` rule matches. Use it to log denials, adjust configuration, or tell the model it may retry the tool call.
+Runs when the [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) classifier denies a tool call. That includes a denial with no verdict because [a safety check separate from auto mode refused the classifier's own request](/docs/en/errors#auto-mode-cannot-determine-the-safety-of-an-action) or the classifier's response didn't parse. Use PermissionDenied to log denials, adjust configuration, or tell the model it may retry the tool call.
+
+The hook doesn't run when you deny a permission dialog, when a `PreToolUse` hook blocks a call, or when a `deny` rule matches.
 
 Matches on tool name, same values as PreToolUse.
 
@@ -83043,7 +83046,7 @@ When the session's launch environment already sets a variable, Claude Code [igno
 
 ## Verify your configuration
 
-You usually find out about a wrong proxy address or a bad certificate path from a [connection or certificate error](/docs/en/errors#network-and-connection-errors) on a later request, since Claude Code doesn't validate most of these settings when it reads them. The one setting it checks at startup is the proxy URL: when it can't parse the value, such as one missing the `http://` scheme, Claude Code stops launch with an error naming the variable to fix.
+You usually find out about a wrong proxy address or a bad certificate path from a [connection or certificate error](/docs/en/errors#network-and-connection-errors) on a later request. When Claude Code can't parse a proxy URL from your shell or `~/.claude/settings.json`, it stops launch with an error naming the variable to fix.
 
 With Claude Code v2.1.327 or later, some starts go ahead on an `HTTPS_PROXY` value that lacks `http://`, where neither standard input nor standard output is a terminal. That is so when Claude Desktop, an SDK, or cron starts Claude Code. Write the proxy value as a complete URL, such as `http://proxy.example.com:8080`, even if a plain `host:port` works in some of your sessions.
 
@@ -83979,6 +83982,7 @@ The following sections cover the order Claude Code evaluates an action in, how t
 >    * No allow rule approves recognized `rm` and `rmdir` [critical-path removals](#critical-paths)
 >    * MCP tools marked [`requiresUserInteraction`](/docs/en/mcp#require-approval-for-a-specific-tool) prompt you directly even when an allow rule matches, and so do connector tools [your organization set to `ask`](/docs/en/mcp#organization-controls-on-connector-tools) in sessions where that setting reaches Claude Code
 >    * A shell command that carries [per-command allowed domains](/docs/en/sandboxing#per-command-allowed-domains-in-auto-mode) also routes to the classifier even when an allow rule matches, because a rule approves the command, not its hosts
+>    * Even in Manual, `acceptEdits`, and `dontAsk` modes, the classifier can review a [Claude in Chrome](/docs/en/chrome) action that an allow rule matches
 >    * Ask rules that match on a command's content, such as `Bash(git push *)`, fall back to a permission prompt
 >    * A write that the [symlink check](/docs/en/permissions#symlinks) resolves to a protected path prompts you when the path Claude requested isn't itself protected
 >    * A read from a [network path](/docs/en/permissions#network-paths) prompts you even when an allow rule matches
@@ -84045,7 +84049,7 @@ The following sections cover the order Claude Code evaluates an action in, how t
 
 If you set `dontAsk` mode, Claude Code auto-denies every tool call that would otherwise prompt you, though a [mod](/docs/en/plugins/mods/overview) you installed can still approve some of those calls. To check which calls a mod can approve, see [Extend permissions with hooks](/docs/en/permissions#precedence-among-rules-hooks-and-mods). Don't rely on `dontAsk` to stop a [tool call a mod makes itself](/docs/en/plugins/mods/reference#mods-api-methods).
 
-Claude still runs actions that need no approval in Manual mode, such as file reads inside your working directories and [read-only Bash commands](/docs/en/permissions#read-only-commands). Actions matching your `permissions.allow` rules and calls approved by a [PreToolUse hook](/docs/en/permissions#extend-permissions-with-hooks) run too. Use this mode for CI pipelines or restricted environments where you pre-define what Claude may do. The status bar shows `⏵⏵ don't ask on` in this mode.
+Claude still runs actions that need no approval in Manual mode, such as file reads inside your working directories and [read-only Bash commands](/docs/en/permissions#read-only-commands). Most calls that your `permissions.allow` rules or a [PreToolUse hook](/docs/en/permissions#extend-permissions-with-hooks) approve run too. Use this mode for CI pipelines or restricted environments where you pre-define what Claude may do. The status bar shows `⏵⏵ don't ask on` in this mode.
 
 These calls are denied where you'd otherwise see a prompt:
 
@@ -87451,7 +87455,7 @@ Pick the tab for where you run Claude Code.
 
 > [tab] Cloud session
 >
-> A [cloud session](/docs/en/cloud-environments), including [the browser at claude.ai/code](/docs/en/claude-code-on-the-web), has no plugin browser and doesn't load the plugins you installed on your own machine or the ones your repository's `.claude/settings.json` turns on. For plugins your organization distributes through managed settings, see [Manage plugins for your organization](/docs/en/plugins/org).
+> A [cloud session](/docs/en/cloud-environments), including [the browser at claude.ai/code](/docs/en/claude-code-on-the-web), has no plugin browser and doesn't load the plugins you installed at user or local scope. For plugins your organization distributes through managed settings, see [Manage plugins for your organization](/docs/en/plugins/org).
 >
 > See [which parts of your setup are also available in a cloud session](/docs/en/cloud-environments#what-carries-over-from-your-setup) for the rest of your setup.
 
@@ -87608,7 +87612,7 @@ The **Installed** tab in `/plugin` lists your plugins with actions to enable, di
 A plugin's details menu offers **Disable plugin** or **Enable plugin**, **Update now**, and **Uninstall**. Two more items appear for plugins that take settings, and a plugin can show both:
 
 * **Configure options**: shown when the plugin's manifest declares [`userConfig` options](/docs/en/plugins/manifest-reference#user-configuration). Opens the dialog for those options
-* **Configure**: shown when the plugin includes a [bundled MCP server](/docs/en/plugins/components#include-a-packaged-mcpb-server). Sets that server's own `user_config` settings
+* **Configure**: shown when a marketplace plugin includes a [bundled MCP server](/docs/en/plugins/components#include-a-packaged-mcpb-server). Sets that server's own `user_config` settings
 
 The tab can also show plugins at **Managed** scope. Your organization installed those through [managed settings](/docs/en/settings#settings-files), and you can't enable, disable, or uninstall them here.
 
@@ -87786,7 +87790,7 @@ A marketplace plugin has two names, and they can differ:
 
 To share a plugin through a repository, list it under `enabledPlugins` in `.claude/settings.json` or place it under `.claude/skills/`. Claude Code doesn't scan a project's `.claude/plugins/` directory.
 
-A cloud session doesn't add the marketplaces a repository lists under [`extraKnownMarketplaces`](/docs/en/settings-reference#extraknownmarketplaces), because that requires the workspace trust dialog, which a cloud session never shows.
+An Anthropic-hosted cloud session doesn't add the marketplaces a repository lists under [`extraKnownMarketplaces`](/docs/en/settings-reference#extraknownmarketplaces), because that requires the workspace trust dialog, which the session doesn't show.
 
 #### Trust check and component limits for repository plugins
 
@@ -89419,7 +89423,7 @@ This page is for the person who deploys managed settings for Claude Code, whethe
 
 ## Stop user-installed mods from loading
 
-To keep every mod your users bring from running its hooks, set the `allowManagedModsOnly` option on the [built-in guard](#know-what-happens-by-default), a policy mod that Claude Code loads ahead of every mod a user installs. The option goes in managed settings under `pluginConfigs`, keyed by `cc-plugin-sec-default@builtin`:
+To refuse users' mods, set the `allowManagedModsOnly` option on the [built-in guard](#know-what-happens-by-default), a policy mod that Claude Code loads ahead of every mod a user installs. The option goes in managed settings under `pluginConfigs`, keyed by `cc-plugin-sec-default@builtin`:
 
 ```json managed-settings.json theme={null}
 {
@@ -89435,7 +89439,7 @@ To keep every mod your users bring from running its hooks, set the `allowManaged
 
 With the option set in managed settings:
 
-* **No mod a user brings runs its hooks**: that covers a mod in a plugin the user installed, a mod loaded with `--plugin-dir`, and a mod [Claude wrote during a session](/docs/en/plugins/mods/create#ask-claude-for-a-mod)
+* **The guard refuses these mods**: a mod in a plugin only the user enabled, a mod loaded with `--plugin-dir`, and a mod [Claude wrote during a session](/docs/en/plugins/mods/create#ask-claude-for-a-mod)
 * **Your organization's mods still run**: a mod that [counts as your organization's](#install-your-organizations-mods) isn't checked. Every other mod counts as a user's and is refused. That includes a mod your organization turns on for its members on claude.ai. If none counts as yours, no installed mod runs its hooks.
 * **Claude Code ignores the option in other settings files**: if someone sets it in a user, project, local, or `--settings` file, your value still applies
 * **A file or MDM policy covers every provider**: when you deliver the option as a file or through MDM, it works the same way on Amazon Bedrock, Google Cloud's Agent Platform, and Microsoft Foundry. For delivery from the claude.ai admin console, see [Platform availability](/docs/en/server-managed-settings#platform-availability)
@@ -89596,7 +89600,7 @@ Mod policies range from no installed mods at all to any mod a user chooses, with
 
 | What you want | Settings |
 | :- | :- |
-| No installed mod runs, with settings hooks untouched | Set [`allowManagedModsOnly`](#set-options-on-the-built-in-guard) and deploy no mods of your own |
+| No installed mod runs, with settings hooks untouched | In managed settings, set [`allowManagedModsOnly`](#set-options-on-the-built-in-guard) and don't enable a plugin that contains a mod |
 | No installed mods and no hooks at all, your managed hooks included | Set `disableAllHooks` to `true` |
 | Only your organization's mods | Set the guard's [`allowManagedModsOnly` option](#stop-user-installed-mods-from-loading), and [install your mods](#install-your-organizations-mods) so that they count as yours |
 | Any mod from marketplaces you approve outside claude.ai | Set a [marketplace allowlist](/docs/en/plugins/org#restrict-what-users-can-install) without `skills-dir`, set `disableSideloadFlags` to `true`, and set [`syncClaudeAiPlugins`](/docs/en/settings-reference#syncclaudeaiplugins) to `false` |
@@ -89658,7 +89662,7 @@ A mod is a plugin, so the ways you [manage plugins for your organization](/docs/
 * **Give one group a different policy, such as a pilot**: [Plan for what managed settings can't enforce](/docs/en/plugins/org#plan-for-what-managed-settings-can’t-enforce)
 * **Check which apps and session kinds apply the plugin keys**: [When each surface applies the plugin keys](/docs/en/plugins/org#when-each-surface-applies-the-plugin-keys)
 * **Set up CI and containers**: [Seed containers and CI](/docs/en/plugins/org#seed-containers-and-ci)
-* **Offer mods your users may install**: [Host a marketplace](/docs/en/plugins/host-marketplace). A mod that Claude Code copies from a GitHub, git, URL, or npm source counts as a user's unless you [install it as your organization's](#install-your-organizations-mods).
+* **Offer mods your users may install**: [Host a marketplace](/docs/en/plugins/host-marketplace)
 
 ### Set options on the built-in guard
 
@@ -89729,7 +89733,7 @@ The manifest lists the plugin by its path relative to that directory:
 }
 ```
 
-An installed plugin that meets neither set of conditions counts as a user's, even when managed `enabledPlugins` enables it. Its mod runs among users' mods, `prependPlugins` and `appendPlugins` skip it, `allowManagedModsOnly` refuses it, and `allowManagedHooksOnly` keeps it from loading. When managed settings enable it, the user's debug log has a line that starts with the plugin's id and `is enabled by managed settings, but`.
+A plugin you enable in managed `enabledPlugins` can still count as a user's, as a directory plugin that misses a condition does. Its mod then runs among users' mods, `prependPlugins` and `appendPlugins` skip it, `allowManagedModsOnly` refuses it, and `allowManagedHooksOnly` keeps it from loading. To see why, search the user's debug log for a line that starts with the plugin's id and `is enabled by managed settings, but`.
 
 Claude Code fires an event each time it's about to act, such as run a tool, and passes it to each mod in turn. A mod that meets the directory conditions [runs before users' mods](/docs/en/plugins/mods/events#the-order-mods-run-in) even when you list it nowhere. To set its place, list its id in one of two settings. The id is the plugin's name, `@`, and the marketplace's name, such as `acme-guard@acme-tools`.
 
@@ -90249,7 +90253,7 @@ The table shows when each kind of Claude Code session applies `extraKnownMarketp
 | :- | :- | :- |
 | Terminal, interactive | Applied at session start on every machine that receives the settings | `extraKnownMarketplaces` applied after trust; `enabledPlugins` applied at session start |
 | `-p` and CI | Applied at session start, with installs running in the background | `extraKnownMarketplaces` in trusted folders only; `enabledPlugins` applied |
-| Cloud sessions | In an Anthropic-hosted environment, only server-managed settings reach the session, which waits for them before it installs plugins. MDM policies and managed settings files stay on the user's machine. For a self-hosted environment, see [Where and when a policy applies](/docs/en/managed-settings#where-and-when-a-policy-applies) | See the **Cloud session** tab under [Install a plugin](/docs/en/plugins/install#install-a-plugin) |
+| Cloud sessions | In an Anthropic-hosted environment, only server-managed settings reach the session, which waits for them before it installs plugins. MDM policies and managed settings files stay on the user's machine. For a self-hosted environment, see [Where and when a policy applies](/docs/en/managed-settings#where-and-when-a-policy-applies) | See [What carries over from your setup](/docs/en/cloud-environments#what-carries-over-from-your-setup) |
 
 In a `-p` or CI run, marketplaces and plugins install in the background, so a plugin can be missing from the first turn. Set `CLAUDE_CODE_SYNC_PLUGIN_INSTALL=1` to make the run wait for the install before its first query.
 
@@ -97388,7 +97392,7 @@ For a complete personal file, team file, and organization file, each shown with 
 
 To try a value without saving it, set it when you start Claude Code. The value applies to that session and your settings files stay as they were. You have three ways to do it:
 
-* **`--settings`**: pass a key as JSON, inline or as a path to a file. Claude Code applies it above your user, project, and local files and below managed settings. It can set any key your user settings file can set; it can't set `Managed` or `Global config` keys.
+* **`--settings`**: pass a key as JSON, inline or as a path to a file. Claude Code applies it above your user, project, and local files and below managed settings. With `--settings`, you can't set [`Managed` or `Global config`](/docs/en/settings-reference#scopes) keys or some user settings keys, such as [`prependPlugins`](/docs/en/settings-reference#prependplugins).
 * **A flag for that key**: some keys have their own flag, such as `--model` for `model` and `--effort` for `effortLevel` and `modelSettings`.
 * **An environment variable**: export the key's paired variable before you run `claude`, such as `ANTHROPIC_MODEL` for `model`.
 
@@ -97558,7 +97562,7 @@ A [cloud session](/docs/en/claude-code-on-the-web) runs in a [cloud environment]
 
 * **Cloud threads in a project**: in a cloud thread in a [project](/docs/en/claude-projects#what-threads-pick-up-from-your-repositories), none of a repository's `.claude/settings.json` permission rules, hooks, or `env` apply, however many repositories the project has. [What threads pick up from your repositories](/docs/en/claude-projects#what-threads-pick-up-from-your-repositories) lists what to use instead.
 * **Shared project settings** (`.claude/settings.json`): read in a session with one repository outside a project's threads, because the file is part of the clone and the session starts inside it. Commit a setting there to apply it in those sessions.
-* **Shared project settings with several repositories**: in an Anthropic-hosted environment, a session with several repositories starts above the clones and reads only the `enabledPlugins` and `extraKnownMarketplaces` keys from each repository's `.claude/settings.json`, not permission rules, hooks, `env`, or other keys. The marketplaces and plugins those two keys declare still [don't load in a cloud session](/docs/en/cloud-environments#what-carries-over-from-your-setup). For a self-hosted environment, see [which repository's settings apply](/docs/en/self-hosted-environments-configuration#repository-settings-in-sessions-with-several-repositories).
+* **Shared project settings with several repositories**: in an Anthropic-hosted environment, a session with several repositories starts above the clones and reads only the `enabledPlugins` and `extraKnownMarketplaces` keys from each repository's `.claude/settings.json`, not permission rules, hooks, `env`, or other keys. The marketplaces a repository declares still [aren't added in a cloud session](/docs/en/cloud-environments#what-carries-over-from-your-setup). For a self-hosted environment, see [which repository's settings apply](/docs/en/self-hosted-environments-configuration#repository-settings-in-sessions-with-several-repositories).
 * **User and project local settings** (`~/.claude/settings.json` and `.claude/settings.local.json`): not read. Both stay on your machine, and the local file isn't in the clone.
 * **Managed settings**: a `managed-settings.json` file or MDM profile on your device doesn't reach a cloud session. Your organization's [server-managed settings](/docs/en/server-managed-settings) do; [surface coverage](/docs/en/model-config#surface-coverage) lists which cloud sessions receive them. A [self-hosted environment](/docs/en/self-hosted-environments) also reads the managed settings file in its runner image. [How Claude Code combines managed sources](/docs/en/managed-settings#how-claude-code-combines-managed-sources) says when that file applies.
 * **`/config`**: in your browser at claude.ai/code, opens your claude.ai **Code** or **Claude Code** settings page instead of changing a value. To change a setting for a cloud session, set an [environment variable](/docs/en/cloud-environments#set-environment-variables) on the environment. In a session with one repository outside a project's threads, you can instead commit the key to that repository's `.claude/settings.json`.
@@ -105128,7 +105132,7 @@ Claude Code sends the following JSON fields to your script via stdin:
 The `context_window` object describes the live context window from the most recent API response.
 
 * **Combined totals** (`total_input_tokens`, `total_output_tokens`): tokens currently in the context window. `total_input_tokens` is the sum of `input_tokens`, `cache_creation_input_tokens`, and `cache_read_input_tokens`; `total_output_tokens` is the output tokens from the most recent response. Both are `0` before the first API response.
-* **Per-component usage** (`current_usage`): the same token counts broken out by category. Use this when you need cache hits separate from fresh input. The object is `null` before the first API call in a session, and `null` or all zeros after `/compact` until the next API call. Treat both as empty.
+* **Per-component usage** (`current_usage`): the same token counts broken out by category. Use this when you need cache hits separate from fresh input. `current_usage` is `null` until the conversation has an API response, and `null` or all zeros after `/compact` until the next API call. Treat both as empty.
 
 The `current_usage` object contains:
 
@@ -106278,7 +106282,7 @@ If the paste carries [invisible Unicode characters](/docs/en/interactive-mode#in
 
 ### How Claude treats pasted text
 
-When you submit, Claude sees the content behind each `[Pasted text #N]` placeholder marked as text you pasted from somewhere else rather than typed. Claude is told that a paste can contain instructions you didn't write, and to follow instructions inside it only where the message you typed asks it to. Pastes can reach Claude unmarked, such as in your [first session after an install](/docs/en/env-vars#first-session-after-an-install-or-upgrade).
+When you submit, Claude sees the content behind each `[Pasted text #N]` placeholder marked as text you pasted from somewhere else rather than typed. Pastes can reach Claude unmarked, such as in your [first session after an install](/docs/en/env-vars#first-session-after-an-install-or-upgrade).
 
 ### Delete and restore a collapsed paste
 
@@ -106533,7 +106537,7 @@ To add custom tools, connect an [MCP server](/docs/en/mcp). To extend Claude wit
 | `EnterPlanMode` | Switches to plan mode to design an approach before coding | No |
 | `EnterWorktree` | Creates an isolated [git worktree](/docs/en/worktrees) and switches into it, or switches into an existing worktree. See [EnterWorktree tool behavior](#enterworktree-tool-behavior) | Some worktrees |
 | `ExitPlanMode` | Presents a plan for approval and exits plan mode | Yes |
-| `ExitWorktree` | Exits a worktree session and returns to the original directory. Not available to subagents that already run in their own working directory, such as with [`isolation: worktree`](/docs/en/sub-agents#supported-frontmatter-fields). Removed or refused once [`permissions.blockWritesOutsideWorkingDirectories`](/docs/en/settings-reference#permissions-blockwritesoutsideworkingdirectories) is on | No |
+| `ExitWorktree` | Exits a worktree session and returns to the original directory. Not available to subagents that already run in their own working directory, such as with [`isolation: worktree`](/docs/en/sub-agents#supported-frontmatter-fields). Removed or refused once [`permissions.blockWritesOutsideWorkingDirectories`](/docs/en/settings-reference#permissions-blockwritesoutsideworkingdirectories) is on | Yes on v2.1.327 or later, to remove a worktree when Claude Code can't check it or finds work at risk, such as unpushed commits or files that `git status` lists |
 | `Glob` | Finds files based on pattern matching. Absent by default on macOS, Linux, and WSL. See [Glob tool behavior](#glob-tool-behavior) | No |
 | `Grep` | Searches for patterns in file contents. Absent by default on macOS, Linux, and WSL. See [Grep tool behavior](#grep-tool-behavior) | No |
 | `ListAgents` | Lists the agents Claude can message with `SendMessage`: subagents in the session, [agent team](/docs/en/agent-teams) teammates, your other local Claude Code sessions, and, while this session is connected to [Remote Control](/docs/en/remote-control), your [cloud sessions](/docs/en/claude-code-on-the-web) and your Remote Control sessions on other machines. Backs the `/list-agents` command. See [cross-session messaging](/docs/en/cross-session-messaging). Requires Claude Code v2.1.224 or later, and appears only in sessions where [cross-session messaging is enabled](/docs/en/cross-session-messaging#availability). Teammate rows and the first line showing this session's own name require v2.1.239 or later | No |
@@ -110877,7 +110881,7 @@ The SDK provides hooks for different stages of agent execution. Some hooks are a
 | `PostToolBatch` | No | Yes | A full batch of tool calls resolves, once per batch before the next model call | Inject conventions once for the whole batch |
 | [`UserPromptSubmit`](/docs/en/hooks#userpromptsubmit) | Yes | Yes | A prompt is submitted, including a turn Claude Code starts on its own | Inject additional context into prompts |
 | [`UserPromptExpansion`](/docs/en/hooks#userpromptexpansion) | No | Yes | A user-typed command, or an MCP prompt, expands into a prompt before it reaches Claude. Doesn't fire when Claude invokes a skill itself | Block a command from direct invocation or add context when a skill is typed |
-| `MessageDisplay` | No | Yes | An assistant message with text completes, once per message with the full message text | Redact or reformat the displayed text without changing the transcript |
+| `MessageDisplay` | No | Yes | An assistant message with text completes, once per message with the full message text | Reformat the displayed text without changing the transcript |
 | `Stop` | Yes | Yes | Agent execution stop | Save session state before exit |
 | `StopFailure` | No | Yes | The turn ends with an API error instead of a normal stop | Log failures or send alerts |
 | `SubagentStart` | Yes | Yes | Subagent initialization | Track parallel task spawning |
@@ -112796,7 +112800,7 @@ async def main():
 asyncio.run(main())
 ```
 
-A remote server's status can also change after it reports `"connected"`. When the connection to it drops mid-session, Claude Code moves the server back to `"pending"` while [reconnecting](/docs/en/mcp#automatic-reconnection). A later `mcpServerStatus()` call in TypeScript, or [`ClaudeSDKClient.get_mcp_status()`](/docs/en/agent-sdk/python#methods) in Python, can then report `"pending"` for a server you saw connected earlier, with no configuration change on your side.
+A remote server's status can also change after it reports `"connected"`. Claude Code moves the server back to `"pending"` while [reconnecting](/docs/en/mcp#automatic-reconnection). A later `mcpServerStatus()` call in TypeScript, or [`ClaudeSDKClient.get_mcp_status()`](/docs/en/agent-sdk/python#methods) in Python, can then report `"pending"` for a server you saw connected earlier, with no configuration change on your side.
 
 After five reconnection attempts fail, the server reports `"failed"`, or `"needs-auth"` when it needs authorizing again. A `"failed"` HTTP or SSE server can still return to `"connected"` without a call from you, because Claude Code keeps [retrying in the background](/docs/en/mcp#mid-session-drops-of-a-remote-server) after a transient error. To retry manually, call [`reconnectMcpServer()`](/docs/en/agent-sdk/typescript#methods) in TypeScript or [`ClaudeSDKClient.reconnect_mcp_server()`](/docs/en/agent-sdk/python#methods) in Python.
 
@@ -122949,6 +122953,7 @@ Symptoms tied to a feature, such as a hook not firing or a skill not being used,
 | `CLINotFoundError`, `CLIConnectionError`, `ProcessError`, `Claude Code process exited with code N`, `Claude Code returned an error result`, `CLIJSONDecodeError`, `structured_output` is `None` | [CLI startup](#cli-startup), [CLI process exit](#cli-process-exit), [Large tool calls and results](#large-tool-calls-and-results), and [Structured outputs](#structured-outputs) on this page |
 | `Operation aborted`, `Claude Code process aborted by user`, `Prompt stream failed; closing stdin`, or a Python `query()` loop that stops, with no exception, before all your messages are answered | [Streaming input](#streaming-input) on this page |
 | `Image could not be processed` | [Image could not be processed](#image-could-not-be-processed) on this page |
+| `option can't be sent to Claude Code` in TypeScript | [`Options`](/docs/en/agent-sdk/typescript#options): fix the option the message names |
 
 ## CLI startup
 
@@ -123295,8 +123300,6 @@ function prewarm(params?: {
 | :- | :- | :- |
 | `options` | [`Options`](#options) | Optional configuration object, the same type that `startup()` takes |
 | `initializeTimeoutMs` | `number` | Maximum time in milliseconds to wait for the spare's initialization. Defaults to `60000`. If initialization doesn't complete in time, the promise rejects with a timeout error |
-
-`prewarm()` counts time spent in [Setup](/docs/en/hooks#setup) hooks toward `initializeTimeoutMs`, even when you leave it unset. To give slow Setup hooks more time, set a longer value.
 
 #### Returns
 
@@ -124440,7 +124443,7 @@ type AgentDefinition = {
 | `disallowedTools` | No | Array of tool names to explicitly disallow for this agent. MCP server-level patterns are also accepted: `mcp__server` or `mcp__server__*` removes every tool from that server, and `mcp__*` removes every MCP tool from any server |
 | `prompt` | Yes | The agent's system prompt |
 | `model` | No | Model override for this agent. Accepts an alias such as `'fable'`, `'opus'`, `'sonnet'`, `'haiku'`, `'inherit'`, or a full model ID. `'inherit'` uses the model of the agent that spawned this one. When you omit `model`, Claude Code picks the model in the [subagent model order](/docs/en/sub-agents#choose-a-model) |
-| `mcpServers` | No | MCP server specifications for this agent |
+| `mcpServers` | No | MCP server specifications for this agent. Put a [`createSdkMcpServer()`](#createsdkmcpserver) server in the `mcpServers` field of [`Options`](#options). If you pass the server object in this field instead, TypeScript Agent SDK v0.3.327 or later ignores it and emits a `CLAUDE_SDK_AGENT_IN_PROCESS_SERVER` warning |
 | `skills` | No | Array of skill names to preload into the agent context |
 | `initialPrompt` | No | Auto-submitted as the first user turn when this agent runs as the main thread agent |
 | `maxTurns` | No | Maximum number of agentic turns (API round-trips) before stopping |
@@ -127413,6 +127416,7 @@ type MonitorOutput = {
   taskId: string;
   timeoutMs: number;
   persistent?: boolean;
+  keptInSandboxByCheck?: boolean;
 };
 ```
 
