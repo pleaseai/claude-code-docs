@@ -20030,8 +20030,8 @@ Cloud sessions stop after a period of inactivity and the session's VM is reclaim
 
 Reopen the session from [claude.ai/code](https://claude.ai/code) to provision a fresh VM:
 
-* **Restored**: your conversation history
-* **Not restored**: background work that was still running or pending when the VM was reclaimed, including:
+* **Restored**: your conversation history, and tracking of [MCP tasks](/docs/en/mcp#mcp-task-results-in-the-cloud) still running on a connector
+* **Not restored**: other background work that was still running or pending when the VM was reclaimed, including:
   * **Shell commands**: Claude Code tells Claude which commands stopped. Ask Claude to rerun the ones you still need.
   * **Subagents**: Claude Code tells Claude which subagents stopped, and which of those can be [resumed](/docs/en/sub-agents#resume-subagents) instead of started over. Ask Claude to continue their work.
   * **Session-scoped scheduled tasks**: tasks you [scheduled in the session](/docs/en/scheduled-tasks) and a `/loop` waiting for its next iteration don't carry over to the reopened session. Ask Claude to schedule the tasks again, or run `/loop` again to restart the loop.
@@ -23992,11 +23992,11 @@ Get more out of Claude Code Desktop: parallel sessions with Git isolation, drag-
 
 In the Claude Desktop app, Claude Code is the **Code** tab. The app also has chat and [Cowork](https://claude.com/product/cowork), which handles Dispatch and longer agentic work. This page is the reference for the Code tab.
 
-> [card] [Download for macOS](https://claude.ai/api/desktop/darwin/universal/dmg/latest/redirect?utm_source=claude_code\&utm_medium=docs)
+> [card] [Download for macOS](https://claude.ai/claude-code/desktop-download?platform=mac\&utm_source=claude_code\&utm_medium=docs)
 >
 > Universal build for Intel and Apple Silicon
 
-> [card] [Download for Windows](https://claude.ai/api/desktop/win32/x64/setup/latest/redirect?utm_source=claude_code\&utm_medium=docs)
+> [card] [Download for Windows](https://claude.ai/claude-code/desktop-download?platform=win-x64\&utm_source=claude_code\&utm_medium=docs)
 >
 > For x64 processors
 
@@ -24004,7 +24004,7 @@ In the Claude Desktop app, Claude Code is the **Code** tab. The app also has cha
 >
 > apt or .deb for Ubuntu and Debian
 
-For Windows ARM64, download the [ARM64 installer](https://claude.ai/api/desktop/win32/arm64/setup/latest/redirect?utm_source=claude_code\&utm_medium=docs). On Linux, install with apt; see [Claude Desktop on Linux](/docs/en/desktop-linux).
+For Windows ARM64, download the [ARM64 installer](https://claude.ai/claude-code/desktop-download?platform=win-arm64\&utm_source=claude_code\&utm_medium=docs). On Linux, install with apt; see [Claude Desktop on Linux](/docs/en/desktop-linux).
 
 After installing, launch Claude, sign in, and click the **Code** tab. For a walkthrough of your first session, see the [Get started guide](/docs/en/desktop-quickstart).
 
@@ -26852,11 +26852,11 @@ The desktop app gives you Claude Code with a graphical interface. You can ask Cl
 
 Claude Code is in the **Code** tab at the top of the app's sidebar. This page walks through installing the app and starting your first session there. Claude Code requires a [Pro, Max, Ultra, Team, or Enterprise subscription](https://claude.com/pricing?utm_source=claude_code\&utm_medium=docs\&utm_content=desktop_quickstart_pricing).
 
-> [card] [Download for macOS](https://claude.ai/api/desktop/darwin/universal/dmg/latest/redirect?utm_source=claude_code\&utm_medium=docs)
+> [card] [Download for macOS](https://claude.ai/claude-code/desktop-download?platform=mac\&utm_source=claude_code\&utm_medium=docs)
 >
 > Universal build for Intel and Apple Silicon
 
-> [card] [Download for Windows](https://claude.ai/api/desktop/win32/x64/setup/latest/redirect?utm_source=claude_code\&utm_medium=docs)
+> [card] [Download for Windows](https://claude.ai/claude-code/desktop-download?platform=win-x64\&utm_source=claude_code\&utm_medium=docs)
 >
 > For x64 processors
 
@@ -26864,7 +26864,7 @@ Claude Code is in the **Code** tab at the top of the app's sidebar. This page wa
 >
 > apt or .deb for Ubuntu and Debian
 
-For Windows ARM64, download the [ARM64 installer](https://claude.ai/api/desktop/win32/arm64/setup/latest/redirect?utm_source=claude_code\&utm_medium=docs). On Linux, install with apt; see [Claude Desktop on Linux](/docs/en/desktop-linux).
+For Windows ARM64, download the [ARM64 installer](https://claude.ai/claude-code/desktop-download?platform=win-arm64\&utm_source=claude_code\&utm_medium=docs). On Linux, install with apt; see [Claude Desktop on Linux](/docs/en/desktop-linux).
 
 > [!NOTE]
 >
@@ -31166,7 +31166,7 @@ build.sh --target�dist
 
 A message with `more than 4,000,000 characters` means a skill, a command, or a [prompt or agent hook](/docs/en/hooks#prompt-and-agent-hook-fields) didn't run. If you pasted long text as arguments, save it to a file, run `/clear`, since the text stays in the conversation, then pass its path.
 
-If your `PreToolUse` prompt or agent hook is over the limit, a tool call that Claude makes directly isn't blocked. Use a [command hook](/docs/en/hooks#command-hook-fields), which has no such limit. For a call from code in Code Mode, see [Tool call refused by a hook](/docs/en/code-mode#tool-call-refused-by-a-hook).
+If your `PreToolUse` prompt or agent hook is over the limit, a tool call that Claude makes directly isn't blocked. Use a [command hook](/docs/en/hooks#command-hook-fields), which has no such limit. For a call from code in Code Mode, see [Tool call ran after a hook failed](/docs/en/code-mode#tool-call-ran-after-a-hook-failed).
 
 ### Input must be provided when using `--print`
 
@@ -36370,6 +36370,7 @@ The `--allowedTools` flag uses [permission rule syntax](/docs/en/settings-refere
 > Command support differs in `-p` mode:
 >
 > * User-invoked [skills](/docs/en/skills) and custom commands work. Include `/skill-name` in the prompt string and Claude Code expands it before running.
+> * [Skills from MCP servers](/docs/en/mcp#requirements-for-skills-from-mcp-servers) aren't supported.
 > * Built-in commands that only run in the terminal interface, such as `/login`, aren't available.
 > * `/model`, `/effort`, `/fast`, `/color`, and `/rename` accept the value as an argument, for example `/model sonnet`, and `/mcp` with no argument prints a text summary of server status. These forms follow each command's [availability notes](/docs/en/commands#all-commands).
 > * To change a setting, pass `key=value` to `/config`, for example `/config verbose=true`.
@@ -38912,7 +38913,7 @@ The per-call limits still apply while the call runs in the background: the wall-
 
 To change or turn off automatic backgrounding:
 
-* Set the [`CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS`](/docs/en/env-vars) environment variable in milliseconds to change the threshold, or set it to `0` to turn automatic backgrounding off. With `0`, Claude also [waits for MCP tasks](#make-claude-wait-for-the-result-of-an-mcp-task) in an interactive session
+* Set the [`CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS`](/docs/en/env-vars) environment variable in milliseconds to change the threshold, or set it to `0` to turn automatic backgrounding off. With `0`, Claude also [waits for MCP tasks](#make-claude-wait-for-the-result-of-an-mcp-task) in an interactive terminal session
 * Set [`CLAUDE_CODE_DISABLE_BACKGROUND_TASKS`](/docs/en/env-vars) to `1` to turn off automatic backgrounding and [background commands](/docs/en/tools-reference#background-commands)
 
 Some calls never move to the background:
@@ -38931,7 +38932,7 @@ Meanwhile, the footer shows a count such as `1 MCP task`, and Claude Code follow
 
 > [!NOTE]
 >
-> MCP tasks are in public beta and require Claude Code v2.1.304 or later. [What a call needs to become an MCP task](#requirements-for-mcp-tasks) lists the sessions and servers that get them.
+> MCP tasks require Claude Code v2.1.304 or later. [What a call needs to become an MCP task](#requirements-for-mcp-tasks) lists the sessions and servers that get them.
 
 #### Stop an MCP task or get its result
 
@@ -38951,7 +38952,11 @@ A running task can open an [elicitation dialog](#respond-to-mcp-elicitation-requ
 
 Unless you've set Claude to [wait for the result](#make-claude-wait-for-the-result-of-an-mcp-task), press `Esc` in the dialog to answer later. To reopen the question, run `/tasks`, open the task's details, and press `Enter`. Answering later requires Claude Code v2.1.324 or later.
 
-In a [non-interactive](/docs/en/headless) session, Claude Code asks the server to cancel a task that requests input, without running your [`Elicitation` hooks](/docs/en/hooks#elicitation) or calling the Agent SDK's `onElicitation` callback.
+Use an interactive terminal session for tasks that ask questions, because no dialog opens in these other places:
+
+* **[`claude -p`](/docs/en/headless) runs and Agent SDK sessions**: Claude Code asks the server to cancel the task, without running your [`Elicitation` hooks](/docs/en/hooks#elicitation) or calling the Agent SDK's `onElicitation` callback
+* **VS Code and local desktop app sessions**: see [MCP tasks in VS Code and the desktop app](#mcp-tasks-in-vs-code-and-desktop)
+* **Cloud sessions and claude.ai chats**: see [Get an MCP task's result in the cloud](#mcp-task-results-in-the-cloud)
 
 #### Exit, clear, or resume while an MCP task runs
 
@@ -38967,15 +38972,14 @@ A task on a remote server keeps running after you exit. A stdio server's process
 
 #### What a call needs to become an MCP task
 
-A tool call becomes an MCP task only when all of these conditions hold:
+For the cloud, see [MCP tasks in cloud sessions and claude.ai chats](#mcp-tasks-in-the-cloud). Elsewhere, a tool call becomes an MCP task only when it meets all of these conditions:
 
 * The server supports tasks
 * The server is an HTTP, stdio, or claude.ai connector server connected on [protocol revision 2026-07-28](#mcp-client-runtimes). Setting [`MCP_SDK_GENERATION=v1` or `MCP_PROTOCOL_NEGOTIATION=legacy`](/docs/en/env-vars) rules that out
 * The session [fetches feature flags](/docs/en/env-vars#features-that-need-feature-flag-fetching), so not on a third-party provider such as Amazon Bedrock, and not with telemetry or flag fetching turned off
 * Anthropic has turned MCP tasks on for your kind of session:
   * Terminal CLI sessions, [Agent SDK](/docs/en/agent-sdk/overview) sessions, and [GitHub Actions](/docs/en/github-actions) runs have them on v2.1.304 or later
-  * [Cloud sessions](/docs/en/claude-code-on-the-web), including ones you open in the desktop app, have them only if Anthropic has turned them on for your account or organization. You can't turn them on or look up their state in a setting
-  * Some other Claude Code surfaces, such as the [VS Code extension](/docs/en/vs-code) and local sessions in the [desktop app](/docs/en/desktop), don't have them
+  * For the VS Code extension and local sessions in the desktop app, see [MCP tasks in VS Code and the desktop app](#mcp-tasks-in-vs-code-and-desktop)
 * The call comes from the main conversation, not from a [subagent](/docs/en/sub-agents)
 * Either the session is interactive, or an [Agent SDK](/docs/en/agent-sdk/overview) session or a `claude -p` run reading `--input-format stream-json` has:
   * [`CLAUDE_AUTO_BACKGROUND_TASKS`](/docs/en/env-vars) at `1`
@@ -38985,6 +38989,57 @@ A tool call becomes an MCP task only when all of these conditions hold:
 Any other call is a plain tool call, and [Automatic backgrounding of long tool calls](#automatic-backgrounding-of-long-tool-calls) says which of those move to the background.
 
 Keep an Agent SDK or stream-json session's input open, because the run [doesn't wait for MCP tasks](/docs/en/headless#mcp-work-when-a-non-interactive-run-ends) after input closes. A one-shot `claude -p "<prompt>"` run doesn't get MCP tasks.
+
+#### MCP tasks in VS Code and the desktop app
+
+MCP tasks work in the [VS Code extension](/docs/en/vs-code) and local [desktop app](/docs/en/desktop) sessions only if Anthropic has turned them on for your account or organization. Update the extension or app to its latest version first.
+
+Use a terminal session in these cases:
+
+* **claude.ai connector in the desktop app**: it gets no tasks in local sessions
+* **Server from `claude_desktop_config.json`**: it gets no tasks either, so [add it to the CLI](#installing-mcp-servers) first
+* **Task that asks questions**: neither app shows a task's question, and Claude Code asks the server to cancel the task unless an [`Elicitation` hook](/docs/en/hooks#elicitation) accepts the request
+
+Once the server accepts the job, you can see or stop the task in VS Code's [`/tasks`](/docs/en/vs-code#monitor-background-processes) or the desktop app's [**Background tasks** pane](/docs/en/desktop#watch-background-tasks). If no row appears while Claude waits on the call, or the tool fails, check these causes:
+
+* **`CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS` at `0` or `CLAUDE_CODE_DISABLE_MCP_TASK_BACKGROUND` at `1`**: remove it, for example from `env` in [`settings.json`](/docs/en/settings), and start a new session
+* **Tasks not turned on for your account**: no setting shows this, so use a terminal session if nothing above applies
+
+#### MCP tasks in cloud sessions and claude.ai chats
+
+MCP tasks work in the cloud with [claude.ai connectors](#use-mcp-servers-from-claude-ai) that support them on [protocol revision 2026-07-28](#mcp-client-runtimes). Calls from the main conversation can become tasks in these places:
+
+* [Cloud sessions](/docs/en/claude-code-on-the-web) you start yourself in Anthropic-hosted environments
+* New chats in the [unified Claude experience](https://support.claude.com/en/articles/16761823-claude-cowork-and-chat-are-one-claude) on Pro, Max, Ultra, and Team plans
+
+Not every existing chat has tasks. If a tool that works only as a task fails in an existing chat on one of those plans, try a new chat.
+
+Only some accounts get MCP tasks in these other places:
+
+* New chats in the unified Claude experience on Free and Enterprise plans
+* The **Cowork** option, on accounts without the unified experience, where the message box offers a choice of **Chat** or **Cowork**
+* [Recurring work that you schedule](https://support.claude.com/en/articles/13854387-schedule-recurring-tasks-in-cowork) from a chat or from Cowork
+
+You can't turn MCP tasks on for your account in a setting. If a tool that works only as a task fails in one of those places, run it from a terminal session on a paid plan.
+
+In cloud sessions, servers from `.mcp.json` or a plugin get no tasks, so a tool that works only as a task returns the server's error. Add a remote server as a connector instead.
+
+Expect calls without tasks in cases such as these, and run a tool that needs tasks from a terminal session:
+
+* [Project](/docs/en/claude-projects) threads
+* Incognito chats
+* Claude Code's [cloud scheduled tasks](/docs/en/routines)
+
+#### Get an MCP task's result in the cloud
+
+If a task's result hasn't arrived in a cloud session or chat, send a message so Claude Code checks the task again. You can leave while a task runs. When it completes or fails, Claude usually picks up the result unprompted, even in a session that stopped for inactivity.
+
+If Claude reports one of these problems with the task, take the step that matches its report:
+
+* **The task was cancelled because it asked you a question**: cloud sessions and chats can't show a task's questions, so run that tool from an interactive terminal session
+* **Tracking stopped after failed status checks**: the job can still be running, so ask Claude to check it again. If no result follows, ask Claude to find the outcome with the server's other tools
+* **The server no longer knows the task**: the result may be lost, so ask Claude to find the outcome with the server's other tools before you run the job again
+* **The task reached the seven-day tracking limit**: the job can still be running. In a cloud session, ask Claude to check it again. In a chat, ask Claude to find the outcome with the server's other tools
 
 #### Status messages on an MCP task
 
@@ -39005,11 +39060,11 @@ These messages, in a task's `/tasks` entry or its closing transcript line, mean 
 
 #### Time limits on MCP tasks
 
-By default, a task in the background has no Claude Code time limit. The [tool call time limits](#time-limits-on-mcp-tool-calls), including the wall-clock limit and the idle timeout, apply until the server answers the call with the task. If you [make Claude wait](#make-claude-wait-for-the-result-of-an-mcp-task), they apply for the whole task. Answered status checks count as activity for the idle timeout.
+Outside [cloud sessions and claude.ai chats](#mcp-task-results-in-the-cloud), a task in the background has no Claude Code time limit by default. The [tool call time limits](#time-limits-on-mcp-tool-calls), including the wall-clock limit and the idle timeout, apply until the server answers the call with the task. If you [make Claude wait](#make-claude-wait-for-the-result-of-an-mcp-task), they apply for the whole task. Answered status checks count as activity for the idle timeout.
 
 #### Make Claude wait for the result of an MCP task
 
-To make Claude wait for a task's result in an interactive session, set one of two environment variables, for example in the `env` block of [`settings.json`](/docs/en/settings):
+To make Claude wait for a task's result in an interactive terminal session, set one of two environment variables, for example in the `env` block of [`settings.json`](/docs/en/settings):
 
 * **[`CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS`](/docs/en/env-vars) set to `0`**: Claude waits for every MCP tool call until the call ends
 * **[`CLAUDE_CODE_DISABLE_MCP_TASK_BACKGROUND`](/docs/en/env-vars) set to `1`**: Claude waits for a task's result. While [automatic backgrounding](#automatic-backgrounding-of-long-tool-calls) is on, it moves the call after two minutes by default, so short tasks finish in place and long ones don't block you. The moved call is a plain background call rather than an MCP task. It doesn't survive exiting the session
@@ -39053,7 +39108,7 @@ Answer with a task only when the request carries the extension, or the call fail
 | `taskId` | Required. At most 128 printable ASCII characters with no spaces, or Claude gets a tool error beginning `MCP server "<name>" returned a malformed task handle for tool "<tool>"`. Keep the ID answerable across connections, because after a resume Claude Code asks about it on a new connection |
 | `status` | Required. One of `working`, `input_required`, `completed`, `failed`, or `cancelled`. Another value gives the `Unsupported result type` error |
 | `createdAt`, `lastUpdatedAt`, `ttlMs` | Required by the tasks extension, and `ttlMs` may be `null`. Claude Code doesn't drop a task because its `ttlMs` has passed |
-| `pollIntervalMs` | Optional. Milliseconds between `tasks/get` requests, clamped to between 250 and 30000. Claude Code uses 2000 when the field is absent or `null`, and reads the value again from each `tasks/get` response |
+| `pollIntervalMs` | Optional. Milliseconds between `tasks/get` requests, read again from each `tasks/get` response. Outside the cloud, Claude Code clamps the value to between 250 and 30000, and uses 2000 when the field is absent or `null`. For the cloud, see [Choose a time to live and a poll interval](#choose-a-time-to-live-and-a-poll-interval) |
 | `statusMessage` | Optional. `/tasks` shows the value from your latest `tasks/get` response, not this first one, and a response that omits the field clears it. A [status message from Claude Code](#status-messages-on-an-mcp-task) can take its place |
 
 Claude Code accepts a task answer that omits `createdAt`, `lastUpdatedAt`, or `ttlMs`, or that sets `pollIntervalMs` to `null`. Before v2.1.317, the call failed with the `Unsupported result type` error instead. To work with those versions too, send the three fields that the tasks extension requires, and send `pollIntervalMs` as a number or not at all.
@@ -39062,7 +39117,9 @@ On an HTTP or claude.ai connector server, the task answer has to start within th
 
 #### Report status, results, and questions
 
-Right after the task answer, Claude Code sends `tasks/get` with `{ "taskId": ... }`, then repeats it once per poll interval. The tasks extension requires your response to carry `"resultType": "complete"` along with `taskId`, `status`, `createdAt`, `lastUpdatedAt`, and `ttlMs`. `ttlMs` may be `null`, and `statusMessage` and `pollIntervalMs` are optional. This example reports the build as done:
+Right after the task answer, Claude Code sends `tasks/get` with `{ "taskId": ... }`, then repeats it once per [poll interval](#choose-a-time-to-live-and-a-poll-interval). The tasks extension requires your response to carry `"resultType": "complete"` along with `taskId`, `status`, `createdAt`, `lastUpdatedAt`, and `ttlMs`. `ttlMs` may be `null`, and `statusMessage` and `pollIntervalMs` are optional.
+
+This example reports the build as done:
 
 ```json theme={null}
 {
@@ -39085,9 +39142,9 @@ Right after the task answer, Claude Code sends `tasks/get` with `{ "taskId": ...
 | `failed` | Tells Claude the `message` of the top-level `error` object `{ code, message, data }`, which the tasks extension requires on a failed task. Without that `message`, Claude gets `statusMessage` instead, or else `Task failed` |
 | `cancelled` | Tells Claude `statusMessage`, or else `Task was cancelled by the server` |
 | `input_required` | Reads `inputRequests`, an object that maps a key you choose to `{ method, params }`. Claude Code answers each key once through `tasks/update` with `{ taskId, inputResponses }`, where `inputResponses` maps the same key to that request's result. Keys beyond 16 per task are ignored |
-| Methods in `inputRequests` | `elicitation/create` is served only in interactive terminal sessions, and `roots/list` everywhere. When Claude Code can't serve a request, it asks the server to cancel the task |
+| Methods in `inputRequests` | `elicitation/create` reaches a person only in interactive terminal sessions. `roots/list` is served outside the cloud. Don't depend on it in [cloud sessions and claude.ai chats](#mcp-tasks-in-the-cloud). When Claude Code can't serve a request, it asks the server to cancel the task |
 | Another `status` value | Claude Code asks the server to cancel the task and reports it to Claude as failed |
-| JSON-RPC error `-32602` | Read as an unknown task ID. For a task in the background, Claude Code keeps asking for up to five minutes, then reports the outcome to Claude as unknown |
+| JSON-RPC error `-32602` | Read as an unknown task ID. For a task in the background outside the cloud, Claude Code keeps asking for up to five minutes, then reports the outcome to Claude as unknown. In cloud sessions and claude.ai chats, expect about five minutes of retries too, then a report that [the server no longer knows the task](#mcp-task-results-in-the-cloud) |
 | `tasks/cancel` | Sent, for example, when Claude or the person stops the task while the server is connected. Not sent on exit |
 | `tasks/result`, `tasks/list`, `notifications/tasks` | Not used, so put the outcome in your `tasks/get` responses |
 
@@ -39099,6 +39156,12 @@ Set `ttlMs` and `pollIntervalMs`, both in milliseconds, in your `tools/call` ans
 
 * **`ttlMs`**: report how long your server keeps the task, counted from the task's creation. Send your longest run time plus the time you keep the result, such as `5400000` for a 30-minute job and one hour. Send `null` if your server keeps tasks with no time limit
 * **`pollIntervalMs`**: send 10000 to 30000 for a job that runs longer than a minute, so your server answers fewer status checks. For a shorter job, send 2000 so Claude gets the result sooner
+
+In [cloud sessions and claude.ai chats](#mcp-tasks-in-the-cloud), status checks can come less often than your `pollIntervalMs` asks, so plan for these intervals:
+
+* **A new task**: expect checks to follow a `pollIntervalMs` from 1000 to 30000. A lower value can be raised to 1000. If you omit the field, expect at most 10 seconds between checks
+* **An older task**: allow for checks that slow to every 10 seconds once the task is a minute old, and to every 30 seconds after 10 minutes
+* **A value above 30000**: checks can follow it as sent and delay the result, so stay at 30000 or below
 
 ### Plugin-provided MCP servers
 
@@ -40174,6 +40237,129 @@ Compare @postgres:schema://users with @docs:file://database/user-model
 > * Resources can contain any type of content that the MCP server provides (text, JSON, structured data, etc.)
 
 MCP Apps UI resources are entries with a `ui://` URI or the `text/html;profile=mcp-app` media type: pages for a host application to render rather than content for Claude to read. They don't appear in the `@` suggestions or in the resource list tool's results, and a server that offers only UI resources shows an empty resource list. Reading a UI resource by its URI still works.
+
+## Use skills from MCP servers
+
+With Skills over MCP, a server can provide [skills](/docs/en/skills) alongside its tools. This works for [claude.ai connectors](#use-mcp-servers-from-claude-ai), [servers you add](#installing-mcp-servers), and [servers from plugins](#plugin-provided-mcp-servers). To serve skills from a server you build, implement the [Skills extension](https://modelcontextprotocol.io/extensions/skills/overview), an extension to MCP that defines how servers list and deliver skills.
+
+> [!NOTE]
+>
+> MCP skills are in public beta and require Claude Code v2.1.331 or later. In the Desktop app, check the [Code tab's Claude Code version](/docs/en/desktop#claude-code-version-in-the-code-tab). See [where they're supported](#requirements-for-skills-from-mcp-servers).
+
+### Find and call MCP skills by name
+
+To find a skill, type `/` at the prompt in the terminal, VS Code, or the Desktop app's Code tab. In the terminal or VS Code, you can also run `/skills`. To use a skill, ask Claude, or type its name as a command. A skill's name is `<server>:<skill>`.
+
+For example, if you added a server named `docs` that has a `pdf` skill, the skill's name is `docs:pdf`, and this command runs it on `report.pdf`:
+
+```text theme={null}
+/docs:pdf report.pdf
+```
+
+Connector and plugin servers add a prefix, such as `claude_ai_Docs:pdf` for a connector named Docs, or `plugin_my-plugin_docs:pdf` for a `docs` server from `my-plugin`. In `<server>`, spaces and punctuation other than `-` become `_`.
+
+### Approvals for MCP skills
+
+When Claude loads an MCP skill in [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), the default, you don't see a prompt. The classifier decides whether the skill loads, without reading it. In Manual or `acceptEdits` mode, you see a prompt. Select **Allow this version** to skip the prompt and the classifier until the server changes the skill's files. To remove that approval in the terminal, delete its rule in `/permissions`.
+
+With an [ask rule](#block-a-servers-skills-or-ask-first) or a connector set to [**Restrict to Ask**](#restrict-mcp-skills-for-organizations), Claude needs your approval each time, including in auto and `bypassPermissions` modes. In plan mode, you see the prompt even for a version you allowed, unless your terminal session has [bypass available](/docs/en/permission-modes#skip-all-checks-with-bypasspermissions-mode). Typing a skill's command at the prompt doesn't need approval. For Remote Control, see [Where MCP skills are supported](#where-mcp-skills-are-supported).
+
+#### Set rules for a server's skills
+
+Add a [permission rule](/docs/en/permissions) to block an MCP server's skills, see a prompt each time Claude loads one, or skip the prompt. In the terminal, run `/permissions` to add one.
+
+These example rules use `docs` as the [server name](#run-an-mcp-skill):
+
+| To | Add to | Rule |
+| :- | :- | :- |
+| Block its skills, including typed commands | `deny` | `Skill(mcp__docs__*)` |
+| Block only its `pdf` skill | `deny` | `Skill(docs:pdf)` |
+| Block its skills and tools | `deny` | `mcp__docs` |
+| See a prompt each time Claude loads one | `ask` | `Skill(mcp__docs__*)` |
+| Approve all versions of its skills | `allow` | `Skill(mcp__docs__*)` |
+
+Add the `allow` rule to user or managed settings. It works for servers you added at user or local scope and for managed servers, but not for connectors, `.mcp.json` servers, or plugin servers. `Skill(mcp__docs__*)` rules require Claude Code v2.1.331 or later.
+
+With `deny` rules, normal [resource reads](#use-mcp-resources) from the server are still allowed. To stop Claude from reading any server's resources, including allowed skills' supporting files, deny `ReadMcpResourceTool`.
+
+### Security scanning for MCP skills
+
+Anthropic scans skills from some connectors, with [exceptions and limitations](#limitations-of-mcp-skills). For these connectors, a version loads only after it passes the scan:
+
+* Third-party [Directory](https://claude.ai/directory) connectors you add on claude.ai
+* Custom connectors, while your Enterprise organization keeps **Skill and plugin security scanning** on in [**Organization settings > Plugins & skills > Policy**](https://claude.ai/admin-settings/skills?tab=policy)
+
+Anthropic doesn't scan skills from other connectors or servers, including Directory servers added with `claude mcp add`.
+
+> [!WARNING]
+>
+> Skills can direct Claude to run code. Servers can change skills at any time. Add only servers you trust.
+
+### MCP skill availability
+
+When you sign in with `/login` on a Pro, Max, or Ultra plan, MCP skills are on. With `/login` on a Team or Enterprise plan, they're off until your organization [turns them on](#turn-on-skills-for-an-organization).
+
+With a [long-lived token](/docs/en/authentication#generate-a-long-lived-token) from any of these plans, MCP skills are on. With an API key or a Console login, they're rolling out: off now, and on by default when the rollout reaches you. For a token, a key, or a Console login, claude.ai connectors don't load, so you can use skills only from other MCP servers.
+
+#### Where MCP skills are supported
+
+You can use MCP skills in a terminal, including in JetBrains IDEs, and in local sessions you start in the Desktop app. In the VS Code extension, they're rolling out and turn on without a setting. When you control an interactive terminal session over [Remote Control](/docs/en/remote-control), ask Claude to use a skill instead of sending its command.
+
+You also need a Fable model, or Claude Opus 4.8, Sonnet 5, Haiku 5.5, or later, and a direct connection to Anthropic with [feature flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) on. If your setup matches one of these, MCP skills aren't supported:
+
+* **Sessions**: cloud sessions, `claude -p`, `claude remote-control` server mode, [GitHub Actions](/docs/en/github-actions), and the Agent SDK
+* **Servers in the Desktop app**: connectors, Desktop extensions, and servers from [`claude_desktop_config.json`](/docs/en/desktop#mcp-servers-from-the-claude-desktop-chat-app)
+* **Connections**: cloud providers, a custom `ANTHROPIC_BASE_URL`, `apiKeyHelper`, and `ANTHROPIC_AUTH_TOKEN`
+* **Compliance settings**: organizations with a setting such as [HIPAA](/docs/en/hipaa-setup) or [zero data retention](/docs/en/zero-data-retention). For connectors, this includes [customer-managed encryption keys](https://platform.claude.com/docs/en/manage-claude/cmek).
+
+### MCP skill limitations
+
+Each server shows up to 100 skills. [Scanned skills](#safety-of-mcp-skills) have limits:
+
+* **Size**: 100 KB per text file, 400 KB per skill
+* **Unscanned files**: PNG, JPEG, GIF, BMP, ICO, SVG, PDF, WOFF, WOFF2, TTF, EOT, MP3, MP4, WAV, AVI, MOV, and dependency lock files aren't scanned or counted
+* **Unsupported files**: skills with an archive, another binary file such as WebP or OTF, or text in folders such as `dist/` don't load
+
+### Turn on MCP skills for organizations
+
+To turn on MCP skills for Team or Enterprise members who sign in with `/login`:
+
+* **Connectors**: an [Owner](/docs/en/server-managed-settings#access-control) turns on **Skills over MCP** in [**Organization settings > Connectors**](https://claude.ai/admin-settings/connectors). Your organization's [**Skills** setting](https://claude.ai/admin-settings/skills?tab=policy) must also be on.
+* **Other servers**: set [`disableDirectMcpSkills`](/docs/en/settings-reference#disabledirectmcpskills) to `false` in [managed settings](/docs/en/managed-settings), in the highest-ranked [admin source](/docs/en/managed-settings#how-claude-code-combines-managed-sources) you use
+
+> [!WARNING]
+>
+> Turn skills on only if you trust your members' servers: skill instructions or code can make Claude take unintended actions, including through [prompt injection](/docs/en/security#protect-against-prompt-injection).
+
+#### Restrict MCP skills for organizations
+
+To restrict one connector's skills, open the connector in [**Organization settings > Connectors**](https://claude.ai/admin-settings/connectors) and change **Default restriction for unconfigured tools**:
+
+* **Restrict to Ask**: Claude needs approval each time it loads a skill
+* **Restrict to Blocked**: no skill loads, including typed commands
+
+Either way, you also restrict the connector's tools that have no restriction of their own. [Per-tool controls](#organization-controls-on-connector-tools) don't apply to skills.
+
+On devices you manage, people can also sign in with a personal plan, an API key, or a long-lived token, where your organization's defaults don't apply. To turn skills off on those devices, set these keys to `true` in a [managed settings file or MDM policy](/docs/en/server-managed-settings#platform-availability):
+
+* **`disableDirectMcpSkills`**: turns off skills from servers other than connectors
+* **[`disableClaudeAiConnectors`](#disable-claude-ai-connectors)**: turns off the connectors Claude Code fetches, including their skills and tools
+
+Normal [resource reads](#use-mcp-resources) from MCP servers are still allowed when skills are turned off.
+
+### Troubleshoot MCP skills
+
+If skills from MCP servers are missing, check the [supported setups](#requirements-for-skills-from-mcp-servers), [approval](#approvals-for-mcp-skills), the [`claude --debug=mcp` log](/docs/en/debug-your-config#check-mcp-servers), and these cases:
+
+| What you see | What to do |
+| :- | :- |
+| A **Features** row in `/status` that names a variable, such as `DISABLE_TELEMETRY` | Unset the variable to turn [feature flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) on, then restart Claude Code |
+| `Unknown command`, or Claude treats the command as text | Send it again. |
+| `Claude Code could not read whether your organization limits this connector` in a prompt | Restart Claude Code |
+| `scan of this skill has no result yet` | Retry in a minute, then tell the server's owner. Some [unsupported files](#limitations-of-mcp-skills) get no result. |
+| `scan cannot take it` or `scan stopped this version` | Tell the server's owner |
+| A connector shows tools but no skills | Ask its provider whether it serves skills to Claude Code. During the beta, Anthropic keeps skills off for some connectors, and no setting changes that. |
+| No **Protocol** row on a connected server's `/mcp` page | Confirm the server supports [MCP revision](#mcp-client-runtimes) 2026-07-28 or later, over HTTP or stdio. If a stdio server takes over 3 seconds to start, change its command from `npx` to the installed program, then select **Reconnect**. |
 
 ## Scale with MCP tool search
 
@@ -46872,6 +47058,19 @@ What Claude Code does with a synced skill's body depends on where the session ru
 * In a Cowork session on your desktop, the body keeps the behavior a local skill has, except that Claude Code replaces every `!` command line with the [`disableSkillShellExecution` placeholder](#inject-dynamic-context), as it does for every skill you supply there.
 * In a terminal or VS Code session, Claude Code doesn't run [`!` commands](#inject-dynamic-context), doesn't attach the files that `@` references name, and doesn't substitute the `${CLAUDE_PROJECT_DIR}` and `${CLAUDE_SESSION_ID}` placeholders. The `@` references and both placeholders reach Claude as literal text. A `!` command line reaches Claude as literal text too, or as the `disableSkillShellExecution` placeholder when that setting is on. This handling requires Claude Code v2.1.228 or later.
 
+### Skills from MCP servers
+
+[MCP servers can provide skills](/docs/en/mcp#use-skills-from-mcp-servers). Using them requires Claude Code v2.1.331 or later. Claude reads a skill's supporting files from the server as [MCP resources](/docs/en/mcp#use-mcp-resources). For prompts and rules, see [Approvals for MCP skills](/docs/en/mcp#approvals-for-mcp-skills).
+
+#### Skill features that don't apply
+
+Because the server supplies the content, you can't use these features of [local skills](#where-skills-live) in an MCP skill:
+
+* **Frontmatter fields**: Claude Code ignores `allowed-tools`, `disallowed-tools`, `hooks`, `model`, `effort`, `context`, `agent`, `background`, `shell`, `paths`, and `metadata`
+* **[`!` commands](#inject-dynamic-context)**: they don't run
+* **`@` references**: the files aren't attached
+* **`${CLAUDE_PROJECT_DIR}` and `${CLAUDE_SESSION_ID}`**: they aren't substituted
+
 ### Edit a skill during a session
 
 Claude Code watches skill directories for file changes, except in [bare mode](/docs/en/headless#start-faster-with-bare-mode). When you add, edit, or remove a skill under `~/.claude/skills/`, the project `.claude/skills/`, or a `.claude/skills/` inside an `--add-dir` directory, Claude Code picks up the change within the current session.
@@ -47227,9 +47426,14 @@ Fix GitHub issue $ARGUMENTS following our coding standards.
 5. Create a commit
 ```
 
-When you run `/fix-issue 123`, Claude receives "Fix GitHub issue 123 following our coding standards..."
+When you run `/fix-issue 123`, Claude receives `Fix GitHub issue 123 following our coding standards...`
 
-If you invoke a skill with arguments but no placeholder in the skill's content receives one, Claude Code appends `ARGUMENTS: <your input>` to the end of the skill content so Claude still sees what you typed. A placeholder is `$ARGUMENTS`, an indexed form such as `$1`, or a named argument. An indexed placeholder with no argument at its position stays as literal text and doesn't count as receiving one. A named placeholder counts even when its position has no argument, because it expands to an empty string.
+If you invoke a skill with arguments but no placeholder in the skill's content receives one, Claude Code appends `ARGUMENTS: <your input>` to the end of the skill content so Claude still sees what you typed. A placeholder is `$ARGUMENTS`, an indexed form such as `$1`, or a named argument.
+
+With no argument at its position, a placeholder counts as receiving one only if it's named:
+
+* **Indexed placeholder, such as `$1`**: stays as literal text
+* **Named placeholder, such as `$issue`**: expands to an empty string
 
 To access individual arguments by position, use `$ARGUMENTS[N]` or the shorter `$N`:
 
@@ -47423,9 +47627,11 @@ The `agent` field specifies which subagent configuration to use. Options include
 
 ### Restrict Claude's skill access
 
-By default, Claude can invoke any skill that doesn't have `disable-model-invocation: true` set. Skills that define [`allowed-tools`](#pre-approve-tools-for-a-skill) grant Claude access to those tools without per-use approval during the turn that invokes the skill; the grant clears when you send your next message. Your [permission settings](/docs/en/permissions) still govern baseline approval behavior for all other tools. A few built-in commands are also available through the Skill tool, including `/init` and `/security-review`. Other built-in commands such as `/compact` are not.
+By default, Claude can invoke any skill that doesn't have `disable-model-invocation: true` set. Skills that define [`allowed-tools`](#pre-approve-tools-for-a-skill) grant Claude access to those tools without per-use approval during the turn that invokes the skill; the grant clears when you send your next message. Your [permission settings](/docs/en/permissions) still govern baseline approval behavior for all other tools. With a [skill from an MCP server](#skills-from-mcp-servers), Claude gets no `allowed-tools` grant.
 
-Three ways to control which skills Claude can invoke:
+A few built-in commands are also available through the Skill tool, including `/init` and `/security-review`. Other built-in commands such as `/compact` aren't.
+
+You can control which skills Claude invokes in these ways:
 
 **Disable all skills** by denying the Skill tool in `/permissions`:
 
@@ -47464,6 +47670,8 @@ Claude Code matches an `allow` rule only against the skill's own name and the na
 * `Skill(anthropic-skills:pdf)` approves the synced `pdf` skill
 * `Skill(anthropic-skills *)` approves every synced skill
 * `Skill(anthropic *)` doesn't cover `anthropic-skills:pdf`, because a prefix outside the namespace doesn't match the names inside it
+
+For a [skill from an MCP server](#skills-from-mcp-servers), [set a rule for its server](/docs/en/mcp#block-a-servers-skills-or-ask-first) instead. You can't skip its prompt with an `allow` rule for the skill's name.
 
 **Hide individual skills** by adding `disable-model-invocation: true` to their frontmatter. This removes the skill from Claude's context entirely.
 
@@ -49650,7 +49858,7 @@ If your issue isn't listed, work through the diagnostic checks below to narrow d
 
 > [!TIP]
 >
-> If you'd rather skip the terminal entirely, the [Claude Code Desktop app](/docs/en/desktop-quickstart) lets you install and use Claude Code through a graphical interface. Download it for [macOS](https://claude.ai/api/desktop/darwin/universal/dmg/latest/redirect?utm_source=claude_code\&utm_medium=docs) or [Windows](https://claude.com/download?utm_source=claude_code\&utm_medium=docs) and start coding without any command-line setup. On Linux, install the app with apt by following the [Linux install instructions](/docs/en/desktop-linux).
+> If you'd rather skip the terminal entirely, the [Claude Code Desktop app](/docs/en/desktop-quickstart) lets you install and use Claude Code through a graphical interface. Download it for [macOS](https://claude.ai/claude-code/desktop-download?platform=mac\&utm_source=claude_code\&utm_medium=docs) or [Windows](https://claude.ai/claude-code/desktop-download?platform=win\&utm_source=claude_code\&utm_medium=docs) and start coding without any command-line setup. On Linux, install the app with apt by following the [Linux install instructions](/docs/en/desktop-linux).
 
 ## Run diagnostic checks
 
@@ -60615,7 +60823,7 @@ With `awsAuthRefresh` configured, run `/login`, select **3rd-party platform**, t
 A workspace API key is a long-lived secret, useful when you don't want to manage federated AWS credentials. Generate one in the AWS Console under **Claude Platform on AWS → API keys** and set it as `ANTHROPIC_AWS_API_KEY`:
 
 ```bash theme={null}
-export ANTHROPIC_AWS_API_KEY=sk-ant-xxxxx
+export ANTHROPIC_AWS_API_KEY=your-workspace-api-key
 ```
 
 The key is sent as `x-api-key` and takes precedence over SigV4, so any AWS credentials in your environment are ignored. API keys from a separate Claude Console organization won't work here.
@@ -61597,19 +61805,19 @@ Try Code Mode on tasks that take many related tool calls, such as:
 
 Before you turn on Code Mode, check that you can accept these limits:
 
-* **Resuming**: you can resume a Code Mode session only in the terminal, with Code Mode on
+* **Resuming**: you can resume a Code Mode session only with Code Mode on. After a Code Mode session has run with a Claude subscription or a Console account, you can't resume it on a cloud provider such as Amazon Bedrock
 * **Auto mode**: auto mode's classifier [reviews the code, not each tool call](#permission-checks)
 * **Long-running code**: unless [code can run in the background](#long-running-code), you wait for it to finish, and it stops after ten minutes
-* **Hooks**: you can see [tool calls refused](#tool-call-refused-by-a-hook) when a `PreToolUse` hook doesn't finish, for example after a timeout
+* **Hooks**: by default, expect a [refused tool call](#tool-call-refused-by-a-hook) when a `PreToolUse` hook doesn't finish, and a [call that can still run](#tool-call-ran-after-a-hook-failed) when the hook fails another way
 * **Unavailable features**: you can't use [Remote Control](/docs/en/remote-control), [Claude in Chrome](/docs/en/chrome), or [computer use](/docs/en/computer-use)
 * **Moving the session**: you can't move the session to the Desktop app or turn it into a [background session](/docs/en/agent-view), and `/fork` can't start a background copy
 
 ## Requirements
 
 * **Version**: Claude Code v2.1.323 or later, on either [release channel](/docs/en/setup#configure-release-channel). An older version starts without Code Mode, with or without the reason `it isn't open to your account yet`
-* **Account**: a Claude subscription or Console account. You can't use Code Mode through a gateway, Amazon Bedrock, Claude Platform on AWS, Google Cloud's Agent Platform, Microsoft Foundry, or [Claude Models on Google Cloud (Anthropic managed)](/docs/en/claude-models-on-google-cloud-anthropic-managed)
+* **Account or provider**: a Claude subscription, a Console account, or a [cloud provider](/docs/en/feature-availability#availability-by-model-provider) such as Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry. With a cloud provider, you need v2.1.331 or later. You can't use Code Mode through a [gateway](/docs/en/gateways) or with Claude for Government. If you reach a cloud provider with an [Enterprise Admin Console sign-in](/docs/en/authentication#log-in-to-claude-code), you need Agent Platform, or Amazon Bedrock without the [Mantle endpoint](/docs/en/amazon-bedrock#use-the-mantle-endpoint)
 * **Organization**: your organization doesn't use the [HIPAA configuration](/docs/en/hipaa-setup) or [zero data retention](/docs/en/zero-data-retention)
-* **Model**: Claude Opus 5.5, Sonnet 5.5, Haiku 5.5, or Fable 5.2
+* **Model**: Claude Opus 5.5, Sonnet 5.5, Haiku 5.5, or Fable 5.2. If you select the model by a deployment name or an application inference profile, ask whoever manages that name whether it points to one of these models
 * **Surface**: an interactive `claude` session in a terminal. Code Mode doesn't work with the VS Code panel, the Desktop app, or cloud sessions
 * **Agent teams**: to use Code Mode with [agent teams](/docs/en/agent-teams) on, you need v2.1.326 or later. Teammates run in Code Mode in the default [in-process display mode](/docs/en/agent-teams#choose-a-display-mode), and start without it in split panes
 * **Mods**: to use Code Mode with a [mod](/docs/en/plugins/mods/overview) that hooks tool calls, you need v2.1.327 or later. If you're on the `stable` channel and an update doesn't reach that version, [switch to `latest`](/docs/en/setup#configure-release-channel)
@@ -61617,7 +61825,7 @@ Before you turn on Code Mode, check that you can accept these limits:
 * **Installation**: the [native build](/docs/en/setup) of Claude Code
 * **Windows**: [Git for Windows](https://git-scm.com/downloads/win) is installed
 
-You also can't start Code Mode with some settings on, such as an API key helper. For the fix for each, see [Code Mode doesn't start](#code-mode-doesnt-start).
+You also can't start Code Mode with some settings on, such as an API key helper on a direct connection to Anthropic. For the fix for each, see [Code Mode doesn't start](#code-mode-doesnt-start).
 
 ## Try Code Mode
 
@@ -61625,7 +61833,7 @@ Turn on Code Mode, give Claude a task, and look at the code that Claude wrote.
 
 **1. Check your version**
 
-Run `claude --version`. If the version is older than v2.1.323, run `claude update`. If you're on the `stable` channel and the update doesn't reach v2.1.323, wait for `stable` to catch up or [switch to `latest`](/docs/en/setup#configure-release-channel).
+Run `claude --version`. If the version is older than the one you [need for your setup](#requirements), run `claude update`. If you're on the `stable` channel and the update doesn't reach that version, wait for `stable` to catch up or [switch to `latest`](/docs/en/setup#configure-release-channel).
 
 **2. Start Claude Code with Code Mode on**
 
@@ -61686,7 +61894,7 @@ Press `Ctrl+O` and expand a **Code** row to see the JavaScript behind the tool c
 
 ### Turn off Code Mode
 
-Remove `CLAUDE_CODE_EXPERIMENTAL_CODE_MODE` from your shell and from `~/.claude/settings.json`, then start a new session. You can also keep the variable and change its value to `0` in either place. With a `0` in one place, Code Mode stays off even if you set `1` in the other.
+Remove `CLAUDE_CODE_EXPERIMENTAL_CODE_MODE` from your shell, `~/.claude/settings.json`, and any `--settings` file, then start a new session. You can also keep the variable and change its value to `0` in any of them. With a `0` in one place, Code Mode stays off even if you set `1` in another.
 
 ### Block Code Mode for your organization
 
@@ -61699,6 +61907,8 @@ Add `CLAUDE_CODE_EXPERIMENTAL_CODE_MODE` with the value `0` to your [managed set
   }
 }
 ```
+
+If your users can connect through a cloud provider, deploy this setting through [MDM or a managed settings file](/docs/en/managed-settings#delivery-mechanisms). A user who sets a provider variable such as `CLAUDE_CODE_USE_BEDROCK` in their shell or user settings can start Code Mode without receiving [server-managed settings](/docs/en/server-managed-settings#platform-availability).
 
 Users who are in a Code Mode session stay in it until they exit or restart Claude Code. After that, your users start without Code Mode and can't resume their Code Mode sessions while the `0` is in place. You can't turn on Code Mode for your users from managed settings.
 
@@ -61718,7 +61928,7 @@ Your permission mode decides how the code that Claude writes is checked and whet
 
 In auto and `bypassPermissions` modes, code can run from start to finish without a permission prompt. Some calls still prompt you, such as the [actions no mode auto-approves](/docs/en/permission-modes#actions-no-mode-auto-approves).
 
-Each tool call in the code goes through your `deny` and `ask` [permission rules](/docs/en/permissions) and [`PreToolUse` hooks](/docs/en/hooks#pretooluse) under the tool's usual name, such as `Bash` or an [MCP tool's name](/docs/en/permissions#mcp). Beyond rules and hooks, a classifier reviews the code in auto mode, and you answer prompts in the modes that ask:
+To control tool calls in the code, write `deny` and `ask` [permission rules](/docs/en/permissions) and [`PreToolUse` hooks](/docs/en/hooks#pretooluse) under the tool's usual name, such as `Bash` or an [MCP tool's name](/docs/en/permissions#mcp). Beyond rules and hooks, a classifier reviews the code in auto mode, and you answer prompts in the modes that ask:
 
 * **[Auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode)**: the classifier reviews each piece of code before it runs, not each tool call. It doesn't see values computed at run time, such as a path taken from search output, so keep rules or hooks for calls you must control. You can still be [prompted for some calls](#permission-prompt-with-a-countdown), such as calls in code that you approved yourself after repeated classifier blocks
 * **Other [permission modes](/docs/en/permission-modes)**: you're prompted for each tool call that would prompt you in that mode
@@ -61783,10 +61993,10 @@ While code runs a long build or test, Claude either waits for it or lets it cont
 
 For background code, start your session in auto or `bypassPermissions` mode. If Claude still waits, check your current mode and how you started the session:
 
-* **You switched to another mode**: press `Shift+Tab` until you're back in the mode you started in
-* **You started in another mode**: if [auto mode is available](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) to you, exit, then run `claude --continue --permission-mode auto` with Code Mode on
-* **You're on a version before v2.1.328 and picked the session from the `claude --resume` list**: exit, [update Claude Code](/docs/en/setup#update-claude-code), then run the same `claude --resume` command with Code Mode on. To stay on your version, replace `--resume` with `--continue`
-* **You passed tool names to `--tools`**: start again in auto mode without that flag
+* **You're on a version before v2.1.328 and picked the session from the `claude --resume` list**: exit, [update Claude Code](/docs/en/setup#update-claude-code), then run the same `claude --resume` command with Code Mode on. To stay on your version, replace `--resume` with `--continue`. If Claude still waits after the update, start a new session in auto mode
+* **You passed tool names to `--tools`**: start a new session in auto mode, with Code Mode on and without that flag
+* **The session first started in auto or `bypassPermissions` mode**: press `Shift+Tab` until you're back in that mode. If that doesn't help, exit, then run `claude --continue --permission-mode auto` with Code Mode on
+* **The session first started in another mode**: if [auto mode is available](/docs/en/permission-modes#eliminate-prompts-with-auto-mode) to you, exit, then run `claude --permission-mode auto` with Code Mode on to start a new session. On v2.1.331 or later, expect Claude to keep waiting if you resume the old session instead
 
 ### Stop code in progress
 
@@ -61818,7 +62028,8 @@ To hide part of the output, return a changed copy of `tool_response` as [`update
 
 * **Change the text**: redact `result`, `stdout`, `stderr`, and `error`. Handle a `result` that's missing or `null`, and expect `error` only when the code failed or was stopped
 * **Keep the shape**: return `code`, `stdout`, and `stderr` as strings, and return `error` as a string or leave it out. If you break this shape, Claude gets the original output
-* **Remove images and PDFs**: if the copy has `images` or `documents` to hide, set that field to `[]`
+* **Remove images, PDFs, and page errors**: if the copy has `images`, `documents`, or `imagePagesFailed` to hide, set that field to `[]`. The `imagePagesFailed` field lists the file path and error for each PDF page that couldn't be shown
+* **Remove the path to long output**: on v2.1.331 or later, omit `uncutOutputNote` from the copy. The field gives Claude a path to the uncut text
 
 To hide the deploy token in the `notes.txt` result, print this JSON:
 
@@ -61864,9 +62075,11 @@ If you check code output in a [`UserPromptSubmit` hook](/docs/en/hooks#userpromp
 | :- | :- |
 | `it isn't open to your account in this version` or `it isn't open to your account yet` | If your version is older than v2.1.323, [update](#try-code-mode). Otherwise, check your network connection and start again. If the reason stays, try again another day |
 | `Anthropic has turned it off for now` | [Update Claude Code](/docs/en/setup#update-claude-code), or start again later |
-| `it only works directly with the Anthropic API` or `it only works with the Anthropic API` | Remove the settings that route requests through a cloud provider, a gateway, or a custom `ANTHROPIC_BASE_URL` |
+| `it only works directly with the Anthropic API` or `it only works with the Anthropic API` | If you use a cloud provider without a gateway, [update Claude Code](/docs/en/setup#update-claude-code) to v2.1.331 or later. If you use a gateway, follow the next row |
+| `it isn't offered yet through a gateway or proxy` | If your administrator set up the [gateway](/docs/en/gateways), you need it, or you use Claude for Government, [turn off Code Mode](#turn-off-code-mode) to stop seeing the line. Otherwise, remove [the gateway's settings](/docs/en/llm-gateway-connect) and key, and connect directly. You can keep `HTTPS_PROXY`. If you signed in to a Claude apps gateway, also remove [its entries from your user settings](/docs/en/claude-apps-gateway#set-the-gateway-url-in-user-settings) and run `/logout`, which removes saved MCP server logins and plugin secrets too |
+| `it isn't offered yet through a gateway or proxy`, with an [Enterprise Admin Console sign-in](/docs/en/authentication#log-in-to-claude-code) | Run `/status`. If `API provider` shows a provider that the [requirements](#requirements) rule out, such as `Microsoft Foundry` or `Amazon Bedrock (Mantle)`, [turn off Code Mode](#turn-off-code-mode) to stop seeing the line. Otherwise, follow the previous row |
 | `it doesn't work with an API key helper` | Remove `apiKeyHelper`, `ANTHROPIC_AUTH_TOKEN`, and any `Authorization` or `X-Api-Key` header in `ANTHROPIC_CUSTOM_HEADERS`. Then sign in or set `ANTHROPIC_API_KEY` |
-| `it only works with Opus 5.5, Sonnet 5.5 and later models` | Start with a [supported model](#requirements), for example with `--model opus`. Haiku 5.5 and Fable 5.2 also work |
+| `it only works with Opus 5.5, Sonnet 5.5 and later models` | Pass the full name of a [supported model](#requirements) that your account can use, for example `--model claude-opus-5-5`, or on Microsoft Foundry the name of your deployment of one. Avoid aliases such as `sonnet`, which [select older models on some providers](/docs/en/model-config#model-aliases) |
 | `it doesn't work in background jobs` | Start in the foreground, without `--remote-control`. If the reason shows in a teammate's split pane, use the [in-process display mode](/docs/en/agent-teams#choose-a-display-mode) to run teammates in Code Mode |
 | `it needs settings that Claude Code downloads from Anthropic` | [Update Claude Code](/docs/en/setup#update-claude-code) to meet the [telemetry settings requirement](#requirements). To stay on your version, unset the variable that [turns off feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching), such as `DISABLE_TELEMETRY` |
 | `OpenTelemetry tracing is on` | Unset `CLAUDE_CODE_ENHANCED_TELEMETRY_BETA`, `ENABLE_ENHANCED_TELEMETRY_BETA`, and `ENABLE_BETA_TRACING_DETAILED` if you can work without [traces](/docs/en/monitoring-usage#traces-beta) |
@@ -61875,6 +62088,7 @@ If you check code output in a [`UserPromptSubmit` hook](/docs/en/hooks#userpromp
 | `it doesn't yet work with an installed mod` | [Update Claude Code](/docs/en/setup#update-claude-code) to meet the [mods requirement](#requirements). To stay on your version, run `/plugin` and disable each mod you installed |
 | `it can't be used together with agent teams yet` | To keep agent teams on, [update Claude Code](/docs/en/setup#update-claude-code) to v2.1.326 or later. To stay on your version, unset `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` |
 | `this launch's tool options` | Start without `--restricted`, add `REPL` to `--tools`, and remove `REPL` from `--disallowedTools` and your `deny` rules |
+| `couldn't read your organization's settings or policy` | Start again. If your Enterprise Admin Console sign-in ended, run `claude auth login` and select your organization. If the reason stays and your network blocks `api.anthropic.com`, ask your administrator to allow that host. If you use a cloud provider and not that sign-in, you can instead unset `ANTHROPIC_API_KEY` and run `claude auth logout`, which also removes saved MCP server logins and plugin secrets |
 | `couldn't save your answer` | Make `~/.claude.json` writable |
 | `your organization's settings don't allow it` | Ask your administrator about the [managed setting](#block-code-mode-for-your-organization) |
 
@@ -61882,7 +62096,9 @@ If you see no line about Code Mode, run `claude --version`. If your version is o
 
 ### Permission prompt with a countdown
 
-In auto mode, if you approve code yourself after [repeated classifier blocks](/docs/en/permission-modes#when-auto-mode-falls-back), you can be asked about tool calls in that code and in earlier code that's still running. With no IDE connected, the prompt can show a countdown:
+In auto mode, if you approve code yourself after [repeated classifier blocks](/docs/en/permission-modes#when-auto-mode-falls-back), you can be asked about tool calls in that code and in earlier code that's still running. Expect the same in auto mode after an [`ask` rule](#approve-each-piece-of-code-first) or a `PreToolUse` hook on `REPL` has you approve the code.
+
+With no IDE connected, the prompt can show a countdown:
 
 ```text theme={null}
 Claude Code will automatically block this request in 1:59, to avoid holding up an unattended session
@@ -61894,15 +62110,22 @@ Before v2.1.327, you could also be asked about the remaining calls in running co
 
 ### Tool call refused by a hook
 
-If Claude reports a refused tool call, ask it for the error text. These errors mean that your [`PreToolUse` hook](/docs/en/hooks#pretooluse) didn't give a decision:
+If Claude reports a refused call, ask it for the error text. These errors mean your [`PreToolUse` hook](/docs/en/hooks#pretooluse) gave no decision:
 
-* **`the hook did not finish`**: your hook timed out, or your agent hook ended without a decision. After a timeout, raise the hook's [`timeout`](/docs/en/hooks#common-fields). For an agent hook that gives no decision, move the check to a `command` hook. You can see this error on calls from code, and on other tool calls after Claude runs code in the session
-* **`the hook failed`**: on a call from code, your hook couldn't start, was killed, exited with 126, 127, or a code above 128, or returned an HTTP error or invalid output. Fix the hook. You can see this error before v2.1.329. On later versions it's rare: one cause is [feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) turning off during a session, after Claude has run code
+* **`the hook did not finish`**: your hook timed out, or your agent hook ended without a decision. Raise the hook's [`timeout`](/docs/en/hooks#common-fields), or set [`"onFailure": "continue"`](#tool-call-ran-after-a-hook-failed) on a `command` or `http` hook. If an agent hook still gives this error, move the check to a `command` hook. After Claude runs code, you can see this error on calls outside code too
+* **`the hook failed`**: your hook failed on a call from code, for example because it couldn't start. Find the failure in the [debug log](/docs/en/hooks#debug-hooks) and fix it. Expect this error before v2.1.329. On later versions, you can see it after you turn off [feature-flag fetching](/docs/en/env-vars#features-that-need-feature-flag-fetching) during a session
 
-On v2.1.329 or later, expect a call from code to run by default after a hook failure other than `the hook did not finish`. To choose whether the call runs, use a `command` or `http` hook and set [`onFailure`](/docs/en/hooks#block-the-action-when-a-hook-fails) on it:
+### Tool call ran after a hook failed
 
-* **To stop the call after a timeout or failure**: set `"onFailure": "block"`. Do this for a hook that guards calls
-* **To let the call run after a timeout or failure**: set `"onFailure": "continue"`
+To stop a call from code when its `PreToolUse` hook fails, use a `command` or `http` hook and set [`"onFailure": "block"`](/docs/en/hooks#block-the-action-when-a-hook-fails). If several settings files have that hook, give it the same `onFailure` value in each.
+
+On v2.1.329 or later, expect these results for `command` and `http` hooks:
+
+| `onFailure` | Hook times out | Hook fails another way, such as a missing script |
+| :- | :- | :- |
+| Not set | Refused | Goes on to permission checks, [with rare exceptions](#tool-call-refused-by-a-hook) |
+| `"block"` | Refused | Refused |
+| `"continue"` | Goes on to permission checks | Goes on to permission checks |
 
 ### Code output withheld by a hook
 
@@ -63741,11 +63964,11 @@ These features work in the local CLI but depend on a server-side capability that
       <td>[Code Mode](/docs/en/code-mode)</td>
       <td>✓ (experimental, [requirements apply](/docs/en/code-mode#requirements))</td>
       <td>✓ (experimental, [requirements apply](/docs/en/code-mode#requirements))</td>
-      <td>✗</td>
-      <td>✗</td>
-      <td>✗</td>
-      <td>✗</td>
-      <td>✗</td>
+      <td>✓ (experimental, [requirements apply](/docs/en/code-mode#requirements))</td>
+      <td>✓ (experimental, [requirements apply](/docs/en/code-mode#requirements))</td>
+      <td>✓ (experimental, [requirements apply](/docs/en/code-mode#requirements))</td>
+      <td>✓ (experimental, [requirements apply](/docs/en/code-mode#requirements))</td>
+      <td>✓ (experimental, [requirements apply](/docs/en/code-mode#requirements))</td>
     </tr>
 
     <tr>
@@ -63866,7 +64089,7 @@ Each tab lists what is unavailable or partially supported on that provider, with
 
 > [tab] Amazon Bedrock
 >
-> **Not available:** all [features that require a Claude subscription](#features-that-require-a-claude-subscription), plus [web search](/docs/en/tools-reference#websearch-tool-behavior), [fast mode](/docs/en/fast-mode), [Advisor](/docs/en/advisor), [Channels](/docs/en/channels), [Code Mode](/docs/en/code-mode), the [analytics dashboard](/docs/en/analytics), [server-managed settings](/docs/en/server-managed-settings), and the [`/design-sync` and `/import` commands](/docs/en/commands#all-commands).
+> **Not available:** all [features that require a Claude subscription](#features-that-require-a-claude-subscription), plus [web search](/docs/en/tools-reference#websearch-tool-behavior), [fast mode](/docs/en/fast-mode), [Advisor](/docs/en/advisor), [Channels](/docs/en/channels), the [analytics dashboard](/docs/en/analytics), [server-managed settings](/docs/en/server-managed-settings), and the [`/design-sync` and `/import` commands](/docs/en/commands#all-commands).
 >
 > **Partial support:**
 >
@@ -63879,7 +64102,7 @@ Each tab lists what is unavailable or partially supported on that provider, with
 
 > [tab] Claude Platform on AWS
 >
-> **Not available:** all [features that require a Claude subscription](#features-that-require-a-claude-subscription), plus [fast mode](/docs/en/fast-mode), [Channels](/docs/en/channels), [GitHub Actions](/docs/en/github-actions), [Code Mode](/docs/en/code-mode), the [analytics dashboard](/docs/en/analytics), [server-managed settings](/docs/en/server-managed-settings), and the [`/design-sync` and `/import` commands](/docs/en/commands#all-commands).
+> **Not available:** all [features that require a Claude subscription](#features-that-require-a-claude-subscription), plus [fast mode](/docs/en/fast-mode), [Channels](/docs/en/channels), [GitHub Actions](/docs/en/github-actions), the [analytics dashboard](/docs/en/analytics), [server-managed settings](/docs/en/server-managed-settings), and the [`/design-sync` and `/import` commands](/docs/en/commands#all-commands).
 >
 > **Available here, not on Amazon Bedrock:** [web search](/docs/en/tools-reference#websearch-tool-behavior), plus the [Advisor](/docs/en/advisor) in Claude Code v2.1.300 or later.
 >
@@ -63891,7 +64114,7 @@ Each tab lists what is unavailable or partially supported on that provider, with
 
 > [tab] Google Cloud (Anthropic managed)
 >
-> **Not available:** all [features that require a Claude subscription](#features-that-require-a-claude-subscription), plus [fast mode](/docs/en/fast-mode), [Channels](/docs/en/channels), [GitHub Actions](/docs/en/github-actions), [Code Mode](/docs/en/code-mode), the [analytics dashboard](/docs/en/analytics), [server-managed settings](/docs/en/server-managed-settings), and the [`/design-sync` and `/import` commands](/docs/en/commands#all-commands).
+> **Not available:** all [features that require a Claude subscription](#features-that-require-a-claude-subscription), plus [fast mode](/docs/en/fast-mode), [Channels](/docs/en/channels), [GitHub Actions](/docs/en/github-actions), the [analytics dashboard](/docs/en/analytics), [server-managed settings](/docs/en/server-managed-settings), and the [`/design-sync` and `/import` commands](/docs/en/commands#all-commands).
 >
 > **Available here, not on Google Cloud (Google managed):** the [Advisor](/docs/en/advisor) in Claude Code v2.1.300 or later.
 >
@@ -63906,7 +64129,7 @@ Each tab lists what is unavailable or partially supported on that provider, with
 >
 > If you set `CLAUDE_CODE_USE_VERTEX` to use Claude Code with Google Cloud's Agent Platform, you're on this provider.
 >
-> **Not available:** all [features that require a Claude subscription](#features-that-require-a-claude-subscription), plus [Advisor](/docs/en/advisor), [Channels](/docs/en/channels), [Code Mode](/docs/en/code-mode), the [analytics dashboard](/docs/en/analytics), [server-managed settings](/docs/en/server-managed-settings), and the [`/design-sync` and `/import` commands](/docs/en/commands#all-commands).
+> **Not available:** all [features that require a Claude subscription](#features-that-require-a-claude-subscription), plus [Advisor](/docs/en/advisor), [Channels](/docs/en/channels), the [analytics dashboard](/docs/en/analytics), [server-managed settings](/docs/en/server-managed-settings), and the [`/design-sync` and `/import` commands](/docs/en/commands#all-commands).
 >
 > **Partial support:**
 >
@@ -63921,7 +64144,7 @@ Each tab lists what is unavailable or partially supported on that provider, with
 
 > [tab] Microsoft Foundry
 >
-> **Not available:** all [features that require a Claude subscription](#features-that-require-a-claude-subscription), plus [fast mode](/docs/en/fast-mode), [Advisor](/docs/en/advisor), [Channels](/docs/en/channels), [GitLab CI/CD](/docs/en/gitlab-ci-cd), [Code Mode](/docs/en/code-mode), the [analytics dashboard](/docs/en/analytics), [server-managed settings](/docs/en/server-managed-settings), and the [`/design-sync` and `/import` commands](/docs/en/commands#all-commands).
+> **Not available:** all [features that require a Claude subscription](#features-that-require-a-claude-subscription), plus [fast mode](/docs/en/fast-mode), [Advisor](/docs/en/advisor), [Channels](/docs/en/channels), [GitLab CI/CD](/docs/en/gitlab-ci-cd), the [analytics dashboard](/docs/en/analytics), [server-managed settings](/docs/en/server-managed-settings), and the [`/design-sync` and `/import` commands](/docs/en/commands#all-commands).
 >
 > **Partial support:**
 >
@@ -63954,6 +64177,7 @@ In Enterprise organizations with the [HIPAA configuration](/docs/en/hipaa-setup)
 | [Cloud scheduled tasks](/docs/en/routines) | ✓ | ✓ | ✓ | ✓ | ✓ |
 | [Remote Control](/docs/en/remote-control) | ✓ | ✓ | ✓ | Admin-enabled | Admin-enabled |
 | [Channels](/docs/en/channels) | ✓ | ✓ | ✓ | Admin-enabled | Admin-enabled |
+| [Skills from MCP servers](/docs/en/mcp#requirements-for-skills-from-mcp-servers) | ✓ | ✓ | ✓ | Admin-enabled | Admin-enabled |
 | [Computer use](/docs/en/computer-use) | ✓ | ✓ | ✓ | ✗ | ✗ |
 | Dispatch ([Desktop](/docs/en/desktop#sessions-from-dispatch)) | Not available to new users | Not available to new users | Not available to new users | ✗ | ✗ |
 | [Code Review](/docs/en/code-review) | ✗ | ✗ | ✗ | ✓ | ✓ |
@@ -66966,6 +67190,7 @@ The cross-source keys include:
 
   Without the lock, Claude Code reads `allowedMcpServers` from the managed source it applies, so under `"first-wins"` an unselected admin source's list is ignored. Requires Claude Code v2.1.273 or later
 * `deniedMcpServers` and [`disableClaudeAiConnectors`](/docs/en/settings-reference#disableclaudeaiconnectors): an entry or a `true` in any admin source applies. Requires Claude Code v2.1.273 or later
+* [`disableDirectMcpSkills`](/docs/en/settings-reference#disabledirectmcpskills): a `true` in any admin source turns off skills from MCP servers other than claude.ai connectors. To turn them on, set `false` in the highest-ranked admin source you use. Claude Code ignores a `false` in the HKCU registry. Skills from MCP servers require Claude Code v2.1.331 or later
 * The sandbox binary paths `sandbox.bwrapPath` and `sandbox.socatPath`
 * The sandbox `ripgrep` binary, [`sandbox.ripgrep`](/docs/en/settings-reference#sandbox-ripgrep)
 * `sandbox.filesystem.disabled` and `sandbox.network.strictAllowlist`
@@ -67213,6 +67438,7 @@ The table covers the permission, plugin, and delivery controls. For any key not 
 | [`blockedMarketplaces`](/docs/en/settings-reference#blockedmarketplaces) | Blocklist of marketplace sources. Blocked sources are checked before downloading, so they never touch the filesystem. See [managed marketplace restrictions](/docs/en/plugins/org#restrict-what-users-can-install) |
 | [`channelsEnabled`](/docs/en/settings-reference#channelsenabled) | Allow [channels](/docs/en/channels) for the organization. See [enterprise controls](/docs/en/channels#enterprise-controls) for the default on each plan |
 | [`disableCommandPluginSources`](/docs/en/settings-reference#disablecommandpluginsources) | When `true`, blocks [`command` plugin sources](/docs/en/plugins/marketplace-reference#command-plugin-source) entirely, so the marketplace-declared command never runs. Also blocks marketplace [`headersHelper` commands](/docs/en/plugins/host-marketplace#authenticate-archive-downloads), except for a marketplace that managed settings themselves declare. When unset, follows `allowManagedHooksOnly`. Requires Claude Code v2.1.229 or later, and the `headersHelper` block requires v2.1.238 or later |
+| [`disableDirectMcpSkills`](/docs/en/settings-reference#disabledirectmcpskills) | Controls [skills from MCP servers other than claude.ai connectors](/docs/en/mcp#turn-on-skills-for-an-organization). Set to `false` to turn them on for Team and Enterprise plans, or to `true` to turn them off. Skills from MCP servers require Claude Code v2.1.331 or later |
 | [`disableSideloadFlags`](/docs/en/settings-reference#disablesideloadflags) | Reject the `--plugin-dir`, `--plugin-url`, `--agents`, and `--mcp-config` flags at startup. In cloud sessions, Claude Code instead starts the session and drops the server-delivered `--mcp-config` servers, apart from the exceptions its [reference entry](/docs/en/settings-reference#disablesideloadflags) lists. Requires Claude Code v2.1.193 or later |
 | [`forceRemoteSettingsRefresh`](/docs/en/settings-reference#forceremotesettingsrefresh) | When `true`, blocks CLI startup until remote managed settings are freshly fetched and exits if the fetch fails. See [fail-closed enforcement](/docs/en/server-managed-settings#enforce-fail-closed-startup) |
 | [`managedMcpServers`](/docs/en/settings-reference#managedmcpservers) | Remote MCP servers provided to every user alongside their own. It provides servers rather than locking anything down. See [Provide servers through managed settings](/docs/en/managed-mcp#provide-servers-through-managed-settings). Requires Claude Code v2.1.259 or later |
@@ -79132,7 +79358,15 @@ Don't approve a mod that fails this command, because some failures don't stop it
 | `$.prompt.submit` | Submits a prompt, and can send it as the user's own words |
 | `$.session.send` | Sends a message that another session's, subagent's, or [teammate's](/docs/en/agent-teams) Claude reads |
 
-In the `hooks:` line, [`tool.call`](/docs/en/plugins/mods/reference#tools) and [`prompt.submit`](/docs/en/plugins/mods/reference#prompts-and-what-claude-reads) mean the mod sees every tool call and every prompt, and can change them. [`session.append`](/docs/en/plugins/mods/reference#session) means the mod can rewrite each row of the conversation before it's stored, apart from [the rows the guard passes over](#hooks-the-guard-passes-over). [`ui.render{component=AskUserQuestion}`](/docs/en/plugins/mods/interface#change-what-claude-code-already-draws) means the mod can redraw the dialog Claude uses to ask the user a question. `tool.check` means the mod can approve or deny a tool call before a permission prompt appears. [Know what happens by default](#know-what-happens-by-default) lists which of your rules and hooks take precedence over its answer.
+In the `hooks:` lines, look for the events that let a mod change what runs, what Claude reads, or what the user sees:
+
+| Hook | What it means | Example |
+| :- | :- | :- |
+| [`tool.call`](/docs/en/plugins/mods/reference#tools), [`prompt.submit`](/docs/en/plugins/mods/reference#prompts-and-what-claude-reads) | Sees every tool call and every prompt, and can change them | Change a Bash command before it runs |
+| `tool.check` | Can approve or deny a tool call before a permission prompt appears. [Know what happens by default](#know-what-happens-by-default) lists which of your rules and hooks take precedence over its answer. | Approve a Bash command with no prompt |
+| [`session.append`](/docs/en/plugins/mods/reference#session) | Can rewrite each row of the conversation before it's stored, except [the rows the guard passes over](#hooks-the-guard-passes-over) and rows that hold a [skill from an MCP server](/docs/en/mcp#use-skills-from-mcp-servers) | Replace the text of a tool result |
+| [`skill.prompt`](/docs/en/plugins/mods/reference#prompts-and-what-claude-reads) | Can change a skill's text before Claude reads it, including a skill from an MCP server | Add instructions to a skill |
+| [`ui.render{component=AskUserQuestion}`](/docs/en/plugins/mods/interface#change-what-claude-code-already-draws) | Can redraw the dialog Claude uses to ask the user a question | Show its own text above a question |
 
 ## Choose how much to allow
 
@@ -82654,7 +82888,7 @@ Session events mark the session starting, ending, compacting, and exchanging mes
 | `session.end` | The session ends, or `/clear`, `/resume`, or `/branch` runs. `e.reason` is `clear`, `resume`, `logout`, `prompt_input_exit`, or `other`. `/branch` reports `resume`. | `next(e)` |
 | `session.compact` | The conversation is about to be compacted | `{ skip: reason }` |
 | [`session.receive`](/docs/en/plugins/mods/api#send-and-receive-messages-between-sessions), [`session.send`](/docs/en/plugins/mods/api#send-and-receive-messages-between-sessions) | A message arrives from, or is about to go to, another agent or session. See [Send and receive messages between sessions](/docs/en/plugins/mods/api#send-and-receive-messages-between-sessions). | `{ consumed: reason }` for `receive`, `{ isDelivered: false, reason }` for `send` |
-| `session.append` | Once for each row the conversation keeps, such as a prompt, a response block, a tool result, or a notice, before it's stored | `next({ ...e, message })` with a changed `message.content`, to rewrite the row's text blocks or the `content` of a `tool_result` block in it |
+| `session.append` | Once for each row the conversation keeps, such as a prompt, a response block, a tool result, or a notice, before it's stored | `next({ ...e, message })` with a changed `message.content`, to rewrite the row's text blocks or the `content` of a `tool_result` block in it. You can't rewrite a row that holds a [skill from an MCP server](/docs/en/mcp#use-skills-from-mcp-servers). To change that skill's text, hook [`skill.prompt`](#prompts-and-what-claude-reads) instead. |
 | `session.attach`, `session.detach` | Another app connects to or disconnects from the session | `next(e)` |
 | `session.measure` | After each turn, and when a plan limit's percent used changes | `next(e)` |
 | `session.stop` | The user stops Claude, such as with Esc during a turn. Requires Claude Code v2.1.326 or later. | `next(e)` |
@@ -92062,6 +92296,7 @@ Every key below links to its entry. Scope lists the [files](/docs/en/settings#se
 | [`disableCommandPluginSources`](#disablecommandpluginsources) | Block [plugins](/docs/en/plugins/overview) that install by running a marketplace-declared command | Plugins and skills | Managed |
 | [`disableDeepLinkRegistration`](#disabledeeplinkregistration) | Stop Claude Code from registering the [`claude-cli://` handler](/docs/en/deep-links) | Remote, desktop, and notifications | Any file |
 | [`disableDesktopLocalSessions`](#disabledesktoplocalsessions) | Turn off [Desktop Code sessions](/docs/en/desktop#local-sessions-on-managed-devices) that run on the device, leaving SSH to other hosts and cloud | Remote, desktop, and notifications | Managed |
+| [`disableDirectMcpSkills`](#disabledirectmcpskills) | Turn [skills from MCP servers](/docs/en/mcp#turn-on-skills-for-an-organization) other than connectors on or off for your organization | MCP | Managed |
 | [`disabledMcpjsonServers`](#disabledmcpjsonservers) | Reject specific servers from a project's [`.mcp.json`](/docs/en/mcp#project-scope) | MCP | Any file |
 | [`disableMobileSimulatorTools`](#disablemobilesimulatortools) | Block Claude's tools in the [desktop](/docs/en/desktop) iOS Simulator pane | Tools | Managed |
 | [`disableRemoteControl`](#disableremotecontrol) | Turn off [Remote Control](/docs/en/remote-control) everywhere it can start | Remote, desktop, and notifications | Any file |
@@ -96160,6 +96395,8 @@ The four sub-key entries below list what else each surface blocks and what still
 
 Lock the `skills` surface. Claude Code stops loading skills from `~/.claude/skills/` and `.claude/skills/`, custom commands from `~/.claude/commands/` and `.claude/commands/`, skills and commands under `--add-dir` directories, and skills synced from your claude.ai account. It keeps loading bundled skills, skills in the managed policy directory, and skills from plugins other than [skills-directory plugins](/docs/en/plugins/loading#skills-directory-plugins-blocked-by-managed-settings).
 
+With the lock on, [skills from MCP servers](/docs/en/mcp#use-skills-from-mcp-servers) that users, projects, and `--mcp-config` add don't load. Skills from claude.ai connectors still load.
+
 * **Scope**: [`Managed`](#scopes)
 * **Type**: the string `"skills"` in the [`strictPluginOnlyCustomization`](#strictpluginonlycustomization) array
 * **Default**: not locked
@@ -96518,6 +96755,28 @@ Block specific MCP servers. Claude Code refuses to load a matching server wherev
 ```
 
 The denylist takes precedence over [`allowedMcpServers`](#allowedmcpservers), so a server on both lists is blocked. See [Policy-based control with allowlists and denylists](/docs/en/managed-mcp#policy-based-control-with-allowlists-and-denylists).
+
+### `disableDirectMcpSkills`
+
+Turn [skills from MCP servers](/docs/en/mcp#turn-on-skills-for-an-organization) on or off for your organization. This key covers every server except claude.ai connectors. For connectors, an Owner uses the **Skills over MCP** switch in [**Organization settings > Connectors**](https://claude.ai/admin-settings/connectors) instead. Skills from MCP servers require Claude Code v2.1.331 or later.
+
+* **Scope**: [`Managed`](#scopes). If you use several [managed sources](/docs/en/managed-settings#how-claude-code-combines-managed-sources), set `false` in the highest-ranked one. Claude Code ignores a `false` in the Windows HKCU registry
+* **Type**: Boolean
+  * `true`: Claude Code doesn't list or load skills from these servers. The servers keep their tools, and claude.ai connectors keep their skills
+  * `false`: on Team and Enterprise plans, allows these skills. They stay off for servers you lock out with `strictPluginOnlyCustomization`, and if your organization isn't [eligible](/docs/en/mcp#requirements-for-skills-from-mcp-servers). On other plans, `false` is the same as unset
+* **Default**: unset. These skills are off for Team and Enterprise members who sign in to claude.ai with `/login`. For other sign-ins, see [MCP skill availability](/docs/en/mcp#requirements-for-skills-from-mcp-servers)
+
+This example allows these skills for Team and Enterprise members:
+
+```json managed-settings.json theme={null}
+{
+  "disableDirectMcpSkills": false
+}
+```
+
+If any [admin source](/docs/en/managed-settings#keys-read-from-every-admin-source) sets `true`, the skills stay off.
+
+Anthropic doesn't scan these skills. They can contain instructions or code that cause Claude to take unintended actions, including through [prompt injection](/docs/en/security#protect-against-prompt-injection). Set this to `false` only if you trust the servers your members add.
 
 ### `disableClaudeAiConnectors`
 
@@ -98152,7 +98411,7 @@ Claude Code runs on the following platforms and configurations:
 
 > [!TIP]
 >
-> Prefer a graphical interface? The [Desktop app](/docs/en/desktop-quickstart) lets you use Claude Code without the terminal. Download it for [macOS](https://claude.ai/api/desktop/darwin/universal/dmg/latest/redirect?utm_source=claude_code\&utm_medium=docs), [Windows](https://claude.com/download?utm_source=claude_code\&utm_medium=docs), or [Linux](/docs/en/desktop-linux).
+> Prefer a graphical interface? The [Desktop app](/docs/en/desktop-quickstart) lets you use Claude Code without the terminal. Download it for [macOS](https://claude.ai/claude-code/desktop-download?platform=mac\&utm_source=claude_code\&utm_medium=docs), [Windows](https://claude.ai/claude-code/desktop-download?platform=win\&utm_source=claude_code\&utm_medium=docs), or [Linux](/docs/en/desktop-linux).
 
 To install Claude Code, open a terminal and run the command for your system. If you haven't used a terminal before, the [terminal guide](/docs/en/terminal-guide) shows how to open one and paste the command.
 
@@ -124480,6 +124739,7 @@ In the table below, `<arg>` indicates a required argument and `[arg]` indicates 
 | `/memory` | Edit `CLAUDE.md` files, enable or disable [auto memory](/docs/en/memory#auto-memory), and view auto memory entries |
 | `/mobile` | Show QR code to download the Claude mobile app. Aliases: `/ios`, `/android` |
 | `/model [model]` | Switch the AI model and save it as your default for new sessions. For models that support it, use left/right arrows to [adjust effort level](/docs/en/model-config#adjust-effort-level). With no argument, opens a picker; press `s` on a row to switch for the current session only. See [when the new model starts](/docs/en/interactive-mode#when-claude-code-sends-what-you-queued). Before v2.1.242, it could wait. With `-p`, pass a model argument, which isn't saved as your default; requires v2.1.205 or later |
+| `/motion [brief]` | **[Skill](/docs/en/skills#bundled-skills).** Make a new animation from your brief as a [Claude Motion](https://support.claude.com/en/articles/17454997-get-started-with-claude-motion) artifact, for example `/motion an explainer of how our deploy pipeline works`. Available in local sessions in the [Desktop app](/docs/en/desktop) and in Anthropic-hosted [cloud sessions](/docs/en/claude-code-on-the-web), not in the terminal or IDE extensions. Requires Claude Code v2.1.323 or later and a Team or Enterprise account where the [Motion template is available](/docs/en/artifacts#start-from-a-slides-design-or-docs-template) |
 | `/output-style [style]` | List [output styles](/docs/en/output-styles) or switch to one, for example `/output-style concise`. See [Change your output style](/docs/en/output-styles#change-your-output-style). Requires Claude Code v2.1.269 or later |
 | `/passes` | Share a free week of Claude Code with friends. Only visible if your account is eligible |
 | `/permissions` | Manage allow, ask, and deny rules for tool permissions. Opens an interactive dialog where you can view rules by scope, add or remove rules, manage working directories, and review [recent auto mode denials](/docs/en/auto-mode-config#review-denials). You can also view and edit [auto mode classifier rules](/docs/en/auto-mode-config#edit-rules-from-permissions) from the dialog's **Auto mode** tab. In the desktop app, edit your [settings files](/docs/en/auto-mode-config#where-the-classifier-reads-configuration) instead. Alias: `/allowed-tools` |
@@ -124539,6 +124799,7 @@ In the table below, `<arg>` indicates a required argument and `[arg]` indicates 
 | `/vim` | Removed in v2.1.92. To toggle between Vim and Normal editing modes, use `/config` → Editor mode |
 | `/voice [hold\|tap\|off]` | Toggle [voice dictation](/docs/en/voice-dictation), or enable it in a specific mode. Requires a Claude.ai account |
 | `/web-setup` | Connect your GitHub account for [cloud sessions](/docs/en/web-quickstart#connect-from-your-terminal) using your local `gh` CLI credentials |
+| `/whiteboard [brief]` | **[Skill](/docs/en/skills#bundled-skills).** Make a new whiteboard from your brief as a [Claude Whiteboards](https://support.claude.com/en/articles/18324319-get-started-with-claude-whiteboards) artifact, for example `/whiteboard a service map of the checkout flow`. Requires Claude Code v2.1.323 or later, a session where [artifacts are available](/docs/en/artifacts#availability), and an account where the [Whiteboards template is available](/docs/en/artifacts#start-from-a-slides-design-or-docs-template). When your organization has that template off, the command doesn't appear, so ask an Owner to [turn it on](https://support.claude.com/en/articles/16994751-artifacts-admin-guide-for-team-and-enterprise-plans#h_6e06d8f1a8) |
 | `/workflow-authoring` | **[Skill](/docs/en/skills#bundled-skills).** Load the reference for writing [dynamic workflow](/docs/en/workflows) scripts: the script API, resume behavior, quality patterns, and worked examples. Claude normally loads it on its own before writing a script; run it yourself before [editing a saved script by hand](/docs/en/workflows#edit-a-saved-script). Available when dynamic workflows are enabled, and requires Claude Code v2.1.248 or later |
 | `/workflows` | Open the [workflow](/docs/en/workflows#watch-the-run) progress view to watch, pause, resume, or save running and completed workflows |
 
@@ -124822,7 +125083,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS` | Set to `1` to remove built-in commit and PR workflow instructions and the git status snapshot from Claude's context. Useful when using your own git workflow skills. Takes precedence over the [`includeGitInstructions`](/docs/en/settings-reference#includegitinstructions) setting when set |
 | `CLAUDE_CODE_DISABLE_INLINE_SHELL_RM_PROMPT` | Set to `1` to stop Claude Code from reading scripts passed to a shell with `-c`, such as `bash -c 'rm -rf ~'`, for [critical-path](/docs/en/permission-modes#removals-inside-nested-commands-and-inline-scripts) removals. Claude Code still checks the shell variable and positional parameter targets in those scripts, and the other critical-path checks keep running. Set it in the environment that launches Claude Code, since Claude Code ignores a copy delivered through a settings `env` block. Requires Claude Code v2.1.288 or later |
 | `CLAUDE_CODE_DISABLE_LEGACY_MODEL_REMAP` | Set to `1` to prevent automatic remapping of Opus 4 and Opus 4.1 to the current Opus version on the Anthropic API. The remap doesn't run on Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry |
-| `CLAUDE_CODE_DISABLE_MCP_TASK_BACKGROUND` | Set to `1` so that Claude waits for the result of an [MCP task](/docs/en/mcp#make-claude-wait-for-the-result-of-an-mcp-task) in an interactive session. While [automatic backgrounding](/docs/en/mcp#automatic-backgrounding-of-long-tool-calls) is on, it still moves the call to the background after two minutes by default. Requires Claude Code v2.1.304 or later |
+| `CLAUDE_CODE_DISABLE_MCP_TASK_BACKGROUND` | Set to `1` so that Claude waits for the result of an [MCP task](/docs/en/mcp#make-claude-wait-for-the-result-of-an-mcp-task) in an interactive terminal session. While [automatic backgrounding](/docs/en/mcp#automatic-backgrounding-of-long-tool-calls) is on, it still moves the call to the background after two minutes by default. Requires Claude Code v2.1.304 or later |
 | `CLAUDE_CODE_DISABLE_MODEL_ACCESS_FALLBACK` | Set to `1` to stop Claude Code on [Amazon Bedrock](/docs/en/amazon-bedrock#when-a-model-is-disabled-mid-session) and [Google Cloud's Agent Platform](/docs/en/google-vertex-ai#when-a-model-is-disabled-mid-session) from switching to an older model when your account loses access to a session's model mid-session; the refused request fails at once instead. A [fallback model chain](/docs/en/model-config#fallback-model-chains) you configure still switches on that refusal, and the [startup model checks](/docs/en/amazon-bedrock#startup-model-checks) still fall back at launch. Requires Claude Code v2.1.285 or later |
 | `CLAUDE_CODE_DISABLE_MOUNTED_DRIVE_RM_PROMPT` | Set to `1` to turn off the [mounted drive prompt](/docs/en/permission-modes#the-mounted-drive-prompt) for paths such as `/Volumes/USB`. [Set it in the environment that launches Claude Code](#set-variables-in-your-shell), because Claude Code [ignores it in a settings `env` block](/docs/en/settings-reference#variables-claude-code-ignores-in-env). Requires Claude Code v2.1.304 or later |
 | `CLAUDE_CODE_DISABLE_MOUSE` | Set to `1` to disable mouse tracking in [fullscreen rendering](/docs/en/fullscreen). Keyboard scrolling with `PgUp` and `PgDn` still works. Use this to keep your terminal's native copy-on-select behavior |
@@ -124902,7 +125163,7 @@ Numeric variables such as timeouts, token budgets, and retry counts accept scien
 | `CLAUDE_CODE_MAX_TURNS` | Cap the number of agentic turns when no explicit limit is passed. Equivalent to passing [`--max-turns`](/docs/en/cli-reference#cli-flags), which takes precedence when both are set. A value that is not a positive integer is rejected at startup with an error rather than treated as no cap |
 | `CLAUDE_CODE_MAX_WEB_SEARCHES_PER_SESSION` | Cap on [WebSearch](/docs/en/tools-reference#session-search-limit) calls (default: 200). When Claude reaches the cap, further WebSearch calls return a notice telling it to continue with the information it already gathered and say so in its answer. Accepts a positive whole number with no upper bound. Anything else is ignored and the default applies, so the cap can be raised but not turned off. Requires Claude Code v2.1.212 or later |
 | `CLAUDE_CODE_MCP_ALLOWLIST_ENV` | Set to `1` to spawn stdio MCP servers with only a safe baseline environment plus the server's configured `env`, instead of inheriting your shell environment |
-| `CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS` | Elapsed time in milliseconds before a still-running MCP tool call [moves to a background task](/docs/en/mcp#automatic-backgrounding-of-long-tool-calls) (default: 120000, or 2 minutes). Set to `0` to turn automatic backgrounding off and, in an interactive session, to make Claude wait for [MCP tasks](/docs/en/mcp#make-claude-wait-for-the-result-of-an-mcp-task). Requires Claude Code v2.1.212 or later |
+| `CLAUDE_CODE_MCP_AUTO_BACKGROUND_MS` | Elapsed time in milliseconds before a still-running MCP tool call [moves to a background task](/docs/en/mcp#automatic-backgrounding-of-long-tool-calls) (default: 120000, or 2 minutes). Set to `0` to turn automatic backgrounding off. In an interactive terminal session, `0` also makes Claude wait for [MCP tasks](/docs/en/mcp#make-claude-wait-for-the-result-of-an-mcp-task). Requires Claude Code v2.1.212 or later |
 | `CLAUDE_CODE_MCP_STARTUP_WAIT_MS` | How long in milliseconds the first turn of a [non-interactive](/docs/en/headless) session waits for MCP servers that are still connecting, in place of the default [first-turn wait](/docs/en/agent-sdk/mcp#connection-timing). In a [self-hosted environment](/docs/en/self-hosted-environments-configuration#connection-timing), it changes only how long the wait lasts. Some servers keep a wait of their own regardless of the value; [Connection timing](/docs/en/agent-sdk/mcp#connection-timing) lists them. Set to `0` to skip the wait for every other server. Requires Claude Code v2.1.274 or later |
 | `CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT` | Idle timeout in milliseconds for MCP tool calls. When a stdio, HTTP, SSE, WebSocket, or [claude.ai connector](/docs/en/mcp#use-mcp-servers-from-claude-ai) MCP server sends no response and no progress notification for this long, the tool call aborts with an error instead of waiting for the overall `MCP_TOOL_TIMEOUT`. Overrides the per-transport defaults of 300000 (5 minutes) for network servers and 1800000 (30 minutes) for stdio servers. Set to `0` to disable the idle check. Values below 1000 are raised to one second, and the value is capped at the effective `MCP_TOOL_TIMEOUT`. A per-server `timeout` in `.mcp.json` of at least 1000 raises that server's idle window to at least the `timeout` value. Doesn't apply to IDE servers or SDK in-process servers. Requires Claude Code v2.1.187 or later. Before v2.1.203, stdio servers were exempt from the idle timeout |
 | `CLAUDE_CODE_MESSAGING_SOCKET` | Set by Claude Code, not by you: in sessions that bind an [inbox socket](/docs/en/cross-session-messaging#the-sessions-inbox-socket), Claude Code exports that socket's path to hooks and Bash commands when it binds the socket. In a session that starts with messaging on, Claude Code binds the socket before any hook runs. Other sessions on the machine deliver messages to this path. Each session exports its own socket rather than one inherited from a parent, and messages arriving on it go through the session's [inbound controls](/docs/en/cross-session-messaging#control-inbound-messages). Settings `env` blocks can't set it. Requires Claude Code v2.1.224 or later |
@@ -125166,6 +125427,7 @@ With fetching off, you can't:
 * Turn on the [You should know mod](/docs/en/interactive-mode#you-should-know-suggestions)
 * Use [the advisor tool](/docs/en/advisor#requirements), except with Claude Code v2.1.300 or later on Claude Platform on AWS or [Claude Models on Google Cloud (Anthropic managed)](/docs/en/feature-availability#availability-by-model-provider)
 * Use [MCP tasks](/docs/en/mcp#mcp-tasks-that-run-on-the-server)
+* Use [skills from MCP servers](/docs/en/mcp#use-skills-from-mcp-servers)
 * Have Claude read [another organization's public artifact](/docs/en/artifacts#read-an-artifact-shared-with-you)
 * Get the [PowerShell tool](/docs/en/tools-reference#powershell-tool) by default for claude.ai and Console accounts on Windows with Git Bash installed; Claude Code routes shell commands through Git Bash unless you set `CLAUDE_CODE_USE_POWERSHELL_TOOL=1`. On Windows without Git Bash, the tool stays on
 * Get [Claude-drafted feedback](/docs/en/tools-reference#sendfeedback-tool-behavior), which Claude Code turns on through a fetched flag
@@ -135270,7 +135532,7 @@ To add custom tools, connect an [MCP server](/docs/en/mcp). To extend Claude wit
 | `SendMessage` | Sends a message to another agent: an [agent team](/docs/en/agent-teams) teammate, a [subagent it resumes](/docs/en/sub-agents#resume-subagents) by agent ID or name, or one of your other Claude Code sessions, on this machine or beyond it. Messaging other sessions requires Claude Code v2.1.224 or later. [Cross-session messaging](/docs/en/cross-session-messaging) covers which sessions Claude can reach, [what a message looks like when it arrives](/docs/en/cross-session-messaging#what-a-message-looks-like), and [how Claude gets a notice when another session goes idle](/docs/en/cross-session-messaging#get-a-notice-when-another-session-goes-idle). Claude can include an optional `summary` input, typically 5-10 words, that Claude Code shows as a one-line preview. When Claude omits it on a [plain-text message](/docs/en/cross-session-messaging#limitations), Claude Code uses the first line of the message as the summary. Claude Code truncates a summary longer than 200 characters with an ellipsis | No |
 | `SendUserFile` | Sends files from the session to you with an optional caption, so a generated report, diagram, screenshot, or built artifact reaches your device instead of only being mentioned in the transcript. The optional `display` input controls presentation: `render` opens the file inline in the client, `attach` shows a download card only, and when unset the client decides by file type. Available when a [Remote Control](/docs/en/remote-control) client is connected or in a [cloud session](/docs/en/claude-code-on-the-web). Delivery runs through Anthropic-hosted infrastructure, so the tool is not available on Amazon Bedrock, Google Cloud's Agent Platform, or Microsoft Foundry | No |
 | `ShareOnboardingGuide` | Uploads `ONBOARDING.md` and returns a share link teammates can open in Claude Code. Called from `/team-onboarding` after the guide is written. Available to claude.ai subscribers on Team and Enterprise plans | Yes |
-| `Skill` | Executes a [skill](/docs/en/skills#control-who-invokes-a-skill) within the main conversation. Can prompt for skills that set `allowed-tools`, `disallowed-tools`, or `hooks` | Some skills |
+| `Skill` | Executes a [skill](/docs/en/skills#control-who-invokes-a-skill) within the main conversation. Can prompt for skills that set `allowed-tools`, `disallowed-tools`, or `hooks`, and for [skills from MCP servers](/docs/en/mcp#approvals-for-mcp-skills) | Some skills |
 | `SubagentHandback` | Delivers a subagent's final report to whichever conversation receives that subagent's result. Provided only in [auto mode](/docs/en/permission-modes#eliminate-prompts-with-auto-mode), to subagents that the Agent tool runs locally other than [forks](/docs/en/sub-agents#fork-the-current-conversation), and available in the terminal CLI, IDE extensions, cloud sessions, and the Agent SDK; the classifier reviews the report before it's delivered. Requires Claude Code v2.1.271 or later | No |
 | `SuggestPluginInstall` | Shows a [card of suggested plugins](/docs/en/claude-code-on-the-web#plugin-suggestions-in-the-conversation) you can add. Available in the same sessions as `ListPlugins` | No |
 | `SuggestSkills` | Shows a card of claude.ai skills you can add. Available in the same sessions as `ListPlugins` | No |
